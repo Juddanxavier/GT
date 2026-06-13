@@ -64,6 +64,42 @@
 
 ## Traceability
 
-| Phase | Requirements |
-|-------|-------------|
-| TBD | (filled by roadmap) |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| AUTH-01 | Phase 2 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| AUTH-04 | Phase 8 | Pending |
+| AUTH-05 | Phase 2 | Pending |
+| AUTH-06 | Phase 2 | Pending |
+| ADMIN-01 | Phase 4 | Pending |
+| ADMIN-02 | Phase 4 | Pending |
+| ADMIN-03 | Phase 9 | Pending |
+| ADMIN-04 | Phase 7 | Pending |
+| ADMIN-05 | Phase 7 | Pending |
+| ADMIN-06 | Phase 4 | Pending |
+| PORTAL-01 | Phase 8 | Pending |
+| PORTAL-02 | Phase 8 | Pending |
+| PORTAL-03 | Phase 8 | Pending |
+| PORTAL-04 | Phase 8 | Pending |
+| TRACK-01 | Phase 5 | Pending |
+| TRACK-02 | Phase 5 | Pending |
+| TRACK-03 | Phase 6 | Pending |
+| TRACK-04 | Phase 6 | Pending |
+| TRACK-05 | Phase 5 | Pending |
+| INFRA-01 | Phase 3 | Pending |
+| INFRA-02 | Phase 3 | Pending |
+| INFRA-03 | Phase 3 | Pending |
+| INFRA-04 | Phase 7 | Pending |
+| INFRA-05 | Phase 3 | Pending |
+| INFRA-06 | Phase 3 | Pending |
+| INFRA-07 | Phase 6 | Pending |
+| INFRA-08 | Phase 6 | Pending |
+| DEPLOY-01 | Phase 10 | Pending |
+| DEPLOY-02 | Phase 10 | Pending |
+| DEPLOY-03 | Phase 10 | Pending |
+| TOOL-01 | Phase 1 | Pending |
+| TOOL-02 | Phase 1 | Pending |
+| TOOL-03 | Phase 1 | Pending |
+
+All 35 v1 requirements mapped ✓
