@@ -6,7 +6,7 @@ A multi-tenant shipment tracking platform for Gajan Traders serving two organiza
 
 ## Phases
 
-- [ ] **Phase 1: Tooling & Foundation** — Biome, Next.js pin, Drizzle ORM, monorepo config
+- [x] **Phase 1: Tooling & Foundation** — Biome, Next.js pin, Drizzle ORM, monorepo config
 - [ ] **Phase 2: Auth & Multi-Tenancy** — Better Auth, CASL roles, tenant resolver, RLS, admin access control
 - [ ] **Phase 3: Infrastructure Backbone** — BullMQ, Redis cache, Socket.IO, Sentry, Arcjet
 - [ ] **Phase 4: Admin Core — Customers, Branches, Shipments** — CRUD operations for core business entities
@@ -158,7 +158,7 @@ After Phase 2 completes, two workstreams run simultaneously:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Tooling & Foundation | 0/TBD | Not started | - |
+| 1. Tooling & Foundation | 1/1 | Complete | 2026-06-14 |
 | 2. Auth & Multi-Tenancy | 0/TBD | Not started | - |
 | 3. Infrastructure Backbone | 0/TBD | Not started | - |
 | 4. Admin Core — Customers, Branches, Shipments | 0/TBD | Not started | - |

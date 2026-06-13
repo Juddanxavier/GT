@@ -47,9 +47,9 @@
 - [ ] **DEPLOY-03**: Standalone Next.js output (output: standalone)
 
 ### Tooling
-- [ ] **TOOL-01**: Biome replacing ESLint + Prettier (one biome.json at workspace root)
-- [ ] **TOOL-02**: Next.js pinned to ^16.2.6 (security patches)
-- [ ] **TOOL-03**: Drizzle ORM v0.45.x (stable, plan v1 migration later)
+- [x] **TOOL-01**: Biome replacing ESLint + Prettier (one biome.json at workspace root)
+- [x] **TOOL-02**: Next.js pinned to ^16.2.6 (security patches)
+- [x] **TOOL-03**: Drizzle ORM v0.45.x (stable, plan v1 migration later)
 
 ## v2 (Deferred)
 - Additional countries (architecture supports via tenant-config)
@@ -98,8 +98,8 @@
 | DEPLOY-01 | Phase 10 | Pending |
 | DEPLOY-02 | Phase 10 | Pending |
 | DEPLOY-03 | Phase 10 | Pending |
-| TOOL-01 | Phase 1 | Pending |
-| TOOL-02 | Phase 1 | Pending |
-| TOOL-03 | Phase 1 | Pending |
+| TOOL-01 | Phase 1 | Complete |
+| TOOL-02 | Phase 1 | Complete |
+| TOOL-03 | Phase 1 | Complete |
 
 All 35 v1 requirements mapped ✓
