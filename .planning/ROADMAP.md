@@ -35,13 +35,22 @@ A multi-tenant shipment tracking platform for Gajan Traders serving two organiza
 **Depends on**: Phase 1
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-05, AUTH-06
 **Success Criteria** (what must be TRUE):
-  1. Admin can log in with email/password and Google OAuth; session persists across browser restarts
-  2. Tenant resolver middleware extracts tenant from subdomain (portals) or X-Tenant-ID header (admin) and injects it into request context
-  3. Staff users (superadmin, tenant-admin, staff) can access admin app; customers are redirected/blocked
-  4. All Drizzle queries against tenant-scoped tables automatically include `tenantId` filter (type-safe via `withTenant`)
-  5. PostgreSQL Row-Level Security policies prevent cross-tenant data access even if a query misses the tenantId filter
-**Plans**: TBD
+   1. Admin can log in with email/password and Google OAuth; session persists across browser restarts
+   2. Tenant resolver middleware extracts tenant from subdomain (portals) or X-Tenant-ID header (admin) and injects it into request context
+   3. Staff users (superadmin, tenant-admin, staff) can access admin app; customers are redirected/blocked
+   4. CASL ability definitions enforce role-based permissions across all 4 roles
+   5. PostgreSQL Row-Level Security policies prevent cross-tenant data access even if a query misses the tenantId filter
+**Plans**: 7 plans (5 waves)
 **UI hint**: yes
+
+Plans:
+- [ ] 02-01-PLAN.md — Database Schema: tenants, branches, tenant_domains, extended user table
+- [ ] 02-02-PLAN.md — Better Auth Config & Hono Integration
+- [ ] 02-03-PLAN.md — CASL Permissions Package (@repo/permissions)
+- [ ] 02-04-PLAN.md — Admin Login UI with shadcn components
+- [ ] 02-05-PLAN.md — Tenant Resolver Middleware with domain caching
+- [ ] 02-06-PLAN.md — Route Guards: CASL middleware & Admin Access Control
+- [ ] 02-07-PLAN.md — RLS Policies & Phase 2 Verification
 
 ### Phase 3: Infrastructure Backbone
 **Goal**: Background job processing, caching, real-time messaging, error monitoring, and security middleware are operational and tenant-aware
@@ -159,7 +168,7 @@ After Phase 2 completes, two workstreams run simultaneously:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tooling & Foundation | 1/1 | Complete | 2026-06-14 |
-| 2. Auth & Multi-Tenancy | 0/TBD | Not started | - |
+| 2. Auth & Multi-Tenancy | 0/7 | In planning | - |
 | 3. Infrastructure Backbone | 0/TBD | Not started | - |
 | 4. Admin Core — Customers, Branches, Shipments | 0/TBD | Not started | - |
 | 5. Tracking Engine | 0/TBD | Not started | - |
