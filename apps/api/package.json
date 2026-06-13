@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^2.0.4",
+    "@repo/permissions": "workspace:^",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.25",
     "postgres": "^3.4.9"
