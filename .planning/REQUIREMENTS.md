@@ -3,7 +3,7 @@
 ## v1 Requirements
 
 ### Auth & Multi-Tenancy
-- [ ] **AUTH-01**: Better Auth with Drizzle adapter — sessions, Google OAuth, refresh tokens, CSRF protection
+- [x] **AUTH-01**: Better Auth with Drizzle adapter — sessions, Google OAuth, refresh tokens, CSRF protection
 - [ ] **AUTH-02**: CASL roles — superadmin, tenant-admin, staff, customer
 - [ ] **AUTH-03**: Tenant resolver middleware (X-Tenant-ID / subdomain) — single DB, tenantId scoping on all queries
 - [ ] **AUTH-04**: Customer account creation (portal apps only, not admin)
@@ -66,7 +66,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 2 | Pending |
+| AUTH-01 | Phase 2 | Complete |
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
 | AUTH-04 | Phase 8 | Pending |

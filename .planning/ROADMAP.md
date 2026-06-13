@@ -45,7 +45,7 @@ A multi-tenant shipment tracking platform for Gajan Traders serving two organiza
 
 Plans:
 - [ ] 02-01-PLAN.md — Database Schema: tenants, branches, tenant_domains, extended user table
-- [ ] 02-02-PLAN.md — Better Auth Config & Hono Integration
+- [x] 02-02-PLAN.md — Better Auth Config & Hono Integration
 - [ ] 02-03-PLAN.md — CASL Permissions Package (@repo/permissions)
 - [ ] 02-04-PLAN.md — Admin Login UI with shadcn components
 - [ ] 02-05-PLAN.md — Tenant Resolver Middleware with domain caching
@@ -168,7 +168,7 @@ After Phase 2 completes, two workstreams run simultaneously:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tooling & Foundation | 1/1 | Complete | 2026-06-14 |
-| 2. Auth & Multi-Tenancy | 0/7 | In planning | - |
+| 2. Auth & Multi-Tenancy | 1/7 | In Progress|  |
 | 3. Infrastructure Backbone | 0/TBD | Not started | - |
 | 4. Admin Core — Customers, Branches, Shipments | 0/TBD | Not started | - |
 | 5. Tracking Engine | 0/TBD | Not started | - |
