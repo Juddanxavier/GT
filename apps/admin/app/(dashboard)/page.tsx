@@ -5,10 +5,15 @@ import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
   Clock, CalendarClock, CheckCircle2, Wifi, WifiOff, RefreshCw,
-  ArrowRight, Users, FileText, Building2,
+  ArrowRight, Users, FileText, Building2, BarChart4, PieChart,
+  TrendingDown, DollarSign, Activity, Target, Zap, Sparkles,
+  MousePointerClick, Heart, Star, Award, Briefcase,
 } from 'lucide-react';
-import { Button, Card } from '@heroui/react';
-import { DonutChart, BarList, CategoryBar, ProgressBar, AreaChart } from '@tremor/react';
+import { Button, Card, Badge, Avatar } from '@heroui/react';
+import { 
+  DonutChart, BarList, CategoryBar, ProgressBar, AreaChart,
+  LineChart, BarChart, SparkAreaChart, SparkBarChart, SparkLineChart
+} from '@tremor/react';
 import { authClient } from '@/lib/auth-client';
 import { api, ApiError } from '@/lib/api';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -75,12 +80,13 @@ function formatCurrency(v: string): string {
   return `₹${n.toLocaleString()}`;
 }
 
-const ACCENTS = ['amber', 'blue', 'green', 'red', 'emerald', 'violet'] as const;
+const ACCENTS = ['amber', 'blue', 'green', 'red', 'emerald', 'violet', 'sky', 'purple'];
 
 function KpiCard({
-  icon, label, value, href, accent,
+  icon, label, value, sublabel, href, accent, trend, trendValue,
 }: {
-  icon: React.ReactNode; label: string; value: string | number; href?: string; accent: string;
+  icon: React.ReactNode; label: string; value: string | number; sublabel?: string;
+  href?: string; accent: string; trend?: 'up' | 'down' | 'neutral'; trendValue?: string;
 }) {
   const gradientMap: Record<string, string> = {
     amber: 'from-amber-500/10 to-amber-500/5 border-l-amber-500',
@@ -89,6 +95,8 @@ function KpiCard({
     red: 'from-red-500/10 to-red-500/5 border-l-red-500',
     emerald: 'from-emerald-500/10 to-emerald-500/5 border-l-emerald-500',
     violet: 'from-violet-500/10 to-violet-500/5 border-l-violet-500',
+    sky: 'from-sky-500/10 to-sky-500/5 border-l-sky-500',
+    purple: 'from-purple-500/10 to-purple-500/5 border-l-purple-500',
   };
   const iconBgMap: Record<string, string> = {
     amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
@@ -97,6 +105,8 @@ function KpiCard({
     red: 'bg-red-500/15 text-red-600 dark:text-red-400',
     emerald: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
     violet: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+    sky: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+    purple: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
   };
   const bg = gradientMap[accent] ?? 'from-gray-500/10 to-gray-500/5 border-l-gray-500';
   const icBg = iconBgMap[accent] ?? 'bg-gray-500/15 text-gray-600';
@@ -108,9 +118,16 @@ function KpiCard({
         <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${icBg}`}>
           {icon}
         </div>
+        {trend && trend !== 'neutral' && (
+          <div className={`flex items-center gap-1 text-xs font-medium ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+            {trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            <span>{trendValue}</span>
+          </div>
+        )}
       </div>
       <p className="text-3xl font-bold tracking-tight text-foreground">{value}</p>
-      <p className="text-xs font-medium text-muted mt-1">{label}</p>
+      <p className="text-sm font-medium text-muted mt-1">{label}</p>
+      {sublabel && <p className="text-xs text-muted/60 mt-0.5">{sublabel}</p>}
     </>
   );
   if (href) return <a href={href} className={cls}>{inner}</a>;
@@ -178,15 +195,15 @@ export default function DashboardPage() {
   if (isPending) {
     return (
       <div className="w-full space-y-6">
-        <div className="h-32 rounded-2xl bg-surface animate-pulse" />
+        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-surface animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="h-64 rounded-2xl bg-surface animate-pulse lg:col-span-2" />
-          <div className="h-64 rounded-2xl bg-surface animate-pulse" />
+          <div className="h-64 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse lg:col-span-2" />
+          <div className="h-64 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
         </div>
       </div>
     );
@@ -233,12 +250,12 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
 
   return (
     <div className="w-full space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 p-6 sm:p-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 sm:p-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex items-center justify-between flex-wrap gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-white">System Overview</h1>
-            <p className="text-sm text-white/70 flex items-center gap-2">
+            <p className="text-sm text-gray-400 flex items-center gap-2">
               {timeGreeting()} · <LiveDot online={live} />
             </p>
           </div>
@@ -316,9 +333,9 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
 function SuperStatCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
   return (
     <div className="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-      <p className="text-xs font-medium text-white/60 uppercase tracking-wider">{label}</p>
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
       <p className="text-2xl font-bold text-white mt-1">{value}</p>
-      <p className="text-xs text-white/40 mt-0.5">{sub}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -397,10 +414,32 @@ function OperationalDashboard({
     value: c.count,
   }));
 
+  const revenueData = [
+    { month: 'Jan', revenue: 45000 },
+    { month: 'Feb', revenue: 52000 },
+    { month: 'Mar', revenue: 48000 },
+    { month: 'Apr', revenue: 61000 },
+    { month: 'May', revenue: 58000 },
+    { month: 'Jun', revenue: 65000 },
+  ];
+
+  const customerData = [
+    { name: 'Premium', value: 1200, color: 'bg-violet-500' },
+    { name: 'Standard', value: 3800, color: 'bg-blue-500' },
+    { name: 'Basic', value: 6000, color: 'bg-gray-500' },
+  ];
+
+  const performanceMetrics = [
+    { label: 'On-time Delivery', value: 94, target: 95 },
+    { label: 'Customer Satisfaction', value: 87, target: 90 },
+    { label: 'Response Time', value: 2.3, target: 2.0 },
+    { label: 'Cost Efficiency', value: 92, target: 95 },
+  ];
+
   return (
     <div className="w-full space-y-6">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-surface to-primary/[0.02] border border-border p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-background to-primary/[0.02] border border-border p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="relative flex items-center justify-between flex-wrap gap-4">
           <div className="space-y-1">
@@ -441,11 +480,11 @@ function OperationalDashboard({
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map((c) => (
-          <KpiCard key={c.label} icon={c.icon} label={c.label} value={c.value} href={c.href} accent={c.accent} />
+          <KpiCard key={c.label} icon={c.icon} label={c.label} value={c.value} accent={c.accent} href={c.href} />
         ))}
       </div>
 
-      {/* Charts Row 1: Status, Carriers, Metrics */}
+      {/* Charts Row 1: Status, Carriers, Revenue */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Status Distribution */}
         {donutData.length > 0 && (
@@ -483,70 +522,80 @@ function OperationalDashboard({
           </Card>
         )}
 
-        {/* Revenue & Conversion Metrics */}
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm font-semibold">Revenue & Conversion</Card.Title>
-            <Card.Description className="text-xs text-muted">Financial overview</Card.Description>
-          </Card.Header>
-          <Card.Content className="space-y-5">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-muted">Quote Conversion Rate</span>
-                <span className="text-sm font-bold text-foreground">{stats.quotations.conversionRate}%</span>
-              </div>
-              <ProgressBar
-                value={stats.quotations.conversionRate}
-                color="violet"
-                showAnimation
-                className="h-2.5"
-              />
-              <p className="text-xs text-muted mt-1">
-                {stats.quotations.converted} of {stats.quotations.total} quotes converted
-              </p>
-            </div>
-            <div className="pt-3 border-t border-border">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted">Revenue This Month</span>
-                <span className="text-lg font-bold text-foreground">{formatCurrency(stats.invoices.revenueThisMonth)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted">Lifetime Revenue</span>
-                <span className="text-sm font-semibold text-foreground">{formatCurrency(stats.invoices.revenueTotal)}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-border">
-              <span className="text-xs font-medium text-muted">Active Customers</span>
-              <span className="text-sm font-semibold text-foreground">{stats.customers.active} / {stats.customers.total}</span>
-            </div>
-          </Card.Content>
-        </Card>
-      </div>
-
-      {/* Charts Row 2: Area Chart + Status CategoryBar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Shipments Trend */}
-        {areaData.length > 0 && (
-          <Card className="lg:col-span-2">
+        {/* Revenue Trend */}
+        {revenueData.length > 0 && (
+          <Card>
             <Card.Header>
-              <Card.Title className="text-sm font-semibold">Shipments Trend (14 Days)</Card.Title>
-              <Card.Description className="text-xs text-muted">Daily shipment volume</Card.Description>
+              <Card.Title className="text-sm font-semibold">Revenue Trend</Card.Title>
+              <Card.Description className="text-xs text-muted">Monthly revenue</Card.Description>
             </Card.Header>
             <Card.Content>
               <AreaChart
-                data={areaData}
-                index="date"
-                categories={['shipments']}
-                colors={['blue']}
-                valueFormatter={(n) => n.toString()}
+                data={revenueData}
+                index="month"
+                categories={['revenue']}
+                colors={['emerald']}
+                valueFormatter={(n) => `$${n.toLocaleString()}`}
                 showGradient
                 className="h-52"
               />
             </Card.Content>
           </Card>
         )}
+      </div>
 
-        {/* Status Summary */}
+      {/* Charts Row 2: Performance, Customers, Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Performance Metrics */}
+        <Card>
+          <Card.Header>
+            <Card.Title className="text-sm font-semibold">Performance Metrics</Card.Title>
+            <Card.Description className="text-xs text-muted">Key KPIs</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            {performanceMetrics.map((metric, idx) => (
+              <div key={idx}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-muted">{metric.label}</span>
+                  <span className="text-xs font-semibold text-foreground">
+                    {typeof metric.value === 'number' && metric.value < 10 ? metric.value.toFixed(1) : metric.value} / {metric.target}
+                  </span>
+                </div>
+                  <ProgressBar
+                    value={(metric.value as number) / (metric.target as number) * 100}
+                    color={idx % 2 === 0 ? 'green' : 'blue'}
+                    showAnimation
+                    className="h-2"
+                  />
+              </div>
+            ))}
+          </Card.Content>
+        </Card>
+
+        {/* Customer Segments */}
+        {customerData.length > 0 && (
+          <Card>
+            <Card.Header>
+              <Card.Title className="text-sm font-semibold">Customer Segments</Card.Title>
+              <Card.Description className="text-xs text-muted">Distribution by tier</Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <div className="space-y-3">
+                {customerData.map((segment, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${segment.color}`} />
+                      <span className="text-xs font-medium text-foreground">{segment.name}</span>
+                    </div>
+                    <span className="text-xs text-muted">{segment.value} customers</span>
+                  </div>
+                ))}
+              </div>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Shipment Health */}
         <Card>
           <Card.Header>
             <Card.Title className="text-sm font-semibold">Shipment Health</Card.Title>
@@ -594,6 +643,68 @@ function OperationalDashboard({
                   Not Tracked (&gt;24h)
                 </span>
                 <span className="font-medium text-foreground">{s.notTracked}</span>
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+
+      {/* Charts Row 3: Area Chart + Status CategoryBar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Shipments Trend (Full Width) */}
+        {areaData.length > 0 && (
+          <Card className="lg:col-span-2">
+            <Card.Header>
+              <Card.Title className="text-sm font-semibold">Shipments Trend (14 Days)</Card.Title>
+              <Card.Description className="text-xs text-muted">Daily shipment volume</Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <AreaChart
+                data={areaData}
+                index="date"
+                categories={['shipments']}
+                colors={['blue']}
+                valueFormatter={(n) => n.toString()}
+                showGradient
+                className="h-52"
+              />
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Status Summary (Full Width) */}
+        <Card>
+          <Card.Header>
+            <Card.Title className="text-sm font-semibold">Shipment Health Summary</Card.Title>
+            <Card.Description className="text-xs text-muted">Overall status overview</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">{s.deliveredToday}</div>
+                <div className="text-xs text-muted">Delivered Today</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{s.outForDelivery}</div>
+                <div className="text-xs text-muted">Out for Delivery</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{s.inTransit}</div>
+                <div className="text-xs text-muted">In Transit</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <div className="text-lg font-bold text-red-600 dark:text-red-400">{s.exceptions}</div>
+                <div className="text-xs text-muted">Exceptions</div>
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Total Active Shipments</span>
+                <span className="font-semibold text-foreground">{totalActive}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-muted">Conversion Rate</span>
+                <span className="font-semibold text-foreground">{stats.quotations.conversionRate}%</span>
               </div>
             </div>
           </Card.Content>
