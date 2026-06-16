@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
   Clock, CalendarClock, CheckCircle2, Wifi, WifiOff, RefreshCw,
-  ArrowRight, Users, FileText,
+  ArrowRight, Users, FileText, Building2,
 } from 'lucide-react';
 import { Button, Card } from '@heroui/react';
-import { DonutChart, BarChart } from '@tremor/react';
+import { DonutChart, BarList, CategoryBar, ProgressBar, AreaChart } from '@tremor/react';
 import { authClient } from '@/lib/auth-client';
 import { api, ApiError } from '@/lib/api';
-import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
 
 type Stats = {
   role: string;
@@ -75,6 +75,8 @@ function formatCurrency(v: string): string {
   return `₹${n.toLocaleString()}`;
 }
 
+const ACCENTS = ['amber', 'blue', 'green', 'red', 'emerald', 'violet'] as const;
+
 function KpiCard({
   icon, label, value, href, accent,
 }: {
@@ -87,16 +89,14 @@ function KpiCard({
     red: 'from-red-500/10 to-red-500/5 border-l-red-500',
     emerald: 'from-emerald-500/10 to-emerald-500/5 border-l-emerald-500',
     violet: 'from-violet-500/10 to-violet-500/5 border-l-violet-500',
-    sky: 'from-sky-500/10 to-sky-500/5 border-l-sky-500',
   };
   const iconBgMap: Record<string, string> = {
-    amber: 'bg-amber-500/15 text-amber-600',
-    blue: 'bg-blue-500/15 text-blue-600',
-    green: 'bg-green-500/15 text-green-600',
-    red: 'bg-red-500/15 text-red-600',
-    emerald: 'bg-emerald-500/15 text-emerald-600',
-    violet: 'bg-violet-500/15 text-violet-600',
-    sky: 'bg-sky-500/15 text-sky-600',
+    amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    blue: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-500/15 text-green-600 dark:text-green-400',
+    red: 'bg-red-500/15 text-red-600 dark:text-red-400',
+    emerald: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    violet: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
   };
   const bg = gradientMap[accent] ?? 'from-gray-500/10 to-gray-500/5 border-l-gray-500';
   const icBg = iconBgMap[accent] ?? 'bg-gray-500/15 text-gray-600';
@@ -108,9 +108,9 @@ function KpiCard({
         <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${icBg}`}>
           {icon}
         </div>
-        <span className="text-xs font-medium text-muted">{label}</span>
       </div>
       <p className="text-3xl font-bold tracking-tight text-foreground">{value}</p>
+      <p className="text-xs font-medium text-muted mt-1">{label}</p>
     </>
   );
   if (href) return <a href={href} className={cls}>{inner}</a>;
@@ -178,15 +178,15 @@ export default function DashboardPage() {
   if (isPending) {
     return (
       <div className="w-full space-y-6">
-        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
+        <div className="h-32 rounded-2xl bg-surface animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-surface animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
-          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="h-64 rounded-2xl bg-surface animate-pulse lg:col-span-2" />
+          <div className="h-64 rounded-2xl bg-surface animate-pulse" />
         </div>
       </div>
     );
@@ -233,12 +233,12 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
 
   return (
     <div className="w-full space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 sm:p-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 p-6 sm:p-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex items-center justify-between flex-wrap gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-white">System Overview</h1>
-            <p className="text-sm text-gray-400 flex items-center gap-2">
+            <p className="text-sm text-white/70 flex items-center gap-2">
               {timeGreeting()} · <LiveDot online={live} />
             </p>
           </div>
@@ -252,60 +252,61 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
         </div>
       </div>
 
-      <Card>
-        <Card.Header>
-          <Card.Title className="text-base font-semibold">Per-Tenant Breakdown</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted border-b border-border">
-                  <th className="pb-3 font-medium">Tenant</th>
-                  <th className="pb-3 font-medium text-right">Shipments</th>
-                  <th className="pb-3 font-medium text-right">In Transit</th>
-                  <th className="pb-3 font-medium text-right">Delivered Today</th>
-                  <th className="pb-3 font-medium text-right">Revenue</th>
-                  <th className="pb-3 font-medium text-right">Branches</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(stats.perTenant ?? []).map((pt) => (
-                  <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
-                    <td className="py-3 font-medium">{pt.tenantName}</td>
-                    <td className="py-3 text-right">{pt.shipments.total}</td>
-                    <td className="py-3 text-right text-amber-600 font-medium">{pt.shipments.inTransit}</td>
-                    <td className="py-3 text-right text-green-600 font-medium">{pt.shipments.deliveredToday}</td>
-                    <td className="py-3 text-right">{formatCurrency(pt.invoices.revenueTotal)}</td>
-                    <td className="py-3 text-right">{pt.branches.total}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card.Content>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {stats.perDay && stats.perDay.length > 0 && (
-          <Card className="lg:col-span-2">
-            <Card.Header>
-              <Card.Title className="text-base font-semibold">Shipments per Day — All Tenants</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <BarChart
-                data={stats.perDay.map((d) => ({ date: d.date, shipments: d.count }))}
-                index="date"
-                categories={['shipments']}
-                colors={['blue']}
-                valueFormatter={(n) => n.toString()}
-                className="h-64"
-              />
-            </Card.Content>
-          </Card>
-        )}
-        <ActionCard onRetry={onRetry} />
+        <Card className="lg:col-span-2">
+          <Card.Header>
+            <Card.Title className="text-base font-semibold">Per-Tenant Breakdown</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted border-b border-border">
+                    <th className="pb-3 font-medium">Tenant</th>
+                    <th className="pb-3 font-medium text-right">Shipments</th>
+                    <th className="pb-3 font-medium text-right">In Transit</th>
+                    <th className="pb-3 font-medium text-right">Delivered Today</th>
+                    <th className="pb-3 font-medium text-right">Revenue</th>
+                    <th className="pb-3 font-medium text-right">Branches</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(stats.perTenant ?? []).map((pt) => (
+                    <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
+                      <td className="py-3 font-medium">{pt.tenantName}</td>
+                      <td className="py-3 text-right">{pt.shipments.total}</td>
+                      <td className="py-3 text-right text-amber-600 dark:text-amber-400 font-medium">{pt.shipments.inTransit}</td>
+                      <td className="py-3 text-right text-green-600 dark:text-green-400 font-medium">{pt.shipments.deliveredToday}</td>
+                      <td className="py-3 text-right">{formatCurrency(pt.invoices.revenueTotal)}</td>
+                      <td className="py-3 text-right">{pt.branches.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card.Content>
+        </Card>
+        <ActionCard />
       </div>
+
+      {stats.perDay && stats.perDay.length > 0 && (
+        <Card>
+          <Card.Header>
+            <Card.Title className="text-base font-semibold">Shipments per Day — All Tenants</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <AreaChart
+              data={stats.perDay.map((d) => ({ date: d.date, shipments: d.count }))}
+              index="date"
+              categories={['shipments']}
+              colors={['blue']}
+              valueFormatter={(n) => n.toString()}
+              showGradient
+              className="h-64"
+            />
+          </Card.Content>
+        </Card>
+      )}
 
       {renderAlerts(stats.alerts)}
     </div>
@@ -315,9 +316,9 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
 function SuperStatCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
   return (
     <div className="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className="text-xs font-medium text-white/60 uppercase tracking-wider">{label}</p>
       <p className="text-2xl font-bold text-white mt-1">{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-xs text-white/40 mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -335,7 +336,7 @@ function OperationalDashboard({
     return (
       <div className="w-full flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-sm">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-danger/10 text-danger mb-4">
             <AlertTriangle size={28} />
           </div>
           <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
@@ -349,21 +350,32 @@ function OperationalDashboard({
   if (loading || !stats) {
     return (
       <div className="w-full space-y-6">
-        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
+        <div className="h-32 rounded-2xl bg-surface animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-surface animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
-          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="h-64 rounded-2xl bg-surface animate-pulse lg:col-span-2" />
+          <div className="h-64 rounded-2xl bg-surface animate-pulse" />
         </div>
       </div>
     );
   }
 
   const s = stats.shipments;
+  const totalActive = s.inTransit + s.outForDelivery + s.deliveredToday;
+  const statusValues = [
+    s.deliveredToday,
+    s.outForDelivery,
+    s.inTransit,
+    s.pending,
+    s.exceptions,
+  ];
+  const statusColors: Array<'green' | 'blue' | 'amber' | 'gray' | 'red'> = [
+    'green', 'blue', 'amber', 'gray', 'red',
+  ];
 
   const cards = [
     { icon: <Truck size={18} />, label: 'In Transit', value: s.inTransit, accent: 'amber', href: '/shipments?status=in_transit' },
@@ -378,17 +390,22 @@ function OperationalDashboard({
     .filter(([, v]) => v > 0)
     .map(([k, v]) => ({ name: statusLabel(k), value: v }));
 
-  const barData = (s.perDay ?? []).map((d) => ({ date: d.date, shipments: d.count }));
+  const areaData = (s.perDay ?? []).map((d) => ({ date: d.date, shipments: d.count }));
+
+  const carrierData = (s.byCarrier ?? []).map((c) => ({
+    name: c.carrier,
+    value: c.count,
+  }));
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-background to-primary/[0.02] border border-border p-6 sm:p-8">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-surface to-primary/[0.02] border border-border p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="relative flex items-center justify-between flex-wrap gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">{timeGreeting()}, {userName}</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{timeGreeting()}, {userName}</h1>
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                 {role.replace('-', ' ')}
               </span>
@@ -410,7 +427,7 @@ function OperationalDashboard({
               <select
                 value={branchFilter}
                 onChange={(e) => onBranchChange(e.target.value)}
-                className="h-9 w-40 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary"
+                className="h-9 w-40 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary text-foreground"
               >
                 <option value="">All Branches</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -428,13 +445,14 @@ function OperationalDashboard({
         ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Charts Row 1: Status, Carriers, Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Status Distribution */}
         {donutData.length > 0 && (
           <Card>
             <Card.Header>
-              <Card.Title className="text-base font-semibold">Status Distribution</Card.Title>
-              <Card.Description className="text-sm text-muted">Breakdown by current shipment status</Card.Description>
+              <Card.Title className="text-sm font-semibold">Status Distribution</Card.Title>
+              <Card.Description className="text-xs text-muted">Current shipment statuses</Card.Description>
             </Card.Header>
             <Card.Content>
               <DonutChart
@@ -442,29 +460,144 @@ function OperationalDashboard({
                 index="name"
                 category="value"
                 valueFormatter={(n) => n.toString()}
-                className="h-64"
+                className="h-52"
               />
             </Card.Content>
           </Card>
         )}
-        {barData.length > 0 && (
+
+        {/* Carrier Breakdown */}
+        {carrierData.length > 0 && (
           <Card>
             <Card.Header>
-              <Card.Title className="text-base font-semibold">Shipments per Day (Last 14 Days)</Card.Title>
-              <Card.Description className="text-sm text-muted">Daily volume trend</Card.Description>
+              <Card.Title className="text-sm font-semibold">By Carrier</Card.Title>
+              <Card.Description className="text-xs text-muted">Shipments per carrier</Card.Description>
             </Card.Header>
             <Card.Content>
-              <BarChart
-                data={barData}
+              <BarList
+                data={carrierData}
+                valueFormatter={(n: number) => n.toString()}
+                className="h-52"
+              />
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Revenue & Conversion Metrics */}
+        <Card>
+          <Card.Header>
+            <Card.Title className="text-sm font-semibold">Revenue & Conversion</Card.Title>
+            <Card.Description className="text-xs text-muted">Financial overview</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-5">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-muted">Quote Conversion Rate</span>
+                <span className="text-sm font-bold text-foreground">{stats.quotations.conversionRate}%</span>
+              </div>
+              <ProgressBar
+                value={stats.quotations.conversionRate}
+                color="violet"
+                showAnimation
+                className="h-2.5"
+              />
+              <p className="text-xs text-muted mt-1">
+                {stats.quotations.converted} of {stats.quotations.total} quotes converted
+              </p>
+            </div>
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-muted">Revenue This Month</span>
+                <span className="text-lg font-bold text-foreground">{formatCurrency(stats.invoices.revenueThisMonth)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted">Lifetime Revenue</span>
+                <span className="text-sm font-semibold text-foreground">{formatCurrency(stats.invoices.revenueTotal)}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <span className="text-xs font-medium text-muted">Active Customers</span>
+              <span className="text-sm font-semibold text-foreground">{stats.customers.active} / {stats.customers.total}</span>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+
+      {/* Charts Row 2: Area Chart + Status CategoryBar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Shipments Trend */}
+        {areaData.length > 0 && (
+          <Card className="lg:col-span-2">
+            <Card.Header>
+              <Card.Title className="text-sm font-semibold">Shipments Trend (14 Days)</Card.Title>
+              <Card.Description className="text-xs text-muted">Daily shipment volume</Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <AreaChart
+                data={areaData}
                 index="date"
                 categories={['shipments']}
                 colors={['blue']}
                 valueFormatter={(n) => n.toString()}
-                className="h-64"
+                showGradient
+                className="h-52"
               />
             </Card.Content>
           </Card>
         )}
+
+        {/* Status Summary */}
+        <Card>
+          <Card.Header>
+            <Card.Title className="text-sm font-semibold">Shipment Health</Card.Title>
+            <Card.Description className="text-xs text-muted">Status distribution bar</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between text-xs text-muted mb-2">
+                <span>Delivered Today</span>
+                <span className="font-medium text-foreground">{s.deliveredToday}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted mb-2">
+                <span>Out for Delivery</span>
+                <span className="font-medium text-foreground">{s.outForDelivery}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted mb-2">
+                <span>In Transit</span>
+                <span className="font-medium text-foreground">{s.inTransit}</span>
+              </div>
+              <CategoryBar
+                values={statusValues}
+                colors={statusColors}
+                showLabels={false}
+                className="mt-3"
+              />
+            </div>
+            <div className="pt-3 border-t border-border space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Stale (no update &gt;72h)
+                </span>
+                <span className="font-medium text-foreground">{s.stale}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  Overdue (past ETA)
+                </span>
+                <span className="font-medium text-foreground">{s.overdue}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Not Tracked (&gt;24h)
+                </span>
+                <span className="font-medium text-foreground">{s.notTracked}</span>
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
       </div>
 
       {/* Alerts + Quick Actions */}
@@ -472,7 +605,7 @@ function OperationalDashboard({
         <div className="lg:col-span-2">
           {renderAlerts(stats.alerts)}
         </div>
-        <ActionCard onRetry={onRetry} router={router} />
+        <ActionCard router={router} onRetry={onRetry} />
       </div>
     </div>
   );
@@ -482,8 +615,8 @@ function ActionCard({ onRetry, router }: { onRetry?: () => void; router?: Return
   return (
     <Card>
       <Card.Header>
-        <Card.Title className="text-base font-semibold">Quick Actions</Card.Title>
-        <Card.Description className="text-sm text-muted">Common tasks</Card.Description>
+        <Card.Title className="text-sm font-semibold">Quick Actions</Card.Title>
+        <Card.Description className="text-xs text-muted">Common tasks</Card.Description>
       </Card.Header>
       <Card.Content className="space-y-2">
         {router && (
@@ -491,6 +624,7 @@ function ActionCard({ onRetry, router }: { onRetry?: () => void; router?: Return
             <QuickActionButton icon={<Package size={16} />} label="New Shipment" onClick={() => router.push('/shipments?status=pending')} />
             <QuickActionButton icon={<Users size={16} />} label="New Customer" onClick={() => router.push('/customers')} />
             <QuickActionButton icon={<FileText size={16} />} label="New Quotation" onClick={() => router.push('/quotations')} />
+            <QuickActionButton icon={<Building2 size={16} />} label="All Shipments" onClick={() => router.push('/shipments')} />
           </>
         )}
         {onRetry && (
@@ -523,9 +657,9 @@ function renderAlerts(alerts: Alert[]) {
     exception: <AlertTriangle size={14} />,
   };
   const colorMap: Record<string, string> = {
-    stale: 'text-amber-600 bg-amber-500/10 border-l-amber-500',
-    overdue: 'text-orange-600 bg-orange-500/10 border-l-orange-500',
-    exception: 'text-red-600 bg-red-500/10 border-l-red-500',
+    stale: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-l-amber-500',
+    overdue: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-l-orange-500',
+    exception: 'text-red-600 dark:text-red-400 bg-red-500/10 border-l-red-500',
   };
   const labelMap: Record<string, string> = {
     stale: 'Stale',
@@ -536,8 +670,8 @@ function renderAlerts(alerts: Alert[]) {
   return (
     <Card>
       <Card.Header>
-        <Card.Title className="text-base font-semibold">Alerts — Shipments Needing Attention</Card.Title>
-        <Card.Description className="text-sm text-muted">
+        <Card.Title className="text-sm font-semibold">Alerts — Shipments Needing Attention</Card.Title>
+        <Card.Description className="text-xs text-muted">
           {alerts.length > 0
             ? `${alerts.length} shipment${alerts.length > 1 ? 's' : ''} need attention`
             : 'All clear'}
@@ -545,7 +679,7 @@ function renderAlerts(alerts: Alert[]) {
       </Card.Header>
       <Card.Content>
         {alerts.length === 0 ? (
-          <div className="flex items-center gap-2 text-green-600 text-sm py-4">
+          <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm py-4">
             <CheckCircle2 size={18} />
             <span>No alerts — all shipments are on track</span>
           </div>
@@ -568,7 +702,7 @@ function renderAlerts(alerts: Alert[]) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-medium text-xs uppercase tracking-wider">{labelMap[a.type] ?? 'Alert'}</span>
+                      <span className="font-mono font-medium text-[10px] uppercase tracking-widest">{labelMap[a.type] ?? 'Alert'}</span>
                       <span className="font-mono font-semibold text-sm">{a.trackingNo}</span>
                     </div>
                     <p className="text-xs text-current/60 truncate mt-0.5">{desc}</p>
