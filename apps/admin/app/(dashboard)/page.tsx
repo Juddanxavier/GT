@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
   Clock, CalendarClock, CheckCircle2, Wifi, WifiOff, RefreshCw,
-  ArrowUpRight, ArrowDownRight, Plus, Users, FileText,
+  ArrowRight, Users, FileText,
 } from 'lucide-react';
-import { Button, Card, Chip } from '@heroui/react';
+import { Button, Card } from '@heroui/react';
 import { DonutChart, BarChart } from '@tremor/react';
 import { authClient } from '@/lib/auth-client';
 import { api, ApiError } from '@/lib/api';
@@ -75,78 +75,56 @@ function formatCurrency(v: string): string {
   return `₹${n.toLocaleString()}`;
 }
 
-const accentBg = 'bg-accent/10 text-accent';
-const kpiColors = [
-  'bg-amber-500/10 text-amber-600',
-  'bg-blue-500/10 text-blue-600',
-  'bg-green-500/10 text-green-600',
-  'bg-red-500/10 text-red-600',
-  'bg-emerald-500/10 text-emerald-600',
-  'bg-violet-500/10 text-violet-600',
-];
-
 function KpiCard({
-  icon, label, value, subtitle, href, color, trend,
+  icon, label, value, href, accent,
 }: {
-  icon: React.ReactNode; label: string; value: string | number; subtitle?: string; href?: string; color: string; trend?: { up: boolean; label: string };
+  icon: React.ReactNode; label: string; value: string | number; href?: string; accent: string;
 }) {
+  const gradientMap: Record<string, string> = {
+    amber: 'from-amber-500/10 to-amber-500/5 border-l-amber-500',
+    blue: 'from-blue-500/10 to-blue-500/5 border-l-blue-500',
+    green: 'from-green-500/10 to-green-500/5 border-l-green-500',
+    red: 'from-red-500/10 to-red-500/5 border-l-red-500',
+    emerald: 'from-emerald-500/10 to-emerald-500/5 border-l-emerald-500',
+    violet: 'from-violet-500/10 to-violet-500/5 border-l-violet-500',
+    sky: 'from-sky-500/10 to-sky-500/5 border-l-sky-500',
+  };
+  const iconBgMap: Record<string, string> = {
+    amber: 'bg-amber-500/15 text-amber-600',
+    blue: 'bg-blue-500/15 text-blue-600',
+    green: 'bg-green-500/15 text-green-600',
+    red: 'bg-red-500/15 text-red-600',
+    emerald: 'bg-emerald-500/15 text-emerald-600',
+    violet: 'bg-violet-500/15 text-violet-600',
+    sky: 'bg-sky-500/15 text-sky-600',
+  };
+  const bg = gradientMap[accent] ?? 'from-gray-500/10 to-gray-500/5 border-l-gray-500';
+  const icBg = iconBgMap[accent] ?? 'bg-gray-500/15 text-gray-600';
+
+  const cls = `block rounded-2xl border-l-4 bg-gradient-to-br ${bg} p-5 transition-all hover:-translate-y-1 hover:shadow-lg`;
   const inner = (
-    <div className="group relative rounded-2xl bg-surface p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-accent/20 transition-all duration-200 hover:-translate-y-0.5">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${color} ring-4 ring-white/50`}>
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${icBg}`}>
           {icon}
         </div>
-        {trend && (
-          <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${trend.up ? 'text-green-600' : 'text-red-500'}`}>
-            {trend.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-            {trend.label}
-          </span>
-        )}
+        <span className="text-xs font-medium text-muted">{label}</span>
       </div>
-      <p className="text-sm font-medium text-muted mb-0.5">{label}</p>
-      <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
-      {subtitle && <p className="text-xs text-muted mt-1">{subtitle}</p>}
-    </div>
+      <p className="text-3xl font-bold tracking-tight text-foreground">{value}</p>
+    </>
   );
-  if (href) return <a href={href} className="block">{inner}</a>;
-  return inner;
-}
-
-function StatBadge({ label, value, color }: { label: string; value: number | string; color?: string }) {
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/5 border border-accent/10 text-xs">
-      <span className="text-muted">{label}</span>
-      <span className={`font-semibold ${color ?? 'text-foreground'}`}>{value}</span>
-    </div>
-  );
+  if (href) return <a href={href} className={cls}>{inner}</a>;
+  return <div className={cls}>{inner}</div>;
 }
 
 function LiveDot({ online }: { online: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs ${online ? 'text-green-500' : 'text-muted'}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${online ? 'text-green-500' : 'text-gray-400'}`}>
+      <span className={`relative inline-flex w-2 h-2 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}>
+        {online && <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />}
+      </span>
       {online ? 'Live' : 'Disconnected'}
     </span>
-  );
-}
-
-function SkeletonBlock() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-2xl bg-surface p-5 border border-border/50 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 animate-pulse" />
-            <div className="h-4 w-20 bg-accent/5 rounded animate-pulse" />
-            <div className="h-8 w-16 bg-accent/10 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-surface p-5 h-64 border border-border/50 animate-pulse" />
-        <div className="rounded-2xl bg-surface p-5 h-64 border border-border/50 animate-pulse" />
-      </div>
-    </div>
   );
 }
 
@@ -197,7 +175,23 @@ export default function DashboardPage() {
     };
   }, [session, isPending, fetchStats, branchFilter]);
 
-  if (isPending) return <SkeletonBlock />;
+  if (isPending) {
+    return (
+      <div className="w-full space-y-6">
+        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   if (!session) return null;
 
   const user = session.user as Record<string, unknown>;
@@ -205,7 +199,6 @@ export default function DashboardPage() {
   const tenantId = user.tenantId as string | undefined;
   const branchName = user.branchName as string | undefined;
   const userName = (user.name as string) || (user.email as string) || 'User';
-  const tenantName = (user.tenantName as string) || '';
 
   const isSuperadmin = role === 'superadmin';
   const isTenantAdmin = role === 'tenant-admin';
@@ -225,7 +218,6 @@ export default function DashboardPage() {
       isTenantAdmin={isTenantAdmin}
       isStaff={isStaff}
       userName={userName}
-      tenantName={tenantName}
       branchName={branchName}
       branches={branches}
       branchFilter={branchFilter}
@@ -240,25 +232,29 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
   const t = stats.total!;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">System Overview</h1>
-          <p className="text-sm text-muted mt-1">Cross-tenant analytics <LiveDot online={live} /></p>
+    <div className="w-full space-y-6">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 sm:p-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-white">System Overview</h1>
+            <p className="text-sm text-gray-400 flex items-center gap-2">
+              {timeGreeting()} · <LiveDot online={live} />
+            </p>
+          </div>
+          <Button isIconOnly variant="ghost" onPress={() => onRetry()} className="text-white/70 hover:text-white"><RefreshCw size={16} /></Button>
         </div>
-        <Button isIconOnly variant="ghost" onPress={() => onRetry()} className="hover:bg-accent/10"><RefreshCw size={16} /></Button>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+          <SuperStatCard label="Total Shipments" value={t.shipments.total} sub="across all tenants" />
+          <SuperStatCard label="Total Revenue" value={formatCurrency(t.invoices.revenueTotal)} sub="lifetime" />
+          <SuperStatCard label="Active Customers" value={t.customers.active} sub="registered" />
+          <SuperStatCard label="Avg. Conversion" value={`${t.quotations.conversionRate}%`} sub="quote-to-ship" />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={<Package size={20} />} label="Total Shipments" value={t.shipments.total} href="/shipments" color="bg-amber-500/10 text-amber-600" />
-        <KpiCard icon={<IndianRupee size={20} />} label="Total Revenue" value={formatCurrency(t.invoices.revenueTotal)} color={accentBg} subtitle="Across all tenants" />
-        <KpiCard icon={<CheckCircle size={20} />} label="Active Customers" value={t.customers.active} href="/customers" color="bg-sky-500/10 text-sky-600" />
-        <KpiCard icon={<TrendingUp size={20} />} label="Avg. Conversion" value={`${t.quotations.conversionRate}%`} color="bg-violet-500/10 text-violet-600" subtitle={`${t.quotations.total} total quotes`} />
-      </div>
-
-      <Card className="border border-border/50 shadow-sm">
+      <Card>
         <Card.Header>
-          <Card.Title className="text-base font-semibold">Tenant Breakdown</Card.Title>
+          <Card.Title className="text-base font-semibold">Per-Tenant Breakdown</Card.Title>
         </Card.Header>
         <Card.Content>
           <div className="overflow-x-auto">
@@ -274,14 +270,14 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
                 </tr>
               </thead>
               <tbody>
-                {(stats.perTenant ?? []).map((pt, i) => (
-                  <tr key={pt.tenantId} className={`border-b border-border/50 hover:bg-accent/5 transition-colors ${i % 2 === 0 ? 'bg-accent/[0.02]' : ''}`}>
+                {(stats.perTenant ?? []).map((pt) => (
+                  <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="py-3 font-medium">{pt.tenantName}</td>
                     <td className="py-3 text-right">{pt.shipments.total}</td>
-                    <td className="py-3 text-right"><span className="text-amber-600 font-medium">{pt.shipments.inTransit}</span></td>
+                    <td className="py-3 text-right text-amber-600 font-medium">{pt.shipments.inTransit}</td>
                     <td className="py-3 text-right text-green-600 font-medium">{pt.shipments.deliveredToday}</td>
-                    <td className="py-3 text-right font-medium">{formatCurrency(pt.invoices.revenueTotal)}</td>
-                    <td className="py-3 text-right"><span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">{pt.branches.total}</span></td>
+                    <td className="py-3 text-right">{formatCurrency(pt.invoices.revenueTotal)}</td>
+                    <td className="py-3 text-right">{pt.branches.total}</td>
                   </tr>
                 ))}
               </tbody>
@@ -290,210 +286,299 @@ function SuperadminDashboard({ stats, live, onRetry }: { stats: Stats; live: boo
         </Card.Content>
       </Card>
 
-      {stats.perDay && stats.perDay.length > 0 && (
-        <Card className="border border-border/50 shadow-sm">
-          <Card.Header>
-            <Card.Title className="text-base font-semibold">Daily Shipments — All Tenants</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <BarChart
-              data={stats.perDay.map((d) => ({ date: d.date, shipments: d.count }))}
-              index="date"
-              categories={['shipments']}
-              colors={['emerald']}
-              valueFormatter={(n) => n.toString()}
-              className="h-64"
-            />
-          </Card.Content>
-        </Card>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {stats.perDay && stats.perDay.length > 0 && (
+          <Card className="lg:col-span-2">
+            <Card.Header>
+              <Card.Title className="text-base font-semibold">Shipments per Day — All Tenants</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <BarChart
+                data={stats.perDay.map((d) => ({ date: d.date, shipments: d.count }))}
+                index="date"
+                categories={['shipments']}
+                colors={['blue']}
+                valueFormatter={(n) => n.toString()}
+                className="h-64"
+              />
+            </Card.Content>
+          </Card>
+        )}
+        <ActionCard onRetry={onRetry} />
+      </div>
 
       {renderAlerts(stats.alerts)}
+    </div>
+  );
+}
+
+function SuperStatCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
+  return (
+    <div className="rounded-xl bg-white/10 backdrop-blur-sm p-4">
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className="text-2xl font-bold text-white mt-1">{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
     </div>
   );
 }
 
 function OperationalDashboard({
-  stats, loading, error, live, role, isTenantAdmin, isStaff, userName, tenantName, branchName,
+  stats, loading, error, live, role, isTenantAdmin, isStaff, userName, branchName,
   branches, branchFilter, onBranchChange, onRetry, router,
 }: {
   stats: Stats | null; loading: boolean; error: string | null; live: boolean;
-  role: string; isTenantAdmin: boolean; isStaff: boolean; userName: string; tenantName?: string; branchName?: string;
+  role: string; isTenantAdmin: boolean; isStaff: boolean; userName: string; branchName?: string;
   branches: Branch[]; branchFilter: string; onBranchChange: (v: string) => void;
   onRetry: () => void; router: ReturnType<typeof useRouter>;
 }) {
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <Button variant="primary" onPress={() => onRetry()}>Retry</Button>
-        </div>
-        <div className="rounded-2xl bg-surface p-12 text-center border border-border/50 shadow-sm">
-          <AlertTriangle size={40} className="mx-auto text-danger mb-4" />
-          <p className="text-muted mb-2">{error}</p>
-          <p className="text-xs text-muted">Try refreshing or check your connection</p>
+      <div className="w-full flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-sm">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 mb-4">
+            <AlertTriangle size={28} />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+          <p className="text-sm text-muted mb-4">{error}</p>
+          <Button variant="primary" onPress={() => onRetry()}>Try again</Button>
         </div>
       </div>
     );
   }
 
-  if (loading || !stats) return <SkeletonBlock />;
+  if (loading || !stats) {
+    return (
+      <div className="w-full space-y-6">
+        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+          <div className="h-72 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   const s = stats.shipments;
 
+  const cards = [
+    { icon: <Truck size={18} />, label: 'In Transit', value: s.inTransit, accent: 'amber', href: '/shipments?status=in_transit' },
+    { icon: <Package size={18} />, label: 'Out for Delivery', value: s.outForDelivery, accent: 'blue', href: '/shipments?status=out_for_delivery' },
+    { icon: <CheckCircle size={18} />, label: 'Delivered Today', value: s.deliveredToday, accent: 'green', href: '/shipments?status=delivered' },
+    { icon: <AlertTriangle size={18} />, label: 'Exceptions', value: s.exceptions, accent: 'red', href: '/shipments?status=exception' },
+    { icon: <IndianRupee size={18} />, label: 'Revenue This Month', value: formatCurrency(stats.invoices.revenueThisMonth), accent: 'emerald' },
+    { icon: <TrendingUp size={18} />, label: 'Quote Conversion', value: `${stats.quotations.conversionRate}%`, accent: 'violet' },
+  ];
+
+  const donutData = Object.entries(s.byStatus)
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => ({ name: statusLabel(k), value: v }));
+
+  const barData = (s.perDay ?? []).map((d) => ({ date: d.date, shipments: d.count }));
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {timeGreeting()}, <span className="text-accent">{userName}</span>
-          </h1>
-          <p className="text-sm text-muted flex items-center gap-2 mt-0.5">
-            <LiveDot online={live} />
-            {tenantName && <><span className="opacity-40">·</span><span>{tenantName}</span></>}
-            {isStaff && branchName && <><span className="opacity-40">·</span><Chip size="sm" variant="soft" color="accent" className="h-5 text-[11px]">{branchName}</Chip></>}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isTenantAdmin && branches.length > 0 && (
-            <select
-              value={branchFilter}
-              onChange={(e) => onBranchChange(e.target.value)}
-              className="h-9 rounded-xl border border-border bg-surface px-3 text-sm outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/30"
-            >
-              <option value="">All Branches</option>
-              {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          )}
-          <Button isIconOnly variant="ghost" onPress={() => onRetry()} className="hover:bg-accent/10"><RefreshCw size={16} /></Button>
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-background to-primary/[0.02] border border-border p-6 sm:p-8">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight">{timeGreeting()}, {userName}</h1>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
+                {role.replace('-', ' ')}
+              </span>
+            </div>
+            <p className="text-sm text-muted flex items-center gap-3">
+              <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+              <span className="opacity-40">·</span>
+              <LiveDot online={live} />
+              {isStaff && branchName && (
+                <>
+                  <span className="opacity-40">·</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-xs">{branchName}</span>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isTenantAdmin && branches.length > 0 && (
+              <select
+                value={branchFilter}
+                onChange={(e) => onBranchChange(e.target.value)}
+                className="h-9 w-40 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary"
+              >
+                <option value="">All Branches</option>
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
+            <Button isIconOnly variant="ghost" onPress={() => onRetry()}><RefreshCw size={16} /></Button>
+          </div>
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiCard icon={<Truck size={18} />} label="In Transit" value={s.inTransit} href="/shipments?status=in_transit" color="bg-amber-500/10 text-amber-600" />
-        <KpiCard icon={<Package size={18} />} label="Out for Delivery" value={s.outForDelivery} href="/shipments?status=out_for_delivery" color="bg-blue-500/10 text-blue-600" />
-        <KpiCard icon={<CheckCircle size={18} />} label="Delivered Today" value={s.deliveredToday} href="/shipments?status=delivered" color="bg-green-500/10 text-green-600" trend={{ up: true, label: `${s.deliveredThisMonth} this month` }} />
-        <KpiCard icon={<AlertTriangle size={18} />} label="Exceptions" value={s.exceptions} href="/shipments?status=exception" color="bg-red-500/10 text-red-600" />
-        <KpiCard icon={<IndianRupee size={18} />} label="Revenue (Month)" value={formatCurrency(stats.invoices.revenueThisMonth)} color={accentBg} subtitle={`${stats.invoices.total} invoices`} />
-        <KpiCard icon={<TrendingUp size={18} />} label="Quote Conversion" value={`${stats.quotations.conversionRate}%`} color="bg-violet-500/10 text-violet-600" subtitle={`${stats.quotations.converted}/${stats.quotations.total} won`} />
+        {cards.map((c) => (
+          <KpiCard key={c.label} icon={c.icon} label={c.label} value={c.value} href={c.href} accent={c.accent} />
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="flex flex-wrap gap-2">
-          <StatBadge label="Total" value={s.total} color="text-accent font-bold" />
-          <StatBadge label="Stale" value={s.stale} color={s.stale > 0 ? 'text-amber-600 font-bold' : ''} />
-          <StatBadge label="Overdue" value={s.overdue} color={s.overdue > 0 ? 'text-orange-600 font-bold' : ''} />
-          <StatBadge label="Pending" value={s.pending} />
-          <StatBadge label="Not Tracked" value={s.notTracked} color={s.notTracked > 0 ? 'text-red-500 font-bold' : ''} />
-        </div>
-      </div>
-
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {Object.entries(s.byStatus).filter(([, v]) => v > 0).length > 0 && (
-          <Card className="border border-border/50 shadow-sm">
+        {donutData.length > 0 && (
+          <Card>
             <Card.Header>
-              <Card.Title className="text-sm font-semibold">Status Distribution</Card.Title>
+              <Card.Title className="text-base font-semibold">Status Distribution</Card.Title>
+              <Card.Description className="text-sm text-muted">Breakdown by current shipment status</Card.Description>
             </Card.Header>
             <Card.Content>
               <DonutChart
-                data={Object.entries(s.byStatus).filter(([, v]) => v > 0).map(([k, v]) => ({ name: statusLabel(k), value: v }))}
+                data={donutData}
                 index="name"
                 category="value"
                 valueFormatter={(n) => n.toString()}
-                className="h-56"
+                className="h-64"
               />
             </Card.Content>
           </Card>
         )}
-        {(s.perDay ?? []).length > 0 && (
-          <Card className="border border-border/50 shadow-sm">
+        {barData.length > 0 && (
+          <Card>
             <Card.Header>
-              <Card.Title className="text-sm font-semibold">Shipments per Day (14 days)</Card.Title>
+              <Card.Title className="text-base font-semibold">Shipments per Day (Last 14 Days)</Card.Title>
+              <Card.Description className="text-sm text-muted">Daily volume trend</Card.Description>
             </Card.Header>
             <Card.Content>
               <BarChart
-                data={(s.perDay ?? []).map((d) => ({ date: d.date, shipments: d.count }))}
+                data={barData}
                 index="date"
                 categories={['shipments']}
-                colors={['emerald']}
+                colors={['blue']}
                 valueFormatter={(n) => n.toString()}
-                className="h-56"
+                className="h-64"
               />
             </Card.Content>
           </Card>
         )}
       </div>
 
-      {renderAlerts(stats.alerts)}
-
-      <Card className="border border-border/50 shadow-sm bg-gradient-to-br from-accent/[0.03] to-transparent">
-        <Card.Header>
-          <Card.Title className="text-sm font-semibold">Quick Actions</Card.Title>
-          <Card.Description className="text-xs text-muted">Common tasks to keep things moving</Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <div className="flex flex-wrap gap-3">
-            <Button onPress={() => router.push('/shipments?status=pending')} className="bg-accent text-white hover:bg-accent/90 shadow-sm shadow-accent/20">
-              <Plus size={14} />
-              New Shipment
-            </Button>
-            <Button variant="ghost" onPress={() => router.push('/customers')} className="hover:bg-accent/10">
-              <Users size={14} />
-              New Customer
-            </Button>
-            <Button variant="ghost" onPress={() => router.push('/quotations')} className="hover:bg-accent/10">
-              <FileText size={14} />
-              New Quotation
-            </Button>
-          </div>
-        </Card.Content>
-      </Card>
+      {/* Alerts + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          {renderAlerts(stats.alerts)}
+        </div>
+        <ActionCard onRetry={onRetry} router={router} />
+      </div>
     </div>
   );
 }
 
-function renderAlerts(alerts: Alert[]) {
-  if (alerts.length === 0) return null;
+function ActionCard({ onRetry, router }: { onRetry?: () => void; router?: ReturnType<typeof useRouter> }) {
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title className="text-base font-semibold">Quick Actions</Card.Title>
+        <Card.Description className="text-sm text-muted">Common tasks</Card.Description>
+      </Card.Header>
+      <Card.Content className="space-y-2">
+        {router && (
+          <>
+            <QuickActionButton icon={<Package size={16} />} label="New Shipment" onClick={() => router.push('/shipments?status=pending')} />
+            <QuickActionButton icon={<Users size={16} />} label="New Customer" onClick={() => router.push('/customers')} />
+            <QuickActionButton icon={<FileText size={16} />} label="New Quotation" onClick={() => router.push('/quotations')} />
+          </>
+        )}
+        {onRetry && (
+          <QuickActionButton icon={<RefreshCw size={16} />} label="Refresh Dashboard" onClick={onRetry} />
+        )}
+      </Card.Content>
+    </Card>
+  );
+}
 
+function QuickActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+    >
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+        {icon}
+      </span>
+      <span className="flex-1">{label}</span>
+      <ArrowRight size={14} className="text-muted shrink-0" />
+    </button>
+  );
+}
+
+function renderAlerts(alerts: Alert[]) {
   const iconMap: Record<string, React.ReactNode> = {
     stale: <Clock size={14} />,
     overdue: <CalendarClock size={14} />,
     exception: <AlertTriangle size={14} />,
   };
   const colorMap: Record<string, string> = {
-    stale: 'text-amber-700 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20',
-    overdue: 'text-orange-700 bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20',
-    exception: 'text-red-700 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20',
+    stale: 'text-amber-600 bg-amber-500/10 border-l-amber-500',
+    overdue: 'text-orange-600 bg-orange-500/10 border-l-orange-500',
+    exception: 'text-red-600 bg-red-500/10 border-l-red-500',
+  };
+  const labelMap: Record<string, string> = {
+    stale: 'Stale',
+    overdue: 'Overdue',
+    exception: 'Exception',
   };
 
   return (
-    <Card className="border border-border/50 shadow-sm">
+    <Card>
       <Card.Header>
-        <Card.Title className="text-sm font-semibold">Alerts — Shipments Needing Attention</Card.Title>
-        <Card.Description className="text-xs text-muted">{alerts.length} shipment{alerts.length !== 1 ? 's' : ''} flagged</Card.Description>
+        <Card.Title className="text-base font-semibold">Alerts — Shipments Needing Attention</Card.Title>
+        <Card.Description className="text-sm text-muted">
+          {alerts.length > 0
+            ? `${alerts.length} shipment${alerts.length > 1 ? 's' : ''} need attention`
+            : 'All clear'}
+        </Card.Description>
       </Card.Header>
       <Card.Content>
-        <div className="space-y-2">
-          {alerts.slice(0, 8).map((a) => {
-            const desc = a.type === 'stale'
-              ? `No update in ${a.lastTrackedAt ? Math.floor((Date.now() - new Date(a.lastTrackedAt).getTime()) / 86400000) : '?'} days`
-              : a.type === 'overdue'
-                ? `ETA was ${a.estimatedDelivery ? new Date(a.estimatedDelivery).toLocaleDateString() : '?'}`
-                : `Status: ${statusLabel(a.status)}`;
-            return (
-              <a
-                key={a.shipmentId}
-                href={`/shipments/${a.shipmentId}`}
-                className={`flex items-center gap-2.5 text-sm px-3.5 py-2.5 rounded-xl border ${colorMap[a.type] ?? 'text-muted bg-surface border-border/50'} hover:shadow-sm transition-all`}
-              >
-                <span className="shrink-0">{iconMap[a.type] ?? <AlertTriangle size={14} />}</span>
-                <span className="font-mono font-medium text-xs">{a.trackingNo}</span>
-                <span className="text-current/70 text-xs">— {desc}</span>
-              </a>
-            );
-          })}
-        </div>
+        {alerts.length === 0 ? (
+          <div className="flex items-center gap-2 text-green-600 text-sm py-4">
+            <CheckCircle2 size={18} />
+            <span>No alerts — all shipments are on track</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {alerts.slice(0, 10).map((a) => {
+              const desc = a.type === 'stale'
+                ? `No update in ${a.lastTrackedAt ? Math.floor((Date.now() - new Date(a.lastTrackedAt).getTime()) / 86400000) : '?'} days`
+                : a.type === 'overdue'
+                  ? `ETA was ${a.estimatedDelivery ? new Date(a.estimatedDelivery).toLocaleDateString() : '?'}`
+                  : `Status: ${statusLabel(a.status)}`;
+              return (
+                <a
+                  key={a.shipmentId}
+                  href={`/shipments/${a.shipmentId}`}
+                  className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl border-l-4 transition-all hover:translate-x-0.5 ${colorMap[a.type] ?? 'text-gray-600 bg-gray-500/10 border-l-gray-500'}`}
+                >
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 shrink-0">
+                    {iconMap[a.type] ?? <AlertTriangle size={14} />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium text-xs uppercase tracking-wider">{labelMap[a.type] ?? 'Alert'}</span>
+                      <span className="font-mono font-semibold text-sm">{a.trackingNo}</span>
+                    </div>
+                    <p className="text-xs text-current/60 truncate mt-0.5">{desc}</p>
+                  </div>
+                  <ArrowRight size={14} className="text-current/40 shrink-0" />
+                </a>
+              );
+            })}
+          </div>
+        )}
       </Card.Content>
     </Card>
   );
