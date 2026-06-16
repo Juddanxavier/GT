@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { FileText, Send, Download, RotateCw } from 'lucide-react';
-import { Button, Chip, Input, Modal, Pagination, Table, cn, type SortDescriptor } from '@heroui/react';
+import { Button, Chip, Input, Modal } from '@heroui/react';
 import { api } from '@/lib/api';
 
 interface InvoiceRow {
@@ -21,7 +21,6 @@ const ROWS_PER_PAGE = 10;
 
 export default function InvoicesPage() {
   const [search, setSearch] = useState('');
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'createdAt', direction: 'descending' });
   const [page, setPage] = useState(1);
   const [invoicesRaw, setInvoicesRaw] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,17 +41,8 @@ export default function InvoicesPage() {
 
   useEffect(() => { fetchInvoices(); }, []);
 
-  const sorted = [...invoicesRaw].sort((a, b) => {
-    const dir = sortDescriptor.direction === 'ascending' ? 1 : -1;
-    const col = sortDescriptor.column as keyof InvoiceRow;
-    const va = a[col] ?? '';
-    const vb = b[col] ?? '';
-    if (col === 'amount') return (Number(va) - Number(vb)) * dir;
-    return String(va).localeCompare(String(vb)) * dir;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / ROWS_PER_PAGE));
-  const paginated = sorted.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(invoicesRaw.length / ROWS_PER_PAGE));
+  const paginated = invoicesRaw.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
   function handleSearch() {
     setPage(1);
@@ -82,7 +72,7 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold">Invoices</h1>
@@ -92,7 +82,6 @@ export default function InvoicesPage() {
           <div className="flex items-center gap-2">
             <Input
               variant="secondary"
-              size="sm"
               placeholder="Search invoices..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -106,66 +95,72 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <Table>
-        <Table.Content aria-label="Invoices" className="min-w-[900px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
-          <Table.Header>
-            <Table.Column id="#" width={48}>
-              {() => <span className="text-muted text-xs">#</span>}
-            </Table.Column>
-            <Table.Column allowsSorting id="invoiceNo" isRowHeader>
-              Invoice No
-            </Table.Column>
-            <Table.Column id="trackingNo">
-              Tracking
-            </Table.Column>
-            <Table.Column allowsSorting id="amount">
-              Amount
-            </Table.Column>
-            <Table.Column id="status">
-              Status
-            </Table.Column>
-            <Table.Column allowsSorting id="emailCount" width={120}>
-              Emails Sent
-            </Table.Column>
-            <Table.Column allowsSorting id="createdAt" width={140}>
-              Created
-            </Table.Column>
-            <Table.Column id="actions" width={100}>
-              {() => <span className="text-muted text-xs">Actions</span>}
-            </Table.Column>
-          </Table.Header>
-          <Table.Body loadingState={loading ? 'loading' : undefined} emptyContent={<p className="py-12 text-center text-muted">No invoices found.</p>}>
-            {paginated.map((inv, i) => (
-              <Table.Row key={inv.id}>
-                <Table.Cell><span className="text-muted text-xs">{(page - 1) * ROWS_PER_PAGE + i + 1}</span></Table.Cell>
-                <Table.Cell><span className="font-medium text-sm">{inv.invoiceNo}</span></Table.Cell>
-                <Table.Cell><span className="text-sm">{inv.trackingNo}</span></Table.Cell>
-                <Table.Cell><span className="font-medium">${Number(inv.amount).toLocaleString()}</span></Table.Cell>
-                <Table.Cell>
-                  <Chip size="sm" variant="soft" color="success">Paid</Chip>
-                </Table.Cell>
-                <Table.Cell><span className="text-sm">{inv.emailCount}/2 today</span></Table.Cell>
-                <Table.Cell><span className="text-sm text-muted">{new Date(inv.createdAt).toLocaleDateString()}</span></Table.Cell>
-                <Table.Cell>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onPress={() => downloadPdf(inv.id)} aria-label="Download PDF">
-                      <Download size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setSendTarget(inv)} aria-label="Send invoice email">
-                      <Send size={14} />
-                    </Button>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Content>
-        {totalPages > 1 && (
-          <Table.Pagination align="center">
-            <Pagination total={totalPages} page={page} onChange={setPage} />
-          </Table.Pagination>
-        )}
-      </Table>
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+          ))}
+        </div>
+      ) : paginated.length === 0 ? (
+        <div className="rounded-2xl bg-surface p-12 text-center">
+          <FileText size={32} className="mx-auto text-muted mb-3" />
+          <p className="text-muted">No invoices found.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30 text-left">
+                <th className="px-4 py-3 font-medium text-muted text-xs w-12">#</th>
+                <th className="px-4 py-3 font-medium">Invoice No</th>
+                <th className="px-4 py-3 font-medium">Tracking</th>
+                <th className="px-4 py-3 font-medium text-right">Amount</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Emails Sent</th>
+                <th className="px-4 py-3 font-medium">Created</th>
+                <th className="px-4 py-3 font-medium text-xs w-24">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.map((inv, i) => (
+                <tr key={inv.id} className="border-b border-border hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 text-muted text-xs">{(page - 1) * ROWS_PER_PAGE + i + 1}</td>
+                  <td className="px-4 py-3 font-medium">{inv.invoiceNo}</td>
+                  <td className="px-4 py-3">{inv.trackingNo}</td>
+                  <td className="px-4 py-3 text-right font-medium">₹{Number(inv.amount).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <Chip size="sm" variant="soft" color="success">Paid</Chip>
+                  </td>
+                  <td className="px-4 py-3">{inv.emailCount}/2 today</td>
+                  <td className="px-4 py-3 text-muted">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" onPress={() => downloadPdf(inv.id)} aria-label="Download PDF">
+                        <Download size={14} />
+                      </Button>
+                      <Button size="sm" variant="ghost" onPress={() => setSendTarget(inv)} aria-label="Send invoice email">
+                        <Send size={14} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 pt-2">
+          <Button size="sm" variant="ghost" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>Previous</Button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <Button key={p} size="sm" variant={p === page ? 'primary' : 'ghost'} onPress={() => setPage(p)}>
+              {p}
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>Next</Button>
+        </div>
+      )}
 
       <Modal.Backdrop isOpen={!!sendTarget} onOpenChange={(v: boolean) => { if (!v) { setSendTarget(null); setSendError(''); setSendSuccess(''); } }}>
         <Modal.Container>
@@ -183,7 +178,7 @@ export default function InvoicesPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="ghost" onPress={() => { setSendTarget(null); setSendError(''); setSendSuccess(''); }}>Cancel</Button>
-              <Button color="primary" isLoading={sending} onPress={() => sendTarget && handleSend(sendTarget)} isDisabled={sending}>
+              <Button variant="primary" isPending={sending} onPress={() => sendTarget && handleSend(sendTarget)} isDisabled={sending}>
                 <Send size={14} />
                 Send Email
               </Button>
