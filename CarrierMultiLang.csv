@@ -1,0 +1,10 @@
+﻿Carrier Code(运输商代码),Carrier Name(运输商名称),Supported Languages(支持语言)
+7041,DHL Paket,"en,de"
+10021,Japan Post,"en,ja"
+20041,Thailand Post,"en,th"
+100003,FedEx,"en,ja,zh-hant"
+100007,DPD (DE),"en,de"
+100410,Shopee Xpress (TH),"en,th"
+100609,Budbee,"en,fi,nb,no,nl"
+101381,METHOD,"en,fr,ptes"
+190766,SF Express(CN),"en,zh-hans"

@@ -1,0 +1,227 @@
+import { Hono } from 'hono';
+import { eq, sql, and } from 'drizzle-orm';
+import { db } from '../db';
+import { shipments, customers, quotations, invoices, tenants as tenantTable, branches } from '../db/schema';
+import { requireRole } from '../middleware/authorization';
+import { queryScope } from '@repo/permissions';
+import type { PermissionContext } from '@repo/permissions';
+import type { AppVariables } from './types';
+
+type Row = Record<string, unknown>;
+
+const app = new Hono<{ Variables: AppVariables }>();
+
+app.get('/stats', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'Not authenticated' }, 401);
+
+  const ctx: PermissionContext = {
+    userId: user.id,
+    role: (user as Record<string, unknown>).role as PermissionContext['role'],
+    tenantId: c.get('tenantId') ?? (user as Record<string, unknown>).tenantId as string,
+    branchId: (user as Record<string, unknown>).branchId as string | undefined | null,
+    overrideTenantId: c.get('tenantId'),
+  };
+  const scope = queryScope(ctx);
+  const role = ctx.role;
+  const branchFilter = role === 'tenant-admin' ? c.req.query('branchId') : null;
+
+  if (role === 'superadmin') {
+    const data = await buildSuperadminStats();
+    return c.json({ data });
+  }
+
+  const data = await buildTenantStats(scope, branchFilter, role);
+  return c.json({ data });
+});
+
+async function buildTenantStats(
+  scope: { tenantId?: string; branchId?: string },
+  branchFilter: string | null,
+  role: string,
+) {
+  const effectiveBranchId = branchFilter ?? scope.branchId;
+  const wheres = [eq(shipments.tenantId, scope.tenantId!)];
+  if (effectiveBranchId) wheres.push(eq(shipments.branchId, effectiveBranchId));
+  const w = and(...wheres);
+
+  const [sRow] = await db.execute<Row>(
+    sql`
+      SELECT
+        COALESCE(SUM(CASE WHEN status='in_transit' THEN 1 ELSE 0 END),0)         AS "inTransit",
+        COALESCE(SUM(CASE WHEN status='out_for_delivery' THEN 1 ELSE 0 END),0)   AS "outForDelivery",
+        COALESCE(SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END),0)          AS delivered,
+        COALESCE(SUM(CASE WHEN status IN ('exception','failed_attempt') THEN 1 ELSE 0 END),0) AS exceptions,
+        COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0)            AS pending,
+        COALESCE(SUM(CASE WHEN status='info_received' THEN 1 ELSE 0 END),0)      AS "infoReceived",
+        COALESCE(SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END),0)            AS expired,
+        COUNT(*)                                                                  AS total,
+        COALESCE(SUM(CASE WHEN status='delivered' AND actual_delivery>=CURRENT_DATE THEN 1 ELSE 0 END),0) AS "deliveredToday",
+        COALESCE(SUM(CASE WHEN status='delivered' AND actual_delivery>=date_trunc('month',CURRENT_DATE) THEN 1 ELSE 0 END),0) AS "deliveredThisMonth",
+        COALESCE(SUM(CASE WHEN status NOT IN ('delivered','expired') AND last_tracked_at<NOW()-INTERVAL '72 hours' THEN 1 ELSE 0 END),0) AS stale,
+        COALESCE(SUM(CASE WHEN status NOT IN ('delivered','expired') AND estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours' THEN 1 ELSE 0 END),0) AS overdue,
+        COALESCE(SUM(CASE WHEN tracking_registered=false AND created_at<NOW()-INTERVAL '24 hours' THEN 1 ELSE 0 END),0) AS "notTracked"
+      FROM shipment WHERE ${w}
+    `,
+  );
+  const s = sRow ?? {};
+
+  const [pdRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val FROM (SELECT DATE(created_at) AS d, COUNT(*)::int AS c FROM shipment WHERE ${w} AND created_at>=NOW()-INTERVAL '14 days' GROUP BY d) sub`,
+  );
+
+  const [bcRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object('carrier',carrier,'count',c) ORDER BY c DESC),'[]'::json) AS val FROM (SELECT carrier, COUNT(*)::int AS c FROM shipment WHERE ${w} AND carrier IS NOT NULL GROUP BY carrier) sub`,
+  );
+
+  const [alRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object(
+      'type', CASE WHEN status IN ('exception','failed_attempt') THEN 'exception' WHEN status NOT IN ('delivered','expired') AND last_tracked_at IS NOT NULL AND last_tracked_at<NOW()-INTERVAL '72 hours' THEN 'stale' WHEN status NOT IN ('delivered','expired') AND estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours' THEN 'overdue' ELSE 'unknown' END,
+      'shipmentId',id,'trackingNo',tracking_no,'status',status,
+      'lastTrackedAt',last_tracked_at,'estimatedDelivery',estimated_delivery,'updatedAt',updated_at
+    ) ORDER BY updated_at DESC),'[]'::json) AS val
+    FROM shipment WHERE ${w} AND (
+      status IN ('exception','failed_attempt')
+      OR (status NOT IN ('delivered','expired') AND last_tracked_at IS NOT NULL AND last_tracked_at<NOW()-INTERVAL '72 hours')
+      OR (status NOT IN ('delivered','expired') AND estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours')
+    ) LIMIT 10`,
+  );
+
+  const [cRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS active FROM customer WHERE ${eq(customers.tenantId, scope.tenantId!)}`,
+  );
+
+  const [qRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN status='converted' THEN 1 ELSE 0 END),0)::int AS converted FROM quotation WHERE ${eq(quotations.tenantId, scope.tenantId!)}`,
+  );
+
+  const [iRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CAST(amount AS numeric)),0)::text AS "revenueTotal", COALESCE(SUM(CAST(amount AS numeric)) FILTER (WHERE paid_at>=date_trunc('month',CURRENT_DATE)),0)::text AS "revenueThisMonth" FROM invoice WHERE ${eq(invoices.tenantId, scope.tenantId!)}`,
+  );
+
+  const [bRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total FROM branch WHERE ${eq(branches.tenantId, scope.tenantId!)}`,
+  );
+
+  const byStatus: Record<string, number> = {
+    in_transit: Number(s['inTransit'] ?? 0),
+    out_for_delivery: Number(s['outForDelivery'] ?? 0),
+    delivered: Number(s['delivered'] ?? 0),
+    exception: Number(s['exceptions'] ?? 0),
+    pending: Number(s['pending'] ?? 0),
+    info_received: Number(s['infoReceived'] ?? 0),
+    expired: Number(s['expired'] ?? 0),
+    failed_attempt: 0,
+  };
+
+  const qt = Number(qRow?.['total'] ?? 0);
+  const qc = Number(qRow?.['converted'] ?? 0);
+  const conversionRate = qt > 0 ? Math.round((qc / qt) * 1000) / 10 : 0;
+
+  return {
+    role,
+    scope: { tenantId: scope.tenantId, branchId: effectiveBranchId ?? null },
+    shipments: {
+      total: Number(s['total'] ?? 0),
+      inTransit: Number(s['inTransit'] ?? 0),
+      outForDelivery: Number(s['outForDelivery'] ?? 0),
+      deliveredToday: Number(s['deliveredToday'] ?? 0),
+      deliveredThisMonth: Number(s['deliveredThisMonth'] ?? 0),
+      exceptions: Number(s['exceptions'] ?? 0),
+      pending: Number(s['pending'] ?? 0),
+      stale: Number(s['stale'] ?? 0),
+      overdue: Number(s['overdue'] ?? 0),
+      notTracked: Number(s['notTracked'] ?? 0),
+      byStatus,
+      perDay: pdRow?.['val'] ?? [],
+      byCarrier: bcRow?.['val'] ?? [],
+    },
+    customers: { total: Number(cRow?.['total'] ?? 0), active: Number(cRow?.['active'] ?? 0) },
+    quotations: { total: qt, converted: qc, conversionRate },
+    invoices: {
+      total: Number(iRow?.['total'] ?? 0),
+      revenueThisMonth: (iRow?.['revenueThisMonth'] as string) ?? '0',
+      revenueTotal: (iRow?.['revenueTotal'] as string) ?? '0',
+    },
+    branches: { total: Number(bRow?.['total'] ?? 0) },
+    alerts: alRow?.['val'] ?? [],
+  };
+}
+
+async function buildSuperadminStats() {
+  const [sRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN status='in_transit' THEN 1 ELSE 0 END),0) AS "inTransit", COALESCE(SUM(CASE WHEN status IN ('exception','failed_attempt') THEN 1 ELSE 0 END),0) AS exceptions, COALESCE(SUM(CASE WHEN status='delivered' AND actual_delivery>=CURRENT_DATE THEN 1 ELSE 0 END),0) AS "deliveredToday" FROM shipment`,
+  );
+  const s = sRow ?? {};
+
+  const [cRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS active FROM customer`,
+  );
+
+  const [qRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN status='converted' THEN 1 ELSE 0 END),0)::int AS converted FROM quotation`,
+  );
+
+  const [iRow] = await db.execute<Row>(
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CAST(amount AS numeric)),0)::text AS "revenueTotal", COALESCE(SUM(CAST(amount AS numeric)) FILTER (WHERE paid_at>=date_trunc('month',CURRENT_DATE)),0)::text AS "revenueThisMonth" FROM invoice`,
+  );
+
+  const [ptRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object(
+      'tenantId',t.id,'tenantName',t.name,
+      'shipments',json_build_object('total',COALESCE(s.c,0),'inTransit',COALESCE(s.it,0),'deliveredToday',COALESCE(s.dt,0),'exceptions',COALESCE(s.ex,0)),
+      'invoices',json_build_object('revenueTotal',COALESCE(i.rt,'0'),'revenueThisMonth',COALESCE(i.rm,'0')),
+      'branches',json_build_object('total',COALESCE(b.bc,0))
+    ) ORDER BY t.name),'[]'::json) AS val
+    FROM tenant t
+    LEFT JOIN LATERAL (SELECT COUNT(*)::int AS c, COUNT(*) FILTER (WHERE status='in_transit')::int AS it, COUNT(*) FILTER (WHERE status='delivered' AND actual_delivery>=CURRENT_DATE)::int AS dt, COUNT(*) FILTER (WHERE status IN ('exception','failed_attempt'))::int AS ex FROM shipment WHERE tenant_id=t.id) s ON true
+    LEFT JOIN LATERAL (SELECT COALESCE(SUM(CAST(amount AS numeric)),0)::text AS rt, COALESCE(SUM(CAST(amount AS numeric)) FILTER (WHERE paid_at>=date_trunc('month',CURRENT_DATE)),0)::text AS rm FROM invoice WHERE tenant_id=t.id) i ON true
+    LEFT JOIN LATERAL (SELECT COUNT(*)::int AS bc FROM branch WHERE tenant_id=t.id) b ON true`,
+  );
+
+  const [pdRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val FROM (SELECT DATE(created_at) AS d, COUNT(*)::int AS c FROM shipment WHERE created_at>=NOW()-INTERVAL '14 days' GROUP BY d) sub`,
+  );
+
+  const [alRow] = await db.execute<Row>(
+    sql`SELECT COALESCE(json_agg(json_build_object(
+      'type',CASE WHEN status IN ('exception','failed_attempt') THEN 'exception' WHEN last_tracked_at IS NOT NULL AND last_tracked_at<NOW()-INTERVAL '72 hours' THEN 'stale' WHEN estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours' THEN 'overdue' ELSE 'unknown' END,
+      'shipmentId',id,'trackingNo',tracking_no,'status',status,
+      'lastTrackedAt',last_tracked_at,'estimatedDelivery',estimated_delivery,'updatedAt',updated_at
+    ) ORDER BY updated_at DESC),'[]'::json) AS val
+    FROM shipment WHERE status IN ('exception','failed_attempt') OR (status NOT IN ('delivered','expired') AND last_tracked_at IS NOT NULL AND last_tracked_at<NOW()-INTERVAL '72 hours') OR (status NOT IN ('delivered','expired') AND estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours') LIMIT 10`,
+  );
+
+  const qt = Number(qRow?.['total'] ?? 0);
+  const qc = Number(qRow?.['converted'] ?? 0);
+  const conversionRate = qt > 0 ? Math.round((qc / qt) * 1000) / 10 : 0;
+
+  return {
+    role: 'superadmin',
+    scope: {},
+    total: {
+      shipments: { total: Number(s['total'] ?? 0), inTransit: Number(s['inTransit'] ?? 0), deliveredToday: Number(s['deliveredToday'] ?? 0), exceptions: Number(s['exceptions'] ?? 0) },
+      customers: { total: Number(cRow?.['total'] ?? 0), active: Number(cRow?.['active'] ?? 0) },
+      quotations: { total: qt, conversionRate },
+      invoices: { total: Number(iRow?.['total'] ?? 0), revenueThisMonth: (iRow?.['revenueThisMonth'] as string) ?? '0', revenueTotal: (iRow?.['revenueTotal'] as string) ?? '0' },
+    },
+    perTenant: ptRow?.['val'] ?? [],
+    perDay: pdRow?.['val'] ?? [],
+    alerts: alRow?.['val'] ?? [],
+  };
+}
+
+app.get('/branches', requireRole('tenant-admin', 'staff'), async (c) => {
+  const tenantId = c.get('tenantId');
+  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const rows = await db
+    .select({ id: branches.id, name: branches.name })
+    .from(branches)
+    .where(eq(branches.tenantId, tenantId))
+    .orderBy(branches.name);
+
+  return c.json({ data: rows });
+});
+
+export default app;

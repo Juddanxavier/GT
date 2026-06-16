@@ -1,4 +1,4 @@
-# Architecture: Multi-Tenant Shipment Tracking Platform
+﻿# Architecture: Multi-Tenant Shipment Tracking Platform
 
 **Domain:** Multi-tenant SaaS logistics/shipment tracking
 **Researched:** 2026-06-13
@@ -10,96 +10,96 @@
 ## 1. System Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                          CLIENT LAYER (Next.js Apps)                                 │
-│                                                                                       │
-│  ┌─────────────────────┐  ┌───────────────────────┐  ┌─────────────────────────┐     │
-│  │  admin.brand.com    │  │  india.brand.com      │  │  srilanka.brand.com     │     │
-│  │  (Admin Dashboard)  │  │  (India Customer      │  │  (Sri Lanka Customer    │     │
-│  │  Staff/Superadmin   │  │   Portal)             │  │   Portal)               │     │
-│  │  roles only         │  │  Customer accounts     │  │  Customer accounts      │     │
-│  └──────────┬──────────┘  └──────────┬────────────┘  └────────────┬────────────┘     │
-│             │                        │                            │                  │
-│         fetch()                  fetch()                      fetch()               │
-│         HTTPS                   HTTPS                         HTTPS                  │
-└─────────────┼────────────────────────┼────────────────────────────┼──────────────────┘
-              │                        │                            │
-              ▼                        ▼                            ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                         API GATEWAY LAYER (Hono)                                     │
-│                                                                                       │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐    │
-│  │                      Tenant Resolver Middleware                                 │    │
-│  │  - Subdomain -> X-Tenant-ID (portals: india.brand.com -> tenant="india")       │    │
-│  │  - Header-based (admin: X-Tenant-ID header)                                   │    │
-│  │  - JWT claim fallback (tenantId from session)                                 │    │
-│  │  - Tenant context -> AsyncLocalStorage for downstream propagation              │    │
-│  └──────────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                       │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐    │
-│  │                      Auth Middleware (Better Auth)                              │    │
-│  │  - Session validation + refresh                                                 │    │
-│  │  - Google OAuth / email-password                                                 │    │
-│  └──────────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                       │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐    │
-│  │                      CASL Authorization Guard                                    │    │
-│  │  - Permissions resolved per-request (tenant-scoped roles)                        │    │
-│  │  - superadmin | tenant-admin | staff | customer                                   │    │
-│  └──────────────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                         APPLICATION LAYER (Hono Routers)                             │
-│                                                                                       │
-│  ┌──────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────────┐    │
-│  │  /api/auth   │ │ /api/    │ │ /api/    │ │ /api/    │ │ /api/shipments     │    │
-│  │  (Better     │ │ tenants  │ │ customers│ │ quotes   │ │ /:id/track         │    │
-│  │   Auth       │ │          │ │          │ │          │ │ (tracking status)   │    │
-│  │   routes)    │ │          │ │          │ │          │ │                    │    │
-│  └──────────────┘ └──────────┘ └──────────┘ └──────────┘ └────────────────────┘    │
-│                                                                                       │
-│  ┌────────────┐ ┌────────────┐ ┌──────────────┐ ┌────────────┐ ┌───────────────┐   │
-│  │ /api/      │ │ /api/      │ │ /api/        │ │ /api/      │ │ /webhooks/    │   │
-│  │ invoices   │ │ branches   │ │ notifications │ │ dashboard  │ │ 17track       │   │
-│  │            │ │            │ │ (config)      │ │ (metrics)  │ │ (external)    │   │
-│  └────────────┘ └────────────┘ └──────────────┘ └────────────┘ └───────────────┘   │
-└──────────────────────────┬──────────────────────────────────────────────────────────┘
-                           │
-              ┌────────────┴────────────┐
-              ▼                         ▼
-┌─────────────────────────┐  ┌──────────────────────────────┐
-│   DATA LAYER            │  │   INFRASTRUCTURE LAYER        │
-│                         │  │                               │
-│  ┌───────────────────┐  │  │  ┌────────────────────────┐   │
-│  │  PostgreSQL        │  │  │  │  Redis                 │   │
-│  │  Single database   │  │  │  │  - Cache (tenant-      │   │
-│  │  tenantId on all   │  │  │  │    prefixed keys)      │   │
-│  │  tenant-scoped     │  │  │  │  - BullMQ queue backend│   │
-│  │  tables            │  │  │  │  - Socket.IO adapter   │   │
-│  │                    │  │  │  └────────────────────────┘   │
-│  │  Shared tables:    │  │  │                               │
-│  │  - tenants         │  │  │  ┌────────────────────────┐   │
-│  │  - users           │  │  │  │  BullMQ                │   │
-│  │  - roles/permissions│  │  │  │  - Notification queue │   │
-│  │                    │  │  │  │  - PDF generation queue│   │
-│  │  Tenant-scoped:    │  │  │  │  - Tracking sync queue │   │
-│  │  - shipments       │  │  │  │  - Webhook processing  │   │
-│  │  - customers       │  │  │  └────────────────────────┘   │
-│  │  - quotes          │  │  │                               │
-│  │  - invoices        │  │  │  ┌────────────────────────┐   │
-│  │  - notifications   │  │  │  │  Socket.IO             │   │
-│  │  - branches        │  │  │  │  - Real-time tracking  │   │
-│  │                    │  │  │  │  - Live status updates │   │
-│  │  Drizzle ORM       │  │  │  │  - Room-per-shipment   │   │
-│  │  - schema          │  │  │  └────────────────────────┘   │
-│  │  - migrations      │  │  │                               │
-│  │  - validators      │  │  │  ┌────────────────────────┐   │
-│  └───────────────────┘  │  │  │  Sentry + OpenTelemetry │   │
-│                         │  │  │  - tenantId-tagged spans│   │
-│                         │  │  └────────────────────────┘   │
-└─────────────────────────┘  └──────────────────────────────┘
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé                          CLIENT LAYER (Next.js Apps)                                 Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ     Γöé
+Γöé  Γöé  admin.brand.com    Γöé  Γöé  india.brand.com      Γöé  Γöé  srilanka.brand.com     Γöé     Γöé
+Γöé  Γöé  (Admin Dashboard)  Γöé  Γöé  (India Customer      Γöé  Γöé  (Sri Lanka Customer    Γöé     Γöé
+Γöé  Γöé  Staff/Superadmin   Γöé  Γöé   Portal)             Γöé  Γöé   Portal)               Γöé     Γöé
+Γöé  Γöé  roles only         Γöé  Γöé  Customer accounts     Γöé  Γöé  Customer accounts      Γöé     Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ     Γöé
+Γöé             Γöé                        Γöé                            Γöé                  Γöé
+Γöé         fetch()                  fetch()                      fetch()               Γöé
+Γöé         HTTPS                   HTTPS                         HTTPS                  Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+              Γöé                        Γöé                            Γöé
+              Γû╝                        Γû╝                            Γû╝
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé                         API GATEWAY LAYER (Hono)                                     Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ    Γöé
+Γöé  Γöé                      Tenant Resolver Middleware                                 Γöé    Γöé
+Γöé  Γöé  - Subdomain -> X-Tenant-ID (portals: india.brand.com -> tenant="india")       Γöé    Γöé
+Γöé  Γöé  - Header-based (admin: X-Tenant-ID header)                                   Γöé    Γöé
+Γöé  Γöé  - JWT claim fallback (tenantId from session)                                 Γöé    Γöé
+Γöé  Γöé  - Tenant context -> AsyncLocalStorage for downstream propagation              Γöé    Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ    Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ    Γöé
+Γöé  Γöé                      Auth Middleware (Better Auth)                              Γöé    Γöé
+Γöé  Γöé  - Session validation + refresh                                                 Γöé    Γöé
+Γöé  Γöé  - Google OAuth / email-password                                                 Γöé    Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ    Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ    Γöé
+Γöé  Γöé                      CASL Authorization Guard                                    Γöé    Γöé
+Γöé  Γöé  - Permissions resolved per-request (tenant-scoped roles)                        Γöé    Γöé
+Γöé  Γöé  - superadmin | tenant-admin | staff | customer                                   Γöé    Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ    Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+              Γöé
+              Γû╝
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé                         APPLICATION LAYER (Hono Routers)                             Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ    Γöé
+Γöé  Γöé  /api/auth   Γöé Γöé /api/    Γöé Γöé /api/    Γöé Γöé /api/    Γöé Γöé /api/shipments     Γöé    Γöé
+Γöé  Γöé  (Better     Γöé Γöé tenants  Γöé Γöé customersΓöé Γöé quotes   Γöé Γöé /:id/track         Γöé    Γöé
+Γöé  Γöé   Auth       Γöé Γöé          Γöé Γöé          Γöé Γöé          Γöé Γöé (tracking status)   Γöé    Γöé
+Γöé  Γöé   routes)    Γöé Γöé          Γöé Γöé          Γöé Γöé          Γöé Γöé                    Γöé    Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ    Γöé
+Γöé                                                                                       Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ   Γöé
+Γöé  Γöé /api/      Γöé Γöé /api/      Γöé Γöé /api/        Γöé Γöé /api/      Γöé Γöé /webhooks/    Γöé   Γöé
+Γöé  Γöé invoices   Γöé Γöé branches   Γöé Γöé notifications Γöé Γöé dashboard  Γöé Γöé 17track       Γöé   Γöé
+Γöé  Γöé            Γöé Γöé            Γöé Γöé (config)      Γöé Γöé (metrics)  Γöé Γöé (external)    Γöé   Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ   Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+                           Γöé
+              ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+              Γû╝                         Γû╝
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé   DATA LAYER            Γöé  Γöé   INFRASTRUCTURE LAYER        Γöé
+Γöé                         Γöé  Γöé                               Γöé
+Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ  Γöé  Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ   Γöé
+Γöé  Γöé  PostgreSQL        Γöé  Γöé  Γöé  Γöé  Redis                 Γöé   Γöé
+Γöé  Γöé  Single database   Γöé  Γöé  Γöé  Γöé  - Cache (tenant-      Γöé   Γöé
+Γöé  Γöé  tenantId on all   Γöé  Γöé  Γöé  Γöé    prefixed keys)      Γöé   Γöé
+Γöé  Γöé  tenant-scoped     Γöé  Γöé  Γöé  Γöé  - BullMQ queue backendΓöé   Γöé
+Γöé  Γöé  tables            Γöé  Γöé  Γöé  Γöé  - Socket.IO adapter   Γöé   Γöé
+Γöé  Γöé                    Γöé  Γöé  Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ   Γöé
+Γöé  Γöé  Shared tables:    Γöé  Γöé  Γöé                               Γöé
+Γöé  Γöé  - tenants         Γöé  Γöé  Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ   Γöé
+Γöé  Γöé  - users           Γöé  Γöé  Γöé  Γöé  BullMQ                Γöé   Γöé
+Γöé  Γöé  - roles/permissionsΓöé  Γöé  Γöé  Γöé  - Notification queue Γöé   Γöé
+Γöé  Γöé                    Γöé  Γöé  Γöé  Γöé  - PDF generation queueΓöé   Γöé
+Γöé  Γöé  Tenant-scoped:    Γöé  Γöé  Γöé  Γöé  - Tracking sync queue Γöé   Γöé
+Γöé  Γöé  - shipments       Γöé  Γöé  Γöé  Γöé  - Webhook processing  Γöé   Γöé
+Γöé  Γöé  - customers       Γöé  Γöé  Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ   Γöé
+Γöé  Γöé  - quotes          Γöé  Γöé  Γöé                               Γöé
+Γöé  Γöé  - invoices        Γöé  Γöé  Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ   Γöé
+Γöé  Γöé  - notifications   Γöé  Γöé  Γöé  Γöé  Socket.IO             Γöé   Γöé
+Γöé  Γöé  - branches        Γöé  Γöé  Γöé  Γöé  - Real-time tracking  Γöé   Γöé
+Γöé  Γöé                    Γöé  Γöé  Γöé  Γöé  - Live status updates Γöé   Γöé
+Γöé  Γöé  Drizzle ORM       Γöé  Γöé  Γöé  Γöé  - Room-per-shipment   Γöé   Γöé
+Γöé  Γöé  - schema          Γöé  Γöé  Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ   Γöé
+Γöé  Γöé  - migrations      Γöé  Γöé  Γöé                               Γöé
+Γöé  Γöé  - validators      Γöé  Γöé  Γöé  ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ   Γöé
+Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ  Γöé  Γöé  Γöé  Sentry + OpenTelemetry Γöé   Γöé
+Γöé                         Γöé  Γöé  Γöé  - tenantId-tagged spansΓöé   Γöé
+Γöé                         Γöé  Γöé  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ   Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ  ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
 
 EXTERNAL INTEGRATIONS:
   17TRACK API <---> Webhook listener --> BullMQ --> Tracking engine
@@ -986,3 +986,62 @@ Stream C (Cross-cutting): Dashboard -> Super Admin -> PDF gen
 - [x] Infrastructure component configuration (Section 7)
 - [x] Webhook ingestion patterns (Section 8)
 - [x] Shared package boundaries (Section 10)
+- [x] Actual implementation deltas documented (Section 13)
+
+---
+
+## 13. Actual Implementation Deltas (Updated: 2026-06-14)
+
+### 13.1 Package Structure Differences
+
+| Research Package | Actual Location | Status |
+|-----------------|----------------|--------|
+| `packages/database` | `apps/api/src/db/` | Schema lives in API app, not shared package |
+| `packages/auth` | `apps/api/src/auth/` + `packages/permissions` | Auth logic in API, CASL abilities in shared package |
+| `packages/tenant-config` | Not created | Planned for Phase 8 |
+| `packages/tracking` | Not created | Planned Phase 5 |
+| `packages/notifications` | Not created | Planned Phase 6 |
+| `packages/ui` (HeroUI) | `packages/ui` re-exports @heroui/react | Ready for all frontend apps |
+
+### 13.2 Database Schema Deviations
+
+| Research Schema | Actual Implementation | Rationale |
+|----------------|----------------------|-----------|
+| `tenants` table with TEXT PK | `organization` + `branch` tables | Two-level org hierarchy for more granular scoping |
+| `tenant_memberships` join table | Role stored directly on `user` table (tenantId + role columns) | Simpler for current scale; 1 role per user per tenant |
+| `role_permissions` DB table | CASL abilities in `packages/permissions` code | Type-safe, no DB round-trip for permissions |
+| `shipments` composite PK (id, tenant_id) | Simple UUID PK with tenant_id column | Simpler, Drizzle tolerates this pattern |
+| `invoices`, `tracking_events` tables | Not yet created | Planned for Phase 5/7 |
+
+### 13.3 Route Structure Deviations
+
+| Research Route | Actual Route | Notes |
+|---------------|-------------|-------|
+| `/api/auth` (Better Auth) | `/api/auth/*` | Same |
+| `/api/tenants` | Not created | Super admin views planned Phase 9 |
+| `/api/branches` | `/api/branches` | Same |
+| `/api/customers` | `/api/customers` | Same |
+| `/api/shipments` | `/api/shipments` | Same |
+| `/api/quotes` | `/api/quotations` | Named `quotations` instead of `quotes` |
+| `/api/invoices` | Not created | Planned Phase 7 |
+| `/api/notifications` | Not created | Planned Phase 6 |
+| `/api/dashboard` | Not created | Planned Phase 9 |
+| `/webhooks/17track` | Not created | Planned Phase 5 |
+
+### 13.4 Key Design Decisions Made During Implementation
+
+1. **CASL in shared package, not DB** — Permissions are code-defined in `packages/permissions`, not stored in a DB table. Type-safe and simpler.
+2. **Organization + Branch two-level hierarchy** — Replaces flat `tenants` table. Staff can be scoped to a branch within their org.
+3. **Role on user table** — No `tenant_memberships` join table. Works for current scale (1 role per user per tenant).
+4. **HeroUI v3 replaces shadcn** — All frontend apps use `@heroui/react` v3.1.0. No custom components. No Provider wrapper.
+5. **Modal.Backdrop controlled pattern** — `Modal.Backdrop isOpen={}` wraps `Container > Dialog`. `<Modal>` (DialogTrigger) only for uncontrolled with trigger Button. Form element inside `Modal.Body` with `form={id}` linking to footer submit button.
+6. **No separate /entity/new pages** — Create forms are HeroUI Modals on list pages. Edit forms are Modals on detail pages. Read-only Card view always visible.
+7. **NeonDB** — Serverless PostgreSQL for dev. Pooled URL with `sslmode=require`.
+8. **Upstash Redis** — Serverless Redis. All features degrade gracefully when `UPSTASH_REDIS_URL` unset.
+9. **Better Auth rate limiting** replaces Arcjet — Built-in rate limiter handles auth endpoints.
+10. **Bull Board over Workbench** — `@bull-board/hono` for queue monitoring dashboard.
+11. **No custom React components** — Every UI element is HeroUI or raw HTML/SVG inline. Zero custom components to maintain.
+12. **KPI card minimal design** — `rounded-2xl bg-surface shadow-sm`, `text-4xl` numbers, trend badges with tinted backgrounds, sparkline SVGs, `hover:-translate-y-1`. No borders, icon circles, or top strips.
+13. **Responsive search+filters** — `flex-col sm:flex-row` for mobile stacking.
+14. **Quotation status taxonomy** — `draft → sent → accepted → converted → rejected`. Includes convert-to-shipment API endpoint.
+15. **Graceful degradation without Redis** — All Redis-dependent features degrade gracefully when URL is unset. API starts, Bull Board shows error state, Socket.IO falls back to in-process adapter.

@@ -38,7 +38,7 @@ A multi-tenant shipment tracking platform for Gajan Traders, a logistics company
 - **@hono/node-server** ^2.0.4 — Node.js adapter to run Hono without a full Node.js HTTP framework. Serves on port 3001.
 - **React** ^19.2.0 — Component library in `@repo/ui` (`packages/ui/src/`). Uses `"use client"` directive for client components, `ReactNode`, `JSX.Element` types.
 - **React DOM** ^19.2.0 — Peer dependency for rendering support.
-- **Next.js** — ESLint config includes `@next/eslint-plugin-next` ^16.2.0 and a `nextjs.json` tsconfig, indicating a Next.js admin app (`apps/admin/`) is scaffolded but contains no source files yet. TSConfig extends `@repo/typescript-config/nextjs.json` (uses `module: "ESNext"`, `moduleResolution: "Bundler"`, `jsx: "preserve"`, `plugins: [{ name: "next" }]`).
+- **Next.js** ^16.2.6 — Admin app (`apps/admin/`) with routes: root dashboard (`(dashboard)/`), login, unauthorized. Pages use **HeroUI v3** (`@heroui/react`) components instead of shadcn. TSConfig extends `@repo/typescript-config/nextjs.json`.
 ## Key Dependencies
 ### Root (`package.json`)
 | Package | Version | Purpose |
@@ -57,6 +57,8 @@ A multi-tenant shipment tracking platform for Gajan Traders, a logistics company
 ### `packages/ui` (`@repo/ui`)
 | Package | Version | Purpose |
 |---------|---------|---------|
+| @heroui/react | ^3.1.0 | HeroUI design system (shared, replaces shadcn) |
+| @heroui/styles | ^3.1.0 | HeroUI theme/styles (import in app-level globals.css) |
 | react | ^19.2.0 | UI component library (shared) |
 | react-dom | ^19.2.0 | React DOM rendering |
 | eslint | ^9.39.1 | Linting (dev) |
@@ -115,8 +117,8 @@ A multi-tenant shipment tracking platform for Gajan Traders, a logistics company
 
 ## Project Overview
 - `apps/api/` — Hono HTTP API server (TypeScript)
-- `apps/admin/` — Placeholder (planned Next.js app, currently empty)
-- `packages/ui/` — `@repo/ui` React 19 component library
+- `apps/admin/` — Next.js 16 admin app (login, dashboard, unauthorized pages) using HeroUI v3
+- `packages/ui/` — `@repo/ui` React 19 component library (includes HeroUI v3)
 - `packages/eslint-config/` — `@repo/eslint-config` shared ESLint flat configs
 - `packages/typescript-config/` — `@repo/typescript-config` shared tsconfigs
 ## Naming Conventions
@@ -265,7 +267,9 @@ A multi-tenant shipment tracking platform for Gajan Traders, a logistics company
 - `@repo/typescript-config/react-library.json` — Extends base, adds React JSX
 - Individual packages/extend via `"extends": "@repo/typescript-config/..."`
 ### 6. Component Library Pattern
-- `@repo/ui` provides basic React components (Button, Card, Code)
+- `@repo/ui` provides shared React components + re-exports HeroUI v3 design system
+- **HeroUI v3** (`@heroui/react`) is the UI framework for all frontend apps — no Provider wrapper needed
+- Import styles via `@import "@heroui/styles"` after `@import "tailwindcss"` in each app's globals.css
 - Components use `"use client"` directive when they need browser APIs
 - Exports use the `./src/*.tsx` glob pattern for direct file access
 ## Error Handling

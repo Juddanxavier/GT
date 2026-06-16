@@ -1,0 +1,90 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1730000000000,
+      "tag": "0001_create_tenant_tables.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1730000000001,
+      "tag": "0002_initial_data.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1730000000002,
+      "tag": "0003_add_rls.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1730000000003,
+      "tag": "0004_add_core_crud_tables.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1730000000004,
+      "tag": "0005_add_tracking_events.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1730000000005,
+      "tag": "0006_make_customer_id_nullable.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1730000000006,
+      "tag": "0007_add_contact_fields.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1730000000007,
+      "tag": "0008_add_tracking_registered_and_bill_amount.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1730000000008,
+      "tag": "0009_add_order_no.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1730000000009,
+      "tag": "0010_rename_order_no_to_label_code.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1730000000010,
+      "tag": "0011_add_tenant_country.sql",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1730000000011,
+      "tag": "0012_add_delivery_date_and_route.sql",
+      "breakpoints": true
+    }
+  ]
+}

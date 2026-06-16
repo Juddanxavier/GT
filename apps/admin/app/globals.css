@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@custom-variant dark (&:where([data-theme="dark"]));
+
+@theme {
+  --color-brand-green: oklch(81.00% 0.2100 143.00);
+}
+
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+*, *::before, *::after, *::backdrop {
+  scrollbar-color: var(--scrollbar-color);
+  scrollbar-width: var(--scrollbar-width, auto);
+}
+
+:root,
+.light,
+[data-theme="light"] {
+  --accent: oklch(81.00% 0.2100 143.00) !important;
+  --accent-foreground: oklch(15% 0.0300 143.00) !important;
+  --background: oklch(97.02% 0.0007 143.00) !important;
+  --border: oklch(90.00% 0.0007 143.00) !important;
+  --danger: oklch(65.32% 0.2331 12.44) !important;
+  --danger-foreground: oklch(99.11% 0 0) !important;
+  --default: oklch(94.00% 0.0007 143.00) !important;
+  --default-foreground: oklch(21.03% 0.0059 143.00) !important;
+  --field-background: oklch(100.00% 0.0003 143.00) !important;
+  --field-border: transparent !important;
+  --field-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --field-placeholder: oklch(55.17% 0.0014 143.00) !important;
+  --focus: oklch(81.00% 0.2100 143.00) !important;
+  --foreground: oklch(21.03% 0.0007 143.00) !important;
+  --muted: oklch(55.17% 0.0014 143.00) !important;
+  --overlay: oklch(100.00% 0.0002 143.00) !important;
+  --overlay-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --scrollbar: oklch(87.10% 0.0007 143.00) !important;
+  --segment: oklch(100.00% 0.0007 143.00) !important;
+  --segment-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --separator: oklch(92.00% 0.0007 143.00) !important;
+  --success: oklch(73.29% 0.1938 137.51) !important;
+  --success-foreground: oklch(21.03% 0.0059 137.51) !important;
+  --surface: oklch(100.00% 0.0003 143.00) !important;
+  --surface-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --surface-secondary: oklch(95.24% 0.0005 143.00) !important;
+  --surface-secondary-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --surface-tertiary: oklch(93.73% 0.0005 143.00) !important;
+  --surface-tertiary-foreground: oklch(21.03% 0.0007 143.00) !important;
+  --warning: oklch(78.19% 0.1587 59.03) !important;
+  --warning-foreground: oklch(21.03% 0.0059 59.03) !important;
+  --radius: 0.25rem !important;
+  --field-radius: 0.25rem !important;
+}
+
+.dark,
+[data-theme="dark"] {
+  --accent: oklch(81.00% 0.2100 143.00) !important;
+  --accent-foreground: oklch(15% 0.0300 143.00) !important;
+  --background: oklch(12.00% 0.0007 143.00) !important;
+  --border: oklch(28.00% 0.0007 143.00) !important;
+  --danger: oklch(59.40% 0.1970 11.33) !important;
+  --danger-foreground: oklch(99.11% 0 0) !important;
+  --default: oklch(27.40% 0.0007 143.00) !important;
+  --default-foreground: oklch(99.11% 0 0) !important;
+  --field-background: oklch(21.03% 0.0014 143.00) !important;
+  --field-border: transparent !important;
+  --field-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --field-placeholder: oklch(70.50% 0.0014 143.00) !important;
+  --focus: oklch(81.00% 0.2100 143.00) !important;
+  --foreground: oklch(99.11% 0.0007 143.00) !important;
+  --muted: oklch(70.50% 0.0014 143.00) !important;
+  --overlay: oklch(21.03% 0.0014 143.00) !important;
+  --overlay-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --scrollbar: oklch(70.50% 0.0007 143.00) !important;
+  --segment: oklch(39.64% 0.0007 143.00) !important;
+  --segment-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --separator: oklch(25.00% 0.0007 143.00) !important;
+  --success: oklch(73.29% 0.1938 137.51) !important;
+  --success-foreground: oklch(21.03% 0.0059 137.51) !important;
+  --surface: oklch(21.03% 0.0014 143.00) !important;
+  --surface-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --surface-secondary: oklch(25.70% 0.0010 143.00) !important;
+  --surface-secondary-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --surface-tertiary: oklch(27.21% 0.0010 143.00) !important;
+  --surface-tertiary-foreground: oklch(99.11% 0.0007 143.00) !important;
+  --warning: oklch(82.03% 0.1390 63.04) !important;
+  --warning-foreground: oklch(21.03% 0.0059 63.04) !important;
+}

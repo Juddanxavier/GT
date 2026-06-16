@@ -1,21 +1,21 @@
-# Roadmap: Gajan Traders — Multi-Tenant Shipment Tracking
+﻿# Roadmap: Gajan Traders — Multi-Tenant Shipment Tracking
 
 ## Overview
 
-A multi-tenant shipment tracking platform for Gajan Traders serving two organizations with multiple branches. Three surfaces (admin app, India customer portal, Sri Lanka customer portal) share a single Hono API, with 17TRACK carrier tracking, email (Resend) and WhatsApp (MSG91) notifications, and tenant-isolated data. The roadmap builds in 10 phases: tooling foundation → auth/tenancy → infrastructure backbone → admin core CRUD → tracking engine → notifications engine → admin financial operations → customer portals → intelligence dashboard → production deployment. Two parallel workstreams accelerate delivery after Phase 2.
+A multi-tenant shipment tracking platform for Gajan Traders serving two organizations with multiple branches. Three surfaces (admin app, India customer portal, Sri Lanka customer portal) share a single Hono API, with 17TRACK carrier tracking, email (Resend) and WhatsApp (MSG91) notifications, and tenant-isolated data. The roadmap builds in 10 phases, prioritizing the admin app first — customer portals postponed to Phase 9.
 
 ## Phases
 
-- [x] **Phase 1: Tooling & Foundation** — Biome, Next.js pin, Drizzle ORM, monorepo config
-- [ ] **Phase 2: Auth & Multi-Tenancy** — Better Auth, CASL roles, tenant resolver, RLS, admin access control
-- [ ] **Phase 3: Infrastructure Backbone** — BullMQ, Redis cache, Socket.IO, Sentry, Arcjet
-- [ ] **Phase 4: Admin Core — Customers, Branches, Shipments** — CRUD operations for core business entities
-- [ ] **Phase 5: Tracking Engine** — 17TRACK API, webhooks, status polling, tracking sync
+- [x] **Phase 1: Tooling & Foundation**
+- [x] **Phase 2: Auth & Multi-Tenancy**
+- [x] **Phase 3: Infrastructure Backbone**
+- [x] **Phase 4: Admin Core — Customers, Branches, Shipments**
+- [x] **Phase 5: Tracking Engine** — 17TRACK + TrackingMore providers, webhooks, polling, dedup, carrier detection, tracking timeline
 - [ ] **Phase 6: Notifications Engine** — Email (Resend), WhatsApp (MSG91), idempotency, dead letter queue
 - [ ] **Phase 7: Admin Operations — Quotes & Invoices** — Quotations, invoices, PDF generation
-- [ ] **Phase 8: Customer Portals** — White-label India/Sri Lanka portals, customer auth, tenant branding
-- [ ] **Phase 9: Admin Dashboard & Intelligence** — KPIs, real-time metrics, exception detection
-- [ ] **Phase 10: Deployment** — Docker, Coolify, standalone output, domain routing
+- [ ] **Phase 8: Admin Dashboard & Intelligence** — KPIs, real-time metrics, exception detection
+- [ ] **Phase 9: Customer Portals** — White-label India/Sri Lanka portals, tenant branding *(postponed)*
+- [ ] **Phase 10: Deployment** — Docker, Coolify, domain routing
 
 ## Phase Details
 
@@ -24,8 +24,8 @@ A multi-tenant shipment tracking platform for Gajan Traders serving two organiza
 **Depends on**: Nothing (first phase)
 **Requirements**: TOOL-01, TOOL-02, TOOL-03
 **Success Criteria** (what must be TRUE):
-  1. `biome check` passes across entire monorepo with zero errors
-  2. All workspace packages resolve correctly with `pnpm install` and `pnpm build`
+  1. iome check passes across entire monorepo with zero errors
+  2. All workspace packages resolve correctly with pnpm install and pnpm build
   3. Drizzle Kit can generate and apply a migration against a local PostgreSQL database
   4. All Next.js apps build successfully with version ^16.2.6 pinned
 **Plans**: TBD
@@ -47,47 +47,60 @@ Plans:
 - [ ] 02-01-PLAN.md — Database Schema: tenants, branches, tenant_domains, extended user table
 - [x] 02-02-PLAN.md — Better Auth Config & Hono Integration
 - [ ] 02-03-PLAN.md — CASL Permissions Package (@repo/permissions)
-- [ ] 02-04-PLAN.md — Admin Login UI with shadcn components
+- [ ] 02-04-PLAN.md — Admin Login UI with HeroUI components
 - [ ] 02-05-PLAN.md — Tenant Resolver Middleware with domain caching
 - [ ] 02-06-PLAN.md — Route Guards: CASL middleware & Admin Access Control
 - [ ] 02-07-PLAN.md — RLS Policies & Phase 2 Verification
 
 ### Phase 3: Infrastructure Backbone
-**Goal**: Background job processing, caching, real-time messaging, error monitoring, and security middleware are operational and tenant-aware
+**Goal**: Background job processing, caching, real-time messaging, error monitoring, and rate limiting are operational and tenant-aware
 **Depends on**: Phase 1
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-05, INFRA-06
+**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-05
 **Success Criteria** (what must be TRUE):
   1. BullMQ workers connect to Redis and process jobs from queues with proper tenant context propagation
-  2. Redis cache stores and retrieves values with tenant-prefixed keys (`t:{tenantId}:`)
+  2. Redis cache stores and retrieves values with tenant-prefixed keys (	:{tenantId}:)
   3. Socket.IO server accepts connections and broadcasts messages to tenant-scoped rooms (no cross-tenant bleed)
-  4. Sentry captures errors with `tenantId` tagged on every span and transaction
-  5. Arcjet rate limiting blocks excessive requests and bot traffic before they reach application routes
-**Plans**: TBD
+  4. Sentry captures errors with 	enantId tagged on every event
+  5. Better Auth rate limiting protects auth endpoints (sign-in: 3 req/10s, sign-up: 5 req/hr)
+**Plans**: 1 plan (03-01-PLAN.md)
+**Completed**: 2026-06-14
 
 ### Phase 4: Admin Core — Customers, Branches, Shipments
-**Goal**: Staff can create and manage the core business entities — customers, branches, and shipments — through the admin app
+**Goal**: Staff can create and manage the core business entities — customers, branches, shipments, and quotations — through the admin app
 **Depends on**: Phase 2
-**Requirements**: ADMIN-01, ADMIN-02, ADMIN-06
+**Requirements**: ADMIN-01, ADMIN-02, ADMIN-04, ADMIN-06
 **Success Criteria** (what must be TRUE):
-  1. Staff can create, edit, view, and deactivate customers scoped to their org/branch
-  2. Staff can add and edit branches within their organization
-  3. Staff can create shipments with tracking numbers, edit shipment details, and deactivate shipments
-  4. All CRUD operations are tenant-isolated — staff only see data from their own org and assigned branches
-  5. Form dropdowns (customer, branch, status) are scoped to the user's org and permissions
-**Plans**: TBD
+   1. Staff can create, edit, view, and deactivate customers scoped to their org/branch
+   2. Staff can add and edit branches within their organization
+   3. Staff can create shipments with tracking numbers, edit shipment details, and deactivate shipments
+   4. All CRUD operations are tenant-isolated — staff only see data from their own org and assigned branches
+   5. Form dropdowns (customer, branch, status) are scoped to the user's org and permissions
+**Completed Milestones**:
+   - DB schema: customer, quotation, quote_item, shipment tables with indexes + RLS
+   - Migration 0004 applied to NeonDB
+   - Zod validation schemas for all entities
+   - API routes: branches CRUD (4), customers CRUD (5), quotations CRUD + status transitions + convert-to-shipment (6), shipments CRUD (5)
+   - HeroUI v3 installed as shared design system in @repo/ui (replaces shadcn)
+   - All list pages: HeroUI Table with sorting, pagination, KPI cards, status filter Tabs, dropdown context menu, create Modal, delete Modal
+   - All detail pages: Read-only Card view, edit Modal, delete Modal
+   - Create/Edit as Modals (no separate /entity/new pages) — Modal.Backdrop controlled pattern
+   - Responsive search+filters (flex-col sm:flex-row)
+   - KPI card redesign: modern minimal cards with trend badges and sparklines
+**UI framework**: HeroUI v3 (@heroui/react 3.1.0) — accessed from @repo/ui, no Provider wrapper needed
 **UI hint**: yes
+**Completed**: 2026-06-14
 
 ### Phase 5: Tracking Engine
-**Goal**: Shipments are automatically tracked via 17TRACK with status changes flowing into the system through webhooks with polling fallback
+**Goal**: Shipments are automatically tracked via 17TRACK/TrackingMore with status changes flowing into the system through webhooks with polling fallback
 **Depends on**: Phase 3, Phase 4
-**Requirements**: TRACK-01, TRACK-02, TRACK-05
 **Success Criteria** (what must be TRUE):
-  1. New shipments are automatically registered with 17TRACK API upon creation (respecting 3 req/s rate limit)
-  2. 17TRACK webhooks are received, HMAC signatures verified, and immediately acknowledged (200 OK) before async processing
-  3. Tracking status updates are reflected on the shipment record within seconds of webhook receipt
-  4. A scheduled polling job catches tracking events missed by webhooks and reconciles statuses
-  5. All 17TRACK API calls go through a rate-limited BullMQ queue (max 3 req/s) with retry logic
-**Plans**: TBD
+   1. Staff searches customers by email/phone on shipment create/edit; "Self" toggle for no-customer shipments
+   2. Carrier detection flow: click Detect → auto-detects → if fails, carrier dropdown appears → register with selected carrier
+   3. New shipments are automatically tracked (registered via detect flow)
+   4. Webhooks are received, HMAC verified, 200 OK immediately, async processing
+   5. Tracking timeline with all status events visible on shipment detail page
+   6. Polling fallback (6h) catches events missed by webhooks
+**Plans**: 05-01-PLAN.md (completed 2026-06-15)
 
 ### Phase 6: Notifications Engine
 **Goal**: Customers automatically receive email and WhatsApp notifications when their shipment tracking status changes, with idempotency guarantees
@@ -99,7 +112,14 @@ Plans:
   3. Duplicate webhook events do not produce duplicate notifications — idempotency keys prevent re-sends
   4. Failed notification jobs (after N retries) are moved to a dead letter queue with Sentry alerting
   5. Email and WhatsApp templates use tenant-branded content (logo, colors, locale, sender identity)
-**Plans**: TBD
+**Plans**: 5 plans (06-01 through 06-05)
+
+Plans:
+- [ ] 06-01-PLAN.md — ZeptoMail Provider + React Email Templates
+- [ ] 06-02-PLAN.md — Trigger Integration: Map 17TRACK Events → Notification Queue
+- [ ] 06-03-PLAN.md — Idempotency + Dead Letter Queue + Sentry Alerting
+- [ ] 06-04-PLAN.md — WhatsApp Notifications via MSG91
+- [ ] 06-05-PLAN.md — Admin Notification Settings UI (optional, low priority)
 
 ### Phase 7: Admin Operations — Quotes & Invoices
 **Goal**: Staff can manage the full financial workflow — quotations and invoices with PDF generation
@@ -114,20 +134,7 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 8: Customer Portals
-**Goal**: Customers can log into their tenant's white-label portal to view shipments, tracking status, quotes, and invoices with their organization's branding
-**Depends on**: Phase 2, Phase 5, Phase 6, Phase 7
-**Requirements**: PORTAL-01, PORTAL-02, PORTAL-03, PORTAL-04, AUTH-04
-**Success Criteria** (what must be TRUE):
-  1. Customer can create an account on both India and Sri Lanka portals (but not on admin app)
-  2. Customer can log in and see only their own shipments with live tracking status from 17TRACK
-  3. Customer can view their quotations and download their invoices
-  4. Each portal displays correct tenant branding (logo, colors, domain, locale) loaded from `packages/tenant-config`
-  5. Real-time tracking updates appear on the portal via Socket.IO without page refresh
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 9: Admin Dashboard & Intelligence
+### Phase 8: Admin Dashboard & Intelligence
 **Goal**: Staff see real-time operational KPIs and exception alerts at a glance
 **Depends on**: Phase 4, Phase 5, Phase 7
 **Requirements**: ADMIN-03
@@ -137,6 +144,17 @@ Plans:
   3. All dashboard data is tenant-scoped — each admin sees only their org's metrics
   4. Exception flags highlight shipments that missed expected ETAs or have stale tracking status
 **Plans**: TBD
+**UI hint**: yes
+
+### Phase 9: Customer Portals *(postponed)*
+**Goal**: Customers can log into their tenant's white-label portal to view shipments, tracking status, quotes, and invoices with their organization's branding
+**Depends on**: Phase 2, Phase 5, Phase 6, Phase 7
+**Success Criteria** (what must be TRUE):
+   1. Customer can create an account on both India and Sri Lanka portals (but not on admin app)
+   2. Customer can log in and see only their own shipments with live tracking status from 17TRACK
+   3. Customer can view their quotations and download their invoices
+   4. Each portal displays correct tenant branding (logo, colors, domain, locale) loaded from packages/tenant-config
+   5. Real-time tracking updates appear on the portal via Socket.IO without page refresh
 **UI hint**: yes
 
 ### Phase 10: Deployment
@@ -150,30 +168,31 @@ Plans:
   4. Tenant resolution works correctly in production — subdomain-based routing resolves the right portal
 **Plans**: TBD
 
-## Parallelization Strategy
+## Execution Strategy
 
-After Phase 2 completes, two workstreams run simultaneously:
+Finish admin app before customer portals. Streams are sequential after Phase 4:
 
-| Stream | Phases | Dependency Chain |
-|--------|--------|-----------------|
-| **Stream A: Core Domain** | P3 → P5 → P6 → P8 | Infrastructure → Tracking → Notifications → Portals |
-| **Stream B: Admin Tools** | P4 → P7 → P9 | Admin CRUD → Quotes/Invoices → Dashboard |
-
-- P3 (Infrastructure) and P4 (Admin Core) can be planned in parallel since they share no blocking dependency beyond P2
-- P5 (Tracking) and P7 (Quotes/Invoices) can execute in parallel since P7 only needs P3+P4, not P5
-- P9 (Dashboard) and P8 (Portals) can be partially parallel — both depend on data flowing from prior phases
+| Order | Phase | Dependency |
+|-------|-------|------------|
+| 1-4 | Foundation → Auth → Infra → Admin CRUD | — |
+| 5 | Tracking Engine (with async customer search) | P3, P4 |
+| 6 | Notifications Engine | P5 |
+| 7 | Quotes & Invoices | P3, P4 |
+| 8 | Dashboard & Intelligence | P5, P7 |
+| 9 | Customer Portals *(postponed)* | P2, P5, P6, P7 |
+| 10 | Deployment | All
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Tooling & Foundation | 1/1 | Complete | 2026-06-14 |
-| 2. Auth & Multi-Tenancy | 1/7 | In Progress|  |
-| 3. Infrastructure Backbone | 0/TBD | Not started | - |
-| 4. Admin Core — Customers, Branches, Shipments | 0/TBD | Not started | - |
-| 5. Tracking Engine | 0/TBD | Not started | - |
-| 6. Notifications Engine | 0/TBD | Not started | - |
-| 7. Admin Operations — Quotes & Invoices | 0/TBD | Not started | - |
-| 8. Customer Portals | 0/TBD | Not started | - |
-| 9. Admin Dashboard & Intelligence | 0/TBD | Not started | - |
+| 2. Auth & Multi-Tenancy | 7/7 | Complete | 2026-06-14 |
+| 3. Infrastructure Backbone | 1/1 | Complete | 2026-06-14 |
+| 4. Admin Core — CRUD | 1/1 | Complete | 2026-06-14 |
+| 5. Tracking Engine | 1/1 | Complete | 2026-06-15 |
+| 6. Notifications Engine | 0/5 | **Ready to plan** | - |
+| 7. Quotes & Invoices | 0/TBD | Not started | - |
+| 8. Dashboard & Intelligence | 0/TBD | Not started | - |
+| 9. Customer Portals | 0/TBD | Postponed | - |
 | 10. Deployment | 0/TBD | Not started | - |

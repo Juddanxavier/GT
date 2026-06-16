@@ -7,15 +7,26 @@
     "build": "next build"
   },
   "dependencies": {
+    "@heroui/react": "^3.1.0",
+    "@heroui/styles": "^3.1.0",
+    "@repo/ui": "workspace:*",
+    "@tremor/react": "^3.18.7",
+    "better-auth": "^1.6.18",
+    "lucide-react": "^1.18.0",
     "next": "^16.2.6",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-flagkit": "^2.0.4",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
     "typescript": "^5.9.2"
   }
 }

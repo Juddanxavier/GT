@@ -1,0 +1,209 @@
+import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent } from '../types';
+import { normalizeEvent, normalizeTrackResponse } from '../normalizer';
+import { createHmac } from 'node:crypto';
+
+const BASE = 'https://api.17track.net/track/v2.4';
+
+function headers(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    '17token': process.env.TRACK_API_KEY || '',
+  };
+}
+
+interface AcceptedItem {
+  number?: string;
+  carrier?: number;
+  track_info?: {
+    latest_status?: {
+      status?: string;
+      sub_status?: string;
+      sub_status_descr?: string | null;
+    };
+    shipping_info?: {
+      shipper_address?: { country?: string; state?: string; city?: string };
+      recipient_address?: { country?: string; state?: string; city?: string };
+    };
+    time_metrics?: {
+      estimated_delivery_date?: {
+        from?: string | null;
+        to?: string | null;
+      };
+    };
+    tracking?: {
+      providers?: Array<{
+        provider?: { key?: number; name?: string };
+        events?: Array<{
+          time_iso?: string | null;
+          time_utc?: string | null;
+          description?: string;
+          location?: string;
+          stage?: string;
+          sub_status?: string;
+        }>;
+      }>;
+    };
+  };
+}
+
+function parseAccepted(body: { code?: number; data?: { accepted?: AcceptedItem[] } }): {
+  item: AcceptedItem | null;
+  error: string | null;
+} {
+  if (body.code !== 0) {
+    return { item: null, error: `17TRACK error code ${body.code}` };
+  }
+  const items = body.data?.accepted;
+  if (!items?.length) {
+    return { item: null, error: 'No accepted data' };
+  }
+  return { item: items[0]!, error: null };
+}
+
+export class SeventeenTrackProvider implements ShipmentProvider {
+  readonly name = '17track';
+
+  async detectCarrier(_trackingNo: string): Promise<DetectResult | null> {
+    return null;
+  }
+
+  async stopTracking(data: { trackingNo: string; carrierCode?: string }): Promise<boolean> {
+    try {
+      const payload: Record<string, unknown> = { number: data.trackingNo };
+      if (data.carrierCode) payload.carrier = Number(data.carrierCode);
+
+      const res = await fetch(`${BASE}/stoptrack`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify([payload]),
+      });
+
+      const json = (await res.json()) as { code?: number };
+      if (json.code === 0) return true;
+
+      console.error(`[17track] stoptrack failed:`, JSON.stringify(json).slice(0, 500));
+      return false;
+    } catch (err) {
+      console.error('[17track] stoptrack error:', err);
+      return false;
+    }
+  }
+
+  async registerShipment(data: {
+    trackingNo: string;
+    orderNo?: string;
+    email?: string;
+  }): Promise<boolean> {
+    try {
+      const body: Record<string, unknown> = { number: data.trackingNo };
+      if (data.orderNo) body.order_no = data.orderNo;
+      if (data.email) body.email = data.email;
+
+      const res = await fetch(`${BASE}/register`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify([body]),
+      });
+
+      const json = (await res.json()) as {
+        code?: number;
+        data?: { accepted?: Array<{ carrier?: number }>; rejected?: Array<{ error?: { code?: number; message?: string } }> };
+      };
+
+      if (json.code === 0 && json.data?.accepted?.length) return true;
+
+      const rejected = json.data?.rejected?.[0];
+      if (rejected?.error?.code === -18019901) {
+        console.warn(`[17track] already registered: ${data.trackingNo}`);
+        return true;
+      }
+
+      console.error(`[17track] register failed:`, JSON.stringify(json).slice(0, 500));
+      return false;
+    } catch (err) {
+      console.error('[17track] register error:', err);
+      return false;
+    }
+  }
+
+  async track(trackingNo: string, carrier?: string): Promise<TrackResult> {
+    try {
+      const payload: Record<string, unknown> = { number: trackingNo };
+      if (carrier) {
+        const code = Number(carrier);
+        if (!isNaN(code)) payload.carrier = code;
+      }
+
+      const res = await fetch(`${BASE}/gettrackinfo`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify([payload]),
+      });
+
+      if (!res.ok) {
+        console.error(`[17track] track failed (${res.status})`);
+        return { carrierCode: '17track', currentStatus: 'exception', events: [] };
+      }
+
+      const json = (await res.json()) as {
+        code?: number;
+        data?: { accepted?: AcceptedItem[] };
+      };
+
+      const { item, error } = parseAccepted(json);
+      if (!item) {
+        console.error(`[17track] track rejected: ${error}`);
+        return { carrierCode: '17track', currentStatus: 'pending', events: [] };
+      }
+
+      const carrierCode = String(item.carrier ?? '17track');
+      const latestStatus = item.track_info?.latest_status;
+      const status = latestStatus?.status ?? 'pending';
+
+      const rawEvents: NormalizedEvent[] = [];
+      for (const p of item.track_info?.tracking?.providers ?? []) {
+        for (const e of p.events ?? []) {
+          const stage = e.stage ?? e.sub_status ?? status;
+          rawEvents.push(
+            normalizeEvent({
+              status: stage,
+              subStatus: e.sub_status ?? stage,
+              description: e.description ?? '',
+              location: e.location ?? '',
+              time: e.time_utc ?? e.time_iso ?? undefined,
+              carrier: p.provider?.name ?? carrierCode,
+              carrierCode,
+            }),
+          );
+        }
+      }
+
+      const result = normalizeTrackResponse(carrierCode, rawEvents);
+
+      const si = item.track_info?.shipping_info;
+      const origin = [si?.shipper_address?.city, si?.shipper_address?.state, si?.shipper_address?.country]
+        .filter(Boolean).join(', ') || undefined;
+      const destination = [si?.recipient_address?.city, si?.recipient_address?.state, si?.recipient_address?.country]
+        .filter(Boolean).join(', ') || undefined;
+
+      const edd = item.track_info?.time_metrics?.estimated_delivery_date;
+      const estimatedDelivery = edd?.from || edd?.to ? (edd.from ?? edd.to) ?? undefined : undefined;
+
+      const delivered = rawEvents.find((e) => e.status === 'delivered');
+      const actualDelivery = delivered?.eventTime.toISOString();
+
+      return { ...result, estimatedDelivery, actualDelivery, origin, destination };
+
+    } catch (err) {
+      console.error('[17track] track error:', err);
+      return { carrierCode: '17track', currentStatus: 'exception', events: [] };
+    }
+  }
+
+  verifyWebhook(body: string, signature: string | null): boolean {
+    const secret = process.env.TRACK_WEBHOOK_SECRET;
+    if (!secret || !signature) return false;
+    const hmac = createHmac('sha256', secret).update(body).digest('hex');
+    return hmac === signature;
+  }
+}
