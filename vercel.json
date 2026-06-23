@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "apps/admin",
   "framework": "nextjs",
   "buildCommand": "cd ../.. && pnpm build --filter=admin",
   "installCommand": "cd ../.. && pnpm install",
