@@ -26,7 +26,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: Dockerfile
+      target: api
     ports:
       - '3001:3001'
     env_file: .env
@@ -39,7 +40,10 @@ services:
   admin:
     build:
       context: .
-      dockerfile: apps/admin/Dockerfile
+      dockerfile: Dockerfile
+      target: admin
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:3001
     ports:
       - '3000:3000'
     environment:
