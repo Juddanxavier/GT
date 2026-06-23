@@ -1,10 +1,10 @@
-import { Worker } from 'bullmq';
+import { Worker, type ConnectionOptions } from 'bullmq';
 import * as Sentry from '@sentry/hono/node';
-import { bullConnection } from '../redis';
+import { bullConnectionOptions } from '../redis';
 import { isRedisConnected } from '../queues';
 
 export function startDlqMonitor(): void {
-  if (!isRedisConnected() || !bullConnection) return;
+  if (!isRedisConnected() || !bullConnectionOptions) return;
 
   const worker = new Worker(
     'dead-letter',
@@ -19,7 +19,7 @@ export function startDlqMonitor(): void {
         },
       });
     },
-    { connection: bullConnection, concurrency: 1 },
+    { connection: bullConnectionOptions as ConnectionOptions, concurrency: 1 },
   );
 
   worker.on('completed', (job) => {

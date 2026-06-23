@@ -103,11 +103,15 @@ export async function handleTrackingEvent(
 
   // Per-status cooldown: prevents same-status spam while allowing different status transitions
   if (cacheClient) {
-    const cooldownKey = `cooldown:notify:${shipment.id}:${status}`;
-    const acquired = await cacheClient.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
-    if (acquired !== 'OK') {
-      console.log(`[notifications] cooldown active for ${shipment.id} status ${status}`);
-      return;
+    try {
+      const cooldownKey = `cooldown:notify:${shipment.id}:${status}`;
+      const acquired = await cacheClient.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
+      if (acquired !== 'OK') {
+        console.log(`[notifications] cooldown active for ${shipment.id} status ${status}`);
+        return;
+      }
+    } catch {
+      console.warn('[notifications] Redis error — skipping cooldown');
     }
   }
 

@@ -2,7 +2,9 @@
 
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { admin, customSession } from 'better-auth/plugins';
+import { admin, customSession, emailOTP, twoFactor } from 'better-auth/plugins';
+import { sendEmail } from './email/provider';
+import { buildEmailHtml } from './email/build-html';
 import { createAccessControl } from 'better-auth/plugins/access';
 import { defaultStatements, adminAc } from 'better-auth/plugins/admin/access';
 import { eq } from 'drizzle-orm';
@@ -20,11 +22,23 @@ export const auth = betterAuth({
       session: schema.session,
       account: schema.account,
       verification: schema.verification,
+      twoFactor: schema.twoFactor,
     },
   }),
+  advanced: {
+    cookies: {
+      session_token: {
+        attributes: {
+          sameSite: 'Lax',
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
   },
   socialProviders: {
     google: {
@@ -49,6 +63,7 @@ export const auth = betterAuth({
   plugins: [
     admin({
       defaultRole: 'customer',
+      adminRoles: ['superadmin', 'admin', 'tenant-admin'],
       ac,
       roles: {
         superadmin: adminAc,
@@ -58,18 +73,94 @@ export const auth = betterAuth({
         customer: ac.newRole({}),
       },
     }),
+    emailOTP({
+      disableSignUp: true,
+      async sendVerificationOTP({ email, otp, type }) {
+        const subject =
+          type === 'sign-in'
+            ? 'Sign-in verification code'
+            : type === 'email-verification'
+              ? 'Verify your email'
+              : 'Reset your password';
+
+        const title =
+          type === 'sign-in'
+            ? 'Sign In'
+            : type === 'email-verification'
+              ? 'Verify Email'
+              : 'Reset Password';
+
+        await sendEmail({
+          to: email,
+          subject,
+          html: buildEmailHtml({
+            title,
+            bodyHtml: `<table role="presentation" style="width:100%">
+              <tr>
+                <td style="text-align:center;padding-bottom:20px">
+                  <p style="font-size:13px;margin:0 0 6px;color:#52525b">Your verification code</p>
+                  <div style="background:#f4f4f5;border-radius:8px;padding:16px;font-size:32px;letter-spacing:8px;font-weight:700;color:#18181b;display:inline-block">${otp}</div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
+                </td>
+              </tr>
+            </table>`,
+          }),
+        });
+      },
+    }),
+    twoFactor({
+      issuer: 'Gajan Traders',
+      skipVerificationOnEnable: true,
+      twoFactorCookieMaxAge: 600,
+      totpOptions: { digits: 6, period: 30 },
+      backupCodeOptions: { amount: 10, length: 10 },
+      otpOptions: {
+        digits: 6,
+        period: 5,
+        async sendOTP({ user, otp }) {
+          await sendEmail({
+            to: user.email,
+            subject: 'Your 2FA verification code',
+            html: buildEmailHtml({
+              title: 'Two-Factor Authentication',
+              bodyHtml: `<table role="presentation" style="width:100%">
+                <tr>
+                  <td style="text-align:center;padding-bottom:20px">
+                    <p style="font-size:13px;margin:0 0 6px;color:#52525b">Your 2FA verification code</p>
+                    <div style="background:#f4f4f5;border-radius:8px;padding:16px;font-size:32px;letter-spacing:8px;font-weight:700;color:#18181b;display:inline-block">${otp}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
+                  </td>
+                </tr>
+              </table>`,
+            }),
+          });
+        },
+      },
+    }),
     customSession(async ({ user, session }) => {
       const typedUser = user as { tenantId?: string | null; branchId?: string | null };
       let tenantName: string | null = null;
+      let tenantCountry: string | null = null;
       let branchName: string | null = null;
 
       if (typedUser.tenantId) {
         const [tenant] = await db
-          .select({ name: schema.tenants.name })
+          .select({ name: schema.tenants.name, country: schema.tenants.country })
           .from(schema.tenants)
           .where(eq(schema.tenants.id, typedUser.tenantId))
           .limit(1);
-        if (tenant) tenantName = tenant.name;
+        if (tenant) {
+          tenantName = tenant.name;
+          tenantCountry = tenant.country;
+        }
       }
 
       if (typedUser.branchId) {
@@ -81,21 +172,21 @@ export const auth = betterAuth({
         if (branch) branchName = branch.name;
       }
 
-      return { user: { ...user, tenantName, branchName }, session };
+      return { user: { ...user, tenantName, tenantCountry, branchName }, session };
     }),
   ],
   trustedOrigins: [
     'http://localhost:3000',
     'http://localhost:3001',
+    ...(process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? []),
   ],
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
-  advanced: {
-    crossSubDomainCookies: {
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: {
       enabled: true,
-    },
-    defaultCookieAttributes: {
-      sameSite: 'lax',
-      secure: false,
+      maxAge: 5 * 60,
     },
   },
   rateLimit: {
@@ -105,8 +196,9 @@ export const auth = betterAuth({
     customRules: {
       '/sign-in/email': { window: 10, max: 3 },
       '/sign-up/email': { window: 3600, max: 5 },
+      '/email-otp/request-password-reset': { window: 300, max: 3 },
       '/two-factor/verify': { window: 10, max: 3 },
-      '/get-session': false,
+      '/get-session': { window: 10, max: 20 },
     },
   },
 });

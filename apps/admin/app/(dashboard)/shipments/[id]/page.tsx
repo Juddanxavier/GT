@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Card, Chip, Input, Label, Modal, ScrollShadow, Skeleton, cn } from '@heroui/react';
+import { Button, Card, Chip, Input, Label, ListBox, Modal, ScrollShadow, Select, Skeleton, cn } from '@heroui/react';
 import { api } from '@/lib/api';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
+import { useTenants } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { updateShipmentSchema, toFieldErrors } from '@/lib/validators/shipment';
+import { getCountryCode, stripDialCode } from '@/lib/country-codes';
 import { ArrowLeft, Check, MapPin, Clock, Calendar, Package, FileText, Users, Globe, DollarSign, RefreshCw, Trash2, Pencil, Ban, Send, Download, Plus } from 'lucide-react';
 
 type Customer = { id: string; name: string; email?: string; phone?: string };
-type Branch = { id: string; name: string };
 type TrackingEvent = {
   id: string; status: string; subStatus: string | null;
   description: string | null; location: string | null; carrier: string | null; eventTime: string;
@@ -23,6 +26,7 @@ type ApiShipment = {
   lastTrackedAt: string | null; trackingProvider: string | null;
   estimatedDelivery: string | null; actualDelivery: string | null;
   createdAt: string; updatedAt: string;
+  tenantId?: string; branchId?: string | null;
 };
 
 const STATUS_META: Record<string, { label: string; color: 'warning' | 'accent' | 'success' | 'danger' | 'default' }> = {
@@ -50,10 +54,15 @@ const STATUS_ICONS: Record<string, ReactNode> = {
 export default function ShipmentDetailPage() {
   const router = useRouter();
   const { id } = useParams();
+  const [shipmentTitle, setShipmentTitle] = useState('');
+  usePageTitle(shipmentTitle || 'Shipment');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [shipment, setShipment] = useState<ApiShipment | null>(null);
+  useEffect(() => { if (shipment?.trackingNo) setShipmentTitle(`Shipment ${shipment.trackingNo}`); }, [shipment?.trackingNo]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string; tenantId: string }[]>([]);
   const [tracking, setTracking] = useState<TrackingEvent[]>([]);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [stopLoading, setStopLoading] = useState(false);
@@ -68,19 +77,34 @@ export default function ShipmentDetailPage() {
   const [editCustomerSelf, setEditCustomerSelf] = useState(false);
   const [editCustomerEmail, setEditCustomerEmail] = useState('');
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editCustomerPhoneLocal, setEditCustomerPhoneLocal] = useState('');
   const [editCustomerLookup, setEditCustomerLookup] = useState<Customer | null | 'not-found'>(null);
   const [editCustomerLookupLoading, setEditCustomerLookupLoading] = useState(false);
   const [editUnclaimedEmail, setEditUnclaimedEmail] = useState('');
   const [editUnclaimedPhone, setEditUnclaimedPhone] = useState('');
-  const [editBranchId, setEditBranchId] = useState('');
+  const [editUnclaimedPhoneLocal, setEditUnclaimedPhoneLocal] = useState('');
+
+  const [editTenantId, setEditTenantId] = useState('');
+  const { data: editTenants = [] } = useTenants();
+  const editTenantCountry = useMemo(() => {
+    if (!editTenantId) return undefined;
+    const t = editTenants.find((t) => t.id === editTenantId);
+    return t?.country ?? undefined;
+  }, [editTenantId, editTenants]);
+  const editPhoneDialCode = getCountryCode(editTenantCountry).dialCode;
+  const editPhoneFlag = getCountryCode(editTenantCountry).flag;
   const [editCarrier, setEditCarrier] = useState('');
+  const [editBranchId, setEditBranchId] = useState('');
   const [editTrackingNo, setEditTrackingNo] = useState('');
   const [editBillAmount, setEditBillAmount] = useState(0);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const clearEditError = (field: string) => setEditErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
 
   useEffect(() => { load(); }, []);
 
   async function lookupEditCustomer() {
-    const q = editCustomerEmail || editCustomerPhone;
+    const fullPhone = editCustomerPhoneLocal ? `${editPhoneDialCode} ${editCustomerPhoneLocal}` : '';
+    const q = editCustomerEmail || fullPhone;
     if (!q) return;
     setEditCustomerLookupLoading(true);
     try {
@@ -91,12 +115,14 @@ export default function ShipmentDetailPage() {
       } else {
         setEditCustomerLookup('not-found');
         setEditUnclaimedEmail(editCustomerEmail);
-        setEditUnclaimedPhone(editCustomerPhone);
+        setEditUnclaimedPhone(fullPhone);
+        setEditUnclaimedPhoneLocal(editCustomerPhoneLocal);
       }
     } catch {
       setEditCustomerLookup('not-found');
       setEditUnclaimedEmail(editCustomerEmail);
-      setEditUnclaimedPhone(editCustomerPhone);
+      setEditUnclaimedPhone(fullPhone);
+      setEditUnclaimedPhoneLocal(editCustomerPhoneLocal);
     }
     setEditCustomerLookupLoading(false);
   }
@@ -106,26 +132,30 @@ export default function ShipmentDetailPage() {
 
   async function load() {
     try {
-      const [data, custs, brs, me] = await Promise.all([
+      const [data, custs, me, tenantList, branchList] = await Promise.all([
         api.get<ApiShipment>(`/api/shipments/${id}`),
         api.get<Customer[]>('/api/customers'),
-        api.get<Branch[]>('/api/branches'),
         api.get<{ id: string; role: string }>('/api/me'),
+        api.get<{ id: string; name: string }[]>('/api/tenants'),
+        api.get<{ id: string; name: string; tenantId: string }[]>('/api/branches'),
       ]);
+      setTenants(tenantList);
+      setBranches(branchList);
       setUserRole(me.role);
       setShipment(data);
       setCustomers(custs);
-      setBranches(brs);
       const s = custs.find((c) => c.id === data.customerId);
       setEditCustomerId(data.customerId ?? '');
       setEditCustomerSelf(!data.customerId);
       setEditCustomerLookup(s ?? null);
-      setEditBranchId('');
       setEditCarrier(data.carrier ?? '');
       setEditTrackingNo(data.trackingNo);
       setEditBillAmount(Number(data.billAmount) || 0);
+      setEditTenantId(data.tenantId ?? '');
+      setEditBranchId(data.branchId ?? '');
     } catch {
-      router.push('/shipments');
+      setLoadError(true);
+      setLoading(false);
       return;
     }
     try {
@@ -150,7 +180,7 @@ export default function ShipmentDetailPage() {
       ]);
       setShipment(updated);
       setTracking(tr.events);
-    } catch { alert('Tracking failed'); }
+    } catch (e) { console.error('[shipments] track failed:', e); }
     setTrackingLoading(false);
   }
 
@@ -161,7 +191,7 @@ export default function ShipmentDetailPage() {
     try {
       await api.post(`/api/shipments/${id}/stop-tracking`);
       setShipment((p) => p ? { ...p, trackingRegistered: false } : null);
-    } catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { console.error('[shipments] stop-tracking failed:', e); }
     setStopLoading(false);
   }
 
@@ -176,18 +206,25 @@ export default function ShipmentDetailPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setEditErrors({});
+    if ((document.getElementById('hp-edit') as HTMLInputElement)?.value) return;
+    const payload = {
+      trackingNo: editTrackingNo.trim(),
+      billAmount: editBillAmount || undefined,
+      branchId: editBranchId || undefined,
+      carrier: editCarrier || undefined,
+    };
+    const parsed = updateShipmentSchema.safeParse(payload);
+    if (!parsed.success) { setEditErrors(toFieldErrors(parsed.error)); return; }
     setSaving(true);
     try {
-      const payload: Record<string, unknown> = {
+      const data = await api.patch<ApiShipment>(`/api/shipments/${id}`, {
         customerId: editCustomerSelf ? undefined : editCustomerId,
         contactEmail: (!editCustomerId && !editCustomerSelf && editUnclaimedEmail) ? editUnclaimedEmail : undefined,
         contactPhone: (!editCustomerId && !editCustomerSelf && editUnclaimedPhone) ? editUnclaimedPhone : undefined,
-        branchId: editBranchId || undefined,
-        carrier: editCarrier || undefined,
-        trackingNo: editTrackingNo,
-      };
-      if (isAdmin) payload.billAmount = editBillAmount || undefined;
-      const data = await api.patch<ApiShipment>(`/api/shipments/${id}`, payload);
+        tenantId: editTenantId || undefined,
+        ...parsed.data,
+      });
       setShipment(data);
       if (data.trackingNo !== shipment?.trackingNo || data.carrier !== shipment?.carrier) {
         try {
@@ -208,13 +245,17 @@ export default function ShipmentDetailPage() {
   function openEdit() {
     if (!shipment) return;
     const s = customers.find((c) => c.id === shipment.customerId);
+    setEditErrors({});
     setEditCustomerId(shipment.customerId ?? '');
     setEditCustomerSelf(!shipment.customerId);
     setEditCustomerLookup(s ?? null);
     setEditCustomerEmail(''); setEditCustomerPhone('');
-    setEditBranchId(''); setEditCarrier(shipment.carrier ?? '');
+    setEditCustomerPhoneLocal(stripDialCode(shipment.contactPhone ?? '', editPhoneDialCode));
+    setEditCarrier(shipment.carrier ?? '');
     setEditTrackingNo(shipment.trackingNo);
     setEditBillAmount(Number(shipment.billAmount) || 0);
+    setEditTenantId(shipment.tenantId ?? '');
+    setEditBranchId(shipment.branchId ?? '');
     setEditOpen(true);
   }
 
@@ -506,28 +547,26 @@ export default function ShipmentDetailPage() {
                       try {
                         const res = await api.post<{ sent: boolean; emailCount: number }>(`/api/invoices/${invoice.id}/send`);
                         setInvoice({ ...invoice, emailCount: res.emailCount });
-                      } catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
+                      } catch (e) { console.error('[invoices] send failed:', e); }
                     }}>
                       <Send size={16} />
                       Send Invoice
                     </Button>
                   </div>
                 </>
-              ) : shipment.customerId ? (
+              ) : (
                 <div className="text-center py-3 space-y-3">
                   <p className="text-xs text-muted">No invoice generated yet</p>
                   <Button className="w-full justify-center" variant="secondary" size="sm" onPress={async () => {
                     try {
                       const inv = await api.post<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string }>(`/api/invoices/shipment/${id}`);
                       setInvoice(inv);
-                    } catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
-                  }}>
-                    <Plus size={16} />
-                    Generate Invoice
-                  </Button>
+                    } catch (e) { console.error('[invoices] generate failed:', e); }
+                    }}>
+                      <Plus size={16} />
+                      Generate Invoice
+                    </Button>
                 </div>
-              ) : (
-                <p className="text-xs text-muted text-center py-2">No customer — cannot create invoice</p>
               )}
             </Card.Content>
           </Card>
@@ -645,6 +684,11 @@ export default function ShipmentDetailPage() {
             <Modal.Header>Edit Shipment</Modal.Header>
             <Modal.Body>
               <form id="edit-form" onSubmit={handleSubmit} className="space-y-4">
+                {/* Honeypot */}
+                <div className="absolute -left-[9999px]" aria-hidden="true">
+                  <label htmlFor="hp-edit">Leave empty</label>
+                  <input id="hp-edit" name="website" type="text" tabIndex={-1} autoComplete="off" />
+                </div>
                 <div className="space-y-2">
                   <Label>Customer</Label>
                   {editCustomerSelf ? (
@@ -655,14 +699,14 @@ export default function ShipmentDetailPage() {
                   ) : editCustomerId && editCustomerLookup && typeof editCustomerLookup !== 'string' ? (
                     <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
                       <span>{editCustomerLookup.name}</span>
-                      <button type="button" className="text-xs text-muted underline ml-auto" onClick={() => { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhone(''); }}>Change</button>
+                      <button type="button" className="text-xs text-muted underline ml-auto" onClick={() => { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhoneLocal(''); }}>Change</button>
                     </div>
                   ) : editCustomerLookup === 'not-found' ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
                         <span className="font-medium">{editUnclaimedEmail || editUnclaimedPhone}</span>
                         <span className="text-xs text-muted">— assignable later</span>
-                        <button type="button" className="text-xs underline ml-auto" onClick={() => { setEditCustomerLookup(null); }}>Change</button>
+                        <button type="button" className="text-xs underline ml-auto" onClick={() => { setEditCustomerLookup(null); setEditUnclaimedPhoneLocal(''); }}>Change</button>
                       </div>
                       {editUnclaimedEmail && <p className="text-xs text-muted">Invite link will be sent to {editUnclaimedEmail}</p>}
                     </div>
@@ -670,47 +714,73 @@ export default function ShipmentDetailPage() {
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <Input variant="secondary" placeholder="Email" value={editCustomerEmail} onChange={(e) => setEditCustomerEmail(e.target.value)} fullWidth />
-                        <Input variant="secondary" placeholder="Phone" value={editCustomerPhone} onChange={(e) => setEditCustomerPhone(e.target.value)} fullWidth />
+                        <div className="flex">
+                          <div className="flex items-center gap-1.5 px-3 border border-r-0 border-border rounded-l-xl bg-muted/10 text-sm text-muted font-medium shrink-0">
+                            {editPhoneFlag && <Flag country={editPhoneFlag} size={14} />}
+                            {editPhoneDialCode}
+                          </div>
+                          <Input variant="secondary" placeholder="Phone" value={editCustomerPhoneLocal} onChange={(e) => setEditCustomerPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
+                        </div>
                       </div>
                       <Button size="sm" variant="secondary" isPending={editCustomerLookupLoading} onPress={lookupEditCustomer}>Lookup</Button>
                     </div>
                   )}
                   {!editCustomerId && editCustomerLookup !== 'not-found' && (
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={editCustomerSelf} onChange={(e) => { setEditCustomerSelf(e.target.checked); if (e.target.checked) { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhone(''); } }} className="rounded border-border" />
+                      <input type="checkbox" checked={editCustomerSelf} onChange={(e) => { setEditCustomerSelf(e.target.checked); if (e.target.checked) { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhoneLocal(''); } }} className="rounded border-border" />
                       Self — no notifications
                     </label>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {(userRole === 'superadmin' || userRole === 'tenant-admin') && (
                   <div className="space-y-1">
-                    <Label htmlFor="edit-branchId">Branch</Label>
-                    <select id="edit-branchId" value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)} className={sel}>
-                      <option value="">None</option>
-                      {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
+                    <Label>Branch</Label>
+                    <Select
+                      selectedKey={editBranchId}
+                      onSelectionChange={(k) => { setEditBranchId(k as string); clearEditError('branchId'); }}
+                      placeholder="None"
+                      variant="secondary"
+                      aria-label="Select branch"
+                    >
+                      <Select.Trigger className="h-10 text-sm">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {branches.filter((b) => b.tenantId === editTenantId).map((b) => (
+                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
+                              {b.name}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    {editErrors.branchId && <p className="text-xs text-danger">{editErrors.branchId}</p>}
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="edit-carrier">Carrier</Label>
-                    <select id="edit-carrier" value={editCarrier} onChange={(e) => setEditCarrier(e.target.value)} className={sel}>
-                      <option value="">None</option>
-                      {['DTDC', 'Blue Dart', 'Delhivery', 'FedEx', 'DHL', 'Other'].map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label htmlFor="edit-carrier">Carrier</Label>
+                  <select id="edit-carrier" value={editCarrier} onChange={(e) => setEditCarrier(e.target.value)} className={sel}>
+                    <option value="">None</option>
+                    {['DTDC', 'Blue Dart', 'Delhivery', 'FedEx', 'DHL', 'Other'].map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-trackingNo">Tracking # *</Label>
-                  <Input id="edit-trackingNo" variant="secondary" value={editTrackingNo} onChange={(e) => setEditTrackingNo(e.target.value)} required fullWidth />
+                  <Input id="edit-trackingNo" variant="secondary" value={editTrackingNo} onChange={(e) => { setEditTrackingNo(e.target.value); clearEditError('trackingNo'); }} required fullWidth />
+                  {editErrors.trackingNo && <p className="text-xs text-danger">{editErrors.trackingNo}</p>}
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-billAmount">Bill Amount</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">&#x20B9;</span>
                     <input id="edit-billAmount" type="number" step="0.01" min="0" value={editBillAmount}
-                      onChange={(e) => setEditBillAmount(Number(e.target.value))}
+                      onChange={(e) => { setEditBillAmount(Number(e.target.value)); clearEditError('billAmount'); }}
                       className={`w-full pl-8 pr-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary ${isStaff ? 'opacity-60 cursor-not-allowed' : ''}`}
                       disabled={isStaff} />
                   </div>
+                  {editErrors.billAmount && <p className="text-xs text-danger">{editErrors.billAmount}</p>}
                   {isStaff && <p className="text-xs text-muted">Only admins can change bill amount</p>}
                 </div>
               </form>

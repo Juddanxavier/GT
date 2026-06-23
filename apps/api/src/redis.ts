@@ -1,21 +1,30 @@
 import { Redis } from 'ioredis';
 
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
+const REDIS_URL = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
+
+export const bullConnectionOptions: Record<string, unknown> | null = REDIS_URL
+  ? { url: REDIS_URL, maxRetriesPerRequest: null, enableReadyCheck: false }
+  : null;
 
 function createBullConnection(): Redis | null {
   if (!REDIS_URL) return null;
-  return new Redis(REDIS_URL, {
+  const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
   });
+  client.on('error', (err) => console.error('[redis] bull connection error:', err.message));
+  return client;
 }
 
 function createCacheClient(): Redis | null {
   if (!REDIS_URL) return null;
-  return new Redis(REDIS_URL, {
+  const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 20,
     lazyConnect: true,
+    retryStrategy: () => null, // don't retry — fail fast so lazyConnect surfaces the error immediately
   });
+  client.on('error', (err) => console.error('[redis] cache client error:', err.message));
+  return client;
 }
 
 export const bullConnection = createBullConnection();

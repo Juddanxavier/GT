@@ -17,24 +17,28 @@ $$ LANGUAGE plpgsql STABLE;
 
 ALTER TABLE "tenant" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_isolation ON "tenant";
 CREATE POLICY tenant_isolation ON "tenant"
   FOR ALL
   USING (is_tenant_accessible(id));
 
 ALTER TABLE "branch" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS branch_isolation ON "branch";
 CREATE POLICY branch_isolation ON "branch"
   FOR ALL
   USING (is_tenant_accessible(tenant_id));
 
 ALTER TABLE "tenant_domain" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_domain_isolation ON "tenant_domain";
 CREATE POLICY tenant_domain_isolation ON "tenant_domain"
   FOR ALL
   USING (is_tenant_accessible(tenant_id));
 
 ALTER TABLE "user" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS user_isolation ON "user";
 CREATE POLICY user_isolation ON "user"
   FOR ALL
   USING (

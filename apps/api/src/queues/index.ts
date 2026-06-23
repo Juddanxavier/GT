@@ -1,21 +1,14 @@
 import { Queue, type ConnectionOptions, type JobsOptions } from 'bullmq';
-import { bullConnection } from '../redis';
+import { bullConnectionOptions } from '../redis';
 
 let connected = false;
 
-function getConnection(): ConnectionOptions {
-  if (!bullConnection) {
-    throw new Error('BullMQ connection not available — UPSTASH_REDIS_URL missing');
-  }
-  return bullConnection;
-}
-
 function createOrSkip(name: string, opts?: Partial<QueueOptions>): Queue | null {
-  if (!bullConnection) {
+  if (!bullConnectionOptions) {
     return null;
   }
   connected = true;
-  return new Queue(name, { connection: getConnection(), ...opts });
+  return new Queue(name, { connection: bullConnectionOptions as ConnectionOptions, ...opts });
 }
 
 type QueueOptions = { defaultJobOptions: JobsOptions };
@@ -33,6 +26,17 @@ export const notificationQueue = createOrSkip('notification', sharedOpts);
 export const emailQueue = createOrSkip('email', sharedOpts);
 export const pdfQueue = createOrSkip('pdf', sharedOpts);
 export const whatsappQueue = createOrSkip('whatsapp', sharedOpts);
+
+const archiveOpts: QueueOptions = {
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: { age: 86400 * 7, count: 50 },
+    removeOnFail: { age: 86400 * 30, count: 100 },
+  },
+};
+export const archiveQueue = createOrSkip('archive', archiveOpts);
+
 export const deadLetterQueue = createOrSkip('dead-letter', {
   defaultJobOptions: {
     attempts: 1,
@@ -46,6 +50,7 @@ export const queues = [
   emailQueue,
   pdfQueue,
   whatsappQueue,
+  archiveQueue,
   deadLetterQueue,
 ]
   .filter((q): q is Queue => q !== null);

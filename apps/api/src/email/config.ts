@@ -5,6 +5,9 @@ export const emailConfig = {
     user: process.env.ZEPTOMAIL_USER || 'emailapikey',
     pass: process.env.ZEPTOMAIL_PASS || '',
   },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY || '',
+  },
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,
@@ -19,6 +22,10 @@ export const emailConfig = {
 
 export function isZeptoMailConfigured(): boolean {
   return !!emailConfig.zeptomail.pass;
+}
+
+export function isResendConfigured(): boolean {
+  return !!emailConfig.resend.apiKey;
 }
 
 export function isSmtpConfigured(): boolean {

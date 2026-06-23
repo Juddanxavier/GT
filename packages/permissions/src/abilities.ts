@@ -47,7 +47,7 @@ export function defineAbilityFor(user: PermissionContext) {
 
   // ── STAFF: Branch-level operations ──
   if (isStaff) {
-    can('manage', 'customer');
+    can('read', 'customer'); // Staff can view branch-linked customers only
     can('manage', 'user');
     can('create', 'shipment'); // Can create shipments
     can('read', 'shipment'); // Can view shipments

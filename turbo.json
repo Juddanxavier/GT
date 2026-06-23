@@ -5,7 +5,26 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"],
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "SENTRY_DSN",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DATABASE_URL",
+        "PORT",
+        "SHIPMENT_PROVIDER",
+        "TRACK_API_KEY",
+        "TRACK_WEBHOOK_SECRET",
+        "REDIS_URL",
+        "ZEPTOMAIL_HOST",
+        "ZEPTOMAIL_PORT",
+        "ZEPTOMAIL_USER",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "DEFAULT_FROM_EMAIL",
+        "DEFAULT_FROM_NAME"
+      ]
     },
     "lint": {
       "dependsOn": []
@@ -15,6 +34,10 @@
     },
     "check-types": {
       "dependsOn": ["^check-types"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "dev": {
       "cache": false,

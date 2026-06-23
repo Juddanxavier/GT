@@ -1,0 +1,24 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Gajan Traders" [level=3] [ref=e5]
+      - paragraph [ref=e6]: Sign in to the admin panel
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - text: Email
+          - textbox "Email" [ref=e10]:
+            - /placeholder: name@example.com
+        - generic [ref=e11]:
+          - text: Password
+          - textbox "Password" [ref=e12]:
+            - /placeholder: Enter your password
+        - button "Sign in with Email" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - separator [ref=e15]
+        - generic [ref=e16]: OR
+      - button "Sign in with Google" [ref=e17] [cursor=pointer]:
+        - img
+        - text: Sign in with Google
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]

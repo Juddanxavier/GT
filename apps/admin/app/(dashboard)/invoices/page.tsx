@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FileText, Send, Download, RotateCw } from 'lucide-react';
-import { Button, Chip, Input, Modal } from '@heroui/react';
-import { api } from '@/lib/api';
+import { Button, Chip, Input, Modal, Skeleton } from '@heroui/react';
+import { useInvoices, useSendInvoice } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface InvoiceRow {
   id: string;
@@ -20,33 +22,25 @@ interface InvoiceRow {
 const ROWS_PER_PAGE = 10;
 
 export default function InvoicesPage() {
+  usePageTitle('Invoices');
   const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [invoicesRaw, setInvoicesRaw] = useState<InvoiceRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sendTarget, setSendTarget] = useState<InvoiceRow | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState('');
+  const qc = useQueryClient();
 
-  function fetchInvoices() {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    api.get<InvoiceRow[]>(`/api/invoices?${params}`)
-      .then(setInvoicesRaw)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => { fetchInvoices(); }, []);
+  const { data: invoicesRaw = [], isPending: loading } = useInvoices(searchQuery);
+  const sendInvoice = useSendInvoice();
 
   const totalPages = Math.max(1, Math.ceil(invoicesRaw.length / ROWS_PER_PAGE));
   const paginated = invoicesRaw.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
   function handleSearch() {
     setPage(1);
-    fetchInvoices();
+    setSearchQuery(search);
   }
 
   async function handleSend(invoice: InvoiceRow) {
@@ -54,10 +48,11 @@ export default function InvoicesPage() {
     setSendError('');
     setSendSuccess('');
     try {
-      const res = await api.post<{ sent: boolean; emailCount: number }>(`/api/invoices/${invoice.id}/send`);
+      const res = await sendInvoice.mutateAsync(invoice.id);
       if (res.sent) {
         setSendSuccess(`Invoice ${invoice.invoiceNo} sent successfully. (${res.emailCount}/2 today)`);
         invoice.emailCount = res.emailCount;
+        qc.invalidateQueries({ queryKey: ['invoices'] });
       }
       setTimeout(() => { setSendTarget(null); setSendSuccess(''); }, 2000);
     } catch (err) {
@@ -96,9 +91,21 @@ export default function InvoicesPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+        <div className="rounded-2xl border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <Skeleton className="h-4 w-48 rounded" />
+          </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
+              <Skeleton className="h-4 w-6 rounded shrink-0" />
+              <Skeleton className="h-4 w-28 rounded" />
+              <Skeleton className="h-4 w-24 rounded" />
+              <Skeleton className="h-4 w-20 rounded ml-auto" />
+              <Skeleton className="h-5 w-12 rounded-full" />
+              <Skeleton className="h-4 w-12 rounded" />
+              <Skeleton className="h-4 w-20 rounded" />
+              <Skeleton className="h-6 w-14 rounded-lg ml-auto" />
+            </div>
           ))}
         </div>
       ) : paginated.length === 0 ? (

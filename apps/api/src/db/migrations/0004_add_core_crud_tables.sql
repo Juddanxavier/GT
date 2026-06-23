@@ -74,14 +74,18 @@ ALTER TABLE "quote_item" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "shipment" ENABLE ROW LEVEL SECURITY;
 
 -- RLS: Tenant isolation policies
+DROP POLICY IF EXISTS "customer_tenant_isolation" ON "customer";
 CREATE POLICY "customer_tenant_isolation" ON "customer"
   USING (tenant_id::text = current_setting('app.tenant_id', true) OR current_setting('app.tenant_id', true) = 'superadmin');
 
+DROP POLICY IF EXISTS "quotation_tenant_isolation" ON "quotation";
 CREATE POLICY "quotation_tenant_isolation" ON "quotation"
   USING (tenant_id::text = current_setting('app.tenant_id', true) OR current_setting('app.tenant_id', true) = 'superadmin');
 
+DROP POLICY IF EXISTS "quote_item_tenant_isolation" ON "quote_item";
 CREATE POLICY "quote_item_tenant_isolation" ON "quote_item"
   USING (quotation_id IN (SELECT id FROM "quotation" WHERE tenant_id::text = current_setting('app.tenant_id', true) OR current_setting('app.tenant_id', true) = 'superadmin'));
 
+DROP POLICY IF EXISTS "shipment_tenant_isolation" ON "shipment";
 CREATE POLICY "shipment_tenant_isolation" ON "shipment"
   USING (tenant_id::text = current_setting('app.tenant_id', true) OR current_setting('app.tenant_id', true) = 'superadmin');

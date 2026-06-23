@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { eq, and, desc, like, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { shipments, trackingEvents, tenants, invoices, customers } from '../db/schema';
-import { requireRole } from '../middleware/authorization';
+import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 import { getProvider } from '../shipment-providers';
@@ -10,29 +10,43 @@ import { insertEvents } from '../shipment-providers/dedup';
 import { emailQueue, pdfQueue } from '../queues';
 import { notifyTrackingEvents } from '../notifications/service';
 import { emitToTenant } from '../realtime';
+import { cacheClient } from '../redis';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
-app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
 
   const status = c.req.query('status');
   const customerId = c.req.query('customerId');
   const search = c.req.query('search');
+  const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
+  const offset = (page - 1) * limit;
 
-  const conditions = [eq(shipments.tenantId, tenantId)];
+  if (search && search.length > 100) return c.json({ error: 'Search query too long' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
   if (status) conditions.push(eq(shipments.status, status));
   if (customerId) conditions.push(eq(shipments.customerId, customerId));
   if (search) conditions.push(sql`${like(shipments.trackingNo, `%${search}%`)}`);
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)::int` })
+    .from(shipments)
+    .where(and(...conditions));
 
   const rows = await db
     .select()
     .from(shipments)
     .where(and(...conditions))
-    .orderBy(desc(shipments.createdAt));
+    .orderBy(desc(shipments.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return c.json({ data: rows });
+  return c.json({ data: rows, total: count, page, limit });
 });
 
 app.post('/detect', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
@@ -43,14 +57,16 @@ app.post('/detect', requireRole('superadmin', 'tenant-admin', 'staff'), async (c
   let detected: { key: string; name: string } | null = null;
   try {
     detected = await provider.detectCarrier(trackingNo);
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[shipments] detect-carrier failed:', err);
+  }
 
   return c.json({ data: { detected } });
 });
 
 app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  const user = c.get('user') as { id: string; role: string; tenantId?: string; branchId?: string } | null;
+  let tenantId = c.get('tenantId');
 
   const body = await c.req.json();
   const parsed = createShipmentSchema.safeParse(body);
@@ -62,15 +78,67 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
-  const [row] = await db
-    .insert(shipments)
-    .values({ ...parsed.data, tenantId } as never)
-    .returning();
+  if (user?.role === 'superadmin' && parsed.data.tenantId) {
+    tenantId = parsed.data.tenantId;
+  }
+
+  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  // Duplicate tracking number check
+  const [dup] = await db
+    .select({ id: shipments.id })
+    .from(shipments)
+    .where(and(eq(shipments.tenantId, tenantId), eq(shipments.trackingNo, parsed.data.trackingNo)))
+    .limit(1);
+  if (dup) return c.json({ error: `Tracking number "${parsed.data.trackingNo}" already exists` }, 409);
+
+  // Branch scope enforcement on creation
+  const bodyBranchId = parsed.data.branchId;
+  const overrideBranchId = c.get('branchId');
+
+  if (user?.role === 'staff') {
+    const allowedBranchId = user.branchId;
+    if (!allowedBranchId) return c.json({ error: 'No branch assigned to your account' }, 403);
+    if (bodyBranchId && bodyBranchId !== allowedBranchId) {
+      return c.json({ error: 'You can only create shipments in your assigned branch' }, 403);
+    }
+    parsed.data.branchId = allowedBranchId;
+  } else if (user?.role === 'tenant-admin' && overrideBranchId) {
+    if (bodyBranchId && bodyBranchId !== overrideBranchId) {
+      return c.json({ error: 'Branch override mismatch: shipment branch does not match selected branch filter' }, 403);
+    }
+    parsed.data.branchId = overrideBranchId;
+  }
+
+  let row: typeof shipments.$inferSelect | undefined;
+
+  await db.transaction(async (tx) => {
+    [row] = await tx
+      .insert(shipments)
+      .values({
+        tenantId,
+        trackingNo: parsed.data.trackingNo,
+        customerId: parsed.data.customerId,
+        branchId: parsed.data.branchId,
+        courierCode: parsed.data.courierCode,
+        carrier: parsed.data.carrier,
+        origin: parsed.data.origin,
+        destination: parsed.data.destination,
+        status: parsed.data.status ?? 'pending',
+        billAmount: parsed.data.billAmount ? String(parsed.data.billAmount) : undefined,
+        contactEmail: parsed.data.contactEmail,
+        contactPhone: parsed.data.contactPhone,
+        customerName: parsed.data.customerName,
+      })
+      .returning();
+
+    if (!row) return c.json({ error: 'Failed to create shipment' }, 500);
+
+    const labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
+    await tx.update(shipments).set({ labelCode, updatedAt: new Date() }).where(eq(shipments.id, row.id));
+  });
 
   if (!row) return c.json({ error: 'Failed to create shipment' }, 500);
-
-  const labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
-  await db.update(shipments).set({ labelCode, updatedAt: new Date() }).where(eq(shipments.id, row.id));
 
   try {
     const provider = getProvider();
@@ -109,14 +177,13 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
       lastTrackedAt: new Date(),
       trackingRegistered: inserted > 0,
       updatedAt: new Date(),
-      payload: trackResult.events,
       origin: trackResult.origin ?? parsed.data.origin ?? null,
       destination: trackResult.destination ?? parsed.data.destination ?? null,
       estimatedDelivery: trackResult.estimatedDelivery ? new Date(trackResult.estimatedDelivery) : null,
       actualDelivery: trackResult.actualDelivery ? new Date(trackResult.actualDelivery) : null,
     };
     if (trackResult.events.length > 0) {
-      updateData.carrier = trackResult.events[0]!.carrier || carrierName || null;
+      updateData.carrier = trackResult.events[0]?.carrier || carrierName || null;
     } else if (carrierName) {
       updateData.carrier = carrierName;
     }
@@ -126,44 +193,53 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   }
 
   // Auto-create invoice
-  try {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const shortId = row.id.slice(0, 5).toUpperCase();
-    const invoiceNo = `INV-${y}${m}-${shortId}`;
-    const amount = parsed.data.billAmount ?? 0;
+  if (parsed.data.billAmount != null && parsed.data.billAmount > 0) {
+    try {
+      const [existingInv] = await db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(eq(invoices.shipmentId, row.id))
+        .limit(1);
 
-    const [tenantRow] = await db
-      .select({ name: tenants.name })
-      .from(tenants)
-      .where(eq(tenants.id, tenantId))
-      .limit(1);
+      if (!existingInv) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const shortId = row.id.slice(0, 5).toUpperCase();
+        const invoiceNo = `INV-${y}${m}-${shortId}`;
 
-    const [inv] = await db
-      .insert(invoices)
-      .values({
-        tenantId,
-        shipmentId: row.id,
-        customerId: parsed.data.customerId ?? '',
-        invoiceNo,
-        amount: String(amount),
-        status: 'paid',
-        emailCount: 1,
-        paidAt: now,
-        lastEmailSentAt: now,
-      } as never)
-      .returning();
+        const [tenantRow] = await db
+          .select({ name: tenants.name })
+          .from(tenants)
+          .where(eq(tenants.id, tenantId))
+          .limit(1);
 
-    if (inv && pdfQueue) {
-      await pdfQueue.add('invoice', {
-        type: 'invoice',
-        invoiceId: inv.id,
-        tenantId,
-      });
+        const [inv] = await db
+          .insert(invoices)
+          .values({
+            tenantId,
+            shipmentId: row.id,
+            customerId: parsed.data.customerId ?? null,
+            invoiceNo,
+            amount: String(parsed.data.billAmount),
+            status: 'paid',
+            emailCount: 1,
+            paidAt: now,
+            lastEmailSentAt: now,
+          })
+          .returning();
+
+        if (inv && pdfQueue) {
+          await pdfQueue.add('invoice', {
+            type: 'invoice',
+            invoiceId: inv.id,
+            tenantId,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[shipments] auto-invoice failed:', err);
     }
-  } catch (err) {
-    console.error('[shipments] auto-invoice failed:', err);
   }
 
   const [updated] = await db
@@ -172,31 +248,34 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     .where(eq(shipments.id, row.id))
     .limit(1);
 
-  emitToTenant(tenantId, 'dashboard:update', {}).catch(() => {});
+  emitToTenant(tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
 
   return c.json({ data: updated ?? row }, 201);
 });
 
-app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
+  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
 
   const [row] = await db
     .select()
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...conditions))
     .limit(1);
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
   return c.json({ data: row });
 });
 
-app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
   const user = c.get('user');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
   const parsed = updateShipmentSchema.safeParse(body);
@@ -208,26 +287,41 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
-  if (user?.role === 'staff' && parsed.data.billAmount !== undefined) {
+  if ((user as Record<string, unknown> | null)?.role === 'staff' && parsed.data.billAmount !== undefined) {
     return c.json({ error: 'Only admins can change bill amount' }, 403);
   }
+
+  // Field-level permissions by role
+  const role = (user as Record<string, unknown> | null)?.role as string;
+  const allowedFields: Record<string, string[]> = {
+    staff: ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'origin', 'destination', 'status'],
+    'tenant-admin': ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'branchId', 'origin', 'destination', 'status', 'billAmount', 'customerName'],
+    superadmin: ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'branchId', 'origin', 'destination', 'status', 'billAmount', 'customerName', 'tenantId'],
+  };
+  const allowed = allowedFields[role] ?? [];
+  const filteredData = Object.fromEntries(
+    Object.entries(parsed.data).filter(([key]) => allowed.includes(key))
+  );
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
+  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [existing] = await db
     .select({ trackingNo: shipments.trackingNo, carrier: shipments.carrier })
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!existing) return c.json({ error: 'Shipment not found' }, 404);
 
-  const trackingChanged = parsed.data.trackingNo && parsed.data.trackingNo !== existing.trackingNo;
-  const carrierChanged = parsed.data.carrier && parsed.data.carrier !== existing.carrier;
-
-  const updateData = { ...parsed.data, updatedAt: new Date() } as never;
+  const updateData: Record<string, unknown> = { ...filteredData, updatedAt: new Date() };
+  const trackingChanged = filteredData.trackingNo && filteredData.trackingNo !== existing.trackingNo;
+  const carrierChanged = filteredData.carrier && filteredData.carrier !== existing.carrier;
   const [row] = await db
     .update(shipments)
     .set(updateData)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .returning();
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
@@ -235,16 +329,16 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
   if (trackingChanged || carrierChanged) {
     try {
       const provider = getProvider();
-      const trackingNo = parsed.data.trackingNo ?? existing.trackingNo;
-      const carrier = parsed.data.carrier ?? existing.carrier ?? undefined;
+      const trackingNo = filteredData.trackingNo ?? existing.trackingNo;
+      const carrier = filteredData.carrier ?? existing.carrier ?? undefined;
 
       if (provider.registerShipment) {
-        const courierCode = parsed.data.courierCode;
+        const courierCode = filteredData.courierCode;
         if (courierCode) {
           const [tenant] = await db
             .select({ name: tenants.name, country: tenants.country })
             .from(tenants)
-            .where(eq(tenants.id, tenantId))
+            .where(eq(tenants.id, scope.tenantId))
             .limit(1);
 
           await provider.registerShipment({
@@ -259,10 +353,10 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
       }
 
       const trackResult = await provider.track(trackingNo, carrier);
-      const inserted = await insertEvents(row.id, tenantId, trackResult.events);
+      const inserted = await insertEvents(row.id, scope.tenantId, trackResult.events);
 
       if (inserted > 0) {
-        notifyTrackingEvents(row.id, tenantId, trackResult.events, trackResult.currentStatus);
+        notifyTrackingEvents(row.id, scope.tenantId, trackResult.events, trackResult.currentStatus);
       }
 
       const trackUpdate: Record<string, unknown> = {
@@ -270,14 +364,13 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
         lastTrackedAt: new Date(),
         trackingRegistered: inserted > 0,
         updatedAt: new Date(),
-        payload: trackResult.events,
         origin: trackResult.origin ?? row.origin ?? null,
         destination: trackResult.destination ?? row.destination ?? null,
         estimatedDelivery: trackResult.estimatedDelivery ? new Date(trackResult.estimatedDelivery) : null,
         actualDelivery: trackResult.actualDelivery ? new Date(trackResult.actualDelivery) : null,
       };
       if (trackResult.events.length > 0) {
-        trackUpdate.carrier = trackResult.events[0]!.carrier || carrier || null;
+        trackUpdate.carrier = trackResult.events[0]?.carrier || carrier || null;
       }
       await db.update(shipments).set(trackUpdate).where(eq(shipments.id, row.id));
     } catch (err) {
@@ -291,30 +384,36 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     .where(eq(shipments.id, row.id))
     .limit(1);
 
-  emitToTenant(tenantId, 'dashboard:update', {}).catch(() => {});
+  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
 
   return c.json({ data: final ?? row });
 });
 
-app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const deleteConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
+  if (scope.branchId) deleteConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [row] = await db
     .delete(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...deleteConditions))
     .returning();
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
-  emitToTenant(tenantId, 'dashboard:update', {}).catch(() => {});
+  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
   return c.json({ data: row });
 });
 
-app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
+  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db
     .select({
@@ -325,7 +424,7 @@ app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), asy
       trackingProvider: shipments.trackingProvider,
     })
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
@@ -335,22 +434,25 @@ app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), asy
     .from(trackingEvents)
     .where(and(
       eq(trackingEvents.shipmentId, id),
-      eq(trackingEvents.tenantId, tenantId),
+      eq(trackingEvents.tenantId, scope.tenantId),
     ))
     .orderBy(desc(trackingEvents.eventTime));
 
   return c.json({ data: { shipment, events } });
 });
 
-app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
+  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db
     .select({ trackingNo: shipments.trackingNo })
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
@@ -365,10 +467,26 @@ app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'
   }
 });
 
-app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  // Rate limit: 1 track per 60 seconds per shipment
+  if (cacheClient) {
+    try {
+      const cooldownKey = `track:cooldown:${id}`;
+      const cooled = await cacheClient.get(cooldownKey);
+      if (cooled) return c.json({ error: 'Please wait before tracking again' }, 429);
+      await cacheClient.set(cooldownKey, '1', 'EX', 60);
+    } catch {
+      console.warn('[track] rate-limit redis unavailable, proceeding without cooldown');
+    }
+  }
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
+  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db
     .select({
@@ -379,7 +497,7 @@ app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), async
       destination: shipments.destination,
     })
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
@@ -387,10 +505,10 @@ app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), async
   try {
     const provider = getProvider();
     const result = await provider.track(shipment.trackingNo, shipment.carrier ?? undefined);
-    const inserted = await insertEvents(shipment.id, tenantId, result.events);
+    const inserted = await insertEvents(shipment.id, scope.tenantId, result.events);
 
     if (inserted > 0) {
-      notifyTrackingEvents(shipment.id, tenantId, result.events, result.currentStatus);
+      notifyTrackingEvents(shipment.id, scope.tenantId, result.events, result.currentStatus);
     }
 
     const updateFields: Record<string, unknown> = {
@@ -398,14 +516,13 @@ app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), async
       lastTrackedAt: new Date(),
       trackingRegistered: true,
       updatedAt: new Date(),
-      payload: result.events,
       origin: result.origin ?? shipment.origin ?? null,
       destination: result.destination ?? shipment.destination ?? null,
       estimatedDelivery: result.estimatedDelivery ? new Date(result.estimatedDelivery) : null,
       actualDelivery: result.actualDelivery ? new Date(result.actualDelivery) : null,
     };
     if (result.events.length > 0) {
-      updateFields.carrier = result.events[0]!.carrier;
+      updateFields.carrier = result.events[0]?.carrier || shipment.carrier || null;
     }
     await db.update(shipments).set(updateFields).where(eq(shipments.id, shipment.id));
 
@@ -417,14 +534,17 @@ app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), async
 });
 
 app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async (c) => {
-  const tenantId = c.get('tenantId');
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
+  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db
     .select({ id: shipments.id, trackingNo: shipments.trackingNo, carrier: shipments.carrier })
     .from(shipments)
-    .where(and(eq(shipments.id, id), eq(shipments.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!shipment) return c.json({ error: 'Shipment not found' }, 404);

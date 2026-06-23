@@ -1,1 +1,1 @@
-ALTER TABLE "tenant" ADD COLUMN "country" varchar(100);
+ALTER TABLE "tenant" ADD COLUMN IF NOT EXISTS "country" varchar(100);

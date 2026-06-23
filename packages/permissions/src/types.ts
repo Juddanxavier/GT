@@ -39,6 +39,8 @@ export type PermissionContext = {
   branchId?: string | null;
   // Superadmin can pass X-Tenant-ID to act as a different tenant
   overrideTenantId?: string | null;
+  // Tenant-admin can pass X-Branch-ID to scope to a specific branch
+  overrideBranchId?: string | null;
 };
 
 /**

@@ -1,0 +1,109 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - complementary [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: GT
+        - generic [ref=e16]:
+          - paragraph [ref=e17]: Gajan Traders
+          - paragraph [ref=e18]: Admin Panel
+      - navigation [ref=e19]:
+        - button "Dashboard" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]:
+            - img
+          - generic [ref=e22]: Dashboard
+        - button "Users" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]:
+            - img
+          - generic [ref=e25]: Users
+        - button "Branches" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]:
+            - img
+          - generic [ref=e28]: Branches
+        - button "Shipments" [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]:
+            - img
+          - generic [ref=e31]: Shipments
+        - button "Quotations" [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]:
+            - img
+          - generic [ref=e34]: Quotations
+        - button "Invoices" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]:
+            - img
+          - generic [ref=e37]: Invoices
+        - button "Reports" [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]:
+            - img
+          - generic [ref=e40]: Reports
+      - generic [ref=e41]:
+        - button "Search" [ref=e42] [cursor=pointer]:
+          - img
+          - text: Search
+        - button "Profile" [ref=e43] [cursor=pointer]:
+          - img
+          - text: Profile
+        - button "Settings" [ref=e44] [cursor=pointer]:
+          - img
+          - text: Settings
+        - button "Help" [ref=e45] [cursor=pointer]:
+          - img
+          - text: Help
+    - generic [ref=e46]:
+      - banner [ref=e47]:
+        - button "Collapse sidebar" [ref=e49] [cursor=pointer]:
+          - img
+        - generic [ref=e50]:
+          - button "⌘ K" [ref=e51] [cursor=pointer]:
+            - img
+            - generic [ref=e52]:
+              - generic "Command" [ref=e53]: ⌘
+              - generic [ref=e54]: K
+          - generic [ref=e55]:
+            - button "Select tenant Filter by tenant" [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]: Select tenant
+              - img [ref=e58]
+            - combobox [ref=e62]
+          - button "Toggle theme" [ref=e63] [cursor=pointer]:
+            - img
+          - generic [ref=e64]:
+            - button "Notifications" [ref=e65] [cursor=pointer]:
+              - img
+            - generic [ref=e66]: "3"
+          - button "S Super Admin" [ref=e67] [cursor=pointer]:
+            - generic [ref=e69]: S
+            - generic [ref=e70]: Super Admin
+            - img [ref=e71]
+      - main [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - heading "Users" [level=1] [ref=e77]
+              - paragraph [ref=e78]: Manage user accounts and permissions
+            - button "Create User" [ref=e79] [cursor=pointer]
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e84]:
+                - paragraph [ref=e85]: "0"
+                - paragraph [ref=e86]: Total Users
+              - img [ref=e87]
+            - generic [ref=e90]:
+              - generic [ref=e93]:
+                - paragraph [ref=e94]: "0"
+                - paragraph [ref=e95]: Active
+              - img [ref=e96]
+            - generic [ref=e99]:
+              - generic [ref=e102]:
+                - paragraph [ref=e103]: "0"
+                - paragraph [ref=e104]: Banned
+              - img [ref=e105]
+          - generic [ref=e108]:
+            - generic [ref=e110]:
+              - textbox "Search users..." [ref=e112]
+              - tablist [ref=e114]:
+                - tab "All" [selected] [ref=e115] [cursor=pointer]
+                - tab "Active" [ref=e116] [cursor=pointer]
+                - tab "Banned" [ref=e117] [cursor=pointer]
+            - generic [ref=e118]: Loading users...

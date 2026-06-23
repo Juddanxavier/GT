@@ -2,8 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { Button, Card } from '@heroui/react';
+import { usePageTitle } from '@/lib/use-page-title';
 
 export default function UnauthorizedPage() {
+  usePageTitle('Access Denied');
   const router = useRouter();
 
   return (

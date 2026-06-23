@@ -44,12 +44,19 @@ export function canAccess(
     }
   }
 
-  // Staff are scoped to their branch (can also see org-wide data)
-  if (user.role === 'staff' && user.branchId && resource.branchId) {
-    // Staff can see their own branch's data
-    if (resource.branchId !== user.branchId) {
-      // But also allow if it's within their org (no branch filter = org-wide)
-      // If branchId filter specifically doesn't match, deny
+  // Staff / tenant-admin with branch override are scoped to that branch.
+  // A tenant-admin's user.branchId is their home assignment, not a scope limit.
+
+  // Superadmin with override is not branch-filtered (branchId comes from tenant, not branch)
+  if (user.role !== 'superadmin' && user.overrideBranchId) {
+    if (resource.branchId && resource.branchId !== user.overrideBranchId) {
+      return false;
+    }
+  }
+
+  // Staff (without override) are always scoped to their assigned branch
+  if (user.role === 'staff' && !user.overrideBranchId && user.branchId) {
+    if (resource.branchId && resource.branchId !== user.branchId) {
       return false;
     }
   }
@@ -75,6 +82,7 @@ export function queryScope(user: PermissionContext): {
   ownerId?: string;
 } {
   const effectiveTenantId = user.overrideTenantId ?? user.tenantId;
+  const effectiveBranchId = user.overrideBranchId ?? user.branchId;
 
   switch (user.role) {
     case 'superadmin':
@@ -85,10 +93,14 @@ export function queryScope(user: PermissionContext): {
       // Superadmin without override sees all
       return {};
     case 'tenant-admin':
+      return {
+        tenantId: effectiveTenantId ?? undefined,
+        ...(user.overrideBranchId ? { branchId: user.overrideBranchId } : {}),
+      };
     case 'staff':
       return {
         tenantId: effectiveTenantId ?? undefined,
-        branchId: user.branchId ?? undefined,
+        branchId: effectiveBranchId ?? undefined,
       };
     case 'customer':
       return { ownerId: user.userId };

@@ -1,31 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Chip, Input, Label, Modal, Pagination, Table, Tabs, cn, type SortDescriptor } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUsers, useTenants, useBranches, useBranchesForTenant, useUpdateUser, useDeleteUser, type UserRecord, type ApiBranch } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, cn, type SortDescriptor } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
-import { api } from '@/lib/api';
 import { Pencil, Trash2, Ban, ShieldOff, ChevronDown, CircleX, Check } from 'lucide-react';
-
-type UserRecord = {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image: string | null;
-  role: string;
-  banned: boolean | null;
-  banReason: string | null;
-  banExpires: string | null;
-  tenantId: string | null;
-  branchId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
 
 type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
 
-const ROLE_OPTIONS = ['superadmin', 'admin', 'tenant-admin', 'staff', 'customer'] as const;
+const SUPERADMIN_CREATE_ROLES = ['superadmin', 'tenant-admin', 'staff'];
+const TENANT_ADMIN_CREATE_ROLES = ['staff'];
+const EDIT_ROLES = ['tenant-admin', 'staff', 'customer'];
 
 const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> = {
   superadmin: 'accent',
@@ -53,11 +41,14 @@ function TrashIcon() { return <Trash2 size={16} />; }
 function BanIcon() { return <Ban size={16} />; }
 function UnbanIcon() { return <ShieldOff size={16} />; }
 export default function UsersPage() {
+  usePageTitle('Users');
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: users = [], isLoading } = useUsers();
+  const { data: tenants = [] } = useTenants();
+  const { data: branches = [] } = useBranches();
+  const { mutateAsync: updateUser } = useUpdateUser();
+  const { mutateAsync: deleteUser } = useDeleteUser();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' });
   const [page, setPage] = useState(1);
@@ -65,12 +56,17 @@ export default function UsersPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createSaving, setCreateSaving] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState('customer');
-  const [newTenantId, setNewTenantId] = useState('');
-  const [newBranchId, setNewBranchId] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createName, setCreateName] = useState('');
+  const [createRole, setCreateRole] = useState('staff');
+  const [createTenantId, setCreateTenantId] = useState('');
+  const [createBranchId, setCreateBranchId] = useState('');
+
+  const { data: session } = authClient.useSession();
+  const sessionUser = session?.user as Record<string, unknown> | undefined;
+  const sessionTenantId = (sessionUser?.tenantId as string) ?? '';
+  const isTenantAdmin = userRole === 'tenant-admin';
 
   const [editTarget, setEditTarget] = useState<UserRecord | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -92,25 +88,7 @@ export default function UsersPage() {
       const role = (res.data?.user as Record<string, unknown> | undefined)?.role as string | undefined;
       setUserRole(role ?? null);
     });
-    load();
   }, []);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const [tenantsData, branchesData] = await Promise.all([
-        api.get<Tenant[]>('/api/tenants').catch(() => []),
-        api.get<Branch[]>('/api/branches').catch(() => []),
-      ]);
-      setTenants(tenantsData);
-      setBranches(branchesData);
-    } catch { /* silent */ }
-    try {
-      const res = await api.get<UserRecord[]>('/api/users');
-      setUsers(res);
-    } catch { /* silent */ }
-    setLoading(false);
-  }
 
   const filtered = useMemo(() => {
     let items = [...users];
@@ -147,34 +125,12 @@ export default function UsersPage() {
   const start = (page - 1) * ROWS_PER_PAGE + 1;
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
-  const filteredBranches = branches.filter((b) => !newTenantId || b.tenantId === newTenantId);
+  const effectiveTenantId = createTenantId || (isTenantAdmin ? sessionTenantId : '');
+  const { data: createBranches = [] } = useBranchesForTenant(effectiveTenantId);
   const editFilteredBranches = branches.filter((b) => !editTenantId || b.tenantId === editTenantId);
 
   const activeCount = users.filter((u) => !u.banned).length;
   const bannedCount = users.filter((u) => u.banned).length;
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setCreateSaving(true);
-    try {
-      const data: Record<string, unknown> = {};
-      if (newTenantId) data.tenantId = newTenantId;
-      if (newBranchId) data.branchId = newBranchId;
-      await (authClient.admin.createUser as (args: Record<string, unknown>) => Promise<unknown>)({
-        email: newEmail,
-        password: newPassword,
-        name: newName,
-        role: newRole,
-        data,
-      });
-      setCreateOpen(false);
-      setNewEmail(''); setNewPassword(''); setNewName(''); setNewRole('customer'); setNewTenantId(''); setNewBranchId('');
-      await load();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to create user');
-    }
-    setCreateSaving(false);
-  }
 
   function openEdit(user: UserRecord) {
     setEditTarget(user);
@@ -194,12 +150,11 @@ export default function UsersPage() {
       if (userRole === 'superadmin' || userRole === 'tenant-admin') data.role = editRole;
       if (userRole === 'superadmin') data.tenantId = editTenantId;
       data.branchId = editBranchId;
-      await api.patch(`/api/users/${editTarget.id}`, data);
+      await updateUser({ id: editTarget.id, ...data });
       if (editPassword) {
         await authClient.admin.setUserPassword({ userId: editTarget.id, newPassword: editPassword });
       }
       setEditTarget(null);
-      await load();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to update user');
     }
@@ -220,11 +175,21 @@ export default function UsersPage() {
         await authClient.admin.banUser({ userId: banTarget.id, banReason: 'Banned by admin' });
       }
       setBanTarget(null);
-      await load();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed');
     }
     setBanSaving(false);
+  }
+
+  const sessionUserId = (sessionUser?.id as string) ?? '';
+  const sessionUserRole = (sessionUser?.role as string) ?? '';
+
+  function canDeleteTarget(target: UserRecord): boolean {
+    if (target.id === sessionUserId) return false;
+    if (sessionUserRole === 'superadmin') return true;
+    if (sessionUserRole === 'tenant-admin') return target.role === 'staff' || target.role === 'customer';
+    return false;
   }
 
   function openDelete(user: UserRecord) {
@@ -235,9 +200,8 @@ export default function UsersPage() {
     if (!deleteTarget) return;
     setDeleteSaving(true);
     try {
-      await api.delete(`/api/users/${deleteTarget.id}`);
+      await deleteUser(deleteTarget.id);
       setDeleteTarget(null);
-      await load();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to delete user');
     }
@@ -246,13 +210,20 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-          <p className="text-sm text-muted">Manage user accounts and permissions</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+            <p className="text-sm text-muted">Manage user accounts and permissions</p>
+          </div>
+          {userRole !== 'staff' && (
+            <Button onPress={() => {
+              setCreateEmail(''); setCreateName(''); setCreateRole('staff'); setCreateError('');
+              setCreateTenantId(isTenantAdmin ? sessionTenantId : '');
+              setCreateBranchId('');
+              setCreateOpen(true);
+            }}>Create User</Button>
+          )}
         </div>
-        <Button onPress={() => { setNewEmail(''); setNewPassword(''); setNewName(''); setNewRole('customer'); setNewTenantId(''); setNewBranchId(''); setCreateOpen(true); }}>Create User</Button>
-      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
@@ -315,11 +286,23 @@ export default function UsersPage() {
             </Tabs>
           </div>
         </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-20 text-sm text-muted">Loading users...</div>
+        {isLoading ? (
+          <div className="space-y-3 py-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4">
+                <div className="w-7 h-7 rounded-full bg-accent/10 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-accent/10 rounded animate-pulse w-1/3" />
+                  <div className="h-3 bg-accent/10 rounded animate-pulse w-1/2" />
+                </div>
+                <div className="h-6 w-16 bg-accent/10 rounded animate-pulse" />
+                <div className="h-6 w-20 bg-accent/10 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
         ) : (
           <Table>
-            <Table.ScrollContainer className="min-h-[300px]">
+            <Table.ScrollContainer>
               <Table.Content aria-label="Users" className="min-w-[950px]"
                 sortDescriptor={sortDescriptor}
                 onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
@@ -336,7 +319,7 @@ export default function UsersPage() {
                   <Table.Column id="tenantId">Tenant</Table.Column>
                   <Table.Column id="branchId">Branch</Table.Column>
                   <Table.Column id="banned">Status</Table.Column>
-                  <Table.Column id="actions" width={100}>{() => null}</Table.Column>
+                  {userRole !== 'staff' && <Table.Column id="actions" width={100}>{() => null}</Table.Column>}
                 </Table.Header>
                 <Table.Body
                   renderEmptyState={() => (
@@ -376,19 +359,23 @@ export default function UsersPage() {
                           </span>
                         )}
                       </Table.Cell>
-                      <Table.Cell>
-                        <div className="flex items-center gap-0.5">
-                          <Button size="sm" variant="ghost" className="text-warning" onPress={() => openEdit(user)}>
-                            <EditIcon />
-                          </Button>
-                          <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger'} onPress={() => openBan(user)}>
-                            {user.banned ? <UnbanIcon /> : <BanIcon />}
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-danger" onPress={() => openDelete(user)}>
-                            <TrashIcon />
-                          </Button>
-                        </div>
-                      </Table.Cell>
+                      {userRole !== 'staff' && (
+                        <Table.Cell>
+                          <div className="flex items-center gap-0.5">
+                            <Button size="sm" variant="ghost" className="text-warning" onPress={() => openEdit(user)}>
+                              <EditIcon />
+                            </Button>
+                            <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger'} onPress={() => openBan(user)}>
+                              {user.banned ? <UnbanIcon /> : <BanIcon />}
+                            </Button>
+                            {canDeleteTarget(user) && (
+                              <Button size="sm" variant="ghost" className="text-danger" onPress={() => openDelete(user)}>
+                                <TrashIcon />
+                              </Button>
+                            )}
+                          </div>
+                        </Table.Cell>
+                      )}
                     </Table.Row>
                   ))}
                 </Table.Body>
@@ -420,53 +407,126 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Create Modal */}
+      {/* Create User Modal */}
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(v) => { if (!v) setCreateOpen(false); }}>
         <Modal.Container>
           <Modal.Dialog>
             <Modal.Header>Create User</Modal.Header>
             <Modal.Body>
-              <form id="create-user-form" onSubmit={handleCreate} className="space-y-4">
+              <form id="create-user-form" onSubmit={async (e) => {
+                e.preventDefault();
+                setCreateError('');
+                if (!createEmail.trim()) { setCreateError('Email is required'); return; }
+                setCreateSaving(true);
+                try {
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/users/create`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      email: createEmail.trim(),
+                      name: createName.trim() || undefined,
+                      role: createRole,
+                      tenantId: createTenantId || undefined,
+                      branchId: createBranchId || undefined,
+                    }),
+                  });
+                  const body = await res.json();
+                  if (!res.ok) throw new Error(body.error || 'Failed to create user');
+                  setCreateOpen(false);
+                  setCreateEmail(''); setCreateName(''); setCreateRole('staff'); setCreateTenantId(''); setCreateBranchId('');
+                  queryClient.invalidateQueries({ queryKey: ['users'] });
+                } catch (err) {
+                  setCreateError(err instanceof Error ? err.message : 'Failed to create user');
+                }
+                setCreateSaving(false);
+              }} className="space-y-4">
+                {createError && <p className="text-sm text-danger">{createError}</p>}
                 <div className="space-y-1">
-                  <Label htmlFor="new-name">Name *</Label>
-                  <Input id="new-name" variant="secondary" value={newName} onChange={(e) => setNewName(e.target.value)} required fullWidth />
+                  <Label htmlFor="create-email">Email *</Label>
+                  <Input id="create-email" type="email" variant="secondary" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} required fullWidth />
+                  <Description>An activation email will be sent to this address</Description>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="new-email">Email *</Label>
-                  <Input id="new-email" type="email" variant="secondary" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required fullWidth />
+                  <Label htmlFor="create-name">Name</Label>
+                  <Input id="create-name" variant="secondary" value={createName} onChange={(e) => setCreateName(e.target.value)} fullWidth />
+                  <Description>Display name for the user</Description>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="new-password">Password *</Label>
-                  <Input id="new-password" type="password" variant="secondary" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required fullWidth />
+                  <Label>Role</Label>
+                  <Select
+                    selectedKey={createRole}
+                    onSelectionChange={(k) => { setCreateRole(k as string); if (k === 'tenant-admin') setCreateBranchId(''); }}
+                    variant="secondary"
+                    aria-label="Select role"
+                  >
+                    <Select.Trigger className="h-10 text-sm">
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {(userRole === 'superadmin' ? SUPERADMIN_CREATE_ROLES : TENANT_ADMIN_CREATE_ROLES).map((r) => (
+                          <ListBox.Item key={r} id={r} textValue={r}>{r}</ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <Description>Controls what the user can access</Description>
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-role">Role</Label>
-                  <select id="new-role" value={newRole} onChange={(e) => setNewRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    {ROLE_OPTIONS.filter((r) => userRole === 'superadmin' ? true : !['superadmin', 'admin'].includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-tenantId">Tenant</Label>
-                  <select id="new-tenantId" value={newTenantId} onChange={(e) => { setNewTenantId(e.target.value); setNewBranchId(''); }}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">None</option>
-                    {tenants.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-branchId">Branch</Label>
-                  <select id="new-branchId" value={newBranchId} onChange={(e) => setNewBranchId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">None</option>
-                    {filteredBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
+                {userRole === 'superadmin' && createRole !== 'superadmin' && (
+                  <div className="space-y-1">
+                    <Label>Tenant</Label>
+                    <Select
+                      selectedKey={createTenantId}
+                      onSelectionChange={(k) => { setCreateTenantId(k as string); setCreateBranchId(''); }}
+                      variant="secondary"
+                      aria-label="Select tenant"
+                    >
+                      <Select.Trigger className="h-10 text-sm">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {tenants.map((t: Tenant) => (
+                            <ListBox.Item key={t.id} id={t.id} textValue={t.name}>{t.name}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Description>Which organization this user belongs to</Description>
+                  </div>
+                )}
+                {createRole !== 'tenant-admin' && createRole !== 'superadmin' && (
+                  <div className="space-y-1">
+                    <Label>Branch</Label>
+                    <Select
+                      selectedKey={createBranchId || undefined}
+                      onSelectionChange={(k) => setCreateBranchId((k as string) ?? '')}
+                      variant="secondary"
+                      aria-label="Select branch"
+                    >
+                      <Select.Trigger className="h-10 text-sm">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
+                          {createBranches.map((b: ApiBranch) => (
+                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                )}
               </form>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-user-form" isPending={createSaving}>Create</Button>
+              <Button type="submit" form="create-user-form" isPending={createSaving}>Create User</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
@@ -493,30 +553,72 @@ export default function UsersPage() {
                 </div>
                 {(userRole === 'superadmin' || userRole === 'tenant-admin') && (
                   <div className="space-y-1">
-                    <Label htmlFor="edit-role">Role</Label>
-                    <select id="edit-role" value={editRole} onChange={(e) => setEditRole(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                      {ROLE_OPTIONS.filter((r) => userRole === 'superadmin' ? true : !['superadmin', 'admin'].includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <Label>Role</Label>
+                    <Select
+                      selectedKey={editRole}
+                      onSelectionChange={(k) => setEditRole(k as string)}
+                      variant="secondary"
+                      aria-label="Select role"
+                    >
+                      <Select.Trigger className="h-10 text-sm">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {EDIT_ROLES.filter((r) => userRole === 'superadmin' ? true : !['superadmin'].includes(r)).map((r) => (
+                            <ListBox.Item key={r} id={r} textValue={r}>{r}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
                   </div>
                 )}
                 {userRole === 'superadmin' && (
                   <div className="space-y-1">
-                    <Label htmlFor="edit-tenantId">Tenant</Label>
-                    <select id="edit-tenantId" value={editTenantId} onChange={(e) => { setEditTenantId(e.target.value); setEditBranchId(''); }}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                      <option value="">None</option>
-                      {tenants.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                    <Label>Tenant</Label>
+                    <Select
+                      selectedKey={editTenantId}
+                      onSelectionChange={(k) => { setEditTenantId(k as string); setEditBranchId(''); }}
+                      variant="secondary"
+                      aria-label="Select tenant"
+                    >
+                      <Select.Trigger className="h-10 text-sm">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
+                          {tenants.map((t: Tenant) => (
+                            <ListBox.Item key={t.id} id={t.id} textValue={t.name}>{t.name}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
                   </div>
                 )}
                 <div className="space-y-1">
-                  <Label htmlFor="edit-branchId">Branch</Label>
-                  <select id="edit-branchId" value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">None</option>
-                    {editFilteredBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                  <Label>Branch</Label>
+                  <Select
+                    selectedKey={editBranchId || undefined}
+                    onSelectionChange={(k) => setEditBranchId((k as string) ?? '')}
+                    variant="secondary"
+                    aria-label="Select branch"
+                  >
+                    <Select.Trigger className="h-10 text-sm">
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
+                        {editFilteredBranches.map((b) => (
+                          <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
               </form>
             </Modal.Body>

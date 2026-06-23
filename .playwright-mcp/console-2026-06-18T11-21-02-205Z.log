@@ -1,0 +1,16 @@
+[     258ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     424ms] [LOG] [Fast Refresh] done in 273ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     765ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     848ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1012ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1347ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "username"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/onboard?token=f8a53ea1-576a-4ce4-8b3b-3267a8dc9168:0
+[    2988ms] [LOG] [Fast Refresh] done in 2090ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  120294ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/onboard/complete:0
+[  286348ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  286383ms] [LOG] [Fast Refresh] done in 141ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  303320ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  311638ms] [LOG] [Fast Refresh] done in 8423ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  311755ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  317978ms] [LOG] [Fast Refresh] done in 6333ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  434072ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  434143ms] [LOG] [Fast Refresh] done in 178ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477

@@ -12,11 +12,16 @@ export async function checkAndSetIdempotency(
     return false;
   }
 
-  const key = `idempotent:${channel}:${shipmentId}:${eventId}`;
-  const result = await cacheClient.setnx(key, '1');
-  if (result === 1) {
-    await cacheClient.expire(key, IDEMPOTENCY_TTL);
+  try {
+    const key = `idempotent:${channel}:${shipmentId}:${eventId}`;
+    const result = await cacheClient.setnx(key, '1');
+    if (result === 1) {
+      await cacheClient.expire(key, IDEMPOTENCY_TTL);
+      return false;
+    }
+    return true;
+  } catch {
+    console.warn('[idempotency] Redis error — allowing (skipping dedup)');
     return false;
   }
-  return true;
 }

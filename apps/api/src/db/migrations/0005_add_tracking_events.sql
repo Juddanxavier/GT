@@ -18,4 +18,5 @@ CREATE INDEX IF NOT EXISTS "tracking_event_shipment_idx" ON "tracking_event" ("s
 CREATE INDEX IF NOT EXISTS "tracking_event_tenant_idx" ON "tracking_event" ("tenant_id");
 CREATE INDEX IF NOT EXISTS "tracking_event_status_idx" ON "tracking_event" ("status");
 
+ALTER TABLE "tracking_event" DROP CONSTRAINT IF EXISTS "tracking_event_dedup";
 ALTER TABLE "tracking_event" ADD CONSTRAINT "tracking_event_dedup" UNIQUE ("shipment_id", "event_time", "sub_status");

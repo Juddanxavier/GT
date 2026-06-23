@@ -2,13 +2,19 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Avatar, Button, Chip, Dropdown, Tooltip } from '@heroui/react';
-import { LayoutDashboard, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
+import { Modal } from '@heroui/react/modal';
+import { BarChart3, HelpCircle, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Search, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronDown, Bell, LogOut, Menu, User } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
+import { useTenants, useDashboardBranches } from '@/lib/queries';
+import { SearchDialog } from '@/components/search-dialog';
 
 const ALLOWED_ROLES = ['superadmin', 'tenant-admin', 'staff'];
 
-function NavItems() {
+function NavItems(role?: string) {
   const items = [
     {
       href: '/',
@@ -20,11 +26,11 @@ function NavItems() {
       label: 'Users',
       icon: <Users size={18} />,
     },
-    {
+    ...(role !== 'staff' ? [{
       href: '/branches',
       label: 'Branches',
       icon: <Building2 size={18} />,
-    },
+    }] : []),
     {
       href: '/shipments',
       label: 'Shipments',
@@ -40,27 +46,34 @@ function NavItems() {
       label: 'Invoices',
       icon: <Receipt size={18} />,
     },
+    {
+      href: '/reports',
+      label: 'Reports',
+      icon: <BarChart3 size={18} />,
+    },
   ];
   return items;
 }
 
 
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false },
+  },
+});
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { data: session, isPending } = authClient.useSession();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
     if (stored === 'dark' || stored === 'light') {
-      setTheme(stored);
       document.documentElement.setAttribute('data-theme', stored);
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
       document.documentElement.setAttribute('data-theme', 'dark');
     }
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -74,11 +87,99 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (!ALLOWED_ROLES.includes(userRole)) router.push('/unauthorized');
   }, [session, isPending, router]);
 
+  const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
+
+  if (isPending) return <div className="flex items-center justify-center min-h-screen"><p className="text-muted">Loading...</p></div>;
+  if (!session) return null;
+  if (!ALLOWED_ROLES.includes(userRole ?? '')) {
+    router.push('/unauthorized');
+    return null;
+  }
+
+  const isSuperadmin = userRole === 'superadmin';
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TenantFilterProvider>
+        <DashboardLayoutInner isSuperadmin={isSuperadmin} session={session} userRole={userRole!} sidebarOpen={sidebarOpen} collapsed={collapsed} setSidebarOpen={setSidebarOpen} setCollapsed={setCollapsed}>
+          {children}
+        </DashboardLayoutInner>
+      </TenantFilterProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+function useIdleTimeout() {
+  const router = useRouter();
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    function reset() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        authClient.signOut().then(() => router.push('/login'));
+      }, SESSION_TIMEOUT_MS);
+    }
+    const events = ['mousedown', 'keydown', 'mousemove', 'touchstart', 'scroll'] as const;
+    for (const e of events) document.addEventListener(e, reset);
+    reset();
+    return () => {
+      clearTimeout(timer);
+      for (const e of events) document.removeEventListener(e, reset);
+    };
+  }, [router]);
+}
+
+function DashboardLayoutInner({
+  children, isSuperadmin, session, userRole, sidebarOpen, collapsed, setSidebarOpen, setCollapsed,
+}: {
+  children: ReactNode; isSuperadmin: boolean; session: NonNullable<ReturnType<typeof authClient.useSession>['data']>; userRole: string;
+  sidebarOpen: boolean; collapsed: boolean; setSidebarOpen: (v: boolean) => void; setCollapsed: (v: boolean | ((prev: boolean) => boolean)) => void;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { tenantFilter, branchFilter, setTenant, setBranch } = useTenantFilter();
+  const { data: tenants = [] } = useTenants();
+  const { data: branches = [] } = useDashboardBranches();
+  const [confirmTenant, setConfirmTenant] = useState<{ id: string; name: string } | null>(null);
+  const [confirmBranch, setConfirmBranch] = useState<{ id: string; name: string } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const navItems = useMemo(() => NavItems(userRole), [userRole]);
+
+  useIdleTimeout();
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (isSuperadmin && tenants.length > 0 && !tenantFilter && tenants[0]) {
+      setTenant(tenants[0].id);
+    }
+  }, [isSuperadmin, tenants, tenantFilter, setTenant]);
+
   function toggleTheme() {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+  }
+
+  function handleSignOut() {
+    localStorage.removeItem('tenantFilter');
+    localStorage.removeItem('branchFilter');
+    authClient.signOut().then(() => router.push('/login'));
   }
 
   function toggleCollapsed() {
@@ -88,17 +189,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       return next;
     });
   }
-
-  function handleSignOut() {
-    authClient.signOut().then(() => router.push('/login'));
-  }
-
-  const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
-  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
-  const navItems = useMemo(() => NavItems(), []);
-
-  if (isPending) return <div className="flex items-center justify-center min-h-screen"><p className="text-muted">Loading...</p></div>;
-  if (!session || !ALLOWED_ROLES.includes(userRole ?? '')) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -124,8 +214,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             const btn = (
               <Button
                 key={item.href}
-                variant={isActive(item.href) ? 'primary' : 'ghost'}
-                className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start'} ${isActive(item.href) ? '' : 'text-foreground'}`}
+                variant={isActive(item.href) ? 'tertiary' : 'ghost'}
+                className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start'} ${isActive(item.href) ? 'bg-accent/10 text-accent' : 'text-foreground'}`}
                 onPress={() => { router.push(item.href); setSidebarOpen(false); }}
               >
                 <span className={collapsed ? '' : 'mr-2'}>{item.icon}</span>
@@ -136,7 +226,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             if (collapsed) {
               return (
                 <Tooltip key={item.href}>
-                  <Tooltip.Trigger>{btn}</Tooltip.Trigger>
+                  <Tooltip.Trigger className="flex w-full">{btn}</Tooltip.Trigger>
                   <Tooltip.Content placement="right">{item.label}</Tooltip.Content>
                 </Tooltip>
               );
@@ -145,34 +235,51 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className={`flex items-center border-t border-border ${collapsed ? 'flex-col justify-center py-2 px-0' : 'justify-between px-4 py-3'}`}>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{session.user.name}</p>
-              <p className="text-xs text-muted truncate">{session.user.email}</p>
-            </div>
-          )}
-          {!collapsed && (
-            <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme">
-              {theme === 'light' ? (
-<Moon size={16} />
-              ) : (
-<Sun size={16} />
-              )}
-            </Button>
-          )}
-          <Tooltip>
-            <Tooltip.Trigger>
-              <Button size="sm" variant="ghost" onPress={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-                {collapsed ? (
-                  <ChevronRight size={16} />
-                ) : (
-                  <ChevronLeft size={16} />
-                )}
+        <div className="border-t border-border p-2 space-y-0.5">
+          {collapsed ? (
+            <>
+              <Tooltip>
+                <Tooltip.Trigger className="flex w-full">
+                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => setSearchOpen(true)}>
+                    <Search size={18} />
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content placement="right">Search</Tooltip.Content>
+              </Tooltip>
+              <Tooltip>
+                <Tooltip.Trigger className="flex w-full">
+                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => router.push('/profile')}>
+                    <User size={18} />
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content placement="right">Profile</Tooltip.Content>
+              </Tooltip>
+
+              <Tooltip>
+                <Tooltip.Trigger className="flex w-full">
+                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => {}}>
+                    <HelpCircle size={18} />
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content placement="right">Help</Tooltip.Content>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => setSearchOpen(true)}>
+                <Search size={18} className="mr-2" />
+                Search
               </Button>
-            </Tooltip.Trigger>
-            <Tooltip.Content placement="right">{collapsed ? 'Expand' : 'Collapse'}</Tooltip.Content>
-          </Tooltip>
+              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => router.push('/profile')}>
+                <User size={18} className="mr-2" />
+                Profile
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => {}}>
+                <HelpCircle size={18} className="mr-2" />
+                Help
+              </Button>
+            </>
+          )}
         </div>
       </aside>
 
@@ -181,6 +288,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top navbar */}
         <header className="flex items-center justify-between h-14 px-4 sm:px-6 border-b border-border bg-surface shrink-0">
           <div className="flex items-center gap-3">
+            <Button size="sm" variant="ghost" className="hidden md:inline-flex" onPress={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+              {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </Button>
             <Button size="sm" variant="ghost" className="md:hidden" onPress={() => setSidebarOpen(true)} aria-label="Open menu">
 <Menu size={18} />
             </Button>
@@ -189,34 +299,186 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-3 text-xs text-muted">
-              <span className="font-medium text-foreground">{(session.user as Record<string, unknown>).tenantName as string || '—'}</span>
-              <span className="opacity-40">|</span>
-              <span>{(session.user as Record<string, unknown>).branchName as string || 'No Branch'}</span>
-              <span className="opacity-40">|</span>
-              <Chip size="sm" variant="soft" color="accent" className="h-5">{(userRole as string).replace('-', ' ')}</Chip>
+            <Button size="sm" variant="ghost" className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground" onPress={() => setSearchOpen(true)}>
+              <Search size={16} />
+              <Kbd className="hidden lg:inline-flex">
+                <Kbd.Abbr keyValue="command" />
+                <Kbd.Content>K</Kbd.Content>
+              </Kbd>
+            </Button>
+            {isSuperadmin ? (
+              <Select
+                selectedKey={tenantFilter}
+                onSelectionChange={(k) => {
+                  const id = k as string;
+                  if (id === tenantFilter) return;
+                  const name = tenants.find((t) => t.id === id)?.name ?? 'this tenant';
+                  setConfirmTenant({ id, name });
+                }}
+                className="w-auto min-w-0"
+                placeholder="Select tenant"
+                aria-label="Filter by tenant"
+                variant="secondary"
+              >
+                <Select.Trigger className="h-8 text-xs">
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {tenants.map((t) => (
+                      <ListBox.Item key={t.id} id={t.id} textValue={t.name}>
+                        <div className="flex items-center gap-2">
+                          <Building2 size={16} className="text-muted" />
+                          {t.name}
+                        </div>
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            ) : null}
+            {userRole === 'tenant-admin' && (
+              <>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                  <Building2 size={14} className="text-muted" />
+                  {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
+                </span>
+                <Select
+                  selectedKey={branchFilter}
+                  onSelectionChange={(k) => {
+                    const id = k as string;
+                    if (id === branchFilter) return;
+                    const name = id ? branches.find((b) => b.id === id)?.name ?? 'this branch' : 'All Branches';
+                    setConfirmBranch({ id, name });
+                  }}
+                  className="w-auto min-w-0"
+                  placeholder="All Branches"
+                  aria-label="Filter by branch"
+                  variant="secondary"
+                >
+                  <Select.Trigger className="h-8 text-xs">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="" textValue="All Branches">
+                        <div className="flex items-center gap-2">
+                          <LayoutDashboard size={16} className="text-muted" />
+                          All Branches
+                        </div>
+                      </ListBox.Item>
+                      {branches.map((b) => (
+                        <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
+                          <div className="flex items-center gap-2">
+                            <Building2 size={16} className="text-muted" />
+                            {b.name}
+                          </div>
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </>
+            )}
+            {userRole === 'staff' && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                <Building2 size={14} className="text-muted" />
+                {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
+                <span className="text-muted">→</span>
+                {(session.user as Record<string, unknown>)?.branchName as string || 'Branch'}
+              </span>
+            )}
+            <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme" className="text-muted hover:text-foreground">
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            </Button>
+            <div className="relative">
+              <Button size="sm" variant="ghost" aria-label="Notifications" className="text-muted hover:text-foreground">
+                <Bell size={16} />
+              </Button>
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">3</span>
             </div>
             <Dropdown>
-              <Dropdown.Trigger className="inline-flex items-center justify-center rounded-full w-8 h-8 hover:bg-muted transition-colors outline-none">
-                <Avatar size="sm" color="accent" className="text-xs font-medium">
-                  <Avatar.Fallback>{(session.user.name ?? 'U').charAt(0).toUpperCase()}</Avatar.Fallback>
+              <Dropdown.Trigger className="flex items-center gap-2 rounded-full outline-none hover:bg-muted transition-colors px-1 py-1">
+                <Avatar size="md" className="rounded-full">
+                  <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
                 </Avatar>
+                <span className="text-sm font-medium hidden sm:inline">{session.user.name}</span>
+                <ChevronDown size={14} className="text-muted hidden sm:block" />
               </Dropdown.Trigger>
-              <Dropdown.Menu>
-                <Dropdown.Section>
-                  <div className="px-3 py-2 min-w-0">
-                    <p className="text-sm font-medium truncate">{session.user.name}</p>
-                    <p className="text-xs text-muted truncate">{session.user.email}</p>
-                    <Chip size="sm" variant="soft" color="accent" className="mt-1">{userRole}</Chip>
+              <Dropdown.Popover>
+                <div className="px-3 pt-3 pb-1">
+                  <div className="flex items-center gap-2">
+                    <Avatar size="md" className="rounded-full">
+                      <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0">
+                      <p className="text-sm leading-5 font-medium">{session.user.name}</p>
+                      <p className="text-xs leading-none text-muted">{session.user.email}</p>
+                    </div>
                   </div>
-                </Dropdown.Section>
-                <Dropdown.Section>
-                  <Dropdown.Item onPress={handleSignOut}>Sign out</Dropdown.Item>
-                </Dropdown.Section>
-              </Dropdown.Menu>
+                </div>
+                <Dropdown.Menu>
+                  <Dropdown.Item id="profile" textValue="Profile" onPress={() => router.push('/profile')}>
+                    <User size={16} />
+                    <Label>Profile</Label>
+                  </Dropdown.Item>
+                  <Dropdown.Item id="signout" textValue="Sign out" variant="danger" onPress={handleSignOut}>
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <Label>Sign out</Label>
+                      <LogOut size={14} className="text-danger" />
+                    </div>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
             </Dropdown>
           </div>
         </header>
+
+        {/* Tenant switch confirmation */}
+        <Modal.Backdrop isOpen={!!confirmTenant} onOpenChange={(open) => { if (!open) setConfirmTenant(null); }}>
+          <Modal.Container>
+            <Modal.Dialog>
+              <Modal.Header>Switch Tenant</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-muted">
+                  Switch to <strong>{confirmTenant?.name}</strong>? Data on all pages will refresh to show that tenant's information.
+                </p>
+              </Modal.Body>
+              <Modal.Footer className="flex gap-2">
+                <Button variant="ghost" onPress={() => setConfirmTenant(null)}>Cancel</Button>
+                <Button variant="primary" onPress={() => {
+                  if (confirmTenant) setTenant(confirmTenant.id);
+                  setConfirmTenant(null);
+                }}>Switch</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+
+        {/* Branch switch confirmation */}
+        <Modal.Backdrop isOpen={!!confirmBranch} onOpenChange={(open) => { if (!open) setConfirmBranch(null); }}>
+          <Modal.Container>
+            <Modal.Dialog>
+              <Modal.Header>Switch Branch</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-muted">
+                  Switch to <strong>{confirmBranch?.name}</strong>? Data on all pages will refresh to show that branch's information.
+                </p>
+              </Modal.Body>
+              <Modal.Footer className="flex gap-2">
+                <Button variant="ghost" onPress={() => setConfirmBranch(null)}>Cancel</Button>
+                <Button variant="primary" onPress={() => {
+                  if (confirmBranch) setBranch(confirmBranch.id);
+                  setConfirmBranch(null);
+                }}>Switch</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+
+        <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           {children}

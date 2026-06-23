@@ -8,12 +8,12 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// For production, use connection pooling with PgBouncer-compatible URL
 const client = postgres(connectionString, {
-  max: 10, // Pool size
+  max: Number(process.env.DB_POOL_MAX) || 50,
   ssl: connectionString.includes('localhost') ? false : 'require',
 });
 
+export { client };
 export const db = drizzle(client, { schema });
 
 export type DbClient = typeof db;

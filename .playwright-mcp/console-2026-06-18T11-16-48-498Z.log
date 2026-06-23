@@ -1,0 +1,59 @@
+[    1288ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1592ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1836ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1927ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[    4813ms] [LOG] [Fast Refresh] done in 3119ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    5137ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    5232ms] [LOG] [Fast Refresh] done in 200ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   12599ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   12664ms] [LOG] [Fast Refresh] done in 169ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   12806ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   12878ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14046ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14049ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14079ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14081ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14477ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[   14480ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14481ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14487ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14488ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14931ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14932ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14949ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   14950ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   15002ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   15004ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   15034ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   15036ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   15657ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[   17804ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[   21356ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:3001/api/users/create:0
+[   21900ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[   54585ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:3001/api/users/create:0
+[   73264ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/users/create:0
+[   97505ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97514ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97629ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97632ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97804ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97807ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97873ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   97876ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  100898ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  102930ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  105952ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  110091ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  113304ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  117456ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  120642ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  124809ms] [ERROR] WebSocket connection to 'ws://localhost:3001/socket.io/?tenantId=null&EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules__pnpm_00qinpf._.js:20858
+[  127340ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3001/api/users/create:0
+[  129863ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129865ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129884ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129886ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129933ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129934ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129960ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  129961ms] [WARNING] If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477

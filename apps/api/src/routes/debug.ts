@@ -7,7 +7,7 @@ import { requireRole } from '../middleware/authorization';
 
 const app = new Hono();
 
-app.post('/fire-notification', async (c) => {
+app.post('/fire-notification', requireRole('superadmin'), async (c) => {
   const { shipmentId, eventType } = await c.req.json<{
     shipmentId: string;
     eventType: 'InfoReceived' | 'InTransit' | 'OutForDelivery' | 'Delivered' | 'Exception';

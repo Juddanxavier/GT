@@ -36,7 +36,11 @@ export const branches = pgTable('branch', {
     .references(() => tenants.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+},
+  (table) => ({
+    branchTenantIdx: index('branch_tenant_idx').on(table.tenantId),
+  }),
+);
 
 export const tenantDomains = pgTable('tenant_domain', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -54,7 +58,7 @@ export const customers = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }),
+    email: varchar('email', { length: 255 }).unique(),
     phone: varchar('phone', { length: 50 }),
     address: text('address'),
     isActive: boolean('is_active').notNull().default(true),
@@ -138,15 +142,18 @@ export const trackingEvents = pgTable(
     details: text('details'),
     eventTime: timestamp('event_time').notNull(),
     raw: jsonb('raw').notNull().default('{}'),
+    branchId: uuid('branch_id').references(() => branches.id, { onDelete: 'set null' }),
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'restrict' }),
+    archivedAt: timestamp('archived_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
     trackingEventShipmentIdx: index('tracking_event_shipment_idx').on(table.shipmentId),
     trackingEventTenantIdx: index('tracking_event_tenant_idx').on(table.tenantId),
     trackingEventStatusIdx: index('tracking_event_status_idx').on(table.status),
+    trackingEventBranchIdx: index('tracking_event_branch_idx').on(table.branchId),
     trackingEventDedup: unique('tracking_event_dedup').on(
       table.shipmentId,
       table.eventTime,
@@ -177,12 +184,15 @@ export const shipments = pgTable(
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'restrict' }),
+    courierCode: varchar('courier_code', { length: 50 }),
+    customerName: varchar('customer_name', { length: 255 }),
     contactEmail: varchar('contact_email', { length: 255 }),
     contactPhone: varchar('contact_phone', { length: 50 }),
     trackingRegistered: boolean('tracking_registered').notNull().default(false),
     lastTrackedAt: timestamp('last_tracked_at'),
     trackingProvider: varchar('tracking_provider', { length: 50 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    archivedAt: timestamp('archived_at'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -190,6 +200,11 @@ export const shipments = pgTable(
     shipmentCustomerIdx: index('shipment_customer_idx').on(table.customerId),
     shipmentStatusIdx: index('shipment_status_idx').on(table.status),
     shipmentTrackingIdx: index('shipment_tracking_idx').on(table.trackingNo),
+    shipmentTenantTrackingUnique: unique('shipment_tenant_tracking_unique').on(
+      table.tenantId,
+      table.trackingNo,
+    ),
+    shipmentBranchIdx: index('shipment_branch_idx').on(table.branchId),
   }),
 );
 
@@ -206,7 +221,6 @@ export const invoices = pgTable(
       .notNull()
       .references(() => shipments.id, { onDelete: 'restrict' }),
     customerId: uuid('customer_id')
-      .notNull()
       .references(() => customers.id, { onDelete: 'restrict' }),
     invoiceNo: varchar('invoice_no', { length: 50 }).notNull(),
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
@@ -214,14 +228,18 @@ export const invoices = pgTable(
     notes: text('notes'),
     emailCount: integer('email_count').notNull().default(1),
     lastEmailSentAt: timestamp('last_email_sent_at').notNull().defaultNow(),
-    paidAt: timestamp('paid_at').notNull().defaultNow(),
+    paidAt: timestamp('paid_at'),
+    branchId: uuid('branch_id').references(() => branches.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    archivedAt: timestamp('archived_at'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
     invoiceTenantIdx: index('invoice_tenant_idx').on(table.tenantId),
     invoiceShipmentIdx: index('invoice_shipment_idx').on(table.shipmentId),
     invoiceCustomerIdx: index('invoice_customer_idx').on(table.customerId),
+    invoiceBranchIdx: index('invoice_branch_idx').on(table.branchId),
+    invoiceCreatedAtIdx: index('invoice_created_at_idx').on(table.createdAt),
   }),
 );
 
@@ -249,12 +267,15 @@ export const user = pgTable(
     banned: boolean('banned').notNull().default(false),
     banReason: text('ban_reason'),
     banExpires: timestamp('ban_expires'),
+    // Two-factor plugin fields
+    twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
   },
   (table) => ({
     tenantIdx: index('user_tenant_idx').on(table.tenantId),
     roleIdx: index('user_role_idx').on(table.role),
+    userBranchIdx: index('user_branch_idx').on(table.branchId),
   }),
 );
 
@@ -290,6 +311,25 @@ export const account = pgTable('account', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// ── Phase 13: Onboard Tokens ──
+
+export const onboardTokens = pgTable(
+  'onboard_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    token: text('token').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    onboardTokenIdx: index('idx_onboard_tokens_token').on(table.token),
+  }),
+);
+
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
@@ -298,3 +338,20 @@ export const verification = pgTable('verification', {
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });
+
+export const twoFactor = pgTable('two_factor', {
+  id: text('id').primaryKey(),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  verified: boolean('verified').notNull().default(true),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+},
+  (table) => ({
+    twoFactorUserIdIdx: index('idx_two_factor_user_id').on(table.userId),
+    twoFactorSecretIdx: index('idx_two_factor_secret').on(table.secret),
+  }),
+);

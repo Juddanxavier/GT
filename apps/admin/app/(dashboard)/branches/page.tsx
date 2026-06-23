@@ -2,30 +2,32 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, Pencil, Trash2, ChevronDown, MoreVertical } from 'lucide-react';
-import { Button, Dropdown, Input, Label, Modal, Pagination, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
-import { api } from '@/lib/api';
+import { ChevronDown, Eye, Pencil, Trash2, MoreVertical, Phone } from 'lucide-react';
+import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Select, Spinner, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
+import { z } from 'zod';
+import { authClient } from '@/lib/auth-client';
+import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { useBranches, useCreateBranch, useDeleteBranch, useTenants, type ApiBranch } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { getCountryCode, stripDialCode } from '@/lib/country-codes';
+import { Flag } from '@/components/copy-button';
 
 interface Branch {
   id: string;
   name: string;
-  phone: string;
-  email: string;
-  address: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
 }
 
-const DUMMY_BRANCHES: Branch[] = [
-  { id: 'b1', name: 'Colombo HQ', phone: '+94 11 234 5678', email: 'colombo@gajan.lk', address: '42 Galle Road, Colombo 03' },
-  { id: 'b2', name: 'Kandy Branch', phone: '+94 81 345 6789', email: 'kandy@gajan.lk', address: '15 Peradeniya Road, Kandy' },
-  { id: 'b3', name: 'Jaffna Office', phone: '+94 21 456 7890', email: 'jaffna@gajan.lk', address: '8 Hospital Road, Jaffna' },
-  { id: 'b4', name: 'Chennai Warehouse', phone: '+91 44 5678 9012', email: 'chennai@gajan.in', address: '23 Mount Road, Chennai' },
-  { id: 'b5', name: 'Mumbai Office', phone: '+91 22 6789 0123', email: 'mumbai@gajan.in', address: '55 Marine Drive, Mumbai' },
-  { id: 'b6', name: 'Delhi Hub', phone: '+91 11 7890 1234', email: 'delhi@gajan.in', address: '12 Connaught Place, New Delhi' },
-  { id: 'b7', name: 'Galle Depot', phone: '+94 91 567 8901', email: 'galle@gajan.lk', address: '7 Lighthouse Street, Galle' },
-  { id: 'b8', name: 'Bangalore Center', phone: '+91 80 8901 2345', email: 'bangalore@gajan.in', address: '90 MG Road, Bangalore' },
-];
+const ROWS_PER_PAGE = 10;
 
-const ROWS_PER_PAGE = 4;
+const branchSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z.string().regex(/^\+?[\d\s-]{6,20}$/, 'Invalid phone number').optional().or(z.literal('')),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  address: z.string().optional().or(z.literal('')),
+});
 
 function SortableHeader({ children, sortDirection }: { children: React.ReactNode; sortDirection?: 'ascending' | 'descending' }) {
   return (
@@ -42,24 +44,44 @@ function TrashIcon() { return <Trash2 size={16} />; }
 function DotsIcon() { return <MoreVertical size={16} />; }
 
 export default function BranchesPage() {
+  usePageTitle('Branches');
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' });
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Branch | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createSaving, setCreateSaving] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newAddress, setNewAddress] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [newTenantId, setNewTenantId] = useState('');
+  const [newPhoneLocal, setNewPhoneLocal] = useState('');
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+  const isSuperAdmin = userRole === 'superadmin';
+
+  if (!sessionPending && (!userRole || userRole === 'staff')) { router.push('/unauthorized'); return null; }
+
+  const { tenantFilter } = useTenantFilter();
+  const { data: branches = [], isPending: branchesLoading } = useBranches();
+  const { data: tenants = [] } = useTenants();
+  const createBranch = useCreateBranch();
+  const deleteBranch = useDeleteBranch();
+
+  const activeTenantId = isSuperAdmin ? (newTenantId || tenantFilter) : tenantFilter;
+  const selectedTenantCountry = useMemo(() => {
+    const t = tenants.find((t) => t.id === activeTenantId);
+    return t?.country ?? null;
+  }, [activeTenantId, tenants]);
+  const phoneDialCode = useMemo(() => getCountryCode(selectedTenantCountry).dialCode, [selectedTenantCountry]);
+  const phoneFlag = useMemo(() => getCountryCode(selectedTenantCountry).flag, [selectedTenantCountry]);
 
   const filtered = useMemo(() => {
-    let items = DUMMY_BRANCHES;
+    let items = branches;
     if (search) {
       const q = search.toLowerCase();
-      items = items.filter((b) => b.name.toLowerCase().includes(q) || b.email.toLowerCase().includes(q) || b.address.toLowerCase().includes(q));
+      items = items.filter((b) => b.name.toLowerCase().includes(q) || b.email?.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q));
     }
     const col = sortDescriptor.column as keyof Branch;
     const dir = sortDescriptor.direction;
@@ -68,94 +90,38 @@ export default function BranchesPage() {
       return dir === 'descending' ? -cmp : cmp;
     });
     return items;
-  }, [search, sortDescriptor]);
+  }, [search, sortDescriptor, branches]);
 
   const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+  const start = (page - 1) * ROWS_PER_PAGE + 1;
+  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
   const paginated = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return filtered.slice(start, start + ROWS_PER_PAGE);
+    const s = (page - 1) * ROWS_PER_PAGE;
+    return filtered.slice(s, s + ROWS_PER_PAGE);
   }, [page, filtered]);
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
   function handleContextAction(key: Key, branch: Branch) {
     if (key === 'view') router.push(`/branches/${branch.id}`);
-    else if (key === 'edit') router.push(`/branches/${branch.id}/edit`);
+    else if (key === 'edit') router.push(`/branches/${branch.id}`);
     else if (key === 'delete') setDeleteTarget(branch);
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setDeleting(false);
-    setDeleteTarget(null);
   }
 
   return (
     <div className="space-y-6">
+      {branchesLoading ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Spinner />
+        </div>
+      ) : (
+      <>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
           <p className="text-sm text-muted">Manage organization branches</p>
         </div>
-        <Button onPress={() => { setNewName(''); setNewPhone(''); setNewEmail(''); setNewAddress(''); setCreateOpen(true); }}>New Branch</Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                12.5%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Total Branches</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-b-total" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,18 L10,14 L20,12 L30,8 L40,4 L50,6 L60,4 L70,2 L80,4 L90,2 L100,4 L110,2 L120,2 L120,24 L0,24 Z" fill="url(#g-b-total)" />
-            <polyline points="0,18 10,14 20,12 30,8 40,4 50,6 60,4 70,2 80,4 90,2 100,4 110,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{DUMMY_BRANCHES.filter((b) => b.email.endsWith('.in')).length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                8.3%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">India</p>
-          </div>
-          <svg className="w-full h-8 text-success/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-b-india" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,18 L20,16 L30,14 L40,12 L50,10 L60,8 L70,6 L80,4 L90,6 L100,4 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-b-india)" />
-            <polyline points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4 90,6 100,4 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{DUMMY_BRANCHES.filter((b) => b.email.endsWith('.lk')).length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                15.2%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Sri Lanka</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-b-lk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,16 L10,20 L20,18 L30,22 L40,14 L50,10 L60,6 L70,8 L80,6 L90,2 L100,4 L110,2 L120,2 L120,24 L0,24 Z" fill="url(#g-b-lk)" />
-            <polyline points="0,16 10,20 20,18 30,22 40,14 50,10 60,6 70,8 80,6 90,2 100,4 110,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
+        <Button onPress={() => { setNewName(''); setNewPhoneLocal(''); setNewEmail(''); setNewAddress(''); setNewTenantId(''); setFormErrors({}); setCreateOpen(true); }}>New Branch</Button>
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
@@ -216,8 +182,7 @@ export default function BranchesPage() {
               </Table.Body>
             </Table.Content>
           </Table.ScrollContainer>
-          {filtered.length > ROWS_PER_PAGE && (
-            <Table.Footer>
+          <Table.Footer>
               <Pagination size="sm">
                 <Pagination.Summary>{start} to {end} of {filtered.length} results</Pagination.Summary>
                 <Pagination.Content>
@@ -235,12 +200,11 @@ export default function BranchesPage() {
                     <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
                       Next <Pagination.NextIcon />
                     </Pagination.Next>
-                  </Pagination.Item>
-                </Pagination.Content>
-              </Pagination>
-            </Table.Footer>
-          )}
-        </Table>
+                    </Pagination.Item>
+                  </Pagination.Content>
+                </Pagination>
+              </Table.Footer>
+          </Table>
       </div>
 
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
@@ -248,33 +212,92 @@ export default function BranchesPage() {
           <Modal.Dialog>
             <Modal.Header>New Branch</Modal.Header>
             <Modal.Body>
-              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); setCreateSaving(true); try { await api.post('/api/branches', { name: newName, phone: newPhone || undefined, email: newEmail || undefined, address: newAddress || undefined }); setCreateOpen(false); } finally { setCreateSaving(false); } }} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="new-name">Name *</Label>
-                  <Input id="new-name" value={newName} onChange={(e) => setNewName(e.target.value)} required fullWidth />
+              <Form.Root id="create-form" onSubmit={async (e) => {
+                e.preventDefault();
+                setFormErrors({});
+                const parsed = branchSchema.safeParse({
+                  name: newName,
+                  email: newEmail,
+                  address: newAddress,
+                });
+                if (!parsed.success) {
+                  const fieldErrors: Record<string, string> = {};
+                  for (const issue of parsed.error.issues) {
+                    const field = issue.path[0] as string;
+                    if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+                  }
+                  setFormErrors(fieldErrors);
+                  return;
+                }
+                setCreateOpen(false);
+                const fullPhone = newPhoneLocal ? `${phoneDialCode} ${newPhoneLocal}` : '';
+                createBranch.mutate({
+                  name: parsed.data.name,
+                  phone: fullPhone || undefined,
+                  email: parsed.data.email || undefined,
+                  address: parsed.data.address || undefined,
+                  ...(isSuperAdmin && newTenantId ? { tenantId: newTenantId } : {}),
+                });
+              }} className="flex flex-col gap-4">
+                {isSuperAdmin && (
+                  <div className="flex flex-col gap-1">
+                    <Label>Tenant</Label>
+                    <Select.Root
+                      selectedKey={newTenantId}
+                      onSelectionChange={(k) => setNewTenantId(k as string)}
+                      className="w-full"
+                    >
+                      <Select.Trigger className="h-10 rounded-xl border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
+                        <Select.Value />
+                        <Select.Indicator>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </Select.Indicator>
+                      </Select.Trigger>
+                      <Select.Popover className="min-w-[200px] rounded-xl border border-border bg-surface p-1 shadow-lg">
+                        <ListBox>
+                          {tenants.map((t) => (
+                            <ListBox.Item key={t.id} id={t.id} className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">{t.name}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select.Root>
+                  </div>
+                )}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="new-name">Name</Label>
+                  <Input id="new-name" variant="secondary" placeholder="Branch name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   <Label htmlFor="new-phone">Phone</Label>
-                  <Input id="new-phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} fullWidth />
+                  <div className="flex">
+                    <div className="flex items-center gap-1.5 px-3 border border-r-0 border-border rounded-l-xl bg-muted/10 text-sm text-muted font-medium shrink-0">
+                      {phoneFlag && <Flag country={phoneFlag} size={14} />}
+                      {phoneDialCode}
+                    </div>
+                    <Input id="new-phone" variant="secondary" placeholder="Phone number" value={newPhoneLocal} onChange={(e) => setNewPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
+                  </div>
+                  {formErrors.phone && <p className="text-xs text-red-500">{formErrors.phone}</p>}
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   <Label htmlFor="new-email">Email</Label>
-                  <Input id="new-email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} fullWidth />
+                  <Input id="new-email" variant="secondary" type="email" placeholder="Email address" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+                  {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   <Label htmlFor="new-address">Address</Label>
-                  <Input id="new-address" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} fullWidth />
+                  <Input id="new-address" variant="secondary" placeholder="Full street address, city, and postal code" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
                 </div>
-              </form>
+              </Form.Root>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-form" isPending={createSaving}>Create Branch</Button>
+              <Button type="submit" form="create-form" isPending={createBranch.isPending}>Create Branch</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
-      
+
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
@@ -284,11 +307,14 @@ export default function BranchesPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteTarget(null)}>Cancel</Button>
-              <Button variant="danger" isPending={deleting} onPress={handleDelete}>{deleting ? 'Deleting...' : 'Delete'}</Button>
+              <Button variant="danger" isPending={deleteBranch.isPending} onPress={() => {
+                if (deleteTarget) { deleteBranch.mutate(deleteTarget.id); setDeleteTarget(null); }
+              }}>{deleteBranch.isPending ? 'Deleting...' : 'Delete'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
+      </>)}
     </div>
   );
 }

@@ -1,31 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
-import { Button, Chip, Dropdown, Input, Label, Modal, Pagination, Table, Tabs, cn, type Key, type SortDescriptor } from '@heroui/react';
-import { api } from '@/lib/api';
-
-interface Quotation {
-  id: string;
-  quoteNumber: string;
-  customerName: string | null;
-  totalAmount: number;
-  status: string;
-  validUntil: string | null;
-  createdAt: string;
-}
-
-const DUMMY_QUOTATIONS: Quotation[] = [
-  { id: 'q1', quoteNumber: 'QT-2024-001', customerName: 'Lakmal Fernando', totalAmount: 1250.00, status: 'sent', validUntil: '2024-04-15', createdAt: '2024-03-10' },
-  { id: 'q2', quoteNumber: 'QT-2024-002', customerName: 'Priya Sharma', totalAmount: 3400.50, status: 'accepted', validUntil: '2024-04-20', createdAt: '2024-03-08' },
-  { id: 'q3', quoteNumber: 'QT-2024-003', customerName: 'Amit Patel', totalAmount: 875.25, status: 'draft', validUntil: null, createdAt: '2024-03-12' },
-  { id: 'q4', quoteNumber: 'QT-2024-004', customerName: 'Saman Silva', totalAmount: 2100.00, status: 'rejected', validUntil: '2024-03-25', createdAt: '2024-03-05' },
-  { id: 'q5', quoteNumber: 'QT-2024-005', customerName: 'Deepa Rajan', totalAmount: 5600.00, status: 'converted', validUntil: '2024-05-01', createdAt: '2024-03-11' },
-  { id: 'q6', quoteNumber: 'QT-2024-006', customerName: 'Ranil Wickram', totalAmount: 1920.75, status: 'sent', validUntil: '2024-04-10', createdAt: '2024-03-07' },
-  { id: 'q7', quoteNumber: 'QT-2024-007', customerName: 'Vikram Singh', totalAmount: 4100.00, status: 'draft', validUntil: null, createdAt: '2024-03-13' },
-  { id: 'q8', quoteNumber: 'QT-2024-008', customerName: null, totalAmount: 780.00, status: 'sent', validUntil: '2024-04-30', createdAt: '2024-03-14' },
-];
+import { Button, Chip, Dropdown, Input, Label, Modal, Pagination, Skeleton, Table, Tabs, cn, type Key, type SortDescriptor } from '@heroui/react';
+import { useQuotations, useCustomers, useCreateQuotation, useDeleteQuotation, type Quotation } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
 
 const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' | 'warning'> = {
   draft: 'default',
@@ -35,7 +15,7 @@ const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' 
   converted: 'warning',
 };
 
-const ROWS_PER_PAGE = 4;
+const ROWS_PER_PAGE = 10;
 
 function SortableHeader({ children, sortDirection }: { children: React.ReactNode; sortDirection?: 'ascending' | 'descending' }) {
   return (
@@ -54,25 +34,23 @@ function TrashIcon() { return <Trash2 size={16} />; }
 function DotsIcon() { return <MoreVertical size={16} />; }
 
 export default function QuotationsPage() {
+  usePageTitle('Quotations');
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'quoteNumber', direction: 'ascending' });
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Quotation | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
-  const [createSaving, setCreateSaving] = useState(false);
-  const [newCustomers, setNewCustomers] = useState<{ id: string; name: string }[]>([]);
+  const { data: quotations = [], isPending, isError, refetch } = useQuotations();
+  const { data: newCustomers = [] } = useCustomers();
+  const createQuotation = useCreateQuotation();
+  const deleteQuotation = useDeleteQuotation();
   const [newCustomerId, setNewCustomerId] = useState('');
   const [newStatus, setNewStatus] = useState('draft');
   const [newValidUntil, setNewValidUntil] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [newItems, setNewItems] = useState<{ description: string; quantity: number; unitPrice: number; total: number }[]>([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
-
-  useEffect(() => {
-    api.get<{ id: string; name: string }[]>('/api/customers').then(setNewCustomers).catch(() => {});
-  }, []);
 
   function updateNewItem(index: number, field: string, value: string | number) {
     setNewItems((prev) => prev.map((item, i) => {
@@ -90,7 +68,7 @@ export default function QuotationsPage() {
   const newGrandTotal = newItems.reduce((sum, item) => sum + item.total, 0);
 
   const filtered = useMemo(() => {
-    let items = DUMMY_QUOTATIONS;
+    let items = quotations;
     if (statusFilter !== 'all') items = items.filter((q) => q.status === statusFilter);
     if (search) {
       const q = search.toLowerCase();
@@ -113,7 +91,6 @@ export default function QuotationsPage() {
     return filtered.slice(start, start + ROWS_PER_PAGE);
   }, [page, filtered]);
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   const start = (page - 1) * ROWS_PER_PAGE + 1;
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
@@ -125,9 +102,7 @@ export default function QuotationsPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setDeleting(false);
+    await deleteQuotation.mutateAsync(deleteTarget.id);
     setDeleteTarget(null);
   }
 
@@ -228,91 +203,19 @@ export default function QuotationsPage() {
             </Tabs>
           </div>
         </div>
-        <Table>
-          <Table.ScrollContainer>
-            <Table.Content aria-label="Quotations" className="min-w-[900px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
-              <Table.Header>
-                <Table.Column id="#" width={48}>
-                  {() => <span className="text-muted text-xs">#</span>}
-                </Table.Column>
-                <Table.Column allowsSorting id="quoteNumber" isRowHeader>
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Quote #</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="customerName">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Customer</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="totalAmount">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Amount</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="status">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Status</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="validUntil">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Valid Until</SortableHeader>}
-                </Table.Column>
-                <Table.Column id="actions" width={48}>
-                  {() => null}
-                </Table.Column>
-              </Table.Header>
-              <Table.Body
-                renderEmptyState={() => (
-                  <div className="flex items-center justify-center py-16 text-muted text-sm">No quotations found</div>
-                )}
-              >
-                {paginated.map((q, i) => (
-                  <Table.Row key={q.id} id={q.id}>
-                    <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
-                    <Table.Cell className="font-mono text-xs font-medium">{q.quoteNumber}</Table.Cell>
-                    <Table.Cell>{q.customerName || '—'}</Table.Cell>
-                    <Table.Cell className="font-medium">${Number(q.totalAmount).toFixed(2)}</Table.Cell>
-                    <Table.Cell>
-                      <Chip size="sm" variant="soft" color={STATUS_COLORS[q.status] ?? 'default'}>{q.status}</Chip>
-                    </Table.Cell>
-                    <Table.Cell className="text-muted text-xs">{q.validUntil ? new Date(q.validUntil).toLocaleDateString() : '—'}</Table.Cell>
-                    <Table.Cell>
-                      <Dropdown.Root>
-                        <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                          <DotsIcon />
-                        </Dropdown.Trigger>
-                        <Dropdown.Popover placement="bottom end">
-                          <Dropdown.Menu onAction={(key) => handleContextAction(key, q)}>
-                            <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
-                            <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
-                            <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown.Popover>
-                      </Dropdown.Root>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Content>
-          </Table.ScrollContainer>
-          {filtered.length > ROWS_PER_PAGE && (
-            <Table.Footer>
-              <Pagination size="sm">
-                <Pagination.Summary>{start} to {end} of {filtered.length} results</Pagination.Summary>
-                <Pagination.Content>
-                  <Pagination.Item>
-                    <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
-                      <Pagination.PreviousIcon /> Prev
-                    </Pagination.Previous>
-                  </Pagination.Item>
-                  {pages.map((p) => (
-                    <Pagination.Item key={p}>
-                      <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
-                    </Pagination.Item>
-                  ))}
-                  <Pagination.Item>
-                    <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                      Next <Pagination.NextIcon />
-                    </Pagination.Next>
-                  </Pagination.Item>
-                </Pagination.Content>
-              </Pagination>
-            </Table.Footer>
-          )}
-        </Table>
+        <QuotationsTable
+          isPending={isPending}
+          isError={isError}
+          refetch={refetch}
+          filtered={filtered}
+          paginated={paginated}
+          start={start}
+          sortDescriptor={sortDescriptor}
+          setSortDescriptor={setSortDescriptor}
+          setPage={setPage}
+          handleContextAction={handleContextAction}
+          totalPages={totalPages}
+          page={page} />
       </div>
 
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
@@ -320,7 +223,7 @@ export default function QuotationsPage() {
           <Modal.Dialog>
             <Modal.Header>New Quotation</Modal.Header>
             <Modal.Body>
-              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); setCreateSaving(true); try { await api.post('/api/quotations', { customerId: newCustomerId, status: newStatus, validUntil: newValidUntil || undefined, notes: newNotes || undefined, items: newItems }); setCreateOpen(false); } finally { setCreateSaving(false); } }} className="space-y-4">
+              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); await createQuotation.mutateAsync({ customerId: newCustomerId, status: newStatus, validUntil: newValidUntil || undefined, notes: newNotes || undefined, items: newItems }); setCreateOpen(false); }} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="new-customerId">Customer *</Label>
                   <select id="new-customerId" value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" required>
@@ -379,7 +282,7 @@ export default function QuotationsPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-form" isPending={createSaving}>Create Quotation</Button>
+              <Button type="submit" form="create-form" isPending={createQuotation.isPending}>Create Quotation</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
@@ -394,11 +297,132 @@ export default function QuotationsPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteTarget(null)}>Cancel</Button>
-              <Button variant="danger" isPending={deleting} onPress={handleDelete}>{deleting ? 'Deleting...' : 'Delete'}</Button>
+              <Button variant="danger" isPending={deleteQuotation.isPending} onPress={handleDelete}>{deleteQuotation.isPending ? 'Deleting...' : 'Delete'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
     </div>
+  );
+}
+
+function QuotationsTable({
+  isPending, isError, refetch, filtered, paginated, start,
+  sortDescriptor, setSortDescriptor, setPage,
+  handleContextAction, totalPages, page
+}: {
+  isPending: boolean; isError: boolean; refetch: () => void;
+  filtered: Quotation[]; paginated: Quotation[]; start: number;
+  sortDescriptor: SortDescriptor; setSortDescriptor: (d: SortDescriptor) => void;
+  setPage: (p: number | ((prev: number) => number)) => void;
+  handleContextAction: (key: Key, quotation: Quotation) => void;
+  totalPages: number; page: number;
+}) {
+  if (isPending) return (
+    <div className="space-y-3 py-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-4">
+          <Skeleton className="h-4 w-8 rounded" />
+          <Skeleton className="h-4 w-28 rounded" />
+          <Skeleton className="h-4 w-36 rounded flex-1" />
+          <Skeleton className="h-4 w-16 rounded" />
+          <Skeleton className="h-6 w-20 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+        </div>
+      ))}
+    </div>
+  );
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <p className="text-danger text-sm">Failed to load quotations</p>
+      <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
+    </div>
+  );
+  return (
+    <Table>
+      <Table.ScrollContainer>
+        <Table.Content aria-label="Quotations" className="min-w-[900px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
+          <Table.Header>
+            <Table.Column id="#" width={48}>
+              {() => <span className="text-muted text-xs">#</span>}
+            </Table.Column>
+            <Table.Column allowsSorting id="quoteNumber" isRowHeader>
+              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Quote #</SortableHeader>}
+            </Table.Column>
+            <Table.Column allowsSorting id="customerName">
+              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Customer</SortableHeader>}
+            </Table.Column>
+            <Table.Column allowsSorting id="totalAmount">
+              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Amount</SortableHeader>}
+            </Table.Column>
+            <Table.Column allowsSorting id="status">
+              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Status</SortableHeader>}
+            </Table.Column>
+            <Table.Column allowsSorting id="validUntil">
+              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Valid Until</SortableHeader>}
+            </Table.Column>
+            <Table.Column id="actions" width={48}>
+              {() => null}
+            </Table.Column>
+          </Table.Header>
+          <Table.Body
+            renderEmptyState={() => (
+              <div className="flex items-center justify-center py-16 text-muted text-sm">No quotations found</div>
+            )}
+          >
+            {paginated.map((q, i) => (
+              <Table.Row key={q.id} id={q.id}>
+                <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
+                <Table.Cell className="font-mono text-xs font-medium">{q.quoteNumber}</Table.Cell>
+                <Table.Cell>{q.customerName || '\u2014'}</Table.Cell>
+                <Table.Cell className="font-medium">${Number(q.totalAmount).toFixed(2)}</Table.Cell>
+                <Table.Cell>
+                  <Chip size="sm" variant="soft" color={STATUS_COLORS[q.status] ?? 'default'}>{q.status}</Chip>
+                </Table.Cell>
+                <Table.Cell className="text-muted text-xs">{q.validUntil ? new Date(q.validUntil).toLocaleDateString() : '\u2014'}</Table.Cell>
+                <Table.Cell>
+                  <Dropdown.Root>
+                    <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
+                      <DotsIcon />
+                    </Dropdown.Trigger>
+                    <Dropdown.Popover placement="bottom end">
+                      <Dropdown.Menu onAction={(key) => handleContextAction(key, q)}>
+                        <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
+                        <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
+                        <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown.Popover>
+                  </Dropdown.Root>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Content>
+      </Table.ScrollContainer>
+      {filtered.length > ROWS_PER_PAGE && (
+        <Table.Footer>
+          <Pagination size="sm">
+            <Pagination.Summary>{start} to {start + paginated.length - 1} of {filtered.length} results</Pagination.Summary>
+            <Pagination.Content>
+              <Pagination.Item>
+                <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
+                  <Pagination.PreviousIcon /> Prev
+                </Pagination.Previous>
+              </Pagination.Item>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Pagination.Item key={p}>
+                  <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+                </Pagination.Item>
+              ))}
+              <Pagination.Item>
+                <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  Next <Pagination.NextIcon />
+                </Pagination.Next>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination>
+        </Table.Footer>
+      )}
+    </Table>
   );
 }

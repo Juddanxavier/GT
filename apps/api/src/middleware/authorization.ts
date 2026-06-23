@@ -28,6 +28,7 @@ export function requireRole(...roles: string[]) {
       tenantId: c.get('tenantId') ?? user.tenantId,
       branchId: user.branchId,
       overrideTenantId: c.get('tenantId'),
+      overrideBranchId: c.get('branchId'),
     };
 
     if (!hasRole(permissionContext, ...roles)) {
@@ -60,6 +61,7 @@ export function requireAbility(action: Action, subject: Subject) {
       tenantId: c.get('tenantId') ?? user.tenantId,
       branchId: user.branchId,
       overrideTenantId: c.get('tenantId'),
+      overrideBranchId: c.get('branchId'),
     };
 
     if (!canAccess(permissionContext, action, subject)) {
@@ -88,12 +90,42 @@ export function requireResourceAbility(
       tenantId: c.get('tenantId') ?? user.tenantId,
       branchId: user.branchId,
       overrideTenantId: c.get('tenantId'),
+      overrideBranchId: c.get('branchId'),
     };
 
     const resource = await resourceFn(c);
 
     if (!canAccess(permissionContext, action, subject, resource)) {
       return c.json({ error: 'Forbidden: insufficient permissions' }, 403);
+    }
+
+    await next();
+  };
+}
+
+/**
+ * Require that a staff user's branch scope is respected.
+ * Blocks requests where query/param branchId doesn't match the user's branch.
+ * Non-staff roles pass through.
+ */
+export function requireBranchScope() {
+  return async function branchScopeGuard(c: Context, next: Next) {
+    const user = c.get('user');
+    if (!user) return c.json({ error: 'Authentication required' }, 401);
+
+    if (user.role !== 'staff') return await next();
+
+    const userBranchId: string | undefined = user.branchId;
+    if (!userBranchId) return c.json({ error: 'No branch assigned to your account' }, 403);
+
+    const queryBranchId = c.req.query('branchId');
+    if (queryBranchId && queryBranchId !== userBranchId) {
+      return c.json({ error: 'Forbidden: you can only access your own branch' }, 403);
+    }
+
+    const paramBranchId = c.req.param('branchId');
+    if (paramBranchId && paramBranchId !== userBranchId) {
+      return c.json({ error: 'Forbidden: you can only access your own branch' }, 403);
     }
 
     await next();
@@ -113,6 +145,7 @@ export function getQueryScope(c: Context) {
     tenantId: c.get('tenantId') ?? user.tenantId,
     branchId: user.branchId,
     overrideTenantId: c.get('tenantId'),
+    overrideBranchId: c.get('branchId'),
   };
 
   return queryScope(permissionContext);

@@ -16,6 +16,8 @@ A multi-tenant shipment tracking platform for Gajan Traders serving two organiza
 - [ ] **Phase 8: Admin Dashboard & Intelligence** — KPIs, real-time metrics, exception detection
 - [ ] **Phase 9: Customer Portals** — White-label India/Sri Lanka portals, tenant branding *(postponed)*
 - [ ] **Phase 10: Deployment** — Docker, Coolify, domain routing
+- [ ] **Phase 11: RBAC Hierarchy Enforcement** — Branch-scoped staff permissions, requireBranchScope middleware, queryScope data filters, billAmount protection
+- [ ] **Phase 13: User Onboard Flow** — Direct user creation + token-based onboard page, no OTP
 
 ## Phase Details
 
@@ -196,3 +198,109 @@ Finish admin app before customer portals. Streams are sequential after Phase 4:
 | 8. Dashboard & Intelligence | 0/TBD | Not started | - |
 | 9. Customer Portals | 0/TBD | Postponed | - |
 | 10. Deployment | 0/TBD | Not started | - |
+
+### Phase 11: RBAC — maintain hierarchy and tenant admin and staff of that branch can only see shipment, quotes, users, invoice, branch
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4 (Admin Core CRUD)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 11 to break down)
+
+### Phase 13: User Onboard Flow
+
+**Goal:** Replace invite flow with direct user creation + token-based onboard page. Admin creates user, email links to `/onboard?token=xxx`, user sets password + confirms name in one step. No OTP, no forgot-password confusion.
+
+**Depends on:** Phase 4
+**Plans:** 1 plan (13-user-onboard-flow/PLAN.md)
+
+---
+
+### Phase 12: Filtering & Security Hardening
+
+**Goal:** Close all filtering gaps to ensure tenant and branch data isolation is watertight across all surfaces (API routes, Socket.IO, frontend state, DB schema).
+
+**Depends on:** Phase 2 (Auth), Phase 4 (Admin Core), Phase 8 (Dashboard)
+
+**Requirements:**
+
+| ID | Requirement | Severity | Batch |
+|----|-------------|----------|-------|
+| SEC-01 | Socket.IO must authenticate connections via session cookie and verify tenant/branch room membership server-side before allowing joins | Critical | 2 |
+| SEC-02 | Customers PATCH/DELETE must use `getQueryScope(c)` and `requireBranchScope()` to prevent cross-branch writes | High | 2 |
+| SEC-03 | Shipments POST must validate `branchId` in request body against the user's assigned branch (staff) or override (tenant-admin) | High | 2 |
+| SEC-04 | Shipments DELETE must include `scope.branchId` in WHERE clause to prevent cross-branch deletion | High | 2 |
+| SEC-05 | Shipments stop-tracking must include `scope.branchId` in WHERE clause | High | 2 |
+| SEC-06 | `trackingEvents` and `invoices` tables must gain a `branchId` column (migration) with branch-level filtering in queries | High | 1 |
+| SEC-07 | Frontend localStorage filters must be cleared on session change/logout to prevent stale X-Branch-ID from breaking the next user's session | High | 6 |
+| SEC-08 | Quotations POST must validate `branchId` in request body against the user's branch scope | Medium | 2 |
+| SEC-09 | Branch validation cache (`middleware/branch.ts`) must support invalidation on branch update/delete | Medium | 2 |
+| SEC-10 | `X-Branch-ID: "undefined"` or `"null"` string values should be silently ignored instead of returning 400 | Low | 2 |
+| SEC-11 | Add unique constraint on `(tenantId, trackingNo)` to prevent cross-tenant webhook ambiguity | Low | 2 |
+| SEC-12 | CORS origin must be configurable via env var, not hardcoded | Critical | 2 |
+| SEC-13 | CSRF protection — add SameSite=Strict on cookies or token validation | Critical | 2 |
+| SEC-14 | Debug endpoint `POST /api/debug/fire-notification` must be authenticated | Critical | 2 |
+| SEC-15 | RLS must be enabled on `tracking_event` and `invoice` tables | Critical | 2 |
+| SEC-16 | Add security headers middleware (CSP, HSTS, X-Frame-Options, X-Content-Type-Options) | High | 2 |
+| SEC-17 | Forgot-password must not leak user enumeration — return generic message | High | 2 |
+| SEC-18 | Webhook `TRACK_WEBHOOK_SECRET` must have a non-empty default or validation | High | 2 |
+| SEC-19 | Staff PATCH allowlist must remove `branchId` | High | 2 |
+| SEC-20 | Bull Board `/jobs` must be authenticated with `requireRole` | High | 2 |
+| SEC-21 | Superadmin must be allowed to use X-Branch-ID header | High | 2 |
+| SEC-22 | Webhook handler must include `tenant_id` in shipment lookup | High | 2 |
+| SEC-23 | RLS must be enabled on `onboard_tokens` table | Medium | 2 |
+| SEC-24 | User table RLS policy must use `is_tenant_accessible()` helper | Medium | 2 |
+| SEC-25 | Customer email/phone should have at least one required | Medium | 2 |
+| SEC-26 | Session cookie must set explicit SameSite attribute | Low | 2 |
+| SEC-27 | Password policy must require complexity (upper+lower+digit+min 8) | Low | 2 |
+| SEC-28 | Webhook body verification must use raw bytes, not JSON.stringify reconstruction | Low | 2 |
+| DTA-01 | Add `courierCode` and `customerName` columns to shipments schema | Critical | 1 |
+| DTA-02 | Fix `customerId ?? ''` to `customerId ?? null` in auto-invoice | Critical | 1 |
+| DTA-03 | Wrap all multi-table writes in `db.transaction()` | Critical | 1 |
+| DTA-04 | Fix migration journal — add 0017/0018 entries, handle 0002 gap | High | 1 |
+| DTA-05 | Batch event insertion — use `db.insert().values(events).onConflictDoNothing()` | High | 1 |
+| DTA-06 | Remove duplicate `shipments.payload` JSONB or add sync guarantee | High | 1 |
+| DTA-07 | Change `paid_at` default from `NOW()` to `NULL` | Medium | 1 |
+| DTA-08 | Fix `paid_at` default in migration 0014 | Medium | 1 |
+| DTA-09 | Add DOWN migrations for each existing migration | Low | 1 |
+| DTA-10 | Define squash checkpoint strategy | Low | 1 |
+| DTA-11 | Make seed script deterministic | Low | 1 |
+| RATE-01 | Add global rate limiter middleware | Critical | 3 |
+| RATE-02 | Add rate limiting on create endpoints (shipments, invoices) | Medium | 3 |
+| RATE-03 | Re-enable rate limiting on `/get-session` | Low | 3 |
+| OBS-01 | Add `process.on('unhandledRejection')` and `process.on('uncaughtException')` handlers | Critical | 4 |
+| OBS-02 | Add SIGTERM/SIGINT graceful shutdown handler | Critical | 4 |
+| OBS-03 | Replace `.catch(() => {})` with `.catch(err => Sentry.captureException(err))` | Critical | 4 |
+| OBS-04 | Replace `console.*` with structured logger (pino) | High | 4 |
+| OBS-05 | Report errors from `app.onError` to Sentry | High | 4 |
+| OBS-06 | Add `/health` or `/api/health` endpoint | High | 4 |
+| OBS-07 | Add request ID middleware (X-Request-ID) | High | 4 |
+| OBS-08 | Move `import './instrument'` to be the very first import | High | 4 |
+| OBS-09 | Set `tracesSampleRate` to 0.1 in dev, configurable via env var | Medium | 4 |
+| OBS-10 | Add `profilesSampleRate` to Sentry config | Medium | 4 |
+| OBS-11 | Log Redis errors instead of silently suppressing | Medium | 4 |
+| PERF-01 | Increase connection pool from 10 to 25-50 | High | 5 |
+| PERF-02 | Add missing indexes on `branch_id`, `tenant_id`, `created_at`, `user_id` | High | 5 |
+| PERF-03 | Add trigram indexes for LIKE queries on tracking_no, customer name/email | Medium | 5 |
+| PERF-04 | Add pagination to invoice list endpoint | Medium | 5 |
+| API-01 | Return full `{ data, total, page, limit }` envelope from API client | Critical | 6 |
+| API-02 | Unify Zod schemas — single source of truth in `@repo/validators` | High | 6 |
+| API-03 | Add input validation to invoice creation endpoint | High | 6 |
+| API-04 | Add API versioning prefix (`/api/v1/`) | Medium | 6 |
+| API-05 | Remove `as never` assertions from invoice routes | Medium | 6 |
+| UI-01 | Migrate detail page to React Query | Critical | 6 |
+| UI-02 | Add ErrorBoundary to all dashboard pages | High | 6 |
+| UI-03 | Add `global-error.tsx` and `error.tsx` to admin app | High | 6 |
+| UI-04 | Add optimistic updates to `useCreateShipment` and `useUpdateShipment` | Medium | 6 |
+| UI-05 | Parallelize tracking + invoice fetches on detail page | Medium | 6 |
+| UI-06 | Show error state UI instead of `null` on detail page | Medium | 6 |
+| UI-07 | Send server-side filters from frontend (status, search) | Low | 6 |
+
+**Plans:** 1 plan (6 batches)
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 12 to break down)
+
+## Phases (full table)

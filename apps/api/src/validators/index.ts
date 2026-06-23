@@ -5,10 +5,12 @@ const numericString = z.string().regex(/^\d+(\.\d{1,2})?$/);
 
 // ── Branch ──
 
+const phoneRegex = /^\+[\d\s-]{4,20}$/;
+
 export const createBranchSchema = z.object({
   name: z.string().min(1).max(255),
-  phone: z.string().max(50).optional(),
-  email: z.string().email().max(255).optional(),
+  phone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
+  email: z.string().email().max(255).optional().or(z.literal('')),
   address: z.string().optional(),
 });
 
@@ -19,7 +21,7 @@ export const updateBranchSchema = createBranchSchema.partial();
 export const createCustomerSchema = z.object({
   name: z.string().min(1).max(255),
   email: z.string().email().max(255).optional(),
-  phone: z.string().max(50).optional(),
+  phone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
   address: z.string().optional(),
   branchId: uuidSchema.optional(),
 });
@@ -67,7 +69,7 @@ export const createShipmentSchema = z.object({
   courierCode: z.string().max(50).optional(),
   customerId: uuidSchema.optional(),
   contactEmail: z.string().email().max(255).optional(),
-  contactPhone: z.string().max(50).optional(),
+  contactPhone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
   carrier: z.string().max(100).optional(),
   estimatedDelivery: z.string().datetime().optional(),
   origin: z.string().optional(),
@@ -76,6 +78,7 @@ export const createShipmentSchema = z.object({
   billAmount: z.coerce.number().positive().optional(),
   payload: z.record(z.unknown()).optional(),
   branchId: uuidSchema.optional(),
+  tenantId: uuidSchema.optional(),
 });
 
 export const updateShipmentSchema = createShipmentSchema.partial();

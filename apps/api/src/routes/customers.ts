@@ -2,20 +2,21 @@ import { Hono } from 'hono';
 import { eq, and, like, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { customers } from '../db/schema';
-import { requireRole } from '../middleware/authorization';
+import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
 import { createCustomerSchema, updateCustomerSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
-app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
 
   const search = c.req.query('search');
   const branchId = c.req.query('branchId');
 
-  const conditions = [eq(customers.tenantId, tenantId)];
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (scope.tenantId) conditions.push(eq(customers.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
   if (search) {
     conditions.push(
       sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
@@ -34,7 +35,7 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   return c.json({ data: rows });
 });
 
-app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
+app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
@@ -54,25 +55,28 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   return c.json({ data: row }, 201);
 });
 
-app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id)];
+  if (scope.tenantId) conditions.push(eq(customers.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
 
   const [row] = await db
     .select()
     .from(customers)
-    .where(and(eq(customers.id, id), eq(customers.tenantId, tenantId)))
+    .where(and(...conditions))
     .limit(1);
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
   return c.json({ data: row });
 });
 
-app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
   const parsed = updateCustomerSchema.safeParse(body);
@@ -82,25 +86,31 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
+  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
+
   const [row] = await db
     .update(customers)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(and(eq(customers.id, id), eq(customers.tenantId, tenantId)))
+    .where(and(...conditions))
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
   return c.json({ data: row });
 });
 
-app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
 
   const [row] = await db
     .update(customers)
     .set({ isActive: false, updatedAt: new Date() })
-    .where(and(eq(customers.id, id), eq(customers.tenantId, tenantId)))
+    .where(and(...conditions))
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);

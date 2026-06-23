@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
@@ -9,7 +8,7 @@ export type InvoiceData = {
   id: string;
   invoiceNo: string;
   shipmentId: string;
-  customerId: string;
+  customerId: string | null;
   amount: string;
   status: string;
   notes: string | null;
@@ -23,6 +22,7 @@ export type InvoiceData = {
   destination: string | null;
   customerName: string | null;
   companyName: string;
+  shipmentBranchId: string | null;
 };
 
 export async function getInvoiceByShipmentId(shipmentId: string, tenantId: string): Promise<InvoiceData | null> {
@@ -45,11 +45,12 @@ export async function getInvoiceByShipmentId(shipmentId: string, tenantId: strin
       destination: shipments.destination,
       customerName: customers.name,
       companyName: tenants.name,
+      shipmentBranchId: shipments.branchId,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
     .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
-    .innerJoin(customers, eq(customers.id, invoices.customerId))
+    .leftJoin(customers, eq(customers.id, invoices.customerId))
     .where(and(eq(invoices.shipmentId, shipmentId), eq(invoices.tenantId, tenantId)))
     .limit(1);
 
@@ -76,11 +77,12 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
       destination: shipments.destination,
       customerName: customers.name,
       companyName: tenants.name,
+      shipmentBranchId: shipments.branchId,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
     .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
-    .innerJoin(customers, eq(customers.id, invoices.customerId))
+    .leftJoin(customers, eq(customers.id, invoices.customerId))
     .where(and(eq(invoices.id, invoiceId), eq(invoices.tenantId, tenantId)))
     .limit(1);
 

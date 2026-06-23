@@ -13,6 +13,7 @@ export function connectSocket(tenantId: string): Socket {
   socket = io(SOCKET_URL, {
     query: { tenantId },
     transports: ['websocket', 'polling'],
+    withCredentials: true,
     reconnection: true,
     reconnectionDelay: 2000,
     reconnectionAttempts: 10,

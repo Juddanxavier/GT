@@ -1,0 +1,51 @@
+[     137ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     300ms] [LOG] [Fast Refresh] done in 264ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     545ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[     616ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[    1792ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[    2914ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[    5017ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[    9131ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3001/api/dashboard/branches:0
+[   13596ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   13597ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   13624ms] [WARNING] A dialog must have a title for accessibility. Either provide an aria-label or aria-labelledby prop, or render a heading element inside the dialog. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   34432ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   34433ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   34667ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   34667ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   34943ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   35161ms] [LOG] [Fast Refresh] done in 324ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   35272ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   35289ms] [LOG] [Fast Refresh] done in 127ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   41862ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   41863ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   42462ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/users/create:0
+[   42565ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[   42566ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  166621ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  166635ms] [LOG] [Fast Refresh] done in 127ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  184835ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  184836ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  185100ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  185101ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  185502ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  185707ms] [LOG] [Fast Refresh] done in 320ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  191791ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  191792ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  197733ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  197733ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  198420ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/users/create:0
+[  198524ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  198524ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  302686ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  302690ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  303181ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  303181ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  313868ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  313868ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  315994ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  315995ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  316222ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  316225ms] [WARNING] If a Dialog does not contain a <Heading slot="title">, it must have an aria-label or aria-labelledby attribute for accessibility. @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  410112ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477
+[  410179ms] [LOG] [Fast Refresh] done in 178ms @ http://localhost:3000/_next/static/chunks/136v_next_dist_0hpuyay._.js:2477

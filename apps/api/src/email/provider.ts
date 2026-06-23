@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
-import { emailConfig, isZeptoMailConfigured, isSmtpConfigured } from './config';
+import { Resend } from 'resend';
+import { emailConfig, isResendConfigured, isSmtpConfigured, isZeptoMailConfigured } from './config';
 
 export type Attachment = {
   filename: string;
@@ -15,7 +16,9 @@ export type SendEmailParams = {
   attachments?: Attachment[];
 };
 
-function createTransport() {
+type SendFn = (params: SendEmailParams) => Promise<void>;
+
+function createNodemailerTransport() {
   if (isZeptoMailConfigured()) {
     return nodemailer.createTransport({
       host: emailConfig.zeptomail.host,
@@ -41,39 +44,84 @@ function createTransport() {
       } : {}),
     });
   }
-  throw new Error('No email provider configured — set ZeptoMail (ZEPTOMAIL_PASS) or SMTP (SMTP_HOST)');
+  return null;
 }
 
-let transport: nodemailer.Transporter | null = null;
-
-function getTransport(): nodemailer.Transporter {
-  if (!transport) {
-    transport = createTransport();
+function createSendFn(): SendFn {
+  // 1. ZeptoMail via Nodemailer (primary)
+  if (isZeptoMailConfigured()) {
+    const transport = createNodemailerTransport()!;
+    let transportRef: nodemailer.Transporter | null = transport;
+    return async (params) => {
+      const from = params.from ?? emailConfig.defaultFrom;
+      await transportRef!.sendMail({
+        from: `"${from.name}" <${from.email}>`,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        attachments: params.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          contentType: a.contentType,
+        })),
+      });
+    };
   }
-  return transport;
+
+  // 2. Resend (fallback)
+  if (isResendConfigured()) {
+    const resend = new Resend(emailConfig.resend.apiKey);
+    return async (params) => {
+      const from = params.from ?? emailConfig.defaultFrom;
+      await resend.emails.send({
+        from: `${from.name} <${from.email}>`,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        attachments: params.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+        })),
+      });
+    };
+  }
+
+  // 3. SMTP via Nodemailer (dev fallback)
+  const transport = createNodemailerTransport()!;
+  let transportRef: nodemailer.Transporter | null = transport;
+  return async (params) => {
+    const from = params.from ?? emailConfig.defaultFrom;
+    await transportRef!.sendMail({
+      from: `"${from.name}" <${from.email}>`,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      attachments: params.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
+    });
+  };
+}
+
+let send: SendFn | null = null;
+
+function getSend(): SendFn {
+  if (!send) {
+    send = createSendFn();
+  }
+  return send;
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<void> {
-  const from = params.from ?? emailConfig.defaultFrom;
-  const mail: Record<string, unknown> = {
-    from: `"${from.name}" <${from.email}>`,
-    to: params.to,
-    subject: params.subject,
-    html: params.html,
-  };
-  if (params.attachments?.length) {
-    mail.attachments = params.attachments.map((a) => ({
-      filename: a.filename,
-      content: a.content,
-      contentType: a.contentType,
-    }));
-  }
-  await getTransport().sendMail(mail);
+  await getSend()(params);
+}
+
+export function closeTransport(): void {
+  send = null;
 }
 
 export function resetTransport(): void {
-  if (transport) {
-    transport.close();
-    transport = null;
-  }
+  closeTransport();
 }

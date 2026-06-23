@@ -2,38 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Card, Chip, Input, Label, Modal } from '@heroui/react';
-import { api } from '@/lib/api';
-
-type Customer = { id: string; name: string };
-type LineItem = { id: string; description: string; quantity: number; unitPrice: number; total: number };
-
-type Quotation = {
-  id: string;
-  quoteNumber: string;
-  customerId: string;
-  customerName: string | null;
-  status: string;
-  validUntil: string | null;
-  notes: string | null;
-  totalAmount: number;
-  items: LineItem[];
-  createdAt: string;
-  updatedAt: string;
-};
+import { Button, Card, Chip, Input, Label, Modal, Skeleton } from '@heroui/react';
+import { useQuotation, useCustomers, useUpdateQuotation, useDeleteQuotation, useUpdateQuotationStatus, useConvertQuotation, type LineItem } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
 
 const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' | 'warning'> = { draft: 'default', sent: 'accent', accepted: 'success', rejected: 'danger', converted: 'warning' };
 
 export default function QuotationDetailPage() {
   const router = useRouter();
   const { id } = useParams();
-  const [quotation, setQuotation] = useState<Quotation | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  usePageTitle(`Quotation #${typeof id === 'string' ? id.slice(0, 8) : ''}`);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const [customerId, setCustomerId] = useState('');
   const [status, setStatus] = useState('');
@@ -41,45 +21,30 @@ export default function QuotationDetailPage() {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<LineItem[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  useEffect(() => { load(); }, []);
+  const { data: quotation, isPending: loading, isError } = useQuotation(id as string);
+  const { data: customers = [] } = useCustomers();
+  const updateQuotation = useUpdateQuotation();
+  const deleteQuotation = useDeleteQuotation();
+  const updateStatus = useUpdateQuotationStatus();
+  const convertQuotation = useConvertQuotation();
 
-  async function load() {
-    try {
-      const [data, custs] = await Promise.all([
-        api.get<Quotation>(`/api/quotations/${id}`),
-        api.get<Customer[]>('/api/customers'),
-      ]);
-      setQuotation(data);
-      setCustomers(custs);
-      setCustomerId(data.customerId);
-      setStatus(data.status);
-      setValidUntil(data.validUntil ? data.validUntil.split('T')[0] ?? '' : '');
-      setNotes(data.notes ?? '');
-      setItems(data.items);
-    } catch { router.push('/quotations'); }
-    finally { setLoading(false); }
-  }
+  useEffect(() => { if (isError) setError('Quotation not found'); }, [isError]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    try {
-      const data = await api.patch<Quotation>(`/api/quotations/${id}`, {
-        customerId, status, validUntil: validUntil || undefined, notes: notes || undefined, items,
-      });
-      setQuotation(data);
-      setEditOpen(false);
-    } finally { setSaving(false); }
+    setError('');
+    updateQuotation.mutate(
+      { id: id as string, customerId, status, validUntil: validUntil || undefined, notes: notes || undefined, items },
+      { onSuccess: () => setEditOpen(false), onError: (e) => setError(e?.message || 'Failed to update quotation') },
+    );
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!quotation) return;
-    setDeleting(true);
-    try {
-      await api.delete(`/api/quotations/${id}`);
-      router.push('/quotations');
-    } finally { setDeleting(false); }
+    setError('');
+    deleteQuotation.mutate(id as string, { onSuccess: () => router.push('/quotations'), onError: (e) => setError(e?.message || 'Failed to delete quotation') });
   }
 
   function openEdit() {
@@ -92,18 +57,13 @@ export default function QuotationDetailPage() {
     setEditOpen(true);
   }
 
-  async function handleAction(action: string) {
+  function handleAction(action: string) {
     setActionLoading(action);
-    try {
-      let data: Quotation;
-      if (action === 'convert') {
-        data = await api.post<Quotation>(`/api/quotations/${id}/convert`);
-      } else {
-        data = await api.patch(`/api/quotations/${id}/status`, { status: action });
-      }
-      setQuotation(data);
-      setStatus(data.status);
-    } finally { setActionLoading(null); }
+    if (action === 'convert') {
+      convertQuotation.mutate(id as string, { onSettled: () => setActionLoading(null) });
+    } else {
+      updateStatus.mutate({ id: id as string, status: action }, { onSettled: () => setActionLoading(null) });
+    }
   }
 
   function updateItem(index: number, field: keyof Omit<LineItem, 'id' | 'total'>, value: string | number) {
@@ -131,8 +91,28 @@ export default function QuotationDetailPage() {
   const sel = 'w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary';
   const ta = 'w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]';
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted">Loading...</p></div>;
-  if (!quotation) return null;
+  if (loading) return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center gap-4">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-7 w-48 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+        </div>
+      </div>
+      <Card><Card.Content className="space-y-4">
+        <Skeleton className="h-4 w-full rounded" />
+        <Skeleton className="h-4 w-3/4 rounded" />
+        <Skeleton className="h-4 w-1/2 rounded" />
+      </Card.Content></Card>
+    </div>
+  );
+  if (!quotation) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+      <p className="text-lg font-medium">Quotation not found</p>
+      <p className="text-sm text-muted">The quotation you're looking for doesn't exist or has been removed.</p>
+      <Button variant="secondary" onPress={() => router.push('/quotations')}>Back to Quotations</Button>
+    </div>
+  );
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -195,6 +175,7 @@ export default function QuotationDetailPage() {
           <Modal.Dialog>
             <Modal.Header>Edit Quotation</Modal.Header>
             <Modal.Body>
+              {error && <p className="text-sm text-danger mb-2">{error}</p>}
               <form id="edit-form" onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="customerId">Customer</Label>
@@ -254,7 +235,7 @@ export default function QuotationDetailPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setEditOpen(false)}>Cancel</Button>
-              <Button type="submit" form="edit-form" isDisabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+              <Button type="submit" form="edit-form" isDisabled={updateQuotation.isPending}>{updateQuotation.isPending ? 'Saving...' : 'Save'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
@@ -269,7 +250,7 @@ export default function QuotationDetailPage() {
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteOpen(false)}>Cancel</Button>
-              <Button variant="danger" isPending={deleting} onPress={handleDelete}>{deleting ? 'Deleting...' : 'Delete'}</Button>
+              <Button variant="danger" isPending={deleteQuotation.isPending} onPress={handleDelete}>{deleteQuotation.isPending ? 'Deleting...' : 'Delete'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

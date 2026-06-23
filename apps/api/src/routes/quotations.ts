@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { quotations, quoteItems, shipments } from '../db/schema';
-import { requireRole, requireAbility } from '../middleware/authorization';
+import { requireRole, requireAbility, requireBranchScope, getQueryScope } from '../middleware/authorization';
 import {
   createQuotationSchema,
   updateQuotationSchema,
@@ -12,14 +12,15 @@ import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
-app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
 
   const status = c.req.query('status');
   const customerId = c.req.query('customerId');
 
-  const conditions = [eq(quotations.tenantId, tenantId)];
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (scope.tenantId) conditions.push(eq(quotations.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
   if (status) conditions.push(eq(quotations.status, status));
   if (customerId) conditions.push(eq(quotations.customerId, customerId));
 
@@ -32,15 +33,18 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   return c.json({ data: rows });
 });
 
-app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(quotations.id, id)];
+  if (scope.tenantId) conditions.push(eq(quotations.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
 
   const [quote] = await db
     .select()
     .from(quotations)
-    .where(and(eq(quotations.id, id), eq(quotations.tenantId, tenantId)))
+    .where(and(...conditions))
     .limit(1);
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
@@ -54,7 +58,8 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) =>
   return c.json({ data: { ...quote, items } });
 });
 
-app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
+app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const user = c.get('user') as { id: string; role: string; tenantId?: string; branchId?: string } | null;
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
@@ -67,6 +72,23 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   }
 
   const { items, ...quoteData } = parsed.data;
+  const bodyBranchId = quoteData.branchId;
+  const overrideBranchId = c.get('branchId');
+
+  // Branch scope enforcement on creation
+  if (user?.role === 'staff') {
+    const allowedBranchId = user.branchId;
+    if (!allowedBranchId) return c.json({ error: 'No branch assigned to your account' }, 403);
+    if (bodyBranchId && bodyBranchId !== allowedBranchId) {
+      return c.json({ error: 'You can only create quotations in your assigned branch' }, 403);
+    }
+    quoteData.branchId = allowedBranchId;
+  } else if (user?.role === 'tenant-admin' && overrideBranchId) {
+    if (bodyBranchId && bodyBranchId !== overrideBranchId) {
+      return c.json({ error: 'Branch override mismatch: quotation branch does not match selected branch filter' }, 403);
+    }
+    quoteData.branchId = overrideBranchId;
+  }
 
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
@@ -84,10 +106,10 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   return c.json({ data: { ...quote, items } }, 201);
 });
 
-app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
   const parsed = updateQuotationSchema.safeParse(body);
@@ -106,10 +128,13 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     updateData.total = total;
   }
 
+  const updateConditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
+  if (scope.branchId) updateConditions.push(eq(quotations.branchId, scope.branchId));
+
   const [quote] = await db
     .update(quotations)
     .set(updateData)
-    .where(and(eq(quotations.id, id), eq(quotations.tenantId, tenantId)))
+    .where(and(...updateConditions))
     .returning();
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
@@ -129,10 +154,10 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
   return c.json({ data: { ...quote, items: updatedItems } });
 });
 
-app.patch('/:id/status', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.patch('/:id/status', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
   const parsed = updateQuotationStatusSchema.safeParse(body);
@@ -142,25 +167,31 @@ app.patch('/:id/status', requireRole('superadmin', 'tenant-admin', 'staff'), asy
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
+  const updateConditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
+  if (scope.branchId) updateConditions.push(eq(quotations.branchId, scope.branchId));
+
   const [quote] = await db
     .update(quotations)
     .set({ status: parsed.data.status, updatedAt: new Date() })
-    .where(and(eq(quotations.id, id), eq(quotations.tenantId, tenantId)))
+    .where(and(...updateConditions))
     .returning();
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
   return c.json({ data: quote });
 });
 
-app.post('/:id/convert', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const tenantId = c.get('tenantId');
+app.post('/:id/convert', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
   const { id } = c.req.param();
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
+  if (scope.branchId) findConditions.push(eq(quotations.branchId, scope.branchId));
 
   const [quote] = await db
     .select()
     .from(quotations)
-    .where(and(eq(quotations.id, id), eq(quotations.tenantId, tenantId)))
+    .where(and(...findConditions))
     .limit(1);
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
@@ -180,7 +211,7 @@ app.post('/:id/convert', requireRole('superadmin', 'tenant-admin', 'staff'), asy
       status: 'pending',
       origin: quote.notes || undefined,
       branchId: quote.branchId,
-      tenantId,
+      tenantId: scope.tenantId,
       payload: { convertedFromQuote: quote.id, quoteNo: quote.quoteNo },
     })
     .returning();

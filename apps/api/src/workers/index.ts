@@ -1,23 +1,25 @@
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
-import { bullConnection } from '../redis';
+import { bullConnectionOptions } from '../redis';
 import { db } from '../db';
-import { isRedisConnected, notificationQueue, emailQueue, whatsappQueue, pdfQueue, deadLetterQueue } from '../queues';
+import { isRedisConnected, notificationQueue, emailQueue, whatsappQueue, pdfQueue, archiveQueue, deadLetterQueue } from '../queues';
 import type { EventType } from '../email/templates';
 import { renderEmail } from '../email/render';
 import { sendEmail } from '../email/provider';
+import { buildEmailHtml } from '../email/build-html';
 import type { Branding, ShipmentData } from '../email/types';
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';
 import { invoices as invoiceSchema, shipments, customers } from '../db/schema';
+import { runArchive } from '../services/archive';
 import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
 
 function getConnection() {
-  if (!bullConnection) {
-    throw new Error('BullMQ connection not available — UPSTASH_REDIS_URL missing');
+  if (!bullConnectionOptions) {
+    throw new Error('BullMQ connection not available — REDIS_URL missing');
   }
-  return bullConnection;
+  return bullConnectionOptions;
 }
 
 function createWorker<T = unknown>(
@@ -61,88 +63,90 @@ type NotifyJobData = {
   trackingNo: string;
 };
 
+export async function notificationProcessor(job: NotifyJobData): Promise<void> {
+  const { shipmentId, eventId, eventType, tenantId, trackingNo } = job;
+
+  const ship = await db
+    .select({
+      trackingNo: shipments.trackingNo,
+      carrier: shipments.carrier,
+      origin: shipments.origin,
+      destination: shipments.destination,
+      estimatedDelivery: shipments.estimatedDelivery,
+      status: shipments.status,
+      customerId: shipments.customerId,
+    })
+    .from(shipments)
+    .where(eq(shipments.id, shipmentId))
+    .limit(1);
+
+  if (!ship.length) {
+    console.warn(`[notifications] Shipment ${shipmentId} not found`);
+    return;
+  }
+
+  const s = ship[0]!;
+  let customerName: string | null = null;
+  let customerEmail: string | null = null;
+  let customerPhone: string | null = null;
+
+  if (s.customerId) {
+    const cust = await db
+      .select({ name: customers.name, email: customers.email, phone: customers.phone })
+      .from(customers)
+      .where(eq(customers.id, s.customerId))
+      .limit(1);
+    if (cust.length) {
+      customerName = cust[0]!.name;
+      customerEmail = cust[0]!.email;
+      customerPhone = cust[0]!.phone;
+    }
+  }
+
+  const shipmentData: ShipmentData = {
+    trackingNo: s.trackingNo,
+    carrier: s.carrier ?? undefined,
+    origin: s.origin ?? undefined,
+    destination: s.destination ?? undefined,
+    estimatedDelivery: s.estimatedDelivery?.toISOString() ?? undefined,
+    customerName: customerName ?? undefined,
+    status: eventType,
+  };
+
+  // Fan out: email
+  if (customerEmail && emailQueue) {
+    const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
+    if (!emailAlreadySent) {
+      await emailQueue.add('send', {
+        to: customerEmail,
+        eventType,
+        shipment: shipmentData,
+      });
+    } else {
+      console.log(`[notifications] Skipping duplicate email for event ${eventId} / shipment ${shipmentId}`);
+    }
+  }
+
+  // Fan out: WhatsApp (queued)
+  if (customerPhone && isWhatsAppConfigured() && whatsappQueue) {
+    const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp');
+    if (!waAlreadySent) {
+      const waParams = getWhatsAppTemplateParams(eventType, shipmentData);
+      if (waParams) {
+        await whatsappQueue.add('send', {
+          to: customerPhone,
+          ...waParams,
+        });
+      }
+    } else {
+      console.log(`[notifications] Skipping duplicate WhatsApp for event ${eventId} / shipment ${shipmentId}`);
+    }
+  }
+}
+
 export const notificationWorker = createWorker<NotifyJobData>(
   'notification',
-  async (job) => {
-    const { shipmentId, eventId, eventType, tenantId, trackingNo } = job.data;
-
-    const ship = await db
-      .select({
-        trackingNo: shipments.trackingNo,
-        carrier: shipments.carrier,
-        origin: shipments.origin,
-        destination: shipments.destination,
-        estimatedDelivery: shipments.estimatedDelivery,
-        status: shipments.status,
-        customerId: shipments.customerId,
-      })
-      .from(shipments)
-      .where(eq(shipments.id, shipmentId))
-      .limit(1);
-
-    if (!ship.length) {
-      console.warn(`[notifications] Shipment ${shipmentId} not found`);
-      return;
-    }
-
-    const s = ship[0]!;
-    let customerName: string | null = null;
-    let customerEmail: string | null = null;
-    let customerPhone: string | null = null;
-
-    if (s.customerId) {
-      const cust = await db
-        .select({ name: customers.name, email: customers.email, phone: customers.phone })
-        .from(customers)
-        .where(eq(customers.id, s.customerId))
-        .limit(1);
-      if (cust.length) {
-        customerName = cust[0]!.name;
-        customerEmail = cust[0]!.email;
-        customerPhone = cust[0]!.phone;
-      }
-    }
-
-    const shipmentData: ShipmentData = {
-      trackingNo: s.trackingNo,
-      carrier: s.carrier ?? undefined,
-      origin: s.origin ?? undefined,
-      destination: s.destination ?? undefined,
-      estimatedDelivery: s.estimatedDelivery?.toISOString() ?? undefined,
-      customerName: customerName ?? undefined,
-      status: eventType,
-    };
-
-    // Fan out: email
-    if (customerEmail && emailQueue) {
-      const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
-      if (!emailAlreadySent) {
-        await emailQueue.add('send', {
-          to: customerEmail,
-          eventType,
-          shipment: shipmentData,
-        });
-      } else {
-        console.log(`[notifications] Skipping duplicate email for event ${eventId} / shipment ${shipmentId}`);
-      }
-    }
-
-    // Fan out: WhatsApp (queued)
-    if (customerPhone && isWhatsAppConfigured() && whatsappQueue) {
-      const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp');
-      if (!waAlreadySent) {
-        const waParams = getWhatsAppTemplateParams(eventType, shipmentData);
-        if (waParams) {
-          await whatsappQueue.add('send', {
-            to: customerPhone,
-            ...waParams,
-          });
-        }
-      } else {
-        console.log(`[notifications] Skipping duplicate WhatsApp for event ${eventId} / shipment ${shipmentId}`);
-      }
-    }
-  },
+  notificationProcessor,
   5,
 );
 
@@ -166,58 +170,75 @@ type EmailJobData = {
   pdfBase64?: string;
 };
 
-export const emailWorker = createWorker<EmailJobData>(
-  'email',
-  async (job) => {
-    const { to, eventType, shipment, branding, invoiceId, pdfBase64 } = job.data;
+export async function emailProcessor(job: EmailJobData): Promise<void> {
+  const { to, eventType, shipment, branding, invoiceId, pdfBase64 } = job;
 
-    if (invoiceId && pdfBase64) {
-      const [inv] = await db
-        .select({
-          invoiceNo: invoiceSchema.invoiceNo,
-          tenantId: invoiceSchema.tenantId,
-          customerId: invoiceSchema.customerId,
-        })
-        .from(invoiceSchema)
-        .where(eq(invoiceSchema.id, invoiceId))
-        .limit(1);
+  if (invoiceId && pdfBase64) {
+    const [inv] = await db
+      .select({
+        invoiceNo: invoiceSchema.invoiceNo,
+        tenantId: invoiceSchema.tenantId,
+        customerId: invoiceSchema.customerId,
+      })
+      .from(invoiceSchema)
+      .where(eq(invoiceSchema.id, invoiceId))
+      .limit(1);
 
-      if (!inv) {
-        console.warn(`[email] Invoice ${invoiceId} not found`);
-        return;
-      }
-
-      const [cust] = await db
-        .select({ email: customers.email, name: customers.name })
-        .from(customers)
-        .where(eq(customers.id, inv.customerId))
-        .limit(1);
-
-      if (!cust?.email) {
-        console.warn(`[email] No email for customer ${inv.customerId}`);
-        return;
-      }
-
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-      await sendEmail({
-        to: cust.email,
-        subject: `Invoice ${inv.invoiceNo} from Gajan Traders`,
-        html: `<p>Dear ${cust.name ?? 'Customer'},</p><p>Please find your invoice attached.</p>`,
-        attachments: [{
-          filename: `invoice-${inv.invoiceNo}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf',
-        }],
-      });
+    if (!inv) {
+      console.warn(`[email] Invoice ${invoiceId} not found`);
       return;
     }
 
-    if (!eventType || !shipment || !to) return;
+    const [cust] = await db
+      .select({ email: customers.email, name: customers.name })
+      .from(customers)
+      .where(eq(customers.id, inv.customerId))
+      .limit(1);
 
-    const html = await renderEmail(eventType, shipment, branding);
-    const subject = getEmailSubject(eventType, shipment);
-    await sendEmail({ to, subject, html });
-  },
+    if (!cust?.email) {
+      console.warn(`[email] No email for customer ${inv.customerId}`);
+      return;
+    }
+
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    await sendEmail({
+      to: cust.email,
+      subject: `Invoice ${inv.invoiceNo} from Gajan Traders`,
+      html: buildEmailHtml({
+        title: 'Invoice',
+        bodyHtml: `<table role="presentation" style="width:100%">
+          <tr>
+            <td style="text-align:center;padding-bottom:16px">
+              <p style="font-size:13px;margin:0 0 4px;color:#52525b">Dear ${cust.name ?? 'Customer'},</p>
+              <p style="font-size:13px;margin:0;color:#52525b">Invoice <strong style="color:#18181b">${inv.invoiceNo}</strong> is attached as a PDF.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align:center;padding:8px 0">
+              <p style="font-size:11px;margin:0;color:#a1a1aa">Please review the attached document for details.</p>
+            </td>
+          </tr>
+        </table>`,
+      }),
+      attachments: [{
+        filename: `invoice-${inv.invoiceNo}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      }],
+    });
+    return;
+  }
+
+  if (!eventType || !shipment || !to) return;
+
+  const html = await renderEmail(eventType, shipment, branding);
+  const subject = getEmailSubject(eventType, shipment);
+  await sendEmail({ to, subject, html });
+}
+
+export const emailWorker = createWorker<EmailJobData>(
+  'email',
+  emailProcessor,
   5,
 );
 
@@ -266,11 +287,30 @@ export const pdfWorker = createWorker<PdfJobData>(
   2,
 );
 
+type ArchiveJobData = Record<string, never>;
+
+export const archiveWorker = createWorker<ArchiveJobData>(
+  'archive',
+  async () => {
+    const result = await runArchive();
+    console.log(`[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}`);
+  },
+  1,
+);
+
+// Register the daily repeatable job (3 AM). BullMQ deduplicates by name + pattern.
+archiveQueue?.add('archive-run', {}, {
+  repeat: { pattern: '0 3 * * *' },
+  removeOnComplete: { age: 86400 * 7, count: 50 },
+  removeOnFail: { age: 86400 * 30, count: 100 },
+}).catch((err: Error) => console.error('[archive] failed to register repeatable job:', err.message));
+
 export const workers = [
   notificationWorker,
   emailWorker,
   whatsappWorker,
   pdfWorker,
+  archiveWorker,
 ]
   .filter((w): w is Worker => w !== null);
 

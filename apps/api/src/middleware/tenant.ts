@@ -3,7 +3,7 @@
 import type { Context, Next } from 'hono';
 import * as Sentry from '@sentry/hono/node';
 import { db } from '../db';
-import { tenantDomains } from '../db/schema';
+import { tenantDomains, tenants } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { setRLSTenantContext } from '../db/rls';
 import { cacheGet, cacheSet } from '../cache';
@@ -12,7 +12,7 @@ const CACHE_TTL_SEC = 300;
 
 export type TenantVariables = {
   tenantId: string | null;
-  tenantSource: 'user' | 'domain' | 'header' | null;
+  tenantSource: 'user' | 'domain' | 'header' | 'slug' | null;
 };
 
 export class TenantResolutionError extends Error {
@@ -55,12 +55,39 @@ async function resolveTenantByDomain(host: string): Promise<string | null> {
   }
 }
 
+async function resolveTenantBySlug(slug: string): Promise<string | null> {
+  const cached = await cacheGet<string | null>(null, `slug:${slug}`);
+  if (cached !== null) {
+    return cached || null;
+  }
+
+  try {
+    const result = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+
+    if (result.length > 0 && result[0]) {
+      await cacheSet(null, `slug:${slug}`, result[0].id, CACHE_TTL_SEC);
+      return result[0].id;
+    }
+
+    await cacheSet(null, `slug:${slug}`, '', CACHE_TTL_SEC);
+    return null;
+  } catch (error) {
+    console.error('Tenant slug lookup failed:', error);
+    return null;
+  }
+}
+
 export async function tenantMiddleware(c: Context, next: Next) {
   let tenantId: string | null = null;
-  let tenantSource: 'user' | 'domain' | 'header' | null = null;
+  let tenantSource: 'user' | 'domain' | 'header' | 'slug' | null = null;
 
   const headerTenantId = c.req.header('X-Tenant-ID');
-  const user = c.get('user') as { role?: string } | null;
+  const headerTenantSlug = c.req.header('X-Tenant-Slug');
+  const user = c.get('user') as { role?: string; tenantId?: string; branchId?: string } | null;
 
   if (headerTenantId && user?.role === 'superadmin') {
     tenantId = headerTenantId;
@@ -72,6 +99,13 @@ export async function tenantMiddleware(c: Context, next: Next) {
     if (userTenantId && typeof userTenantId === 'string') {
       tenantId = userTenantId;
       tenantSource = 'user';
+    }
+  }
+
+  if (!tenantId && headerTenantSlug) {
+    tenantId = await resolveTenantBySlug(headerTenantSlug);
+    if (tenantId) {
+      tenantSource = 'slug';
     }
   }
 
@@ -92,12 +126,14 @@ export async function tenantMiddleware(c: Context, next: Next) {
   if (tenantId) {
     Sentry.setTag('tenantId', tenantId);
   }
-  Sentry.setTag('tenantSource', tenantSource ?? 'none');
+  Sentry.setTag('tenantSource', (tenantSource as string) ?? 'none');
+  Sentry.setTag('branchOverride', c.req.header('X-Branch-ID') ?? 'none');
 
   try {
     await setRLSTenantContext(tenantId);
   } catch (error) {
     console.error('Failed to set RLS context:', error);
+    return c.json({ error: 'Internal server error' }, 500);
   }
 
   await next();
