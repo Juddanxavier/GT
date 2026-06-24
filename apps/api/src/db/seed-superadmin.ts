@@ -4,7 +4,7 @@ import { auth } from '../auth';
 import { eq } from 'drizzle-orm';
 
 async function seedSuperAdmin() {
-  const email = 'superadmin@gajantraders.com';
+  const email = 'juddan2008@gmail.com';
   const existing = await db.select().from(user).where(eq(user.email, email)).limit(1);
 
   if (existing.length > 0) {
@@ -15,13 +15,13 @@ async function seedSuperAdmin() {
   await auth.api.createUser({
     body: {
       email,
-      password: 'Admin@123',
+      password: 'B7a90sfd@12',
       name: 'Super Admin',
       role: 'superadmin',
     },
   });
 
-  console.log('Super admin created: superadmin@gajantraders.com / Admin@123');
+  console.log('Super admin created: juddan2008@gmail.com / B7a90sfd@12');
   process.exit(0);
 }
 
