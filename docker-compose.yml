@@ -26,8 +26,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: api
+      dockerfile: apps/api/Dockerfile
     ports:
       - '3001:3001'
     depends_on:
@@ -39,8 +38,7 @@ services:
   admin:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: admin
+      dockerfile: apps/admin/Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:3001
     ports:
