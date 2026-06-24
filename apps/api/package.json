@@ -10,7 +10,7 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=../../.env src/db/seed.ts",
-    "db:seed-admin": "tsx --env-file=../../.env src/db/seed-superadmin.ts",
+    "db:seed-admin": "tsx src/db/seed-superadmin.ts",
     "start": "tsx src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"
