@@ -14,6 +14,10 @@ export const auth = betterAuth({
     trustedOrigins: [
       'http://localhost:3000',
       'http://localhost:3001',
+      'https://admin.gajantraders.com',
+      'https://api.gajantraders.com',
+      'https://gajantraders.com',
+      'https://www.gajantraders.com',
       ...(process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? []),
     ],
     sendEmail,
