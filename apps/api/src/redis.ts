@@ -11,6 +11,7 @@ function createBullConnection(): Redis | null {
   const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    lazyConnect: true,
   });
   client.on('error', (err) => console.error('[redis] bull connection error:', err.message));
   return client;

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "predev": "powershell -NoProfile -File scripts/kill-ports.ps1",
     "dev": "turbo run dev",
     "lint": "biome check .",
     "format": "biome format --write .",

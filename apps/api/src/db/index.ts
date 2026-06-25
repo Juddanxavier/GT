@@ -11,6 +11,7 @@ if (!connectionString) {
 const client = postgres(connectionString, {
   max: Number(process.env.DB_POOL_MAX) || 50,
   ssl: connectionString.includes('localhost') ? false : 'require',
+  onnotice: () => {},
 });
 
 export { client };
