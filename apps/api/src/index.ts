@@ -47,6 +47,14 @@ function validateEnv(): void {
   if (!process.env.TRACK_WEBHOOK_SECRET) {
     console.warn('[env] TRACK_WEBHOOK_SECRET is empty — 17TRACK webhook verification will reject all requests');
   }
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.REDIS_URL) {
+      console.warn('[env] REDIS_URL is empty — job queues and real-time features will be unavailable');
+    }
+    if (!process.env.SEED_SECRET) {
+      console.warn('[env] SEED_SECRET is empty — superadmin seed endpoint is unprotected');
+    }
+  }
 }
 
 type AppVariables = AuthVariables & TenantVariables & BranchVariables & RequestIdVariables;

@@ -26,6 +26,7 @@
     "@hono/node-server": "^2.0.4",
     "@react-email/components": "^1.0.12",
     "@react-pdf/renderer": "^4.5.1",
+    "@repo/auth-config": "workspace:*",
     "@repo/permissions": "workspace:^",
     "@sentry/hono": "^10.57.0",
     "@sentry/node": "^10.57.0",

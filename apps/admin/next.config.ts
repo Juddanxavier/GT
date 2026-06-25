@@ -6,7 +6,6 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
 
 const nextConfig: NextConfig = {
   transpilePackages: ['better-auth'],
-  typescript: { ignoreBuildErrors: true },
   async headers() {
     return [
       {
