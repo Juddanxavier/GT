@@ -18,22 +18,24 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
 
   const search = q.trim();
 
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
   const shipConditions: ReturnType<typeof eq>[] = [
     sql`${like(shipments.trackingNo, `%${search}%`)}`,
+    eq(shipments.tenantId, scope.tenantId),
   ];
-  if (scope.tenantId) shipConditions.push(eq(shipments.tenantId, scope.tenantId));
   if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
 
   const customerConditions: ReturnType<typeof eq>[] = [
     sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
+    eq(customers.tenantId, scope.tenantId),
   ];
-  if (scope.tenantId) customerConditions.push(eq(customers.tenantId, scope.tenantId));
   if (scope.branchId) customerConditions.push(eq(customers.branchId, scope.branchId));
 
   const invoiceConditions: ReturnType<typeof eq>[] = [
     sql`${like(invoices.invoiceNo, `%${search}%`)}`,
+    eq(invoices.tenantId, scope.tenantId),
   ];
-  if (scope.tenantId) invoiceConditions.push(eq(invoices.tenantId, scope.tenantId));
   if (scope.branchId) invoiceConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipRows, customerRows, invoiceRows] = await Promise.all([

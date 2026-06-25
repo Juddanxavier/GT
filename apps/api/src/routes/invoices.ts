@@ -16,6 +16,8 @@ app.get('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'staf
   const shipmentId = c.req.param('shipmentId');
   if (!shipmentId) return c.json({ error: 'Invalid request' }, 400);
 
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
   // Verify branch scope
   if (scope.branchId) {
     const [ship] = await db
@@ -26,7 +28,7 @@ app.get('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'staf
     if (!ship) return c.json({ error: 'Shipment not found' }, 404);
   }
 
-  const data = await getInvoiceByShipmentId(shipmentId, scope.tenantId ?? null);
+  const data = await getInvoiceByShipmentId(shipmentId, scope.tenantId);
   return c.json({ data: data ?? null });
 });
 
@@ -93,8 +95,9 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   const limit = Math.min(100, Math.max(1, Number(c.req.query('limit')) || 50));
   const offset = (page - 1) * limit;
 
-  const conditions: ReturnType<typeof eq>[] = [];
-  if (scope.tenantId) conditions.push(eq(invoices.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(invoices.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
   if (search) conditions.push(sql`${like(invoices.invoiceNo, `%${search}%`)}`);
 

@@ -15,11 +15,8 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
 
   if (isSuperAdmin) {
     const tenantId = c.get('tenantId');
-    if (tenantId) {
-      const rows = await db.select().from(branches).where(eq(branches.tenantId, tenantId)).orderBy(branches.name);
-      return c.json({ data: rows });
-    }
-    const rows = await db.select().from(branches).orderBy(branches.name);
+    if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+    const rows = await db.select().from(branches).where(eq(branches.tenantId, tenantId)).orderBy(branches.name);
     return c.json({ data: rows });
   }
 
@@ -82,13 +79,6 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
 app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
   const curUser = getUser(c);
   const { id } = c.req.param();
-
-  // Superadmin without tenant filter sees all branches
-  if (curUser?.role === 'superadmin' && !c.get('tenantId')) {
-    const [row] = await db.select().from(branches).where(eq(branches.id, id)).limit(1);
-    if (!row) return c.json({ error: 'Branch not found' }, 404);
-    return c.json({ data: row });
-  }
 
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);

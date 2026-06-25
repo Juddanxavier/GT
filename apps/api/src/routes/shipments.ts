@@ -26,8 +26,9 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
 
   if (search && search.length > 100) return c.json({ error: 'Search query too long' }, 400);
 
-  const conditions: ReturnType<typeof eq>[] = [];
-  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
   if (status) conditions.push(eq(shipments.status, status));
   if (customerId) conditions.push(eq(shipments.customerId, customerId));
@@ -257,8 +258,9 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const scope = getQueryScope(c);
   const { id } = c.req.param();
 
-  const conditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
-  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
 
   const [row] = await db
@@ -411,8 +413,9 @@ app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), req
   const scope = getQueryScope(c);
   const { id } = c.req.param();
 
-  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
-  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db
@@ -445,8 +448,9 @@ app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'
   const scope = getQueryScope(c);
   const { id } = c.req.param();
 
-  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id)];
-  if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [shipment] = await db

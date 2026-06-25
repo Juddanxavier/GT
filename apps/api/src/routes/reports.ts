@@ -38,6 +38,7 @@ function scopeFilters(scope: { tenantId?: string; branchId?: string }) {
 // Shipment aggregate
 app.get('/shipments', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
   const dFilter = dateFilter('created_at', start, end);
@@ -73,6 +74,7 @@ app.get('/shipments', requireRole('superadmin', 'tenant-admin'), async (c) => {
 // Quotation aggregate
 app.get('/quotations', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
   const dFilter = dateFilter('created_at', start, end);
@@ -108,6 +110,7 @@ app.get('/quotations', requireRole('superadmin', 'tenant-admin'), async (c) => {
 // Shipment records (paginated)
 app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
   const sdFilter = dateFilter('s.created_at', start, end);
@@ -131,6 +134,7 @@ app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) 
 // Quotation records (paginated)
 app.get('/quotations/data', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
   const qdFilter = dateFilter('q.created_at', start, end);
@@ -154,6 +158,7 @@ app.get('/quotations/data', requireRole('superadmin', 'tenant-admin'), async (c)
 // Generate PDF
 app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const body = await c.req.json() as { type?: string; startDate?: string; endDate?: string };
   const { tFilter, bFilter, sFilter, sbFilter, qFilter, qbFilter } = scopeFilters(scope);
 
@@ -191,6 +196,7 @@ app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
 // Send PDF via email
 app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const body = await c.req.json() as { type?: string; startDate?: string; endDate?: string };
   const user = c.get('user') as Record<string, unknown> | undefined;
   if (!user?.email) return c.json({ error: 'No email on your account' }, 400);

@@ -131,8 +131,9 @@ export function useTenants() {
 // ─── Dashboard queries ───────────────────────────────────────────────
 
 export function useDashboardBranches() {
+  const { filterVersion } = useTenantFilter();
   return useQuery<{ id: string; name: string }[]>({
-    queryKey: ['dashboard-branches'],
+    queryKey: ['dashboard-branches', filterVersion],
     queryFn: () => api.get<{ id: string; name: string }[]>('/api/dashboard/branches'),
   });
 }

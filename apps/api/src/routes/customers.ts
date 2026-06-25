@@ -14,8 +14,9 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   const search = c.req.query('search');
   const branchId = c.req.query('branchId');
 
-  const conditions: ReturnType<typeof eq>[] = [];
-  if (scope.tenantId) conditions.push(eq(customers.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
   if (search) {
     conditions.push(
@@ -59,8 +60,9 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const scope = getQueryScope(c);
   const { id } = c.req.param();
 
-  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id)];
-  if (scope.tenantId) conditions.push(eq(customers.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
 
   const [row] = await db

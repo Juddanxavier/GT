@@ -18,8 +18,9 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   const status = c.req.query('status');
   const customerId = c.req.query('customerId');
 
-  const conditions: ReturnType<typeof eq>[] = [];
-  if (scope.tenantId) conditions.push(eq(quotations.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(quotations.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
   if (status) conditions.push(eq(quotations.status, status));
   if (customerId) conditions.push(eq(quotations.customerId, customerId));
@@ -37,8 +38,9 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const scope = getQueryScope(c);
   const { id } = c.req.param();
 
-  const conditions: ReturnType<typeof eq>[] = [eq(quotations.id, id)];
-  if (scope.tenantId) conditions.push(eq(quotations.tenantId, scope.tenantId));
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
 
   const [quote] = await db

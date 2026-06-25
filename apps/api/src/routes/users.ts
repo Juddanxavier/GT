@@ -20,19 +20,16 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
 
   const conditions: ReturnType<typeof eq>[] = [];
 
+  const overrideTenantId = c.get('tenantId');
   if (currentUser.role === 'superadmin') {
-    const overrideTenantId = c.get('tenantId');
-    if (overrideTenantId) {
-      conditions.push(
-        sql`(${eq(user.tenantId, overrideTenantId)} OR ${sql`${user.tenantId} IS NULL`})`,
-      );
-    }
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(
+      sql`(${eq(user.tenantId, overrideTenantId)} OR ${sql`${user.tenantId} IS NULL`})`,
+    );
   } else if (currentUser.role === 'tenant-admin') {
-    // Tenant-admin sees users in their own tenant
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(user.tenantId, currentUser.tenantId));
   } else {
-    // Staff sees only customer-role users in their own tenant and branch
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     if (!currentUser.branchId) return c.json({ error: 'No branch assigned' }, 400);
     conditions.push(eq(user.tenantId, currentUser.tenantId));
@@ -83,11 +80,10 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
 
   if (currentUser.role === 'superadmin') {
     const overrideTenantId = c.get('tenantId');
-    if (overrideTenantId) {
-      conditions.push(
-        sql`(${eq(user.tenantId, overrideTenantId)} OR ${sql`${user.tenantId} IS NULL`})`,
-      );
-    }
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(
+      sql`(${eq(user.tenantId, overrideTenantId)} OR ${sql`${user.tenantId} IS NULL`})`,
+    );
   } else {
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(user.tenantId, currentUser.tenantId));
@@ -131,7 +127,11 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
 
   // Verify access
   const conditions: ReturnType<typeof eq>[] = [eq(user.id, id)];
-  if (currentUser.role !== 'superadmin') {
+  if (currentUser.role === 'superadmin') {
+    const overrideTenantId = c.get('tenantId');
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(eq(user.tenantId, overrideTenantId));
+  } else {
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(user.tenantId, currentUser.tenantId));
     if (currentUser.role === 'staff') {
@@ -361,7 +361,11 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   }
 
   const conditions: ReturnType<typeof eq>[] = [eq(user.id, id)];
-  if (currentUser.role !== 'superadmin') {
+  if (currentUser.role === 'superadmin') {
+    const overrideTenantId = c.get('tenantId');
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(eq(user.tenantId, overrideTenantId));
+  } else {
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(user.tenantId, currentUser.tenantId));
   }

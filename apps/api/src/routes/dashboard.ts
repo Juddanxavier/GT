@@ -341,7 +341,7 @@ async function buildSuperadminStats(filterTenantId: string | null) {
 
 app.get('/branches', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!tenantId) return c.json({ data: [] });
 
   const rows = await db
     .select({ id: branches.id, name: branches.name })
