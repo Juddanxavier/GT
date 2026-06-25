@@ -539,7 +539,7 @@ export default function ShipmentDetailPage() {
                     <span className="text-sm">{invoice.emailCount}/2 today</span>
                   </div>
                   <div className="pt-2 space-y-2 border-t border-border">
-                    <Button className="w-full justify-start" variant="secondary" size="sm" onPress={() => window.open(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/invoices/${invoice.id}/pdf`, '_blank')}>
+                    <Button className="w-full justify-start" variant="secondary" size="sm" onPress={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invoices/${invoice.id}/pdf`, '_blank')}>
                       <FileText size={16} />
                       View Invoice
                     </Button>

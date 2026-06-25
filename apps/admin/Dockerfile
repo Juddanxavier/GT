@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/admin/package.json apps/admin/
 COPY packages/ packages/
-ARG NEXT_PUBLIC_API_URL=https://api.gajantraders.com
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.gajantraders.com}
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter=admin build

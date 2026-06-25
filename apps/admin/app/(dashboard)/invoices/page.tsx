@@ -63,7 +63,7 @@ export default function InvoicesPage() {
   }
 
   function downloadPdf(id: string) {
-    window.open(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/invoices/${id}/pdf`, '_blank');
+    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invoices/${id}/pdf`, '_blank');
   }
 
   return (

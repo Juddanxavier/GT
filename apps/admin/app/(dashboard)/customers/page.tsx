@@ -419,7 +419,7 @@ export default function UsersPage() {
                 if (!createEmail.trim()) { setCreateError('Email is required'); return; }
                 setCreateSaving(true);
                 try {
-                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/users/create`, {
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/create`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },

@@ -125,7 +125,7 @@ export default function ReportsPage() {
       if (tenantOverride) headers['X-Tenant-ID'] = tenantOverride;
       const branchOverride = getBranchFilter();
       if (branchOverride) headers['X-Branch-ID'] = branchOverride;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/reports/pdf`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/reports/pdf`, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -160,7 +160,7 @@ export default function ReportsPage() {
       if (tenantOverride) headers['X-Tenant-ID'] = tenantOverride;
       const branchOverride = getBranchFilter();
       if (branchOverride) headers['X-Branch-ID'] = branchOverride;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/reports/send-email`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/reports/send-email`, {
         method: 'POST',
         headers,
         credentials: 'include',
