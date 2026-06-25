@@ -20,6 +20,11 @@ services:
       - '3000:3000'
     environment:
       - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+      - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
+      - DATABASE_URL
+      - BETTER_AUTH_SECRET
+      - BETTER_AUTH_URL=https://admin.gajantraders.com
+      - DB_SSL
     depends_on:
       - api
     restart: unless-stopped
