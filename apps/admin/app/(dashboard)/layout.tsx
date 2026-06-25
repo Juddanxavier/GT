@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
 import { Modal } from '@heroui/react/modal';
@@ -59,7 +60,7 @@ function NavItems(role?: string) {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false },
+    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false, retry: 1 },
   },
 });
 
@@ -481,7 +482,7 @@ function DashboardLayoutInner({
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
     </div>
