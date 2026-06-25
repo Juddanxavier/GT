@@ -1,3 +1,4 @@
+# Build context must be repo root (subpath=/ in Dokploy)
 FROM node:22-alpine
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app

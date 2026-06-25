@@ -2,7 +2,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: Dockerfile
+      target: api
     ports:
       - '3001:3001'
     env_file: .env.production
@@ -11,7 +12,8 @@ services:
   admin:
     build:
       context: .
-      dockerfile: apps/admin/Dockerfile
+      dockerfile: Dockerfile
+      target: admin
       args:
         - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
     ports:
@@ -25,7 +27,8 @@ services:
   customer:
     build:
       context: .
-      dockerfile: apps/customer/Dockerfile
+      dockerfile: Dockerfile
+      target: customer
     ports:
       - '3002:3002'
     depends_on:
