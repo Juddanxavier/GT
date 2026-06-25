@@ -18,7 +18,7 @@ import { requireRole } from './middleware/authorization';
 import { queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
-import { tenants as tenantTable, user as userTable, twoFactor as twoFactorTable } from './db/schema';
+import { tenants as tenantTable, user as userTable } from './db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
@@ -203,21 +203,6 @@ app.post('/api/seed/superadmin', async (c) => {
     body: { email, password: 'B7a90sfd@12', name: 'Super Admin', role: 'superadmin' },
   });
   return c.json({ message: 'Super admin created' });
-});
-
-// Disable 2FA for admin users (one-time, protected by SEED_SECRET)
-app.post('/api/disable-2fa', async (c) => {
-  const secret = c.req.header('X-Seed-Secret');
-  if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-  const { email } = await c.req.json<{ email?: string }>();
-  if (!email) return c.json({ error: 'email is required' }, 400);
-  const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
-  if (!existing) return c.json({ error: 'User not found' }, 404);
-  await db.delete(twoFactorTable).where(eq(twoFactorTable.userId, existing.id));
-  await db.update(userTable).set({ twoFactorEnabled: false }).where(eq(userTable.id, existing.id));
-  return c.json({ message: `2FA disabled for ${email}` });
 });
 
 // Health check
