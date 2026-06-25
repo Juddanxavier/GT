@@ -153,17 +153,6 @@ function KpiCard({
   return <div className={cls}>{inner}</div>;
 }
 
-function LiveDot({ online }: { online: boolean }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${online ? 'text-green-500' : 'text-gray-400'}`}>
-      <span className={`relative inline-flex w-2 h-2 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`}>
-        {online && <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />}
-      </span>
-      {online ? 'Live' : 'Disconnected'}
-    </span>
-  );
-}
-
 export default function DashboardPage() {
   usePageTitle('Dashboard');
   const router = useRouter();
@@ -171,7 +160,6 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchFilter, setBranchFilter] = useState('');
   const { tenantFilter, branchFilter: navBranchFilter } = useTenantFilter();
@@ -212,14 +200,9 @@ export default function DashboardPage() {
     }
 
     const socket = connectSocket(tenantId);
-    socket.on('connect', () => setLive(true));
-    socket.on('disconnect', () => setLive(false));
     socket.on('dashboard:update', () => fetchStats(branchFilter || undefined));
-    setLive(socket.connected);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
       socket.off('dashboard:update');
     };
   }, [session, isPending, fetchStats, branchFilter]);
@@ -253,12 +236,8 @@ export default function DashboardPage() {
   const isTenantAdmin = role === 'tenant-admin';
   const isStaff = role === 'staff';
 
-  if (isSuperadmin && stats?.total) {
-    return <SuperadminDashboard stats={stats} live={live} onRetry={fetchStats} router={router} />;
-  }
-
-  if (!isSuperadmin && stats?.total) {
-    return <SuperadminDashboard stats={stats} live={live} onRetry={fetchStats} router={router} isTenantAdmin />;
+  if (stats?.total) {
+    return <SuperadminDashboard stats={stats} onRetry={fetchStats} router={router} isTenantAdmin={!isSuperadmin} />;
   }
 
   return (
@@ -266,7 +245,6 @@ export default function DashboardPage() {
       stats={stats}
       loading={loading}
       error={error}
-      live={live}
       role={role}
       isTenantAdmin={isTenantAdmin}
       isStaff={isStaff}
@@ -281,8 +259,8 @@ export default function DashboardPage() {
   );
 }
 
-function SuperadminDashboard({ stats, live, onRetry, router, isTenantAdmin }: {
-  stats: Stats; live: boolean; onRetry: () => void; router: ReturnType<typeof useRouter>; isTenantAdmin?: boolean;
+function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
+  stats: Stats; onRetry: () => void; router: ReturnType<typeof useRouter>; isTenantAdmin?: boolean;
 }) {
   const [chartRange, setChartRange] = useState<'1w' | '2w' | '1m'>('1w');
   const [revRange, setRevRange] = useState<'3m' | '6m' | '12m' | 'all'>('12m');
@@ -344,10 +322,6 @@ function SuperadminDashboard({ stats, live, onRetry, router, isTenantAdmin }: {
             <Paragraph color="muted" className="text-sm flex items-center gap-3">
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
               <span className="opacity-40">·</span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${live ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
-                {live ? 'Live' : 'Offline'}
-              </span>
             </Paragraph>
           </div>
           <div className="flex items-center gap-2">
@@ -606,10 +580,10 @@ function SuperStatCard({ label, value, sub }: { label: string; value: string | n
 }
 
 function OperationalDashboard({
-  stats, loading, error, live, role, isTenantAdmin, isStaff, userName, branchName,
+  stats, loading, error, role, isTenantAdmin, isStaff, userName, branchName,
   branches, branchFilter, onBranchChange, onRetry, router,
 }: {
-  stats: Stats | null; loading: boolean; error: string | null; live: boolean;
+  stats: Stats | null; loading: boolean; error: string | null;
   role: string; isTenantAdmin: boolean; isStaff: boolean; userName: string; branchName?: string;
   branches: Branch[]; branchFilter: string; onBranchChange: (v: string) => void;
   onRetry: () => void; router: ReturnType<typeof useRouter>;
@@ -773,8 +747,6 @@ function OperationalDashboard({
             </div>
             <Paragraph className="text-sm text-muted flex items-center gap-3">
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-              <span className="opacity-40">·</span>
-              <LiveDot online={live} />
               {isStaff && branchName && (
                 <>
                   <span className="opacity-40">·</span>

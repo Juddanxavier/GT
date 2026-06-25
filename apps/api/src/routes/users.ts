@@ -276,9 +276,14 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }
   } catch (err) {
     const baErr = err as { status?: number; message?: string; body?: { error?: string } };
-    const status = baErr.status ?? 400;
-    const msg = baErr.body?.error || baErr.message || 'Failed to create user';
-    return c.json({ error: msg }, status as 400 | 403 | 409 | 500);
+    const [existingUser] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
+    if (existingUser) {
+      createdUserId = existingUser.id;
+    } else {
+      const status = baErr.status ?? 500;
+      const msg = baErr.body?.error || baErr.message || 'Failed to create user';
+      return c.json({ error: msg }, status as 400 | 403 | 409 | 500);
+    }
   }
 
   // Ban user until they complete onboarding
