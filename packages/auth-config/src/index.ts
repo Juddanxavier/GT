@@ -1,5 +1,5 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { admin, customSession, emailOTP } from 'better-auth/plugins';
+import { admin, customSession, emailOTP, twoFactor } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
 import { defaultStatements, adminAc } from 'better-auth/plugins/admin/access';
 import { eq } from 'drizzle-orm';
@@ -205,7 +205,39 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
           });
         },
       }),
-
+      twoFactor({
+        issuer: 'Gajan Traders',
+        skipVerificationOnEnable: true,
+        twoFactorCookieMaxAge: 600,
+        totpOptions: { digits: 6, period: 30 },
+        backupCodeOptions: { amount: 10, length: 10 },
+        otpOptions: {
+          digits: 6,
+          period: 5,
+          async sendOTP({ user, otp }) {
+            await sendEmail({
+              to: user.email,
+              subject: 'Your 2FA verification code',
+              html: buildEmailHtml({
+                title: 'Two-Factor Authentication',
+                bodyHtml: `<table role="presentation" style="width:100%">
+                  <tr>
+                    <td style="text-align:center;padding-bottom:20px">
+                      <p style="font-size:13px;margin:0 0 6px;color:#52525b">Your 2FA verification code</p>
+                      <div style="background:#f4f4f5;border-radius:8px;padding:16px;font-size:32px;letter-spacing:8px;font-weight:700;color:#18181b;display:inline-block">${otp}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
+                    </td>
+                  </tr>
+                </table>`,
+              }),
+            });
+          },
+        },
+      }),
       customSession(async ({ user, session }) => {
         const typedUser = user as { tenantId?: string | null; branchId?: string | null };
         let tenantName: string | null = null;

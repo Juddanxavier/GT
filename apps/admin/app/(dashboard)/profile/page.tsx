@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Avatar, Button, Card, Chip, Input, Label, Skeleton } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
-import { Shield, Save, Lock, User, Mail, Check, X, Building2 } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldX, Save, Lock, User, Mail, Check, X, Building2, Smartphone, RefreshCw } from 'lucide-react';
 
 export default function ProfilePage() {
   usePageTitle('Profile');
@@ -23,6 +23,14 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordDirty, setPasswordDirty] = useState(false);
+
+  const [twoFactorState, setTwoFactorState] = useState<'idle' | 'enabling' | 'disabling'>('idle');
+  const [twoFactorPassword, setTwoFactorPassword] = useState('');
+  const [twoFactorBackupCodes, setTwoFactorBackupCodes] = useState<string[]>([]);
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+  const [twoFactorMessage, setTwoFactorMessage] = useState('');
+
+  const twoFactorEnabled = (user?.twoFactorEnabled as boolean) ?? false;
 
   useEffect(() => {
     if (user?.name) { setName(user.name as string); setOriginalName(user.name as string); }
@@ -63,6 +71,54 @@ export default function ProfilePage() {
       setPasswordMessage('Failed to change password');
     } finally {
       setPasswordSaving(false);
+    }
+  }
+
+  async function handleEnable2FA() {
+    setTwoFactorMessage('');
+    setTwoFactorLoading(true);
+    try {
+      const { data, error } = await authClient.twoFactor.enable({ password: twoFactorPassword });
+      if (error) { setTwoFactorMessage(error.message || 'Failed to enable 2FA'); setTwoFactorLoading(false); return; }
+      setTwoFactorBackupCodes(data?.backupCodes ?? []);
+      setTwoFactorState('idle');
+      setTwoFactorPassword('');
+      setTwoFactorMessage('2FA enabled — save your backup codes');
+      refetch();
+    } catch {
+      setTwoFactorMessage('Failed to enable 2FA');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  }
+
+  async function handleDisable2FA() {
+    setTwoFactorMessage('');
+    setTwoFactorLoading(true);
+    try {
+      const { error } = await authClient.twoFactor.disable({ password: twoFactorPassword });
+      if (error) { setTwoFactorMessage(error.message || 'Failed to disable 2FA'); setTwoFactorLoading(false); return; }
+      setTwoFactorState('idle');
+      setTwoFactorPassword('');
+      refetch();
+    } catch {
+      setTwoFactorMessage('Failed to disable 2FA');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  }
+
+  async function handleRegenerateBackupCodes() {
+    setTwoFactorMessage('');
+    setTwoFactorLoading(true);
+    try {
+      const { data, error } = await authClient.twoFactor.generateBackupCodes({ password: twoFactorPassword });
+      if (error) { setTwoFactorMessage(error.message || 'Failed to regenerate codes'); setTwoFactorLoading(false); return; }
+      setTwoFactorBackupCodes(data?.backupCodes ?? []);
+    } catch {
+      setTwoFactorMessage('Failed to regenerate codes');
+    } finally {
+      setTwoFactorLoading(false);
     }
   }
 
@@ -260,7 +316,89 @@ export default function ProfilePage() {
         </Card.Content>
       </Card>
 
+      <Card>
+        <Card.Header>
+          <Card.Title className="flex items-center gap-2 text-sm font-semibold">
+            <Smartphone size={15} />
+            Two-Factor Authentication
+          </Card.Title>
+          <Card.Description className="text-xs text-muted">
+            Add an extra layer of security to your account
+          </Card.Description>
+        </Card.Header>
+        <Card.Content className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {twoFactorEnabled ? <ShieldCheck size={16} className="text-success" /> : <ShieldX size={16} className="text-muted" />}
+              <span className="text-sm">{twoFactorEnabled ? '2FA is enabled' : '2FA is not enabled'}</span>
+            </div>
+            <Chip size="sm" variant="soft" color={twoFactorEnabled ? 'success' : 'default'}>
+              {twoFactorEnabled ? 'Active' : 'Inactive'}
+            </Chip>
+          </div>
 
+          {twoFactorState === 'idle' && !twoFactorEnabled && (
+            <Button variant="secondary"  onPress={() => { setTwoFactorState('enabling'); setTwoFactorMessage(''); }} className="flex items-center gap-1.5">
+              <Shield size={14} />Enable 2FA
+            </Button>
+          )}
+
+          {twoFactorState === 'idle' && twoFactorEnabled && (
+            <div className="flex gap-2">
+              <Button variant="secondary" onPress={() => { setTwoFactorState('disabling'); setTwoFactorPassword(''); setTwoFactorMessage(''); }} className="flex items-center gap-1.5">
+                <ShieldX size={14} />Disable 2FA
+              </Button>
+              <Button variant="ghost" onPress={handleRegenerateBackupCodes} isPending={twoFactorLoading} className="flex items-center gap-1.5">
+                <RefreshCw size={14} />Regenerate Codes
+              </Button>
+            </div>
+          )}
+
+          {twoFactorState === 'enabling' && (
+            <div className="space-y-3">
+              <Label htmlFor="2fa-password">Confirm your password to enable 2FA</Label>
+              <Input id="2fa-password" type="password" variant="secondary" placeholder="Current password" value={twoFactorPassword} onChange={(e) => { setTwoFactorPassword(e.target.value); setTwoFactorMessage(''); }} fullWidth />
+              <div className="flex gap-2">
+                <Button variant="secondary"  onPress={handleEnable2FA} isDisabled={!twoFactorPassword} isPending={twoFactorLoading} className="flex items-center gap-1.5">
+                  <Shield size={14} />Enable
+                </Button>
+                <Button variant="ghost" onPress={() => { setTwoFactorState('idle'); setTwoFactorPassword(''); setTwoFactorMessage(''); }}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          {twoFactorBackupCodes.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted">Backup codes (save these securely — they won't be shown again):</p>
+              <div className="grid grid-cols-2 gap-1">
+                {twoFactorBackupCodes.map((code, i) => (
+                  <code key={i} className="bg-muted/10 rounded px-2 py-1 text-xs font-mono select-all">{code}</code>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {twoFactorState === 'disabling' && (
+            <div className="space-y-3">
+              <Label htmlFor="2fa-disable-pw">Confirm your password to disable 2FA</Label>
+              <Input id="2fa-disable-pw" type="password" variant="secondary" placeholder="Current password" value={twoFactorPassword} onChange={(e) => { setTwoFactorPassword(e.target.value); setTwoFactorMessage(''); }} fullWidth />
+              <div className="flex gap-2">
+                <Button variant="secondary" onPress={handleDisable2FA} isDisabled={!twoFactorPassword} isPending={twoFactorLoading} className="flex items-center gap-1.5">
+                  <ShieldX size={14} />Disable
+                </Button>
+                <Button variant="ghost" onPress={() => { setTwoFactorState('idle'); setTwoFactorPassword(''); setTwoFactorMessage(''); }}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          {twoFactorMessage && (
+            <div className={`flex items-center gap-1.5 text-xs ${twoFactorMessage.startsWith('Invalid') || twoFactorMessage.startsWith('Failed') || twoFactorMessage.startsWith('Verification failed') ? 'text-danger' : 'text-success'}`}>
+              {twoFactorMessage.startsWith('Invalid') || twoFactorMessage.startsWith('Failed') || twoFactorMessage.startsWith('Verification failed') ? <X size={12} /> : <Check size={12} />}
+              {twoFactorMessage}
+            </div>
+          )}
+        </Card.Content>
+      </Card>
     </div>
   );
 }
