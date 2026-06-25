@@ -3,6 +3,7 @@ import { eq, and, desc, like, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { shipments, trackingEvents, tenants, invoices, customers } from '../db/schema';
 import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
+import { withCache, cacheDel } from '../cache';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 import { getProvider } from '../shipment-providers';
@@ -10,7 +11,6 @@ import { insertEvents } from '../shipment-providers/dedup';
 import { emailQueue, pdfQueue } from '../queues';
 import { notifyTrackingEvents } from '../notifications/service';
 import { emitToTenant } from '../realtime';
-import { cacheClient } from '../redis';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
@@ -34,20 +34,26 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   if (customerId) conditions.push(eq(shipments.customerId, customerId));
   if (search) conditions.push(sql`${like(shipments.trackingNo, `%${search}%`)}`);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`COUNT(*)::int` })
-    .from(shipments)
-    .where(and(...conditions));
+  const cacheKey = `shipments:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
 
-  const rows = await db
-    .select()
-    .from(shipments)
-    .where(and(...conditions))
-    .orderBy(desc(shipments.createdAt))
-    .limit(limit)
-    .offset(offset);
+  const { rows, total, page: pg, limit: lm } = await withCache(scope.tenantId, cacheKey, async () => {
+    const [{ count }] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(shipments)
+      .where(and(...conditions));
 
-  return c.json({ data: rows, total: count, page, limit });
+    const rows = await db
+      .select()
+      .from(shipments)
+      .where(and(...conditions))
+      .orderBy(desc(shipments.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return { rows, total: count, page, limit };
+  }, 60);
+
+  return c.json({ data: rows, total, page: pg, limit: lm });
 });
 
 app.post('/detect', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
@@ -249,6 +255,8 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     .where(eq(shipments.id, row.id))
     .limit(1);
 
+  // ponytail: list cache expires in 60s, no need to enumerate keys
+
   emitToTenant(tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
 
   return c.json({ data: updated ?? row }, 201);
@@ -263,11 +271,15 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const conditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
 
-  const [row] = await db
-    .select()
-    .from(shipments)
-    .where(and(...conditions))
-    .limit(1);
+  const [row] = await withCache(scope.tenantId, `shipments:${id}`, () =>
+    db
+      .select()
+      .from(shipments)
+      .where(and(...conditions))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    120,
+  );
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
   return c.json({ data: row });
@@ -386,6 +398,8 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
     .where(eq(shipments.id, row.id))
     .limit(1);
 
+  await cacheDel(scope.tenantId, `shipments:${row.id}`);
+  await cacheDel(scope.tenantId, `shipments:${row.id}:tracking`);
   emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
 
   return c.json({ data: final ?? row });
@@ -405,6 +419,8 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
     .returning();
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
+  await cacheDel(scope.tenantId, `shipments:${row.id}`);
+  await cacheDel(scope.tenantId, `shipments:${row.id}:tracking`);
   emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
   return c.json({ data: row });
 });
@@ -418,30 +434,36 @@ app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), req
   const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
-  const [shipment] = await db
-    .select({
-      id: shipments.id,
-      status: shipments.status,
-      trackingRegistered: shipments.trackingRegistered,
-      lastTrackedAt: shipments.lastTrackedAt,
-      trackingProvider: shipments.trackingProvider,
-    })
-    .from(shipments)
-    .where(and(...findConditions))
-    .limit(1);
+  const data = await withCache(scope.tenantId, `shipments:${id}:tracking`, async () => {
+    const [shipment] = await db
+      .select({
+        id: shipments.id,
+        status: shipments.status,
+        trackingRegistered: shipments.trackingRegistered,
+        lastTrackedAt: shipments.lastTrackedAt,
+        trackingProvider: shipments.trackingProvider,
+      })
+      .from(shipments)
+      .where(and(...findConditions))
+      .limit(1);
 
-  if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
+    if (!shipment) return null;
 
-  const events = await db
-    .select()
-    .from(trackingEvents)
-    .where(and(
-      eq(trackingEvents.shipmentId, id),
-      eq(trackingEvents.tenantId, scope.tenantId),
-    ))
-    .orderBy(desc(trackingEvents.eventTime));
+    const events = await db
+      .select()
+      .from(trackingEvents)
+      .where(and(
+        eq(trackingEvents.shipmentId, id),
+        eq(trackingEvents.tenantId, scope.tenantId),
+      ))
+      .orderBy(desc(trackingEvents.eventTime));
 
-  return c.json({ data: { shipment, events } });
+    return { shipment, events };
+  }, 60);
+
+  if (!data) return c.json({ error: 'Shipment not found' }, 404);
+
+  return c.json({ data: { shipment: data.shipment, events: data.events } });
 });
 
 app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
@@ -529,6 +551,8 @@ app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), requi
       updateFields.carrier = result.events[0]?.carrier || shipment.carrier || null;
     }
     await db.update(shipments).set(updateFields).where(eq(shipments.id, shipment.id));
+    await cacheDel(scope.tenantId, `shipments:${shipment.id}`);
+    await cacheDel(scope.tenantId, `shipments:${shipment.id}:tracking`);
 
     return c.json({ data: { newEvents: inserted, currentStatus: result.currentStatus } });
   } catch (err) {
@@ -577,6 +601,8 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
     .set({ trackingRegistered: false, updatedAt: new Date() })
     .where(eq(shipments.id, id));
 
+  await cacheDel(scope.tenantId, `shipments:${id}`);
+  await cacheDel(scope.tenantId, `shipments:${id}:tracking`);
   return c.json({ data: { stopped: true } });
 });
 

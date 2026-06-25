@@ -47,6 +47,20 @@ export async function cacheDel(tenantId: string | null, key: string): Promise<vo
   }
 }
 
+export async function withCache<T>(
+  tenantId: string | null,
+  key: string,
+  fn: () => Promise<T>,
+  ttlSeconds: number,
+): Promise<T> {
+  if (!tenantId) return fn();
+  const cached = await cacheGet<T>(tenantId, key);
+  if (cached !== null) return cached;
+  const data = await fn();
+  await cacheSet(tenantId, key, data, ttlSeconds);
+  return data;
+}
+
 export async function cacheFlushTenant(tenantId: string): Promise<void> {
   if (!cacheClient) return;
   try {

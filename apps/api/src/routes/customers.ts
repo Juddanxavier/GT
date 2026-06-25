@@ -3,6 +3,7 @@ import { eq, and, like, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { customers } from '../db/schema';
 import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
+import { withCache, cacheDel } from '../cache';
 import { createCustomerSchema, updateCustomerSchema } from '../validators';
 import type { AppVariables } from './types';
 
@@ -27,11 +28,14 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
     conditions.push(eq(customers.branchId, branchId));
   }
 
-  const rows = await db
-    .select()
-    .from(customers)
-    .where(and(...conditions))
-    .orderBy(customers.name);
+  const rows = await withCache(scope.tenantId!, 'customers:list', () =>
+    db
+      .select()
+      .from(customers)
+      .where(and(...conditions))
+      .orderBy(customers.name),
+    600,
+  );
 
   return c.json({ data: rows });
 });
@@ -53,6 +57,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
     .values({ ...parsed.data, tenantId })
     .returning();
 
+  await cacheDel(tenantId, 'customers:list');
   return c.json({ data: row }, 201);
 });
 
@@ -65,11 +70,15 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
 
-  const [row] = await db
-    .select()
-    .from(customers)
-    .where(and(...conditions))
-    .limit(1);
+  const [row] = await withCache(scope.tenantId!, `customers:${id}`, () =>
+    db
+      .select()
+      .from(customers)
+      .where(and(...conditions))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    600,
+  );
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
   return c.json({ data: row });
@@ -98,6 +107,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
+
+  await cacheDel(scope.tenantId!, 'customers:list');
+  await cacheDel(scope.tenantId!, `customers:${id}`);
   return c.json({ data: row });
 });
 
@@ -116,6 +128,9 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
+
+  await cacheDel(scope.tenantId!, 'customers:list');
+  await cacheDel(scope.tenantId!, `customers:${id}`);
   return c.json({ data: row });
 });
 

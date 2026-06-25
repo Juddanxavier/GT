@@ -3,6 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { quotations, quoteItems, shipments } from '../db/schema';
 import { requireRole, requireAbility, requireBranchScope, getQueryScope } from '../middleware/authorization';
+import { withCache, cacheDel } from '../cache';
 import {
   createQuotationSchema,
   updateQuotationSchema,
@@ -25,11 +26,15 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   if (status) conditions.push(eq(quotations.status, status));
   if (customerId) conditions.push(eq(quotations.customerId, customerId));
 
-  const rows = await db
-    .select()
-    .from(quotations)
-    .where(and(...conditions))
-    .orderBy(desc(quotations.createdAt));
+  const cacheKey = `quotations:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}`;
+  const rows = await withCache(scope.tenantId, cacheKey, () =>
+    db
+      .select()
+      .from(quotations)
+      .where(and(...conditions))
+      .orderBy(desc(quotations.createdAt)),
+    120,
+  );
 
   return c.json({ data: rows });
 });
@@ -43,21 +48,26 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const conditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
 
-  const [quote] = await db
-    .select()
-    .from(quotations)
-    .where(and(...conditions))
-    .limit(1);
+  const quote = await withCache(scope.tenantId, `quotations:${id}`, async () => {
+    const [q] = await db
+      .select()
+      .from(quotations)
+      .where(and(...conditions))
+      .limit(1);
+
+    if (!q) return null;
+
+    const items = await db
+      .select()
+      .from(quoteItems)
+      .where(eq(quoteItems.quotationId, id))
+      .orderBy(quoteItems.createdAt);
+
+    return { ...q, items };
+  }, 120);
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
-
-  const items = await db
-    .select()
-    .from(quoteItems)
-    .where(eq(quoteItems.quotationId, id))
-    .orderBy(quoteItems.createdAt);
-
-  return c.json({ data: { ...quote, items } });
+  return c.json({ data: quote });
 });
 
 app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
@@ -105,6 +115,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchS
     );
   }
 
+  await cacheDel(tenantId!, 'quotations:list:*');
   return c.json({ data: { ...quote, items } }, 201);
 });
 
@@ -153,6 +164,8 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
     .from(quoteItems)
     .where(eq(quoteItems.quotationId, id));
 
+  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDel(scope.tenantId!, `quotations:${id}`);
   return c.json({ data: { ...quote, items: updatedItems } });
 });
 
@@ -179,6 +192,8 @@ app.patch('/:id/status', requireRole('superadmin', 'tenant-admin', 'staff'), req
     .returning();
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
+  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDel(scope.tenantId!, `quotations:${id}`);
   return c.json({ data: quote });
 });
 
@@ -223,6 +238,8 @@ app.post('/:id/convert', requireRole('superadmin', 'tenant-admin', 'staff'), req
     .set({ status: 'converted', updatedAt: new Date() })
     .where(eq(quotations.id, id));
 
+  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDel(scope.tenantId!, `quotations:${id}`);
   return c.json({ data: { quotation: { ...quote, status: 'converted' }, shipment } }, 201);
 });
 

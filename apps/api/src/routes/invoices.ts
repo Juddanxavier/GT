@@ -3,6 +3,7 @@ import { eq, and, desc, sql, like } from 'drizzle-orm';
 import { db } from '../db';
 import { invoices, shipments, tenants } from '../db/schema';
 import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
+import { withCache, cacheDel } from '../cache';
 import type { AppVariables } from './types';
 import { getInvoiceData, getInvoiceByShipmentId, generateInvoicePdf, canSendToday } from '../invoice/service';
 import { emailQueue } from '../queues';
@@ -28,7 +29,7 @@ app.get('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'staf
     if (!ship) return c.json({ error: 'Shipment not found' }, 404);
   }
 
-  const data = await getInvoiceByShipmentId(shipmentId, scope.tenantId);
+  const data = await withCache(scope.tenantId, `invoices:shipment:${shipmentId}`, () => getInvoiceByShipmentId(shipmentId, scope.tenantId), 120);
   return c.json({ data: data ?? null });
 });
 
@@ -83,6 +84,8 @@ app.post('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'sta
 
   if (!inv) return c.json({ error: 'Failed to create invoice' }, 500);
 
+  await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
+  await cacheDel(scope.tenantId!, 'invoices:list:*');
   emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[invoices] emit error:', err));
   return c.json({ data: inv }, 201);
 });
@@ -101,32 +104,37 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
   if (search) conditions.push(sql`${like(invoices.invoiceNo, `%${search}%`)}`);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(invoices)
-    .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
-    .where(and(...conditions));
+  const cacheKey = `invoices:list:${scope.branchId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
+  const result = await withCache(scope.tenantId, cacheKey, async () => {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
+      .where(and(...conditions));
 
-  const rows = await db
-    .select({
-      id: invoices.id,
-      invoiceNo: invoices.invoiceNo,
-      amount: invoices.amount,
-      status: invoices.status,
-      emailCount: invoices.emailCount,
-      paidAt: invoices.paidAt,
-      createdAt: invoices.createdAt,
-      trackingNo: shipments.trackingNo,
-      customerId: invoices.customerId,
-    })
-    .from(invoices)
-    .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
-    .where(and(...conditions))
-    .orderBy(desc(invoices.createdAt))
-    .limit(limit)
-    .offset(offset);
+    const rows = await db
+      .select({
+        id: invoices.id,
+        invoiceNo: invoices.invoiceNo,
+        amount: invoices.amount,
+        status: invoices.status,
+        emailCount: invoices.emailCount,
+        paidAt: invoices.paidAt,
+        createdAt: invoices.createdAt,
+        trackingNo: shipments.trackingNo,
+        customerId: invoices.customerId,
+      })
+      .from(invoices)
+      .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
+      .where(and(...conditions))
+      .orderBy(desc(invoices.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-  return c.json({ data: rows, total: Number(count), page, limit });
+    return { rows, total: Number(count), page, limit };
+  }, 120);
+
+  return c.json({ data: result.rows, total: result.total, page: result.page, limit: result.limit });
 });
 
 app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
@@ -134,7 +142,7 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const id = c.req.param('id');
   if (!id) return c.json({ error: 'Tenant required' }, 400);
 
-  const data = await getInvoiceData(id, scope.tenantId ?? null);
+  const data = await withCache(scope.tenantId!, `invoices:${id}`, () => getInvoiceData(id, scope.tenantId ?? null), 120);
   if (!data) return c.json({ error: 'Invoice not found' }, 404);
 
   // Staff can only view invoices for their branch
@@ -150,7 +158,7 @@ app.get('/:id/pdf', requireRole('superadmin', 'tenant-admin', 'staff'), requireB
   const id = c.req.param('id');
   if (!id) return c.json({ error: 'Tenant required' }, 400);
 
-  const data = await getInvoiceData(id, scope.tenantId ?? null);
+  const data = await withCache(scope.tenantId!, `invoices:${id}:data`, () => getInvoiceData(id, scope.tenantId ?? null), 120);
   if (!data) return c.json({ error: 'Invoice not found' }, 404);
 
   if (scope.branchId && data.shipmentBranchId && data.shipmentBranchId !== scope.branchId) {
@@ -211,6 +219,8 @@ app.post('/:id/send', requireRole('superadmin', 'tenant-admin', 'staff'), requir
     })
     .where(eq(invoices.id, inv.id));
 
+  await cacheDel(scope.tenantId!, `invoices:${id}`);
+  await cacheDel(scope.tenantId!, `invoices:${id}:data`);
   emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[invoices] emit error:', err));
 
   return c.json({ data: { sent: true, emailCount: Number(inv.emailCount) + 1 } });

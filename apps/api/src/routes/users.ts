@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { user, session, account, verification, onboardTokens, tenants } from '../db/schema';
 import { requireRole, requireBranchScope, getUser } from '../middleware/authorization';
+import { withCache, cacheDel, cacheFlushTenant } from '../cache';
 import { sendEmail } from '../email/provider';
 import { buildEmailHtml } from '../email/build-html';
 import { auth } from '../auth';
@@ -48,25 +49,30 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
     conditions.push(eq(user.role, roleFilter));
   }
 
-  const rows = await db
-    .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      image: user.image,
-      role: user.role,
-      banned: user.banned,
-      banReason: user.banReason,
-      banExpires: user.banExpires,
-      tenantId: user.tenantId,
-      branchId: user.branchId,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    })
-    .from(user)
-    .where(and(...conditions))
-    .orderBy(user.createdAt);
+  const cacheTenantId = overrideTenantId || currentUser.tenantId || null;
+  const cacheKey = `users:list:${currentUser.role}:${currentUser.branchId ?? 'all'}:${search ?? ''}:${roleFilter ?? ''}`;
+  const rows = await withCache(cacheTenantId, cacheKey, () =>
+    db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        role: user.role,
+        banned: user.banned,
+        banReason: user.banReason,
+        banExpires: user.banExpires,
+        tenantId: user.tenantId,
+        branchId: user.branchId,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user)
+      .where(and(...conditions))
+      .orderBy(user.createdAt),
+    120,
+  );
 
   return c.json({ data: rows });
 });
@@ -180,6 +186,8 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     });
 
   if (!row) return c.json({ error: 'User not found' }, 404);
+  const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
+  if (tenantForCache) await cacheFlushTenant(tenantForCache);
   return c.json({ data: row });
 });
 
@@ -348,6 +356,8 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }),
   });
 
+  const tenantForCache = c.get('tenantId') || tenantId;
+  if (tenantForCache) await cacheFlushTenant(tenantForCache);
   return c.json({ data: { id: createdUserId, email } }, 201);
 });
 
@@ -395,6 +405,8 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await db.delete(account).where(eq(account.userId, id));
   await db.delete(user).where(eq(user.id, id));
 
+  const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
+  if (tenantForCache) await cacheFlushTenant(tenantForCache);
   return c.json({ data: { success: true } });
 });
 

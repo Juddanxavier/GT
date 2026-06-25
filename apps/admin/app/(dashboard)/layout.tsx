@@ -2,7 +2,9 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
@@ -60,8 +62,13 @@ function NavItems(role?: string) {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false, retry: 1 },
+    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false, retry: 1, gcTime: 1000 * 60 * 30 },
   },
+});
+
+const persister = createSyncStoragePersister({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: 'GT_QUERY_CACHE',
 });
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -100,14 +107,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isSuperadmin = userRole === 'superadmin';
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 30 }}>
       <TenantFilterProvider>
         <DashboardLayoutInner isSuperadmin={isSuperadmin} session={session} userRole={userRole!} sidebarOpen={sidebarOpen} collapsed={collapsed} setSidebarOpen={setSidebarOpen} setCollapsed={setCollapsed}>
           {children}
         </DashboardLayoutInner>
       </TenantFilterProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

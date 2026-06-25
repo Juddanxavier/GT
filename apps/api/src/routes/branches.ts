@@ -4,6 +4,7 @@ import { db } from '../db';
 import { branches, tenants } from '../db/schema';
 import { requireRole, requireBranchScope, getUser, getQueryScope } from '../middleware/authorization';
 import { invalidateBranchCache } from '../middleware/branch';
+import { withCache, cacheDel } from '../cache';
 import { createBranchSchema, updateBranchSchema } from '../validators';
 import type { AppVariables } from './types';
 
@@ -16,7 +17,10 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   if (isSuperAdmin) {
     const tenantId = c.get('tenantId');
     if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
-    const rows = await db.select().from(branches).where(eq(branches.tenantId, tenantId)).orderBy(branches.name);
+    const rows = await withCache(tenantId, 'branches:list', () =>
+      db.select().from(branches).where(eq(branches.tenantId, tenantId)).orderBy(branches.name),
+      900,
+    );
     return c.json({ data: rows });
   }
 
@@ -28,11 +32,14 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
     conditions.push(eq(branches.id, curUser.branchId));
   }
 
-  const rows = await db
-    .select()
-    .from(branches)
-    .where(and(...conditions))
-    .orderBy(branches.name);
+  const rows = await withCache(tenantId, `branches:list:${curUser?.branchId ?? 'all'}`, () =>
+    db
+      .select()
+      .from(branches)
+      .where(and(...conditions))
+      .orderBy(branches.name),
+    900,
+  );
 
   return c.json({ data: rows });
 });
@@ -73,6 +80,8 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
     .values({ ...parsed.data, tenantId })
     .returning();
 
+  await cacheDel(tenantId, 'branches:list');
+  await cacheDel(tenantId, 'dashboard:branches');
   return c.json({ data: row }, 201);
 });
 
@@ -88,11 +97,15 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
     conditions.push(eq(branches.id, curUser.branchId));
   }
 
-  const [row] = await db
-    .select()
-    .from(branches)
-    .where(and(...conditions))
-    .limit(1);
+  const [row] = await withCache(tenantId, `branches:${id}`, () =>
+    db
+      .select()
+      .from(branches)
+      .where(and(...conditions))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    900,
+  );
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
   return c.json({ data: row });
@@ -134,6 +147,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
+  await cacheDel(tenantId, 'branches:list');
+  await cacheDel(tenantId, 'dashboard:branches');
+  await cacheDel(tenantId, `branches:${id}`);
   await invalidateBranchCache(id, tenantId);
   return c.json({ data: row });
 });
@@ -150,6 +166,9 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
+  await cacheDel(scope.tenantId, 'branches:list');
+  await cacheDel(scope.tenantId, 'dashboard:branches');
+  await cacheDel(scope.tenantId, `branches:${id}`);
   await invalidateBranchCache(id, scope.tenantId);
   return c.json({ data: row });
 });

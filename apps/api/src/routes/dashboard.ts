@@ -3,6 +3,7 @@ import { eq, sql, and } from 'drizzle-orm';
 import { db } from '../db';
 import { shipments, customers, quotations, invoices, tenants as tenantTable, branches } from '../db/schema';
 import { requireRole, getQueryScope } from '../middleware/authorization';
+import { withCache } from '../cache';
 import type { AppVariables } from './types';
 
 type Row = Record<string, unknown>;
@@ -19,16 +20,18 @@ app.get('/stats', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
 
   if (role === 'superadmin') {
     const filterTenantId = c.get('tenantId');
-    const data = await buildSuperadminStats(filterTenantId);
+    const cacheKey = filterTenantId ? `dashboard:stats:${filterTenantId}` : 'dashboard:stats:all';
+    const data = await withCache(filterTenantId, cacheKey, () => buildSuperadminStats(filterTenantId), 120);
     return c.json({ data });
   }
 
   if (role === 'tenant-admin' && !branchOverride) {
-    const data = await buildBranchAdminStats(scope.tenantId);
+    const data = await withCache(scope.tenantId, 'dashboard:stats:branch-admin', () => buildBranchAdminStats(scope.tenantId), 120);
     return c.json({ data });
   }
 
-  const data = await buildTenantStats(scope, role);
+  const statsKey = branchOverride ? `dashboard:stats:branch:${branchOverride}` : 'dashboard:stats:staff';
+  const data = await withCache(scope.tenantId, statsKey, () => buildTenantStats(scope, role), 120);
   return c.json({ data });
 });
 
@@ -343,11 +346,14 @@ app.get('/branches', requireRole('superadmin', 'tenant-admin', 'staff'), async (
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ data: [] });
 
-  const rows = await db
-    .select({ id: branches.id, name: branches.name })
-    .from(branches)
-    .where(eq(branches.tenantId, tenantId))
-    .orderBy(branches.name);
+  const rows = await withCache(tenantId, 'dashboard:branches', () =>
+    db
+      .select({ id: branches.id, name: branches.name })
+      .from(branches)
+      .where(eq(branches.tenantId, tenantId))
+      .orderBy(branches.name),
+    300,
+  );
 
   return c.json({ data: rows });
 });
