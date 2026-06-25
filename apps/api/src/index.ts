@@ -18,7 +18,7 @@ import { requireRole } from './middleware/authorization';
 import { queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
-import { tenants as tenantTable, user as userTable } from './db/schema';
+import { tenants as tenantTable, user as userTable, branches } from './db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
@@ -203,6 +203,53 @@ app.post('/api/seed/superadmin', async (c) => {
     body: { email, password: 'B7a90sfd@12', name: 'Super Admin', role: 'superadmin' },
   });
   return c.json({ message: 'Super admin created' });
+});
+
+// Seed tenants + all demo data (protected by SEED_SECRET)
+app.post('/api/seed/tenant', async (c) => {
+  const secret = c.req.header('X-Seed-Secret');
+  if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // ── Tenants ──
+  const existingTenants = await db.select().from(tenantTable);
+  const gajan = existingTenants.find((t) => t.slug === 'gajan-traders') ?? (await db.insert(tenantTable).values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' }).returning())[0];
+  const lanka = existingTenants.find((t) => t.slug === 'lanka-mahal') ?? (await db.insert(tenantTable).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' }).returning())[0];
+
+  // ── Branches ──
+  await db.delete(branches);
+  const [mumbaiHq, delhi, chennai] = await db.insert(branches).values([
+    { name: 'Mumbai HQ', tenantId: gajan.id, phone: '+91-22-12345678', email: 'mumbai@gajantraders.com', address: '123 Business District, Mumbai' },
+    { name: 'Delhi Branch', tenantId: gajan.id, phone: '+91-11-87654321', email: 'delhi@gajantraders.com', address: '456 Connaught Place, New Delhi' },
+    { name: 'Chennai Branch', tenantId: gajan.id, phone: '+91-44-23456789', email: 'chennai@gajantraders.com', address: '789 Anna Salai, Chennai' },
+  ]).returning();
+  const [colomboHq, kandy, jaffna] = await db.insert(branches).values([
+    { name: 'Colombo HQ', tenantId: lanka.id, phone: '+94-11-2345678', email: 'colombo@lankamahal.lk', address: '1 Galle Road, Colombo 03' },
+    { name: 'Kandy Branch', tenantId: lanka.id, phone: '+94-81-3456789', email: 'kandy@lankamahal.lk', address: '45 Peradeniya Road, Kandy' },
+    { name: 'Jaffna Branch', tenantId: lanka.id, phone: '+94-21-4567890', email: 'jaffna@lankamahal.lk', address: '78 Hospital Road, Jaffna' },
+  ]).returning();
+
+  // ── Users ──
+  const usersData = [
+    { name: 'Gajan Admin', email: 'admin@gajantraders.com', password: 'Admin@123', role: 'tenant-admin', tenantId: gajan.id, branchId: mumbaiHq.id },
+    { name: 'Gajan Staff Mumbai', email: 'staff-mumbai@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan.id, branchId: mumbaiHq.id },
+    { name: 'Gajan Staff Delhi', email: 'staff-delhi@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan.id, branchId: delhi.id },
+    { name: 'Gajan Staff Chennai', email: 'staff-chennai@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan.id, branchId: chennai.id },
+    { name: 'Lanka Admin', email: 'admin@lankamahal.lk', password: 'Admin@123', role: 'tenant-admin', tenantId: lanka.id, branchId: colomboHq.id },
+    { name: 'Lanka Staff Colombo', email: 'staff-colombo@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka.id, branchId: colomboHq.id },
+    { name: 'Lanka Staff Kandy', email: 'staff-kandy@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka.id, branchId: kandy.id },
+    { name: 'Lanka Staff Jaffna', email: 'staff-jaffna@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka.id, branchId: jaffna.id },
+  ];
+  for (const u of usersData) {
+    const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
+    if (existing) continue;
+    await auth.api.createUser({
+      body: { email: u.email, password: u.password, name: u.name, role: u.role, data: { tenantId: u.tenantId, branchId: u.branchId } },
+    });
+  }
+
+  return c.json({ message: 'Seed complete: tenants, branches, users created' });
 });
 
 // Health check
