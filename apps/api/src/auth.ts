@@ -26,6 +26,10 @@ export const auth = betterAuth({
     },
   }),
   advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: '.gajantraders.com',
+    },
     cookies: {
       session_token: {
         attributes: {
