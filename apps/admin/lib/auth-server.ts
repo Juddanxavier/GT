@@ -1,5 +1,4 @@
 import { betterAuth } from 'better-auth';
-import { nextCookies } from 'better-auth/next-js';
 import { createAuthConfig, buildEmailHtml } from '@repo/auth-config';
 import { sendEmail } from './email/provider';
 import { getDb } from './db';
@@ -10,7 +9,7 @@ let _auth: ReturnType<typeof betterAuth> | null = null;
 export function getAuth() {
   if (_auth) return _auth;
   const db = getDb();
-  const config = createAuthConfig({
+  _auth = betterAuth(createAuthConfig({
     db,
     schema: schema as any,
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
@@ -25,8 +24,6 @@ export function getAuth() {
     ],
     sendEmail,
     buildEmailHtml,
-  });
-  config.plugins.push(nextCookies());
-  _auth = betterAuth(config);
+  }));
   return _auth;
 }

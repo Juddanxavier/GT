@@ -115,7 +115,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     }),
     advanced: {
       crossSubDomainCookies: {
-        enabled: true,
+        enabled: !!process.env.COOKIE_DOMAIN,
         domain: process.env.COOKIE_DOMAIN || undefined,
       },
       cookies: {
