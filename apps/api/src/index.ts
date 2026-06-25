@@ -18,7 +18,7 @@ import { requireRole } from './middleware/authorization';
 import { queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
-import { tenants as tenantTable, user as userTable, branches } from './db/schema';
+import { tenants as tenantTable, user as userTable, branches as branchTable } from './db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
@@ -218,13 +218,13 @@ app.post('/api/seed/tenant', async (c) => {
   const lanka = existingTenants.find((t) => t.slug === 'lanka-mahal') ?? (await db.insert(tenantTable).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' }).returning())[0];
 
   // ── Branches ──
-  await db.delete(branches);
-  const [mumbaiHq, delhi, chennai] = await db.insert(branches).values([
+  await db.delete(branchTable);
+  const [mumbaiHq, delhi, chennai] = await db.insert(branchTable).values([
     { name: 'Mumbai HQ', tenantId: gajan.id, phone: '+91-22-12345678', email: 'mumbai@gajantraders.com', address: '123 Business District, Mumbai' },
     { name: 'Delhi Branch', tenantId: gajan.id, phone: '+91-11-87654321', email: 'delhi@gajantraders.com', address: '456 Connaught Place, New Delhi' },
     { name: 'Chennai Branch', tenantId: gajan.id, phone: '+91-44-23456789', email: 'chennai@gajantraders.com', address: '789 Anna Salai, Chennai' },
   ]).returning();
-  const [colomboHq, kandy, jaffna] = await db.insert(branches).values([
+  const [colomboHq, kandy, jaffna] = await db.insert(branchTable).values([
     { name: 'Colombo HQ', tenantId: lanka.id, phone: '+94-11-2345678', email: 'colombo@lankamahal.lk', address: '1 Galle Road, Colombo 03' },
     { name: 'Kandy Branch', tenantId: lanka.id, phone: '+94-81-3456789', email: 'kandy@lankamahal.lk', address: '45 Peradeniya Road, Kandy' },
     { name: 'Jaffna Branch', tenantId: lanka.id, phone: '+94-21-4567890', email: 'jaffna@lankamahal.lk', address: '78 Hospital Road, Jaffna' },
