@@ -33,7 +33,8 @@ export const auth = betterAuth({
     cookies: {
       session_token: {
         attributes: {
-          sameSite: 'Lax',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax',
+          secure: process.env.NODE_ENV === 'production',
         },
       },
     },
