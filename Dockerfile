@@ -12,7 +12,7 @@ EXPOSE 3001
 CMD ["pnpm", "--filter=api", "start"]
 
 FROM base AS admin
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=https://api.gajantraders.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY apps/admin/package.json apps/admin/
 COPY packages/ packages/

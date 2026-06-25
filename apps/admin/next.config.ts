@@ -1,14 +1,7 @@
 import type { NextConfig } from 'next';
 
-const required = ['NEXT_PUBLIC_API_URL'] as const;
-for (const key of required) {
-  if (!process.env[key]) {
-    if (process.env.VERCEL) {
-      console.warn(`[env] ${key} not set — configure in Vercel dashboard`);
-    } else {
-      throw new Error(`Missing required env var: ${key}`);
-    }
-  }
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  console.warn('[env] NEXT_PUBLIC_API_URL not set at build time — use --build-arg or Dokploy Build Args');
 }
 
 const nextConfig: NextConfig = {
