@@ -18,7 +18,7 @@ import { requireRole } from './middleware/authorization';
 import { queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
-import { tenants as tenantTable } from './db/schema';
+import { tenants as tenantTable, user as userTable } from './db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
@@ -180,6 +180,21 @@ app.onError((err, c) => {
     contexts: { request: { request_id: requestId } },
   });
   return c.json({ error: 'Internal server error', requestId }, 500);
+});
+
+// Seed super admin (one-time, protected by SEED_SECRET)
+app.post('/api/seed/superadmin', async (c) => {
+  const secret = c.req.header('X-Seed-Secret');
+  if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const email = 'juddan2008@gmail.com';
+  const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
+  if (existing) return c.json({ message: 'Super admin already exists' });
+  await auth.api.createUser({
+    body: { email, password: 'B7a90sfd@12', name: 'Super Admin', role: 'superadmin' },
+  });
+  return c.json({ message: 'Super admin created' });
 });
 
 // Health check
