@@ -268,10 +268,6 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     session: {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24, // 24h
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60,
-      },
     },
     rateLimit: {
       enabled: true,
