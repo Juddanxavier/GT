@@ -11,6 +11,7 @@ import { auth } from './auth';
 import { sessionMiddleware, type AuthVariables } from './middleware/auth';
 import { securityHeadersMiddleware } from './middleware/security-headers';
 import { requestIdMiddleware, type RequestIdVariables } from './middleware/request-id';
+import { globalRateLimit } from './middleware/rate-limit';
 import { tenantMiddleware, type TenantVariables } from './middleware/tenant';
 import { branchMiddleware, type BranchVariables } from './middleware/branch';
 import { requireRole } from './middleware/authorization';
@@ -142,6 +143,9 @@ app.use('*', tenantMiddleware);
 
 // Branch validation (must run after tenant)
 app.use('*', branchMiddleware);
+
+// Rate limiting for API routes (auth routes use Better Auth's built-in rate limiter)
+app.use('/api/*', globalRateLimit());
 
 // ── Bull Board (job queue dashboard) ──
 
