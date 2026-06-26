@@ -276,7 +276,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     rateLimit: {
       enabled: true,
       window: 60,
-      max: 100,
+      max: 500,
       customRules: {
         '/sign-in/email': { window: 10, max: 3 },
         '/sign-up/email': { window: 3600, max: 5 },
