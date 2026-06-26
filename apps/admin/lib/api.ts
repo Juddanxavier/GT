@@ -85,29 +85,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return data;
 }
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
-async function requestPaginated<T>(path: string, options?: RequestInit): Promise<PaginatedResponse<T>> {
-  const { res } = await fetchJson<PaginatedResponse<T>>(path, options);
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    const parts: string[] = [];
-    if (body && typeof body.error === 'string') parts.push(body.error);
-    throw new ApiError(res.status, parts.join(' ') || `Request failed (${res.status})`);
-  }
-  return body as PaginatedResponse<T>;
-}
-
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  getPaginated: <T>(path: string) => requestPaginated<T>(path),
-  getForTenant: <T>(path: string, tenantId: string) =>
-    request<T>(path, { headers: { 'X-Tenant-ID': tenantId } as Record<string, string> }),
+  get: <T>(path: string, options?: RequestInit) => request<T>(path, options),
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
   patch: <T>(path: string, data: unknown) =>

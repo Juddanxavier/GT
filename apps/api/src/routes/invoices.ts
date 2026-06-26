@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import { eq, and, desc, sql, like } from 'drizzle-orm';
 import { db } from '../db';
-import { invoices, shipments, tenants } from '../db/schema';
+import { invoices, shipments, tenants, customers } from '../db/schema';
 import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
-import { withCache, cacheDel } from '../cache';
+import { withCache, cacheDel, cacheDelPattern } from '../cache';
 import type { AppVariables } from './types';
 import { getInvoiceData, getInvoiceByShipmentId, generateInvoicePdf, canSendToday } from '../invoice/service';
 import { emailQueue } from '../queues';
 import { emitToTenant } from '../realtime';
+import { logAudit } from '../services/audit';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
@@ -34,63 +35,71 @@ app.get('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'staf
 });
 
 app.post('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
-  const scope = getQueryScope(c);
-  const shipmentId = c.req.param('shipmentId');
-  if (!scope.tenantId || !shipmentId) return c.json({ error: 'Invalid request' }, 400);
+  try {
+    const scope = getQueryScope(c);
+    const shipmentId = c.req.param('shipmentId');
+    if (!scope.tenantId || !shipmentId) return c.json({ error: 'Invalid request' }, 400);
 
-  // Check invoice doesn't already exist
-  const [existing] = await db
-    .select({ id: invoices.id })
-    .from(invoices)
-    .where(and(eq(invoices.shipmentId, shipmentId), eq(invoices.tenantId, scope.tenantId)))
-    .limit(1);
+    const [existing] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.shipmentId, shipmentId), eq(invoices.tenantId, scope.tenantId)))
+      .limit(1);
 
-  if (existing) {
+    if (existing) {
+      await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
+      return c.json({ error: 'Invoice already exists for this shipment' }, 409);
+    }
+
+    const shipConditions: ReturnType<typeof eq>[] = [eq(shipments.id, shipmentId), eq(shipments.tenantId, scope.tenantId)];
+    if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
+    const [ship] = await db
+      .select()
+      .from(shipments)
+      .where(and(...shipConditions))
+      .limit(1);
+
+    if (!ship) return c.json({ error: 'Shipment not found' }, 404);
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const shortId = ship.id.slice(0, 5).toUpperCase();
+    const invoiceNo = `INV-${y}${m}-${shortId}`;
+    const amount = ship.billAmount ?? '0';
+
+    const invoiceValues = {
+      tenantId: scope.tenantId,
+      shipmentId: ship.id,
+      customerId: ship.customerId ?? null,
+      branchId: ship.branchId ?? null,
+      invoiceNo,
+      amount: String(amount),
+      status: 'paid' as const,
+      emailCount: 0,
+      paidAt: now,
+      lastEmailSentAt: now,
+    };
+
+    const [inv] = await db
+      .insert(invoices)
+      .values(invoiceValues)
+      .returning();
+
+    if (!inv) return c.json({ error: 'Failed to create invoice' }, 500);
+
     await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
-    return c.json({ error: 'Invoice already exists for this shipment' }, 409);
+    await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+    logAudit('INVOICE_CREATED', c.get('user')?.id ?? null, {
+      invoiceId: inv.id, invoiceNo, shipmentId, amount, tenantId: scope.tenantId,
+    }, c);
+    emitToTenant(scope.tenantId, 'dashboard:update', {});
+    return c.json({ data: inv }, 201);
+  } catch (err) {
+    const message = err instanceof Error ? `${err.name}: ${err.message}` : `Non-Error thrown: ${String(err)}`;
+    console.error('[invoices] POST /shipment/:shipmentId unhandled error:', message, err);
+    return c.json({ error: message }, 500);
   }
-
-  // Get shipment + customer + tenant
-  const shipConditions: ReturnType<typeof eq>[] = [eq(shipments.id, shipmentId), eq(shipments.tenantId, scope.tenantId)];
-  if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
-  const [ship] = await db
-    .select()
-    .from(shipments)
-    .where(and(...shipConditions))
-    .limit(1);
-
-  if (!ship) return c.json({ error: 'Shipment not found' }, 404);
-
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const shortId = ship.id.slice(0, 5).toUpperCase();
-  const invoiceNo = `INV-${y}${m}-${shortId}`;
-  const amount = ship.billAmount ?? '0';
-
-  const invoiceValues = {
-    tenantId: scope.tenantId,
-    shipmentId: ship.id,
-    customerId: ship.customerId ?? null,
-    invoiceNo,
-    amount: String(amount),
-    status: 'paid' as const,
-    emailCount: 0,
-    paidAt: now,
-    lastEmailSentAt: now,
-  };
-
-  const [inv] = await db
-    .insert(invoices)
-    .values(invoiceValues)
-    .returning();
-
-  if (!inv) return c.json({ error: 'Failed to create invoice' }, 500);
-
-  await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
-  await cacheDel(scope.tenantId!, 'invoices:list:*');
-  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[invoices] emit error:', err));
-  return c.json({ data: inv }, 201);
 });
 
 app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
@@ -126,9 +135,11 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
         createdAt: invoices.createdAt,
         trackingNo: shipments.trackingNo,
         customerId: invoices.customerId,
+        customerName: customers.name,
       })
       .from(invoices)
       .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
+      .leftJoin(customers, eq(customers.id, invoices.customerId))
       .where(and(...conditions))
       .orderBy(desc(invoices.createdAt))
       .limit(limit)
@@ -185,7 +196,7 @@ app.post('/:id/send', requireRole('superadmin', 'tenant-admin', 'staff'), requir
   if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
   const [inv] = await db
-    .select({ id: invoices.id, emailCount: invoices.emailCount, lastEmailSentAt: invoices.lastEmailSentAt, shipmentId: invoices.shipmentId })
+    .select({ id: invoices.id, emailCount: invoices.emailCount, lastEmailSentAt: invoices.lastEmailSentAt, shipmentId: invoices.shipmentId, customerId: invoices.customerId })
     .from(invoices)
     .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
     .limit(1);
@@ -195,6 +206,16 @@ app.post('/:id/send', requireRole('superadmin', 'tenant-admin', 'staff'), requir
   if (!canSendToday(inv)) {
     return c.json({ error: 'Max 2 invoice emails per day. Try again tomorrow.' }, 429);
   }
+
+  if (!inv.customerId) return c.json({ error: 'Cannot send — no customer assigned to this invoice. Assign a customer to the shipment first.' }, 400);
+
+  const [cust] = await db
+    .select({ email: customers.email })
+    .from(customers)
+    .where(eq(customers.id, inv.customerId))
+    .limit(1);
+
+  if (!cust?.email) return c.json({ error: 'Customer has no email address' }, 400);
 
   const data = await getInvoiceData(inv.id, scope.tenantId);
   if (!data) return c.json({ error: 'Invoice data not found' }, 404);
@@ -209,7 +230,7 @@ app.post('/:id/send', requireRole('superadmin', 'tenant-admin', 'staff'), requir
 
   await emailQueue.add('invoice', {
     invoiceId: inv.id,
-    shipmentId: data.shipmentId,
+    tenantId: scope.tenantId,
     pdfBase64: pdf.toString('base64'),
   });
 
@@ -224,9 +245,84 @@ app.post('/:id/send', requireRole('superadmin', 'tenant-admin', 'staff'), requir
 
   await cacheDel(scope.tenantId!, `invoices:${id}`);
   await cacheDel(scope.tenantId!, `invoices:${id}:data`);
-  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[invoices] emit error:', err));
+  logAudit('INVOICE_SENT', c.get('user')?.id ?? null, {
+    invoiceId: id, customerId: inv.customerId, email: cust.email, tenantId: scope.tenantId,
+  }, c);
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
 
   return c.json({ data: { sent: true, emailCount: Number(inv.emailCount) + 1 } });
+});
+
+app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
+  const id = c.req.param('id');
+  if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
+
+  const body = await c.req.json();
+  const allowed = ['status', 'notes', 'amount'];
+  const filtered = Object.fromEntries(
+    Object.entries(body).filter(([k]) => allowed.includes(k))
+  );
+  if (Object.keys(filtered).length === 0) return c.json({ error: 'No valid fields to update' }, 400);
+
+  const [existing] = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .limit(1);
+  if (!existing) return c.json({ error: 'Invoice not found' }, 404);
+
+  const [row] = await db
+    .update(invoices)
+    .set({ ...filtered, updatedAt: new Date() })
+    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .returning();
+
+  await cacheDel(scope.tenantId!, `invoices:${id}`);
+  await cacheDel(scope.tenantId!, `invoices:${id}:data`);
+  await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of Object.keys(filtered)) {
+    const oldVal = (existing as Record<string, unknown>)[key];
+    const newVal = filtered[key];
+    if (String(oldVal) !== String(newVal)) changes[key] = { from: oldVal, to: newVal };
+  }
+  if (Object.keys(changes).length > 0) {
+    logAudit('INVOICE_UPDATED', c.get('user')?.id ?? null, {
+      invoiceId: id, invoiceNo: existing.invoiceNo, changes, tenantId: scope.tenantId,
+    }, c);
+  }
+
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
+  return c.json({ data: row });
+});
+
+app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
+  const id = c.req.param('id');
+  if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
+
+  const [existing] = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .limit(1);
+  if (!existing) return c.json({ error: 'Invoice not found' }, 404);
+
+  await db
+    .delete(invoices)
+    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)));
+
+  await cacheDel(scope.tenantId!, `invoices:${id}`);
+  await cacheDel(scope.tenantId!, `invoices:${id}:data`);
+  await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+  logAudit('INVOICE_DELETED', c.get('user')?.id ?? null, {
+    invoiceId: id, invoiceNo: existing.invoiceNo, tenantId: scope.tenantId,
+  }, c);
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
+
+  return c.json({ data: { success: true } });
 });
 
 export default app;

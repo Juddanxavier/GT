@@ -3,13 +3,14 @@ import { eq, and, desc, like, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { shipments, trackingEvents, tenants, invoices, customers } from '../db/schema';
 import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
-import { withCache, cacheDel } from '../cache';
+import { withCache, cacheDel, cacheDelPattern } from '../cache';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
 import { emailQueue, pdfQueue } from '../queues';
 import { notifyTrackingEvents } from '../notifications/service';
+import { logAudit } from '../services/audit';
 import { emitToTenant } from '../realtime';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -56,19 +57,24 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
   return c.json({ data: rows, total, page: pg, limit: lm });
 });
 
-app.post('/detect', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
-  const { trackingNo } = await c.req.json<{ trackingNo?: string }>();
-  if (!trackingNo) return c.json({ error: 'trackingNo required' }, 400);
-
-  const provider = getProvider();
-  let detected: { key: string; name: string } | null = null;
-  try {
-    detected = await provider.detectCarrier(trackingNo);
-  } catch (err) {
-    console.error('[shipments] detect-carrier failed:', err);
-  }
-
-  return c.json({ data: { detected } });
+app.get('/trend', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+  const conditions = [eq(shipments.tenantId, scope.tenantId)];
+  if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
+  const rows = await db
+    .select({
+      date: sql<string>`DATE(${shipments.createdAt})::text`,
+      total: sql<number>`COUNT(*)::int`,
+      intransit: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'in_transit')::int`,
+      delivered: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'delivered')::int`,
+      pending: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'pending')::int`,
+    })
+    .from(shipments)
+    .where(and(...conditions))
+    .groupBy(sql`DATE(${shipments.createdAt})`)
+    .orderBy(sql`DATE(${shipments.createdAt})`);
+  return c.json({ data: rows });
 });
 
 app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
@@ -118,6 +124,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   }
 
   let row: typeof shipments.$inferSelect | undefined;
+  let labelCode: string | undefined;
 
   await db.transaction(async (tx) => {
     [row] = await tx
@@ -141,7 +148,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
 
     if (!row) return c.json({ error: 'Failed to create shipment' }, 500);
 
-    const labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
+    labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
     await tx.update(shipments).set({ labelCode, updatedAt: new Date() }).where(eq(shipments.id, row.id));
   });
 
@@ -257,7 +264,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
 
   // ponytail: list cache expires in 60s, no need to enumerate keys
 
-  emitToTenant(tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
+  emitToTenant(tenantId, 'dashboard:update', {});
 
   return c.json({ data: updated ?? row }, 201);
 });
@@ -308,9 +315,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
   // Field-level permissions by role
   const role = (user as Record<string, unknown> | null)?.role as string;
   const allowedFields: Record<string, string[]> = {
-    staff: ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'origin', 'destination', 'status'],
-    'tenant-admin': ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'branchId', 'origin', 'destination', 'status', 'billAmount', 'customerName'],
-    superadmin: ['customerId', 'contactEmail', 'contactPhone', 'carrier', 'courierCode', 'trackingNo', 'branchId', 'origin', 'destination', 'status', 'billAmount', 'customerName', 'tenantId'],
+    staff: ['customerId', 'customerName', 'contactEmail', 'contactPhone', 'origin', 'destination', 'status'],
+    'tenant-admin': ['customerId', 'customerName', 'contactEmail', 'contactPhone', 'branchId', 'origin', 'destination', 'status', 'billAmount'],
+    superadmin: ['customerId', 'customerName', 'contactEmail', 'contactPhone', 'branchId', 'origin', 'destination', 'status', 'billAmount', 'tenantId'],
   };
   const allowed = allowedFields[role] ?? [];
   const filteredData = Object.fromEntries(
@@ -322,7 +329,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
   if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
 
   const [existing] = await db
-    .select({ trackingNo: shipments.trackingNo, carrier: shipments.carrier })
+    .select()
     .from(shipments)
     .where(and(...findConditions))
     .limit(1);
@@ -330,8 +337,6 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
   if (!existing) return c.json({ error: 'Shipment not found' }, 404);
 
   const updateData: Record<string, unknown> = { ...filteredData, updatedAt: new Date() };
-  const trackingChanged = filteredData.trackingNo && filteredData.trackingNo !== existing.trackingNo;
-  const carrierChanged = filteredData.carrier && filteredData.carrier !== existing.carrier;
   const [row] = await db
     .update(shipments)
     .set(updateData)
@@ -340,69 +345,32 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
 
-  if (trackingChanged || carrierChanged) {
-    try {
-      const provider = getProvider();
-      const trackingNo = filteredData.trackingNo ?? existing.trackingNo;
-      const carrier = filteredData.carrier ?? existing.carrier ?? undefined;
+  await cacheDel(scope.tenantId, `shipments:${row.id}`);
+  await cacheDel(scope.tenantId, `shipments:${row.id}:tracking`);
+  await cacheDelPattern(scope.tenantId, 'shipments:list:*');
+  await cacheDelPattern(scope.tenantId, 'dashboard:*');
 
-      if (provider.registerShipment) {
-        const courierCode = filteredData.courierCode;
-        if (courierCode) {
-          const [tenant] = await db
-            .select({ name: tenants.name, country: tenants.country })
-            .from(tenants)
-            .where(eq(tenants.id, scope.tenantId))
-            .limit(1);
-
-          await provider.registerShipment({
-            trackingNo,
-            orderNo: row.labelCode ?? undefined,
-            courierCode,
-            customerName: row.customerId ?? undefined,
-            companyName: tenant?.name ?? undefined,
-            countryName: tenant?.country ?? undefined,
-          });
-        }
-      }
-
-      const trackResult = await provider.track(trackingNo, carrier);
-      const inserted = await insertEvents(row.id, scope.tenantId, trackResult.events);
-
-      if (inserted > 0) {
-        notifyTrackingEvents(row.id, scope.tenantId, trackResult.events, trackResult.currentStatus);
-      }
-
-      const trackUpdate: Record<string, unknown> = {
-        status: trackResult.currentStatus,
-        lastTrackedAt: new Date(),
-        trackingRegistered: inserted > 0,
-        updatedAt: new Date(),
-        origin: trackResult.origin ?? row.origin ?? null,
-        destination: trackResult.destination ?? row.destination ?? null,
-        estimatedDelivery: trackResult.estimatedDelivery ? new Date(trackResult.estimatedDelivery) : null,
-        actualDelivery: trackResult.actualDelivery ? new Date(trackResult.actualDelivery) : null,
-      };
-      if (trackResult.events.length > 0) {
-        trackUpdate.carrier = trackResult.events[0]?.carrier || carrier || null;
-      }
-      await db.update(shipments).set(trackUpdate).where(eq(shipments.id, row.id));
-    } catch (err) {
-      console.error('[shipments] re-track on edit failed:', err);
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of Object.keys(filteredData)) {
+    const oldVal = (existing as Record<string, unknown>)[key];
+    const newVal = filteredData[key];
+    if (String(oldVal) !== String(newVal)) {
+      changes[key] = { from: oldVal, to: newVal };
     }
   }
 
-  const [final] = await db
-    .select()
-    .from(shipments)
-    .where(eq(shipments.id, row.id))
-    .limit(1);
+  if (Object.keys(changes).length > 0) {
+    logAudit('SHIPMENT_UPDATED', c.get('user')?.id ?? null, {
+      shipmentId: row.id,
+      trackingNo: row.trackingNo,
+      tenantId: scope.tenantId,
+      changes,
+    }, c);
+  }
 
-  await cacheDel(scope.tenantId, `shipments:${row.id}`);
-  await cacheDel(scope.tenantId, `shipments:${row.id}:tracking`);
-  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
 
-  return c.json({ data: final ?? row });
+  return c.json({ data: row });
 });
 
 app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
@@ -410,18 +378,25 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const deleteConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
-  if (scope.branchId) deleteConditions.push(eq(shipments.branchId, scope.branchId));
+  const shipmentScope = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
+  if (scope.branchId) shipmentScope.push(eq(shipments.branchId, scope.branchId));
 
-  const [row] = await db
-    .delete(shipments)
-    .where(and(...deleteConditions))
-    .returning();
+  await db.delete(invoices).where(and(eq(invoices.shipmentId, id), eq(invoices.tenantId, scope.tenantId)));
+  const [row] = await db.delete(shipments).where(and(...shipmentScope)).returning();
 
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
   await cacheDel(scope.tenantId, `shipments:${row.id}`);
   await cacheDel(scope.tenantId, `shipments:${row.id}:tracking`);
-  emitToTenant(scope.tenantId, 'dashboard:update', {}).catch((err) => console.error('[shipments] emit error:', err));
+  await cacheDel(scope.tenantId, `invoices:shipment:${row.id}`);
+  await cacheDelPattern(scope.tenantId, 'shipments:list:*');
+  await cacheDelPattern(scope.tenantId, 'dashboard:*');
+  await cacheDelPattern(scope.tenantId, 'invoices:list*');
+  logAudit('SHIPMENT_DELETED', c.get('user')?.id ?? null, {
+    shipmentId: row.id,
+    trackingNo: row.trackingNo,
+    tenantId: scope.tenantId,
+  }, c);
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
   return c.json({ data: row });
 });
 
@@ -465,34 +440,6 @@ app.get('/:id/tracking', requireRole('superadmin', 'tenant-admin', 'staff'), req
 
   return c.json({ data: { shipment: data.shipment, events: data.events } });
 });
-
-app.get('/:id/detect-carrier', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
-  const scope = getQueryScope(c);
-  const { id } = c.req.param();
-
-  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
-
-  const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
-  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId));
-
-  const [shipment] = await db
-    .select({ trackingNo: shipments.trackingNo })
-    .from(shipments)
-    .where(and(...findConditions))
-    .limit(1);
-
-  if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
-
-  try {
-    const provider = getProvider();
-    const carrier = await provider.detectCarrier(shipment.trackingNo);
-    return c.json({ data: carrier });
-  } catch (err) {
-    console.error('[shipments] detect-carrier failed:', err);
-    return c.json({ error: 'Carrier detection failed' }, 500);
-  }
-});
-
 app.post('/:id/track', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
   const scope = getQueryScope(c);
   const { id } = c.req.param();
@@ -582,28 +529,33 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
     return c.json({ error: `${provider.name} does not support stop tracking` }, 400);
   }
 
-  const [lastEvent] = await db
-    .select({ carrierCode: trackingEvents.carrierCode })
-    .from(trackingEvents)
-    .where(eq(trackingEvents.shipmentId, id))
-    .orderBy(desc(trackingEvents.eventTime))
-    .limit(1);
+  try {
+    const [lastEvent] = await db
+      .select({ carrierCode: trackingEvents.carrierCode })
+      .from(trackingEvents)
+      .where(eq(trackingEvents.shipmentId, id))
+      .orderBy(desc(trackingEvents.eventTime))
+      .limit(1);
 
-  const ok = await provider.stopTracking({
-    trackingNo: shipment.trackingNo,
-    carrierCode: lastEvent?.carrierCode ?? undefined,
-    carrier: shipment.carrier ?? undefined,
-  });
+    const ok = await provider.stopTracking({
+      trackingNo: shipment.trackingNo,
+      carrierCode: lastEvent?.carrierCode ?? undefined,
+      carrier: shipment.carrier ?? undefined,
+    });
 
-  if (!ok) return c.json({ error: 'Failed to stop tracking' }, 500);
+    if (!ok) return c.json({ error: 'Failed to stop tracking' }, 500);
 
-  await db.update(shipments)
-    .set({ trackingRegistered: false, updatedAt: new Date() })
-    .where(eq(shipments.id, id));
+    await db.update(shipments)
+      .set({ trackingRegistered: false, updatedAt: new Date() })
+      .where(eq(shipments.id, id));
 
-  await cacheDel(scope.tenantId, `shipments:${id}`);
-  await cacheDel(scope.tenantId, `shipments:${id}:tracking`);
-  return c.json({ data: { stopped: true } });
+    await cacheDel(scope.tenantId, `shipments:${id}`);
+    await cacheDel(scope.tenantId, `shipments:${id}:tracking`);
+    return c.json({ data: { stopped: true } });
+  } catch (err) {
+    console.error('[shipments] stop-tracking failed:', err);
+    return c.json({ error: 'Failed to stop tracking' }, 500);
+  }
 });
 
 export default app;

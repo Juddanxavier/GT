@@ -48,6 +48,7 @@ export default function QuotationsPage() {
   const deleteQuotation = useDeleteQuotation();
   const [newCustomerId, setNewCustomerId] = useState('');
   const [newStatus, setNewStatus] = useState('draft');
+  const [newQuoteNo, setNewQuoteNo] = useState('');
   const [newValidUntil, setNewValidUntil] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [newItems, setNewItems] = useState<{ description: string; quantity: number; unitPrice: number; total: number }[]>([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
@@ -96,7 +97,7 @@ export default function QuotationsPage() {
 
   function handleContextAction(key: Key, quotation: Quotation) {
     if (key === 'view') router.push(`/quotations/${quotation.id}`);
-    else if (key === 'edit') router.push(`/quotations/${quotation.id}/edit`);
+    else if (key === 'edit') router.push(`/quotations/${quotation.id}`);
     else if (key === 'delete') setDeleteTarget(quotation);
   }
 
@@ -223,13 +224,17 @@ export default function QuotationsPage() {
           <Modal.Dialog>
             <Modal.Header>New Quotation</Modal.Header>
             <Modal.Body>
-              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); await createQuotation.mutateAsync({ customerId: newCustomerId, status: newStatus, validUntil: newValidUntil || undefined, notes: newNotes || undefined, items: newItems }); setCreateOpen(false); }} className="space-y-4">
+              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); await createQuotation.mutateAsync({ quoteNo: newQuoteNo, customerId: newCustomerId, status: newStatus, validUntil: newValidUntil || undefined, notes: newNotes || undefined, items: newItems.map((i) => ({ description: i.description, quantity: i.quantity, rate: i.unitPrice, amount: i.total })) }); setCreateOpen(false); }} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="new-customerId">Customer *</Label>
                   <select id="new-customerId" value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" required>
                     <option value="">Select customer...</option>
                     {newCustomers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="new-quoteNo">Quote No *</Label>
+                  <Input id="new-quoteNo" value={newQuoteNo} onChange={(e) => setNewQuoteNo(e.target.value)} fullWidth required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">

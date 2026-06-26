@@ -139,7 +139,3 @@ export async function tenantMiddleware(c: Context, next: Next) {
   await next();
 }
 
-export function clearTenantCache(): void {
-  // In-memory cache removed — Redis-based cache auto-expires via TTL
-  // For immediate invalidation, use cacheFlushTenant or cacheDel
-}

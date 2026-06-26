@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
 import { useTenants } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
-import { updateShipmentSchema, toFieldErrors } from '@/lib/validators/shipment';
+
 import { getCountryCode, stripDialCode } from '@/lib/country-codes';
 import { ArrowLeft, Check, MapPin, Clock, Calendar, Package, FileText, Users, Globe, DollarSign, RefreshCw, Trash2, Pencil, Ban, Send, Download, Plus } from 'lucide-react';
 
@@ -93,9 +93,7 @@ export default function ShipmentDetailPage() {
   }, [editTenantId, editTenants]);
   const editPhoneDialCode = getCountryCode(editTenantCountry).dialCode;
   const editPhoneFlag = getCountryCode(editTenantCountry).flag;
-  const [editCarrier, setEditCarrier] = useState('');
   const [editBranchId, setEditBranchId] = useState('');
-  const [editTrackingNo, setEditTrackingNo] = useState('');
   const [editBillAmount, setEditBillAmount] = useState(0);
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const clearEditError = (field: string) => setEditErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
@@ -148,8 +146,7 @@ export default function ShipmentDetailPage() {
       setEditCustomerId(data.customerId ?? '');
       setEditCustomerSelf(!data.customerId);
       setEditCustomerLookup(s ?? null);
-      setEditCarrier(data.carrier ?? '');
-      setEditTrackingNo(data.trackingNo);
+
       setEditBillAmount(Number(data.billAmount) || 0);
       setEditTenantId(data.tenantId ?? '');
       setEditBranchId(data.branchId ?? '');
@@ -209,13 +206,9 @@ export default function ShipmentDetailPage() {
     setEditErrors({});
     if ((document.getElementById('hp-edit') as HTMLInputElement)?.value) return;
     const payload = {
-      trackingNo: editTrackingNo.trim(),
       billAmount: editBillAmount || undefined,
       branchId: editBranchId || undefined,
-      carrier: editCarrier || undefined,
     };
-    const parsed = updateShipmentSchema.safeParse(payload);
-    if (!parsed.success) { setEditErrors(toFieldErrors(parsed.error)); return; }
     setSaving(true);
     try {
       const data = await api.patch<ApiShipment>(`/api/shipments/${id}`, {
@@ -223,15 +216,9 @@ export default function ShipmentDetailPage() {
         contactEmail: (!editCustomerId && !editCustomerSelf && editUnclaimedEmail) ? editUnclaimedEmail : undefined,
         contactPhone: (!editCustomerId && !editCustomerSelf && editUnclaimedPhone) ? editUnclaimedPhone : undefined,
         tenantId: editTenantId || undefined,
-        ...parsed.data,
+        ...payload,
       });
       setShipment(data);
-      if (data.trackingNo !== shipment?.trackingNo || data.carrier !== shipment?.carrier) {
-        try {
-          const tr = await api.get<{ shipment: object; events: TrackingEvent[] }>(`/api/shipments/${id}/tracking`);
-          setTracking(tr.events);
-        } catch { /* ok */ }
-      }
       setEditOpen(false);
     } finally { setSaving(false); }
   }
@@ -251,8 +238,7 @@ export default function ShipmentDetailPage() {
     setEditCustomerLookup(s ?? null);
     setEditCustomerEmail(''); setEditCustomerPhone('');
     setEditCustomerPhoneLocal(stripDialCode(shipment.contactPhone ?? '', editPhoneDialCode));
-    setEditCarrier(shipment.carrier ?? '');
-    setEditTrackingNo(shipment.trackingNo);
+
     setEditBillAmount(Number(shipment.billAmount) || 0);
     setEditTenantId(shipment.tenantId ?? '');
     setEditBranchId(shipment.branchId ?? '');
@@ -767,18 +753,6 @@ export default function ShipmentDetailPage() {
                     {editErrors.branchId && <p className="text-xs text-danger">{editErrors.branchId}</p>}
                   </div>
                 )}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-carrier">Carrier</Label>
-                  <select id="edit-carrier" value={editCarrier} onChange={(e) => setEditCarrier(e.target.value)} className={sel}>
-                    <option value="">None</option>
-                    {['DTDC', 'Blue Dart', 'Delhivery', 'FedEx', 'DHL', 'Other'].map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-trackingNo">Tracking # *</Label>
-                  <Input id="edit-trackingNo" variant="secondary" value={editTrackingNo} onChange={(e) => { setEditTrackingNo(e.target.value); clearEditError('trackingNo'); }} required fullWidth />
-                  {editErrors.trackingNo && <p className="text-xs text-danger">{editErrors.trackingNo}</p>}
-                </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-billAmount">Bill Amount</Label>
                   <div className="relative">

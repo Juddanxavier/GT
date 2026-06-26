@@ -126,5 +126,12 @@ export async function handleTrackingEvent(
     eventType,
     tenantId: shipment.tenantId,
     trackingNo: shipment.trackingNo,
+    carrier: shipment.carrier ?? undefined,
+    origin: shipment.origin ?? undefined,
+    destination: shipment.destination ?? undefined,
+    estimatedDelivery: shipment.estimatedDelivery ?? undefined,
+    customerName: shipment.customerName ?? undefined,
+    customerEmail: shipment.customerEmail ?? undefined,
+    customerPhone: shipment.customerPhone ?? undefined,
   });
 }

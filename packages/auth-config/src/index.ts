@@ -1,7 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { admin, customSession, emailOTP, twoFactor } from 'better-auth/plugins';
-import { createAccessControl } from 'better-auth/plugins/access';
-import { defaultStatements, adminAc } from 'better-auth/plugins/admin/access';
+import { adminAc, defaultRoles } from 'better-auth/plugins/admin/access';
 import { eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -96,8 +95,6 @@ export interface AuthConfigDeps {
   buildEmailHtml: BuildEmailHtmlFn;
 }
 
-const ac = createAccessControl(defaultStatements);
-
 export function createAuthConfig(deps: AuthConfigDeps): any {
   const { db, schema, baseURL, trustedOrigins, sendEmail, buildEmailHtml } = deps;
 
@@ -156,14 +153,12 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     plugins: [
       admin({
         defaultRole: 'customer',
-        adminRoles: ['superadmin', 'admin', 'tenant-admin'],
-        ac,
+        adminRoles: ['superadmin', 'tenant-admin'],
         roles: {
           superadmin: adminAc,
-          admin: adminAc,
-          'tenant-admin': ac.newRole({ ...adminAc.statements }),
-          staff: ac.newRole({}),
-          customer: ac.newRole({}),
+          'tenant-admin': adminAc,
+          staff: defaultRoles.user,
+          customer: defaultRoles.user,
         },
       }),
       emailOTP({
@@ -272,7 +267,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     baseURL,
     session: {
       expiresIn: 60 * 60 * 24 * 7,
-      updateAge: 60 * 60 * 24,
+      updateAge: 60 * 60 * 24, // 24h
       cookieCache: {
         enabled: true,
         maxAge: 5 * 60,
@@ -287,7 +282,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
         '/sign-up/email': { window: 3600, max: 5 },
         '/email-otp/request-password-reset': { window: 300, max: 3 },
         '/two-factor/verify': { window: 10, max: 3 },
-        '/get-session': { window: 10, max: 20 },
+        '/get-session': { window: 10, max: 100 },
       },
     },
   };

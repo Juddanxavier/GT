@@ -1,19 +1,20 @@
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
-import { bullConnectionOptions } from '../redis';
+import { bullConnectionOptions, cacheClient } from '../redis';
 import { db } from '../db';
 import { isRedisConnected, notificationQueue, emailQueue, whatsappQueue, pdfQueue, archiveQueue, deadLetterQueue } from '../queues';
 import type { EventType } from '../email/templates';
 import { renderEmail } from '../email/render';
 import { sendEmail } from '../email/provider';
-import { buildEmailHtml } from '../email/build-html';
-import type { Branding, ShipmentData } from '../email/types';
+import { buildEmailHtml } from '@repo/auth-config';
+import type { Branding, ShipmentData } from '../email/provider';
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';
 import { invoices as invoiceSchema, shipments, customers } from '../db/schema';
 import { runArchive } from '../services/archive';
 import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
+import { logAudit } from '../services/audit';
 
 function getConnection() {
   if (!bullConnectionOptions) {
@@ -34,7 +35,7 @@ function createWorker<T = unknown>(
     name,
     async (job) => {
       console.log(`[worker/${name}] processing job ${job.id}:`, job.data);
-      await processor(job);
+      await processor(job.data);
     },
     { connection: getConnection(), concurrency },
   );
@@ -49,6 +50,17 @@ function createWorker<T = unknown>(
         failedReason: err.message,
       });
     }
+    if (job && ['notification', 'email', 'whatsapp'].includes(name)) {
+      await logAudit('NOTIFICATION_FAILED', null, {
+        queue: name,
+        jobId: job.id,
+        failedReason: err.message,
+        ...('tenantId' in job.data ? { tenantId: job.data.tenantId as string } : {}),
+        ...('to' in job.data ? { recipient: job.data.to as string } : {}),
+        ...('shipmentId' in job.data ? { shipmentId: job.data.shipmentId as string } : {}),
+        ...('eventType' in job.data ? { eventType: job.data.eventType as string } : {}),
+      });
+    }
   });
   worker.on('error', (err) => console.error(`[worker] ${name} error:`, err.message));
 
@@ -61,55 +73,27 @@ type NotifyJobData = {
   eventType: EventType;
   tenantId: string;
   trackingNo: string;
+  labelCode?: string;
+  carrier?: string;
+  origin?: string;
+  destination?: string;
+  estimatedDelivery?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 };
 
 export async function notificationProcessor(job: NotifyJobData): Promise<void> {
-  const { shipmentId, eventId, eventType, tenantId, trackingNo } = job;
-
-  const ship = await db
-    .select({
-      trackingNo: shipments.trackingNo,
-      carrier: shipments.carrier,
-      origin: shipments.origin,
-      destination: shipments.destination,
-      estimatedDelivery: shipments.estimatedDelivery,
-      status: shipments.status,
-      customerId: shipments.customerId,
-    })
-    .from(shipments)
-    .where(eq(shipments.id, shipmentId))
-    .limit(1);
-
-  if (!ship.length) {
-    console.warn(`[notifications] Shipment ${shipmentId} not found`);
-    return;
-  }
-
-  const s = ship[0]!;
-  let customerName: string | null = null;
-  let customerEmail: string | null = null;
-  let customerPhone: string | null = null;
-
-  if (s.customerId) {
-    const cust = await db
-      .select({ name: customers.name, email: customers.email, phone: customers.phone })
-      .from(customers)
-      .where(eq(customers.id, s.customerId))
-      .limit(1);
-    if (cust.length) {
-      customerName = cust[0]!.name;
-      customerEmail = cust[0]!.email;
-      customerPhone = cust[0]!.phone;
-    }
-  }
+  const { shipmentId, eventId, eventType, tenantId, trackingNo, labelCode, carrier, origin, destination, estimatedDelivery, customerName, customerEmail, customerPhone } = job;
 
   const shipmentData: ShipmentData = {
-    trackingNo: s.trackingNo,
-    carrier: s.carrier ?? undefined,
-    origin: s.origin ?? undefined,
-    destination: s.destination ?? undefined,
-    estimatedDelivery: s.estimatedDelivery?.toISOString() ?? undefined,
-    customerName: customerName ?? undefined,
+    trackingNo,
+    labelCode,
+    carrier,
+    origin,
+    destination,
+    estimatedDelivery,
+    customerName,
     status: eventType,
   };
 
@@ -135,6 +119,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
       if (waParams) {
         await whatsappQueue.add('send', {
           to: customerPhone,
+          tenantId,
           ...waParams,
         });
       }
@@ -151,14 +136,15 @@ export const notificationWorker = createWorker<NotifyJobData>(
 );
 
 function getEmailSubject(eventType: EventType, shipment: ShipmentData): string {
+  const ref = shipment.labelCode ?? shipment.trackingNo;
   const map: Record<EventType, string> = {
-    InfoReceived: `Shipment ${shipment.trackingNo} - Picked Up`,
-    InTransit: `Shipment ${shipment.trackingNo} - In Transit`,
-    OutForDelivery: `Shipment ${shipment.trackingNo} - Out for Delivery`,
-    Delivered: `Shipment ${shipment.trackingNo} - Delivered`,
-    Exception: `Shipment ${shipment.trackingNo} - Delivery Exception`,
+    InfoReceived: `Shipment ${ref} - Registered`,
+    InTransit: `Shipment ${ref} - In Transit`,
+    OutForDelivery: `Shipment ${ref} - Out for Delivery`,
+    Delivered: `Shipment ${ref} - Delivered`,
+    Exception: `Shipment ${ref} - Delivery Exception`,
   };
-  return map[eventType] ?? `Shipment ${shipment.trackingNo} - Status Update`;
+  return map[eventType] ?? `Shipment ${ref} - Status Update`;
 }
 
 type EmailJobData = {
@@ -244,14 +230,29 @@ export const emailWorker = createWorker<EmailJobData>(
 
 type WhatsAppJobData = {
   to: string;
+  tenantId?: string;
   templateId: string;
   variables: Record<string, string>;
 };
 
+const WHATSAPP_RATE_LIMIT = parseInt(process.env.WHATSAPP_RATE_PER_MINUTE ?? '30', 10);
+
+async function checkWhatsAppRateLimit(tenantId?: string): Promise<boolean> {
+  if (!tenantId || !cacheClient) return true;
+  const key = `whatsapp_rate:${tenantId}:${Math.floor(Date.now() / 60000)}`;
+  const count = await cacheClient.incr(key);
+  if (count === 1) await cacheClient.expire(key, 70);
+  return count <= WHATSAPP_RATE_LIMIT;
+}
+
 export const whatsappWorker = createWorker<WhatsAppJobData>(
   'whatsapp',
   async (job) => {
-    const { to, templateId, variables } = job.data;
+    const { to, tenantId, templateId, variables } = job;
+    const allowed = await checkWhatsAppRateLimit(tenantId);
+    if (!allowed) {
+      throw new Error(`WhatsApp rate limit exceeded for tenant ${tenantId}`);
+    }
     const { sendWhatsApp } = await import('../notifications/whatsapp/provider');
     await sendWhatsApp({ to, templateId, variables });
   },
@@ -267,7 +268,7 @@ type PdfJobData = {
 export const pdfWorker = createWorker<PdfJobData>(
   'pdf',
   async (job) => {
-    const { type, invoiceId, tenantId } = job.data;
+    const { type, invoiceId, tenantId } = job;
 
     if (type === 'invoice') {
       const data = await getInvoiceData(invoiceId, tenantId);
@@ -299,11 +300,13 @@ export const archiveWorker = createWorker<ArchiveJobData>(
 );
 
 // Register the daily repeatable job (3 AM). BullMQ deduplicates by name + pattern.
-archiveQueue?.add('archive-run', {}, {
-  repeat: { pattern: '0 3 * * *' },
-  removeOnComplete: { age: 86400 * 7, count: 50 },
-  removeOnFail: { age: 86400 * 30, count: 100 },
-}).catch((err: Error) => console.error('[archive] failed to register repeatable job:', err.message));
+if (archiveQueue) {
+  archiveQueue.add('archive-run', {}, {
+    repeat: { pattern: '0 3 * * *' },
+    removeOnComplete: { age: 86400 * 7, count: 50 },
+    removeOnFail: { age: 86400 * 30, count: 100 },
+  }).catch((err: Error) => console.error('[archive] failed to register repeatable job:', err.message));
+}
 
 export const workers = [
   notificationWorker,

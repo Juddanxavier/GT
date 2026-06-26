@@ -4,9 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { user, session, account, verification, onboardTokens, tenants } from '../db/schema';
 import { requireRole, requireBranchScope, getUser } from '../middleware/authorization';
-import { withCache, cacheDel, cacheFlushTenant } from '../cache';
+import { logAudit } from '../services/audit';
+import { cacheDel, cacheFlushTenant } from '../cache';
 import { sendEmail } from '../email/provider';
-import { buildEmailHtml } from '../email/build-html';
+import { buildEmailHtml } from '@repo/auth-config';
 import { auth } from '../auth';
 import type { AppVariables } from './types';
 
@@ -49,30 +50,25 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchSc
     conditions.push(eq(user.role, roleFilter));
   }
 
-  const cacheTenantId = overrideTenantId || currentUser.tenantId || null;
-  const cacheKey = `users:list:${currentUser.role}:${currentUser.branchId ?? 'all'}:${search ?? ''}:${roleFilter ?? ''}`;
-  const rows = await withCache(cacheTenantId, cacheKey, () =>
-    db
-      .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        role: user.role,
-        banned: user.banned,
-        banReason: user.banReason,
-        banExpires: user.banExpires,
-        tenantId: user.tenantId,
-        branchId: user.branchId,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      })
-      .from(user)
-      .where(and(...conditions))
-      .orderBy(user.createdAt),
-    120,
-  );
+  const rows = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      image: user.image,
+      role: user.role,
+      banned: user.banned,
+      banReason: user.banReason,
+      banExpires: user.banExpires,
+      tenantId: user.tenantId,
+      branchId: user.branchId,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    })
+    .from(user)
+    .where(and(...conditions))
+    .orderBy(user.createdAt);
 
   return c.json({ data: rows });
 });
@@ -167,6 +163,13 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     return c.json({ error: 'No valid fields to update' }, 400);
   }
 
+  // Capture current role before update for audit
+  const [before] = await db
+    .select({ role: user.role })
+    .from(user)
+    .where(and(...conditions))
+    .limit(1);
+
   const [row] = await db
     .update(user)
     .set({ ...updates, updatedAt: new Date() })
@@ -186,6 +189,11 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     });
 
   if (!row) return c.json({ error: 'User not found' }, 404);
+
+  if (updates.role && before && before.role !== row.role) {
+    await logAudit('USER_ROLE_CHANGED', id, { from: before.role, to: row.role }, c);
+  }
+
   const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
   if (tenantForCache) await cacheFlushTenant(tenantForCache);
   return c.json({ data: row });
@@ -323,6 +331,8 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     updatedAt: new Date(),
   });
 
+  await logAudit('USER_CREATED', createdUserId, { email, role, tenantId, branchId }, c);
+
   // Send activation email
   const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
   const activateLink = `${appUrl}/onboard?token=${onboardToken}`;
@@ -381,7 +391,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   }
 
   const [target] = await db
-    .select({ id: user.id, role: user.role, tenantId: user.tenantId })
+    .select({ id: user.id, email: user.email, role: user.role, tenantId: user.tenantId })
     .from(user)
     .where(and(...conditions))
     .limit(1);
@@ -393,11 +403,6 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
     return c.json({ error: 'Cannot delete this user' }, 403);
   }
 
-  // Admin role cannot delete anyone (defense in depth — requireRole already blocks)
-  if (currentUser.role === 'admin') {
-    return c.json({ error: 'Admins cannot delete users' }, 403);
-  }
-
   // Clean up all associated records before deleting the user
   await db.delete(verification).where(eq(verification.value, id));
   await db.delete(onboardTokens).where(eq(onboardTokens.userId, id));
@@ -405,6 +410,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await db.delete(account).where(eq(account.userId, id));
   await db.delete(user).where(eq(user.id, id));
 
+  await logAudit('USER_DELETED', id, { email: target.email, role: target.role }, c);
   const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
   if (tenantForCache) await cacheFlushTenant(tenantForCache);
   return c.json({ data: { success: true } });

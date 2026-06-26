@@ -15,6 +15,8 @@ import { globalRateLimit } from './middleware/rate-limit';
 import { tenantMiddleware, type TenantVariables } from './middleware/tenant';
 import { branchMiddleware, type BranchVariables } from './middleware/branch';
 import { requireRole } from './middleware/authorization';
+import { signInHandler } from './middleware/lockout';
+import { logAudit } from './services/audit';
 import { queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
@@ -121,10 +123,14 @@ app.post('/api/auth/forgot-password', async (c) => {
     await auth.api.requestPasswordResetEmailOTP({
       body: { email },
     });
+    await logAudit('PASSWORD_RESET', user.id, { email }, c);
   }
 
   return c.json({ data: { success: true } });
 });
+
+// Lockout check + forward to auth handler
+app.post('/api/auth/sign-in/email', signInHandler);
 
 // Auth handler
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw));
@@ -187,7 +193,9 @@ app.onError((err, c) => {
   Sentry.captureException(err, {
     contexts: { request: { request_id: requestId } },
   });
-  return c.json({ error: 'Internal server error', requestId }, 500);
+  const message = err instanceof Error ? `${err.name}: ${err.message}` : `Non-Error thrown: ${String(err)}`;
+  console.error(`[api] error details (requestId=${requestId}):`, err instanceof Error ? err.stack : err);
+  return c.json({ error: message, requestId }, 500);
 });
 
 // Seed super admin (one-time, protected by SEED_SECRET)

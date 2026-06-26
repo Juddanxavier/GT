@@ -169,15 +169,18 @@ export function getIO(): SocketIOServer | null {
 
 // Helper: emit to all clients in a tenant room
 export function emitToTenant(tenantId: string, event: string, data: unknown): void {
-  io?.to(`tenant:${tenantId}`).emit(event, data);
+  if (!io) return;
+  io.to(`tenant:${tenantId}`).emit(event, data);
 }
 
 // Helper: emit to a specific branch within a tenant
 export function emitToBranch(tenantId: string, branchId: string, event: string, data: unknown): void {
-  io?.to(`tenant:${tenantId}:branch:${branchId}`).emit(event, data);
+  if (!io) return;
+  io.to(`tenant:${tenantId}:branch:${branchId}`).emit(event, data);
 }
 
 // Helper: emit to all connected clients (use sparingly — for global events)
 export function emitGlobal(event: string, data: unknown): void {
-  io?.emit(event, data);
+  if (!io) return;
+  io.emit(event, data);
 }

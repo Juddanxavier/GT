@@ -6,7 +6,7 @@ import { requireRole, getQueryScope } from '../middleware/authorization';
 import { withCache } from '../cache';
 import { generateReportPdf } from '../invoice/report-service';
 import { sendEmail } from '../email/provider';
-import { buildEmailHtml } from '../email/build-html';
+import { buildEmailHtml } from '@repo/auth-config';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();

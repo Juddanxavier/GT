@@ -1,65 +1,95 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Send, Download, RotateCw } from 'lucide-react';
-import { Button, Chip, Input, Modal, Skeleton } from '@heroui/react';
-import { useInvoices, useSendInvoice } from '@/lib/queries';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Download, Eye, FileText, MoreVertical, Send, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Button, Chip, Dropdown, Input, Modal, Pagination, Skeleton, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
+import { useInvoices, useSendInvoice, useDeleteInvoice } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useQueryClient } from '@tanstack/react-query';
 
-interface InvoiceRow {
-  id: string;
-  invoiceNo: string;
-  amount: string;
-  status: string;
-  emailCount: number;
-  trackingNo: string;
-  customerId: string;
-  paidAt: string;
-  createdAt: string;
-}
-
 const ROWS_PER_PAGE = 10;
+const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
+  paid: 'success',
+  unpaid: 'warning',
+  cancelled: 'danger',
+  refunded: 'danger',
+};
 
 export default function InvoicesPage() {
   usePageTitle('Invoices');
+  const router = useRouter();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [sendTarget, setSendTarget] = useState<InvoiceRow | null>(null);
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'createdAt', direction: 'descending' });
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sendTarget, setSendTarget] = useState<{ id: string; invoiceNo: string; trackingNo: string; emailCount: number } | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState('');
-  const qc = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; invoiceNo: string } | null>(null);
 
-  const { data: invoicesRaw = [], isPending: loading } = useInvoices(searchQuery);
+  const { data: invoicesRaw = [], isPending: loading, isError, refetch } = useInvoices(searchQuery);
   const sendInvoice = useSendInvoice();
+  const deleteInvoice = useDeleteInvoice();
 
-  const totalPages = Math.max(1, Math.ceil(invoicesRaw.length / ROWS_PER_PAGE));
-  const paginated = invoicesRaw.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+  const invoices = useMemo(() => {
+    let items = invoicesRaw.map((inv) => ({
+      ...inv,
+      customerName: inv.customerName ?? '—',
+    }));
+    if (statusFilter !== 'all') items = items.filter((inv) => inv.status === statusFilter);
+    if (sortDescriptor.column) {
+      const col = sortDescriptor.column as string;
+      const dir = sortDescriptor.direction;
+      items = [...items].sort((a, b) => {
+        const valA = String((a as Record<string, unknown>)[col] ?? '');
+        const valB = String((b as Record<string, unknown>)[col] ?? '');
+        const cmp = valA.localeCompare(valB);
+        return dir === 'descending' ? -cmp : cmp;
+      });
+    }
+    return items;
+  }, [invoicesRaw, statusFilter, sortDescriptor]);
+
+  const totalPages = Math.max(1, Math.ceil(invoices.length / ROWS_PER_PAGE));
+  const paginated = useMemo(() => {
+    const start = (page - 1) * ROWS_PER_PAGE;
+    return invoices.slice(start, start + ROWS_PER_PAGE);
+  }, [page, invoices]);
+  const start = (page - 1) * ROWS_PER_PAGE + 1;
+  const end = Math.min(page * ROWS_PER_PAGE, invoices.length);
+
+  const kpiTotal = invoicesRaw.length;
+  const kpiSentToday = invoicesRaw.filter((inv) => inv.emailCount > 0).length;
+  const kpiPaid = invoicesRaw.filter((inv) => inv.status === 'paid').length;
+  const kpiPending = invoicesRaw.filter((inv) => inv.status === 'unpaid').length;
 
   function handleSearch() {
     setPage(1);
     setSearchQuery(search);
   }
 
-  async function handleSend(invoice: InvoiceRow) {
+  async function handleSend(invoice: typeof sendTarget) {
+    if (!invoice) return;
     setSending(true);
     setSendError('');
     setSendSuccess('');
     try {
       const res = await sendInvoice.mutateAsync(invoice.id);
-      if (res.sent) {
-        setSendSuccess(`Invoice ${invoice.invoiceNo} sent successfully. (${res.emailCount}/2 today)`);
-        invoice.emailCount = res.emailCount;
-        qc.invalidateQueries({ queryKey: ['invoices'] });
-      }
+      setSendSuccess(`Invoice ${invoice.invoiceNo} sent. (${res.emailCount}/2 today)`);
       setTimeout(() => { setSendTarget(null); setSendSuccess(''); }, 2000);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Failed to send');
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
+  }
+
+  function handleContextAction(key: Key, inv: typeof paginated[number]) {
+    if (key === 'view') router.push(`/invoices/${inv.id}`);
+    else if (key === 'send') setSendTarget(inv);
+    else if (key === 'delete') setDeleteTarget(inv);
   }
 
   function downloadPdf(id: string) {
@@ -68,106 +98,137 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold">Invoices</h1>
-          <p className="text-sm text-muted mt-1">View and send invoices to customers</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Input
-              variant="secondary"
-              placeholder="Search invoices..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-56"
-            />
-            <Button size="sm" variant="ghost" onPress={handleSearch} aria-label="Search">
-              <RotateCw size={14} />
-            </Button>
-          </div>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
+          <p className="text-sm text-muted">View and send invoices to customers</p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <Skeleton className="h-4 w-48 rounded" />
-          </div>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
-              <Skeleton className="h-4 w-6 rounded shrink-0" />
-              <Skeleton className="h-4 w-28 rounded" />
-              <Skeleton className="h-4 w-24 rounded" />
-              <Skeleton className="h-4 w-20 rounded ml-auto" />
-              <Skeleton className="h-5 w-12 rounded-full" />
-              <Skeleton className="h-4 w-12 rounded" />
-              <Skeleton className="h-4 w-20 rounded" />
-              <Skeleton className="h-6 w-14 rounded-lg ml-auto" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Total', count: kpiTotal, color: '#3b82f6', icon: FileText },
+          { label: 'Paid', count: kpiPaid, color: '#22c55e', icon: CheckCircle },
+          { label: 'Unpaid', count: kpiPending, color: '#f59e0b', icon: Clock },
+          { label: 'Sent Today', count: kpiSentToday, color: '#8b5cf6', icon: Send },
+        ].map(({ label, count, color, icon: Icon }) => (
+          <div key={label} className="rounded-xl border border-border bg-surface overflow-hidden flex flex-col">
+            <div className="p-5 pb-3 flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">{label}</span>
+                <Icon size={18} style={{ color }} />
+              </div>
+              <p className="text-4xl font-bold tracking-tight">{count}</p>
             </div>
-          ))}
-        </div>
-      ) : paginated.length === 0 ? (
-        <div className="rounded-2xl bg-surface p-12 text-center">
-          <FileText size={32} className="mx-auto text-muted mb-3" />
-          <p className="text-muted">No invoices found.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30 text-left">
-                <th className="px-4 py-3 font-medium text-muted text-xs w-12">#</th>
-                <th className="px-4 py-3 font-medium">Invoice No</th>
-                <th className="px-4 py-3 font-medium">Tracking</th>
-                <th className="px-4 py-3 font-medium text-right">Amount</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Emails Sent</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-                <th className="px-4 py-3 font-medium text-xs w-24">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.map((inv, i) => (
-                <tr key={inv.id} className="border-b border-border hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 text-muted text-xs">{(page - 1) * ROWS_PER_PAGE + i + 1}</td>
-                  <td className="px-4 py-3 font-medium">{inv.invoiceNo}</td>
-                  <td className="px-4 py-3">{inv.trackingNo}</td>
-                  <td className="px-4 py-3 text-right font-medium">₹{Number(inv.amount).toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <Chip size="sm" variant="soft" color="success">Paid</Chip>
-                  </td>
-                  <td className="px-4 py-3">{inv.emailCount}/2 today</td>
-                  <td className="px-4 py-3 text-muted">{new Date(inv.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" onPress={() => downloadPdf(inv.id)} aria-label="Download PDF">
-                        <Download size={14} />
-                      </Button>
-                      <Button size="sm" variant="ghost" onPress={() => setSendTarget(inv)} aria-label="Send invoice email">
-                        <Send size={14} />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1 pt-2">
-          <Button size="sm" variant="ghost" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>Previous</Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <Button key={p} size="sm" variant={p === page ? 'primary' : 'ghost'} onPress={() => setPage(p)}>
-              {p}
-            </Button>
-          ))}
-          <Button size="sm" variant="ghost" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>Next</Button>
+      <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="sm:flex-1">
+              <Input variant="secondary" placeholder="Search invoices..." value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onKeyDown={(e: { key: string }) => e.key === 'Enter' && handleSearch()}
+                fullWidth />
+            </div>
+            <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
+              <Tabs.List>
+                <Tabs.Tab id="all">All</Tabs.Tab>
+                <Tabs.Tab id="paid">Paid</Tabs.Tab>
+                <Tabs.Tab id="unpaid">Unpaid</Tabs.Tab>
+                <Tabs.Tab id="cancelled">Cancelled</Tabs.Tab>
+                <Tabs.Tab id="refunded">Refunded</Tabs.Tab>
+              </Tabs.List>
+            </Tabs>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div className="p-8 flex items-center justify-center"><Spinner /></div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <p className="text-danger text-sm">Failed to load invoices</p>
+            <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
+          </div>
+        ) : paginated.length === 0 ? (
+          <div className="flex items-center justify-center py-24 text-muted text-sm">No invoices found</div>
+        ) : (
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Invoices" className="min-w-[950px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
+                <Table.Header>
+                  <Table.Column id="#" width={48}>{() => <span className="text-muted text-xs">#</span>}</Table.Column>
+                  <Table.Column allowsSorting id="invoiceNo" isRowHeader>Invoice No</Table.Column>
+                  <Table.Column allowsSorting id="trackingNo">Tracking</Table.Column>
+                  <Table.Column allowsSorting id="customerName">Customer</Table.Column>
+                  <Table.Column allowsSorting id="amount" width={120}>Amount</Table.Column>
+                  <Table.Column allowsSorting id="status">Status</Table.Column>
+                  <Table.Column allowsSorting id="emailCount">Sent</Table.Column>
+                  <Table.Column allowsSorting id="createdAt">Created</Table.Column>
+                  <Table.Column id="actions" width={48}>{() => null}</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => (
+                  <div className="flex items-center justify-center py-24 text-muted text-sm">No invoices found</div>
+                )}>
+                  {paginated.map((inv, i) => (
+                    <Table.Row key={inv.id} id={inv.id}>
+                      <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
+                      <Table.Cell><span className="font-mono text-xs font-medium">{inv.invoiceNo}</span></Table.Cell>
+                      <Table.Cell className="font-mono text-xs">{inv.trackingNo || '—'}</Table.Cell>
+                      <Table.Cell>{inv.customerName}</Table.Cell>
+                      <Table.Cell className="font-medium">₹{Number(inv.amount).toLocaleString()}</Table.Cell>
+                      <Table.Cell>
+                        <Chip size="sm" variant="soft" color={STATUS_COLORS[inv.status] ?? 'default'}>{inv.status}</Chip>
+                      </Table.Cell>
+                      <Table.Cell className="text-muted text-xs">{inv.emailCount}/2</Table.Cell>
+                      <Table.Cell className="text-muted text-xs">{new Date(inv.createdAt).toLocaleDateString()}</Table.Cell>
+                      <Table.Cell>
+                        <Dropdown.Root>
+                          <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
+                            <MoreVertical size={16} />
+                          </Dropdown.Trigger>
+                          <Dropdown.Popover placement="bottom end">
+                            <Dropdown.Menu onAction={(key) => handleContextAction(key, inv)}>
+                              <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
+                              <Dropdown.Item id="send" textValue="Send"><span className="flex items-center gap-2"><Send size={16} /> Send Email</span></Dropdown.Item>
+                              <Dropdown.Item id="pdf" textValue="PDF"><span className="flex items-center gap-2"><Download size={16} /> Download PDF</span></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete" className="text-danger"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
+                        </Dropdown.Root>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+            <Table.Footer>
+              <Pagination size="sm">
+                <Pagination.Summary>{start} to {end} of {invoices.length} results</Pagination.Summary>
+                <Pagination.Content>
+                  <Pagination.Item>
+                    <Pagination.Previous isDisabled={page === 1} onPress={() => setPage(Math.max(1, page - 1))}>
+                      <Pagination.PreviousIcon /> Prev
+                    </Pagination.Previous>
+                  </Pagination.Item>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <Pagination.Item key={p}>
+                      <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+                    </Pagination.Item>
+                  ))}
+                  <Pagination.Item>
+                    <Pagination.Next isDisabled={page >= totalPages} onPress={() => setPage(Math.min(totalPages, page + 1))}>
+                      Next <Pagination.NextIcon />
+                    </Pagination.Next>
+                  </Pagination.Item>
+                </Pagination.Content>
+              </Pagination>
+            </Table.Footer>
+          </Table>
+        )}
+      </div>
 
       <Modal.Backdrop isOpen={!!sendTarget} onOpenChange={(v: boolean) => { if (!v) { setSendTarget(null); setSendError(''); setSendSuccess(''); } }}>
         <Modal.Container>
@@ -177,18 +238,32 @@ export default function InvoicesPage() {
               <p className="text-sm text-muted">
                 Send invoice <strong>{sendTarget?.invoiceNo}</strong> for shipment <strong>{sendTarget?.trackingNo}</strong> to the customer via email?
               </p>
-              <p className="text-xs text-muted mt-1">
-                ({sendTarget?.emailCount}/2 emails sent today)
-              </p>
+              <p className="text-xs text-muted mt-1">({sendTarget?.emailCount}/2 emails sent today)</p>
               {sendError && <p className="text-sm text-danger mt-2">{sendError}</p>}
               {sendSuccess && <p className="text-sm text-success mt-2">{sendSuccess}</p>}
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
-              <Button variant="ghost" onPress={() => { setSendTarget(null); setSendError(''); setSendSuccess(''); }}>Cancel</Button>
-              <Button variant="primary" isPending={sending} onPress={() => sendTarget && handleSend(sendTarget)} isDisabled={sending}>
-                <Send size={14} />
-                Send Email
+              <Button variant="secondary" onPress={() => { setSendTarget(null); setSendError(''); setSendSuccess(''); }}>Cancel</Button>
+              <Button variant="primary" isPending={sending} onPress={() => handleSend(sendTarget)} isDisabled={sending}>
+                <Send size={14} /> Send Email
               </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header>Delete Invoice</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-muted">Delete invoice <strong>{deleteTarget?.invoiceNo}</strong>? This action cannot be undone.</p>
+            </Modal.Body>
+            <Modal.Footer className="flex gap-2">
+              <Button variant="secondary" onPress={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="danger" isPending={deleteInvoice.isPending} onPress={() => {
+                if (deleteTarget) { deleteInvoice.mutate(deleteTarget.id); setDeleteTarget(null); }
+              }}>{deleteInvoice.isPending ? 'Deleting...' : 'Delete'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

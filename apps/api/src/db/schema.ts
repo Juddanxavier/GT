@@ -339,6 +339,26 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// ── Phase 24: Audit Log ──
+
+export const auditLogs = pgTable(
+  'audit_log',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    event: varchar('event', { length: 50 }).notNull(),
+    userId: text('user_id'),
+    metadata: jsonb('metadata').notNull().default('{}'),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    auditLogEventIdx: index('idx_audit_log_event').on(table.event),
+    auditLogUserIdIdx: index('idx_audit_log_user_id').on(table.userId),
+    auditLogCreatedAtIdx: index('idx_audit_log_created_at').on(table.createdAt),
+  }),
+);
+
 export const twoFactor = pgTable('two_factor', {
   id: text('id').primaryKey(),
   secret: text('secret').notNull(),

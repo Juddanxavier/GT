@@ -2,13 +2,11 @@ import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { quotations, quoteItems, shipments } from '../db/schema';
-import { requireRole, requireAbility, requireBranchScope, getQueryScope } from '../middleware/authorization';
-import { withCache, cacheDel } from '../cache';
-import {
-  createQuotationSchema,
-  updateQuotationSchema,
-  updateQuotationStatusSchema,
-} from '../validators';
+import { requireRole, requireBranchScope, getUser, getQueryScope } from '../middleware/authorization';
+import { withCache, cacheDel, cacheDelPattern } from '../cache';
+import { createQuotationSchema, updateQuotationSchema, updateQuotationStatusSchema } from '../validators';
+import { logAudit } from '../services/audit';
+import { emitToTenant } from '../realtime';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -115,7 +113,9 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchS
     );
   }
 
-  await cacheDel(tenantId!, 'quotations:list:*');
+  await cacheDelPattern(tenantId!, 'quotations:list:*');
+  await logAudit('QUOTATION_CREATED', user?.id ?? null, { quotationId: quote.id, quoteNo: quote.quoteNo, tenantId }, c);
+  emitToTenant(tenantId!, 'dashboard:update', {});
   return c.json({ data: { ...quote, items } }, 201);
 });
 
@@ -164,8 +164,10 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBra
     .from(quoteItems)
     .where(eq(quoteItems.quotationId, id));
 
-  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDelPattern(scope.tenantId!, 'quotations:list:*');
   await cacheDel(scope.tenantId!, `quotations:${id}`);
+  await logAudit('QUOTATION_UPDATED', getUser(c)?.id ?? null, { quotationId: id, changes: parsed.data, tenantId: scope.tenantId }, c);
+  emitToTenant(scope.tenantId!, 'dashboard:update', {});
   return c.json({ data: { ...quote, items: updatedItems } });
 });
 
@@ -192,8 +194,10 @@ app.patch('/:id/status', requireRole('superadmin', 'tenant-admin', 'staff'), req
     .returning();
 
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
-  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDelPattern(scope.tenantId!, 'quotations:list:*');
   await cacheDel(scope.tenantId!, `quotations:${id}`);
+  await logAudit('QUOTATION_UPDATED', getUser(c)?.id ?? null, { quotationId: id, changes: { status: parsed.data.status }, tenantId: scope.tenantId }, c);
+  emitToTenant(scope.tenantId!, 'dashboard:update', {});
   return c.json({ data: quote });
 });
 
@@ -238,9 +242,29 @@ app.post('/:id/convert', requireRole('superadmin', 'tenant-admin', 'staff'), req
     .set({ status: 'converted', updatedAt: new Date() })
     .where(eq(quotations.id, id));
 
-  await cacheDel(scope.tenantId!, 'quotations:list:*');
+  await cacheDelPattern(scope.tenantId!, 'quotations:list:*');
   await cacheDel(scope.tenantId!, `quotations:${id}`);
+  await logAudit('QUOTATION_CONVERTED', getUser(c)?.id ?? null, { quotationId: id, quoteNo: quote.quoteNo, shipmentId: shipment.id, trackingNo, tenantId: scope.tenantId }, c);
+  emitToTenant(scope.tenantId!, 'dashboard:update', {});
   return c.json({ data: { quotation: { ...quote, status: 'converted' }, shipment } }, 201);
+});
+
+app.delete('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
+  const { id } = c.req.param();
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const conditions: ReturnType<typeof eq>[] = [eq(quotations.id, id), eq(quotations.tenantId, scope.tenantId)];
+  if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
+
+  const [quote] = await db.delete(quotations).where(and(...conditions)).returning();
+  if (!quote) return c.json({ error: 'Quotation not found' }, 404);
+
+  await cacheDelPattern(scope.tenantId!, 'quotations:list:*');
+  await cacheDel(scope.tenantId!, `quotations:${id}`);
+  await logAudit('QUOTATION_DELETED', getUser(c)?.id ?? null, { quotationId: id, quoteNo: quote.quoteNo, tenantId: scope.tenantId }, c);
+  emitToTenant(scope.tenantId!, 'dashboard:update', {});
+  return c.json({ data: quote });
 });
 
 export default app;

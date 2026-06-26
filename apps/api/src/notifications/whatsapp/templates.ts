@@ -13,8 +13,7 @@ export function getWhatsAppTemplateParams(
 
   const variables: TemplateVars = {
     customer_name: shipment.customerName ?? 'Valued Customer',
-    tracking_no: shipment.trackingNo,
-    carrier: shipment.carrier ?? '',
+    label_code: shipment.labelCode ?? shipment.trackingNo,
     origin: shipment.origin ?? '',
     destination: shipment.destination ?? '',
     estimated_delivery: shipment.estimatedDelivery ?? '',

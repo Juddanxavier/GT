@@ -1,6 +1,54 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
-import { emailConfig, isResendConfigured, isSmtpConfigured, isZeptoMailConfigured } from './config';
+
+const emailConfig = {
+  zeptomail: {
+    host: process.env.ZEPTOMAIL_HOST || 'smtp.zeptomail.com',
+    port: Number(process.env.ZEPTOMAIL_PORT) || 587,
+    user: process.env.ZEPTOMAIL_USER || 'emailapikey',
+    pass: process.env.ZEPTOMAIL_PASS || '',
+  },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY || '',
+  },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+  defaultFrom: {
+    email: process.env.DEFAULT_FROM_EMAIL || 'noreply@gajantraders.com',
+    name: process.env.DEFAULT_FROM_NAME || 'Gajan Traders',
+  },
+};
+
+function isZeptoMailConfigured(): boolean {
+  return !!emailConfig.zeptomail.pass;
+}
+function isResendConfigured(): boolean {
+  return !!emailConfig.resend.apiKey;
+}
+function isSmtpConfigured(): boolean {
+  return !!emailConfig.smtp.host;
+}
+
+export type Branding = {
+  logoUrl?: string;
+  primaryColor?: string;
+  companyName?: string;
+};
+
+export type ShipmentData = {
+  trackingNo: string;
+  labelCode?: string;
+  carrier?: string;
+  origin?: string;
+  destination?: string;
+  estimatedDelivery?: string;
+  customerName?: string;
+  status: string;
+};
 
 export type Attachment = {
   filename: string;
@@ -87,7 +135,13 @@ function createSendFn(): SendFn {
   }
 
   // 3. SMTP via Nodemailer (dev fallback)
-  const transport = createNodemailerTransport()!;
+  const transport = createNodemailerTransport();
+  if (!transport) {
+    const noop = async (_params: SendEmailParams) => {
+      console.warn('[email] No email provider configured — email not sent. Set RESEND_API_KEY or ZEPTOMAIL_PASS.');
+    };
+    return noop;
+  }
   let transportRef: nodemailer.Transporter | null = transport;
   return async (params) => {
     const from = params.from ?? emailConfig.defaultFrom;
@@ -122,6 +176,3 @@ export function closeTransport(): void {
   send = null;
 }
 
-export function resetTransport(): void {
-  closeTransport();
-}

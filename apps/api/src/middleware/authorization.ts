@@ -47,62 +47,6 @@ export function getUser(c: Context) {
   return c.get('user') as { id: string; role: string; tenantId?: string; branchId?: string } | null;
 }
 
-export function requireAbility(action: Action, subject: Subject) {
-  return async function abilityGuard(c: Context, next: Next) {
-    const user = c.get('user');
-
-    if (!user) {
-      return c.json({ error: 'Authentication required' }, 401);
-    }
-
-    const permissionContext: PermissionContext = {
-      userId: user.id,
-      role: user.role as PermissionContext['role'],
-      tenantId: c.get('tenantId') ?? user.tenantId,
-      branchId: user.branchId,
-      overrideTenantId: c.get('tenantId'),
-      overrideBranchId: c.get('branchId'),
-    };
-
-    if (!canAccess(permissionContext, action, subject)) {
-      return c.json({ error: 'Forbidden: insufficient permissions' }, 403);
-    }
-
-    await next();
-  };
-}
-
-export function requireResourceAbility(
-  action: Action,
-  subject: Subject,
-  resourceFn: (c: Context) => ResourceContext | Promise<ResourceContext>,
-) {
-  return async function resourceAbilityGuard(c: Context, next: Next) {
-    const user = c.get('user');
-
-    if (!user) {
-      return c.json({ error: 'Authentication required' }, 401);
-    }
-
-    const permissionContext: PermissionContext = {
-      userId: user.id,
-      role: user.role as PermissionContext['role'],
-      tenantId: c.get('tenantId') ?? user.tenantId,
-      branchId: user.branchId,
-      overrideTenantId: c.get('tenantId'),
-      overrideBranchId: c.get('branchId'),
-    };
-
-    const resource = await resourceFn(c);
-
-    if (!canAccess(permissionContext, action, subject, resource)) {
-      return c.json({ error: 'Forbidden: insufficient permissions' }, 403);
-    }
-
-    await next();
-  };
-}
-
 /**
  * Require that a staff user's branch scope is respected.
  * Blocks requests where query/param branchId doesn't match the user's branch.

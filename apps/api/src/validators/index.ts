@@ -79,6 +79,7 @@ export const createShipmentSchema = z.object({
   payload: z.record(z.unknown()).optional(),
   branchId: uuidSchema.optional(),
   tenantId: uuidSchema.optional(),
+  status: z.string().max(50).optional(),
 });
 
 export const updateShipmentSchema = createShipmentSchema.partial();

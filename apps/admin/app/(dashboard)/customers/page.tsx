@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useUsers, useTenants, useBranches, useBranchesForTenant, useUpdateUser, useDeleteUser, type UserRecord, type ApiBranch } from '@/lib/queries';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord, type ApiBranch } from '@/lib/queries';
+import { api } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, cn, type SortDescriptor } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
-import { Pencil, Trash2, Ban, ShieldOff, ChevronDown, CircleX, Check } from 'lucide-react';
+import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
 
 type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
@@ -25,21 +26,9 @@ const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> 
 
 const ROWS_PER_PAGE = 10;
 
-function SortableHeader({ children, sortDirection }: { children: React.ReactNode; sortDirection?: 'ascending' | 'descending' }) {
-  return (
-    <span className="flex items-center gap-1 select-none">
-      {children}
-      {sortDirection && (
-        <ChevronDown size={12} className={cn('transition-transform duration-100', sortDirection === 'descending' ? 'rotate-180' : '')} />
-      )}
-    </span>
-  );
-}
 
-function EditIcon() { return <Pencil size={16} />; }
-function TrashIcon() { return <Trash2 size={16} />; }
-function BanIcon() { return <Ban size={16} />; }
-function UnbanIcon() { return <ShieldOff size={16} />; }
+
+
 export default function UsersPage() {
   usePageTitle('Users');
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -126,7 +115,11 @@ export default function UsersPage() {
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
   const effectiveTenantId = createTenantId || (isTenantAdmin ? sessionTenantId : '');
-  const { data: createBranches = [] } = useBranchesForTenant(effectiveTenantId);
+  const { data: createBranches = [] } = useQuery<ApiBranch[]>({
+    queryKey: ['branches', 'tenant', effectiveTenantId],
+    queryFn: () => api.get<ApiBranch[]>(`/api/branches`, { headers: { 'X-Tenant-ID': effectiveTenantId } as Record<string, string> }),
+    enabled: !!effectiveTenantId,
+  });
   const editFilteredBranches = branches.filter((b) => !editTenantId || b.tenantId === editTenantId);
 
   const activeCount = users.filter((u) => !u.banned).length;
@@ -226,50 +219,17 @@ export default function UsersPage() {
         </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-4xl font-bold tracking-tight text-foreground">{users.length}</p>
-                <p className="text-sm text-muted mt-1">Total Users</p>
-              </div>
-            </div>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-u-total" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,18 L10,14 L20,12 L30,8 L40,4 L50,6 L60,4 L70,2 L80,4 L90,2 L100,4 L110,2 L120,2 L120,24 L0,24 Z" fill="url(#g-u-total)" />
-            <polyline points="0,18 10,14 20,12 30,8 40,4 50,6 60,4 70,2 80,4 90,2 100,4 110,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+          <p className="text-4xl font-bold tracking-tight text-foreground">{users.length}</p>
+          <p className="text-sm text-muted mt-1">Total Users</p>
         </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-4xl font-bold tracking-tight text-success">{activeCount}</p>
-                <p className="text-sm text-muted mt-1">Active</p>
-              </div>
-            </div>
-          </div>
-          <svg className="w-full h-8 text-success/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-u-active" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,18 L20,16 L30,14 L40,12 L50,10 L60,8 L70,6 L80,4 L90,6 L100,4 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-u-active)" />
-            <polyline points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4 90,6 100,4 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+          <p className="text-4xl font-bold tracking-tight text-success">{activeCount}</p>
+          <p className="text-sm text-muted mt-1">Active</p>
         </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-4xl font-bold tracking-tight text-danger">{bannedCount}</p>
-                <p className="text-sm text-muted mt-1">Banned</p>
-              </div>
-            </div>
-          </div>
-          <svg className="w-full h-8 text-danger/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-u-banned" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,6 L10,8 L20,12 L30,14 L40,18 L50,16 L60,20 L70,18 L80,22 L90,20 L100,22 L110,24 L120,24 L120,24 L0,24 Z" fill="url(#g-u-banned)" />
-            <polyline points="0,6 10,8 20,12 30,14 40,18 50,16 60,20 70,18 80,22 90,20 100,22 110,24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+          <p className="text-4xl font-bold tracking-tight text-danger">{bannedCount}</p>
+          <p className="text-sm text-muted mt-1">Banned</p>
         </a>
       </div>
 
@@ -308,14 +268,10 @@ export default function UsersPage() {
                 onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
                 <Table.Header>
                   <Table.Column allowsSorting id="name" isRowHeader>
-                    {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Name</SortableHeader>}
+                    {({ sortDirection }) => <span className="flex items-center gap-1 select-none">{sortDirection === 'ascending' && '↑'}Name</span>}
                   </Table.Column>
-                  <Table.Column allowsSorting id="email">
-                    {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Email</SortableHeader>}
-                  </Table.Column>
-                  <Table.Column id="role">
-                    {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Role</SortableHeader>}
-                  </Table.Column>
+                  <Table.Column allowsSorting id="email">Email</Table.Column>
+                  <Table.Column id="role">Role</Table.Column>
                   <Table.Column id="tenantId">Tenant</Table.Column>
                   <Table.Column id="branchId">Branch</Table.Column>
                   <Table.Column id="banned">Status</Table.Column>
@@ -363,14 +319,14 @@ export default function UsersPage() {
                         <Table.Cell>
                           <div className="flex items-center gap-0.5">
                             <Button size="sm" variant="ghost" className="text-warning" onPress={() => openEdit(user)}>
-                              <EditIcon />
+                              <Pencil size={16} />
                             </Button>
                             <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger'} onPress={() => openBan(user)}>
-                              {user.banned ? <UnbanIcon /> : <BanIcon />}
+                              {user.banned ? <ShieldOff size={16} /> : <Ban size={16} />}
                             </Button>
                             {canDeleteTarget(user) && (
                               <Button size="sm" variant="ghost" className="text-danger" onPress={() => openDelete(user)}>
-                                <TrashIcon />
+                                <Trash2 size={16} />
                               </Button>
                             )}
                           </div>

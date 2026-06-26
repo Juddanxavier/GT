@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Eye, MoreVertical, Pencil, Trash2, Phone } from 'lucide-react';
-import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, cn, type Key, type SortDescriptor } from '@heroui/react';
+import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
+import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { api } from '@/lib/api';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
-import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment } from '@/lib/queries';
-import { createShipmentSchema, toFieldErrors } from '@/lib/validators/shipment';
+import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend } from '@/lib/queries';
+
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { getCountryCode } from '@/lib/country-codes';
@@ -33,21 +33,7 @@ const STATUS_COLORS: Record<string, 'warning' | 'accent' | 'success' | 'danger'>
 
 const ROWS_PER_PAGE = 10;
 
-function SortableHeader({ children, sortDirection }: { children: React.ReactNode; sortDirection?: 'ascending' | 'descending' }) {
-  return (
-    <span className="flex items-center gap-1 select-none">
-      {children}
-      {sortDirection && (
-        <ChevronDown size={12} className={cn('transition-transform duration-100', sortDirection === 'descending' ? 'rotate-180' : '')} />
-      )}
-    </span>
-  );
-}
 
-function EyeIcon() { return <Eye size={16} />; }
-function EditIcon() { return <Pencil size={16} />; }
-function TrashIcon() { return <Trash2 size={16} />; }
-function DotsIcon() { return <MoreVertical size={16} />; }
 
 export default function ShipmentsPage() {
   usePageTitle('Shipments');
@@ -55,6 +41,12 @@ export default function ShipmentsPage() {
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'trackingNumber', direction: 'ascending' });
   const [page, setPage] = useState(1);
+  const [editTarget, setEditTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
+  const [editStatus, setEditStatus] = useState('');
+  const [editBill, setEditBill] = useState(0);
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editBranchId, setEditBranchId] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
@@ -87,6 +79,41 @@ export default function ShipmentsPage() {
   const phoneFlag = getCountryCode(tenantCountry).flag;
 
   const { data: shipmentsRaw = [], isPending: shipmentsLoading, isError: shipmentsError, refetch: refetchShipments } = useShipments();
+  const { data: trendData = [] } = useShipmentTrend();
+
+  const sparklines = useMemo(() => {
+    const map = new Map(trendData.map((r) => [r.date, r]));
+    const days = 14;
+    const now = new Date();
+    const total: number[] = [];
+    const inTransit: number[] = [];
+    const delivered: number[] = [];
+    const pending: number[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const row = map.get(key);
+      total.push(row?.total ?? 0);
+      inTransit.push(row?.intransit ?? 0);
+      delivered.push(row?.delivered ?? 0);
+      pending.push(row?.pending ?? 0);
+    }
+    return { total, inTransit, delivered, pending };
+  }, [trendData]);
+
+  const trend = useMemo(() => {
+    const calc = (data: number[]) => {
+      if (data.length < 14) return 0;
+      const prev = data.slice(0, 7).reduce((a, b) => a + b, 0);
+      const curr = data.slice(7).reduce((a, b) => a + b, 0);
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 100);
+    };
+    return { total: calc(sparklines.total), inTransit: calc(sparklines.inTransit), delivered: calc(sparklines.delivered), pending: calc(sparklines.pending) };
+  }, [sparklines]);
+
+  const sparklineKeys = ['total', 'inTransit', 'delivered', 'pending'] as const;
   const { data: allCustomers = [] } = useCustomers();
   const { data: newBranches = [] } = useBranches();
 
@@ -166,9 +193,15 @@ export default function ShipmentsPage() {
   const start = (page - 1) * ROWS_PER_PAGE + 1;
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
-  function handleContextAction(key: Key, shipment: { id: string; trackingNumber: string }) {
+  function handleContextAction(key: Key, shipment: typeof paginated[number]) {
     if (key === 'view') router.push(`/shipments/${shipment.id}`);
-    else if (key === 'edit') router.push(`/shipments/${shipment.id}/edit`);
+    else if (key === 'edit') {
+      setEditCustomerName(shipment.customerName === 'Self' ? '' : shipment.customerName === '—' ? '' : shipment.customerName);
+      setEditStatus(shipment.status);
+      setEditBill(Number(shipment.billAmount) || 0);
+      setEditBranchId('');
+      setEditTarget(shipment);
+    }
     else if (key === 'delete') setDeleteTarget(shipment);
   }
 
@@ -193,87 +226,66 @@ export default function ShipmentsPage() {
         <Button onPress={() => { setErrors({}); setNewCustomerId(''); setNewCustomerSelf(false); setCustomerEmail(''); setCustomerPhoneLocal(''); setCustomerLookupResult(null); setUnclaimedEmail(''); setUnclaimedPhone(''); setNewTrackingNumber(''); setBillAmount(0); setCustomerName(''); setCreateOpen(true); }}>New Shipment</Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                12.5%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Total</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-s-total" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,18 L10,14 L20,12 L30,8 L40,4 L50,6 L60,4 L70,2 L80,4 L90,2 L100,4 L110,2 L120,2 L120,24 L0,24 Z" fill="url(#g-s-total)" />
-            <polyline points="0,18 10,14 20,12 30,8 40,4 50,6 60,4 70,2 80,4 90,2 100,4 110,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((s) => s.status === 'in_transit').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                8.3%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">In Transit</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-s-transit" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,8 L20,22 L30,10 L40,18 L50,6 L60,14 L70,4 L80,16 L90,6 L100,18 L110,8 L120,8 L120,24 L0,24 Z" fill="url(#g-s-transit)" />
-            <polyline points="0,20 10,8 20,22 30,10 40,18 50,6 60,14 70,4 80,16 90,6 100,18 110,8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((s) => s.status === 'delivered').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                15.2%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Delivered</p>
-          </div>
-          <svg className="w-full h-8 text-success/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-s-delivered" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,18 L20,16 L30,14 L40,12 L50,10 L60,8 L70,6 L80,4 L90,6 L100,4 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-s-delivered)" />
-            <polyline points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4 90,6 100,4 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((s) => s.status === 'pending').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-warning/10 text-warning">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                3.2%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Pending</p>
-          </div>
-          <svg className="w-full h-8 text-warning/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-s-pending" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,12 L10,14 L20,10 L30,12 L40,8 L50,10 L60,6 L70,8 L80,4 L90,6 L100,8 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-s-pending)" />
-            <polyline points="0,12 10,14 20,10 30,12 40,8 50,10 60,6 70,8 80,4 90,6 100,8 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Total', count: filtered.length, color: '#3b82f6', icon: Package, key: 'total' },
+          { label: 'In Transit', count: filtered.filter((s) => s.status === 'in_transit').length, color: '#8b5cf6', icon: Truck, key: 'inTransit' },
+          { label: 'Delivered', count: filtered.filter((s) => s.status === 'delivered').length, color: '#22c55e', icon: CheckCircle, key: 'delivered' },
+          { label: 'Pending', count: filtered.filter((s) => s.status === 'pending').length, color: '#f59e0b', icon: Clock, key: 'pending' },
+        ].map(({ label, count, color, icon: Icon, key }) => {
+          const data = sparklines[key as keyof typeof sparklines];
+          const t = trend[key as keyof typeof trend];
+          const up = t >= 0;
+          const max = Math.max(...data) || 1;
+          const min = Math.min(...data);
+          const range = max - min || 1;
+          const w = 80; const h = 32;
+          const pts = data.map((v, i) => `${((i / (data.length - 1)) * w).toFixed(1)},${(h - ((v - min) / range) * (h - 4) - 2).toFixed(1)}`).join(' ');
+          const area = `0,${h} ${pts} ${w},${h}`;
+          return (
+            <a key={label} className="rounded-xl border border-border bg-surface hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden flex flex-col">
+              <div className="p-5 pb-3 flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">{label}</span>
+                  <Icon size={18} style={{ color }} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-bold tracking-tight">{count}</p>
+                    <span className={`text-xs font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
+                      {up ? '↑' : '↓'} {Math.abs(t)}%
+                    </span>
+                  </div>
+                  <div className="w-20 h-8">
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id={`fill-${label.replace(/\s/g, '')}`} x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+                          <stop offset="100%" stopColor={color} stopOpacity="0.03" />
+                        </linearGradient>
+                      </defs>
+                      <polygon points={area} fill={`url(#fill-${label.replace(/\s/g, '')})`} />
+                      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </a>
+          );
+        })}
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1"><Input variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
-            <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-1">
+            <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
                 <Tabs.Tab id="all">All</Tabs.Tab>
                 <Tabs.Tab id="in_transit">In Transit</Tabs.Tab>
                 <Tabs.Tab id="delivered">Delivered</Tabs.Tab>
                 <Tabs.Tab id="pending">Pending</Tabs.Tab>
+                <Tabs.Tab id="exception">Exception</Tabs.Tab>
                 <Tabs.Tab id="cancelled">Cancelled</Tabs.Tab>
               </Tabs.List>
             </Tabs>
@@ -287,23 +299,13 @@ export default function ShipmentsPage() {
                   {() => <span className="text-muted text-xs">#</span>}
                 </Table.Column>
                 <Table.Column allowsSorting id="trackingNumber" isRowHeader>
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Tracking #</SortableHeader>}
+                  <span className="text-muted text-xs">Tracking #</span>
                 </Table.Column>
-                <Table.Column allowsSorting id="labelCode">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Label Code</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="customerName">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Customer</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="carrier">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Carrier</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="billAmount" width={100}>
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Bill</SortableHeader>}
-                </Table.Column>
-                <Table.Column allowsSorting id="status">
-                  {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Status</SortableHeader>}
-                </Table.Column>
+                <Table.Column allowsSorting id="labelCode">Label Code</Table.Column>
+                <Table.Column allowsSorting id="customerName">Customer</Table.Column>
+                <Table.Column allowsSorting id="carrier">Carrier</Table.Column>
+                <Table.Column allowsSorting id="billAmount" width={100}>Bill</Table.Column>
+                <Table.Column allowsSorting id="status">Status</Table.Column>
                 <Table.Column id="actions" width={48}>
                   {() => null}
                 </Table.Column>
@@ -332,13 +334,13 @@ export default function ShipmentsPage() {
                     <Table.Cell>
                       <Dropdown.Root>
                         <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                          <DotsIcon />
+                          <MoreVertical size={16} />
                         </Dropdown.Trigger>
                         <Dropdown.Popover placement="bottom end">
                           <Dropdown.Menu onAction={(key) => handleContextAction(key, shipment)}>
-                            <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
-                            <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
-                            {userRole !== 'staff' && <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>}
+                            <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
+                            <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><Pencil size={16} /> Edit</span></Dropdown.Item>
+                            {userRole !== 'staff' && <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>}
                           </Dropdown.Menu>
                         </Dropdown.Popover>
                       </Dropdown.Root>
@@ -388,8 +390,7 @@ export default function ShipmentsPage() {
                   billAmount: billAmount || undefined,
                   branchId: selectedBranchId || undefined,
                 };
-                const parsed = createShipmentSchema.safeParse(payload);
-                if (!parsed.success) { setErrors(toFieldErrors(parsed.error)); return; }
+                if (!payload.trackingNo?.trim()) { setErrors({ trackingNo: 'Tracking number is required' }); return; }
                 const dup = shipmentsRaw.find((s) => s.trackingNo.toLowerCase() === newTrackingNumber.trim().toLowerCase());
                 if (dup) { setErrors({ trackingNo: `Already exists (${dup.id.slice(0, 8)}...)` }); return; }
                 const fullPhone = customerPhoneLocal ? `${phoneDialCode} ${customerPhoneLocal}` : '';
@@ -398,10 +399,9 @@ export default function ShipmentsPage() {
                 const phone = fullPhone || fullUnclaimedPhone || undefined;
                 createShipment.mutate({
                   customerId: newCustomerSelf || !newCustomerId ? undefined : newCustomerId,
-                  customerName: customerName || undefined,
                   contactEmail: email,
                   contactPhone: phone,
-                  ...parsed.data,
+                  ...payload,
                   tenantId: effectiveTenantId || undefined,
                 }, { onSuccess: () => setCreateOpen(false) });
               }} className="flex flex-col gap-4">
@@ -511,6 +511,77 @@ export default function ShipmentsPage() {
         </Modal.Container>
       </Modal.Backdrop>
 
+      <Modal.Backdrop isOpen={!!editTarget} onOpenChange={(v: boolean) => { if (!v) setEditTarget(null); }}>
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header>Edit Shipment</Modal.Header>
+            <Modal.Body>
+              <form id="edit-form-list" onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editTarget) return;
+                setEditSaving(true);
+                const payload: Record<string, unknown> = { status: editStatus };
+                if (editBill > 0) payload.billAmount = editBill;
+                if (editCustomerName.trim()) payload.customerName = editCustomerName.trim();
+                if (editBranchId) payload.branchId = editBranchId;
+                try {
+                  await api.patch(`/api/shipments/${editTarget.id}`, payload);
+                  setEditTarget(null);
+                  refetchShipments();
+                } finally { setEditSaving(false); }
+              }} className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="edit-status-list">Status</Label>
+                  <select id="edit-status-list" value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full h-10 px-3 border border-border rounded-xl bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="pending">Pending</option>
+                    <option value="info_received">Info Received</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="delivery_failure">Delivery Failure</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="exception">Exception</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-customer-name-list">Customer Name</Label>
+                  <Input id="edit-customer-name-list" variant="secondary" value={editCustomerName} onChange={(e) => setEditCustomerName(e.target.value)} fullWidth />
+                </div>
+                {(isSuperAdmin || isTenantAdmin) && (
+                  <div className="space-y-1">
+                    <Label>Branch</Label>
+                    <Select selectedKey={editBranchId} onSelectionChange={(k) => setEditBranchId(k as string)} placeholder="None" variant="secondary" aria-label="Select branch">
+                      <Select.Trigger className="h-10 text-sm"><Select.Value /><Select.Indicator /></Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {newBranches.filter((b) => b.tenantId === effectiveTenantId).map((b) => (
+                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label htmlFor="edit-bill-list">Bill Amount</Label>
+                  <NumberField.Root variant="secondary" fullWidth value={editBill} onChange={(v) => setEditBill(v)} isDisabled={userRole === 'staff'}>
+                    <NumberField.Group>
+                      <NumberField.DecrementButton />
+                      <NumberField.Input id="edit-bill-list" placeholder="0.00" />
+                      <NumberField.IncrementButton />
+                    </NumberField.Group>
+                  </NumberField.Root>
+                </div>
+              </form>
+            </Modal.Body>
+            <Modal.Footer className="flex gap-2">
+              <Button variant="secondary" onPress={() => setEditTarget(null)}>Cancel</Button>
+              <Button type="submit" form="edit-form-list" isPending={editSaving}>Save</Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
@@ -531,3 +602,4 @@ export default function ShipmentsPage() {
     </div>
   );
 }
+

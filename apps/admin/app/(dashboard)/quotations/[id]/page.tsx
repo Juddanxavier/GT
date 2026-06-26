@@ -22,6 +22,8 @@ export default function QuotationDetailPage() {
   const [items, setItems] = useState<LineItem[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertTrackingNo, setConvertTrackingNo] = useState('');
 
   const { data: quotation, isPending: loading, isError } = useQuotation(id as string);
   const { data: customers = [] } = useCustomers();
@@ -36,7 +38,7 @@ export default function QuotationDetailPage() {
     e.preventDefault();
     setError('');
     updateQuotation.mutate(
-      { id: id as string, customerId, status, validUntil: validUntil || undefined, notes: notes || undefined, items },
+      { id: id as string, customerId, status, validUntil: validUntil || undefined, notes: notes || undefined, items: items.map((i) => ({ description: i.description, quantity: i.quantity, rate: i.unitPrice, amount: i.total })) },
       { onSuccess: () => setEditOpen(false), onError: (e) => setError(e?.message || 'Failed to update quotation') },
     );
   }
@@ -60,10 +62,16 @@ export default function QuotationDetailPage() {
   function handleAction(action: string) {
     setActionLoading(action);
     if (action === 'convert') {
-      convertQuotation.mutate(id as string, { onSettled: () => setActionLoading(null) });
+      setConvertOpen(true);
+      setConvertTrackingNo('');
     } else {
       updateStatus.mutate({ id: id as string, status: action }, { onSettled: () => setActionLoading(null) });
     }
+  }
+
+  function handleConvert() {
+    if (!convertTrackingNo.trim()) return;
+    convertQuotation.mutate({ id: id as string, trackingNo: convertTrackingNo }, { onSettled: () => { setActionLoading(null); setConvertOpen(false); } });
   }
 
   function updateItem(index: number, field: keyof Omit<LineItem, 'id' | 'total'>, value: string | number) {
@@ -251,6 +259,23 @@ export default function QuotationDetailPage() {
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteOpen(false)}>Cancel</Button>
               <Button variant="danger" isPending={deleteQuotation.isPending} onPress={handleDelete}>{deleteQuotation.isPending ? 'Deleting...' : 'Delete'}</Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <Modal.Backdrop isOpen={convertOpen} onOpenChange={(v: boolean) => { if (!v) setConvertOpen(false); }}>
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header>Convert to Shipment</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-muted mb-3">Enter tracking number for the shipment:</p>
+              <Input value={convertTrackingNo} onChange={(e) => setConvertTrackingNo(e.target.value)} placeholder="Tracking number" fullWidth required />
+              {convertQuotation.isError && <p className="text-sm text-danger mt-2">{convertQuotation.error?.message || 'Conversion failed'}</p>}
+            </Modal.Body>
+            <Modal.Footer className="flex gap-2">
+              <Button variant="secondary" onPress={() => setConvertOpen(false)}>Cancel</Button>
+              <Button variant="primary" isDisabled={!convertTrackingNo.trim()} isPending={convertQuotation.isPending} onPress={handleConvert}>{convertQuotation.isPending ? 'Converting...' : 'Convert'}</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

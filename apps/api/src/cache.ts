@@ -78,3 +78,22 @@ export async function cacheFlushTenant(tenantId: string): Promise<void> {
     console.error('[cache] flush error:', err);
   }
 }
+
+export async function cacheDelPattern(tenantId: string | null, suffix: string): Promise<void> {
+  if (!cacheClient) return;
+  try {
+    const prefix = tenantId ? `t:${tenantId}:` : `global:`;
+    const pattern = `${prefix}${suffix}`;
+    let cursor = '0';
+    do {
+      const result = await cacheClient.scan(cursor, { match: pattern, count: 100 });
+      cursor = result[0];
+      const keys = result[1];
+      if (keys.length > 0) {
+        await cacheClient.del(...keys);
+      }
+    } while (cursor !== '0');
+  } catch (err) {
+    console.error('[cache] delPattern error:', err);
+  }
+}

@@ -55,14 +55,6 @@ export function useBranches() {
   });
 }
 
-export function useBranchesForTenant(tenantId: string) {
-  return useQuery<ApiBranch[]>({
-    queryKey: ['branches', 'tenant', tenantId],
-    queryFn: () => api.getForTenant<ApiBranch[]>('/api/branches', tenantId),
-    enabled: !!tenantId,
-  });
-}
-
 export function useCreateBranch() {
   const qc = useQueryClient();
   const { filterVersion } = useTenantFilter();
@@ -157,6 +149,15 @@ export function useShipments() {
   });
 }
 
+export function useShipmentTrend() {
+  const { filterVersion } = useTenantFilter();
+  return useQuery<{ date: string; total: number; intransit: number; delivered: number; pending: number }[]>({
+    queryKey: ['shipment-trend', filterVersion],
+    queryFn: () => api.get<{ date: string; total: number; intransit: number; delivered: number; pending: number }[]>('/api/shipments/trend'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useCreateShipment() {
   const qc = useQueryClient();
   return useMutation({
@@ -220,6 +221,7 @@ export interface Invoice {
   emailCount: number;
   trackingNo: string;
   customerId: string;
+  customerName: string | null;
   paidAt: string;
   createdAt: string;
 }
@@ -237,6 +239,14 @@ export function useSendInvoice() {
   return useMutation({
     mutationFn: (id: string) =>
       api.post<{ sent: boolean; emailCount: number }>(`/api/invoices/${id}/send`),
+  });
+}
+
+export function useDeleteInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ success: boolean }>(`/api/invoices/${id}`),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
   });
 }
 
@@ -317,7 +327,8 @@ export function useUpdateQuotationStatus() {
 export function useConvertQuotation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.post<Quotation>(`/api/quotations/${id}/convert`),
+    mutationFn: ({ id, trackingNo }: { id: string; trackingNo: string }) =>
+      api.post<Quotation>(`/api/quotations/${id}/convert`, { trackingNo }),
     onSettled: () => qc.invalidateQueries({ queryKey: ['quotation'] }),
   });
 }

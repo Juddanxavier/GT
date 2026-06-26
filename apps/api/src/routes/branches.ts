@@ -4,8 +4,10 @@ import { db } from '../db';
 import { branches, tenants } from '../db/schema';
 import { requireRole, requireBranchScope, getUser, getQueryScope } from '../middleware/authorization';
 import { invalidateBranchCache } from '../middleware/branch';
-import { withCache, cacheDel } from '../cache';
+import { withCache, cacheDel, cacheDelPattern } from '../cache';
 import { createBranchSchema, updateBranchSchema } from '../validators';
+import { logAudit } from '../services/audit';
+import { emitToTenant } from '../realtime';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -82,6 +84,8 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   await cacheDel(tenantId, 'branches:list');
   await cacheDel(tenantId, 'dashboard:branches');
+  await logAudit('BRANCH_CREATED', curUser?.id ?? null, { branchId: row.id, branchName: row.name, tenantId }, c);
+  emitToTenant(tenantId, 'dashboard:update', {});
   return c.json({ data: row }, 201);
 });
 
@@ -147,10 +151,12 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
-  await cacheDel(tenantId, 'branches:list');
+  await cacheDelPattern(tenantId, 'branches:list:*');
   await cacheDel(tenantId, 'dashboard:branches');
   await cacheDel(tenantId, `branches:${id}`);
   await invalidateBranchCache(id, tenantId);
+  await logAudit('BRANCH_UPDATED', getUser(c)?.id ?? null, { branchId: id, changes: parsed.data, tenantId }, c);
+  emitToTenant(tenantId, 'dashboard:update', {});
   return c.json({ data: row });
 });
 
@@ -166,10 +172,12 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
-  await cacheDel(scope.tenantId, 'branches:list');
+  await cacheDelPattern(scope.tenantId, 'branches:list:*');
   await cacheDel(scope.tenantId, 'dashboard:branches');
   await cacheDel(scope.tenantId, `branches:${id}`);
   await invalidateBranchCache(id, scope.tenantId);
+  await logAudit('BRANCH_DELETED', getUser(c)?.id ?? null, { branchId: id, branchName: row.name, tenantId: scope.tenantId }, c);
+  emitToTenant(scope.tenantId, 'dashboard:update', {});
   return c.json({ data: row });
 });
 

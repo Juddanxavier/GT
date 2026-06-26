@@ -77,7 +77,7 @@ async function handleWebhook(
 
       // Trigger notifications for new events
       notifyTrackingEvents(shipment[0]!.id, shipment[0]!.tenantId, result.events, result.currentStatus);
-      emitToTenant(shipment[0]!.tenantId, 'dashboard:update', {}).catch((err) => console.error('[webhooks] emit error:', err));
+      emitToTenant(shipment[0]!.tenantId, 'dashboard:update', {});
     }
 
     return c.json({ received: true, newEvents: inserted });
