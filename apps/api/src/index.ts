@@ -145,7 +145,7 @@ app.use('*', tenantMiddleware);
 app.use('*', branchMiddleware);
 
 // Rate limiting for API routes (auth routes use Better Auth's built-in rate limiter)
-app.use('/api/*', globalRateLimit());
+app.use('*', globalRateLimit());
 
 // ── Bull Board (job queue dashboard) ──
 

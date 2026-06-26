@@ -23,6 +23,12 @@ function getLimit(method: string, path: string): RateLimitConfig {
 
 export function globalRateLimit(config?: Partial<RateLimitConfig>) {
   return async function rateLimitMiddleware(c: Context, next: Next) {
+    // Auth routes have their own rate limiting via Better Auth
+    if (c.req.path.startsWith('/api/auth/')) {
+      await next();
+      return;
+    }
+
     if (!cacheClient) {
       await next();
       return;
