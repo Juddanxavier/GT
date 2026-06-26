@@ -97,7 +97,7 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
     conditions.push(eq(branches.id, curUser.branchId));
   }
 
-  const [row] = await withCache(tenantId, `branches:${id}`, () =>
+  const row = await withCache(tenantId, `branches:${id}`, () =>
     db
       .select()
       .from(branches)

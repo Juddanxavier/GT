@@ -271,7 +271,7 @@ app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranc
   const conditions: ReturnType<typeof eq>[] = [eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId)];
   if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
 
-  const [row] = await withCache(scope.tenantId, `shipments:${id}`, () =>
+  const row = await withCache(scope.tenantId, `shipments:${id}`, () =>
     db
       .select()
       .from(shipments)

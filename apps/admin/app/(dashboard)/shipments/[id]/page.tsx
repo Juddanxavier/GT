@@ -262,6 +262,7 @@ export default function ShipmentDetailPage() {
   const sel = 'w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary';
 
   if (loading) return <LoadingSkeleton />;
+  if (loadError) return <p className="text-center text-muted mt-20">Failed to load shipment. <button className="underline" onClick={load}>Retry</button></p>;
   if (!shipment) return null;
 
   const cfg = STATUS_META[shipment.status] ?? { label: shipment.status, color: 'default' as const };
@@ -561,7 +562,14 @@ export default function ShipmentDetailPage() {
                     try {
                       const inv = await api.post<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string }>(`/api/invoices/shipment/${id}`);
                       setInvoice(inv);
-                    } catch (e) { console.error('[invoices] generate failed:', e); }
+                    } catch (e) {
+                      if ((e as { status?: number })?.status === 409) {
+                        const inv = await api.get<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string } | null>(`/api/invoices/shipment/${id}`);
+                        if (inv) setInvoice(inv);
+                      } else {
+                        console.error('[invoices] generate failed:', e);
+                      }
+                    }
                     }}>
                       <Plus size={16} />
                       Generate Invoice

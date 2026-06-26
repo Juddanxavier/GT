@@ -45,7 +45,10 @@ app.post('/shipment/:shipmentId', requireRole('superadmin', 'tenant-admin', 'sta
     .where(and(eq(invoices.shipmentId, shipmentId), eq(invoices.tenantId, scope.tenantId)))
     .limit(1);
 
-  if (existing) return c.json({ error: 'Invoice already exists for this shipment' }, 409);
+  if (existing) {
+    await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
+    return c.json({ error: 'Invoice already exists for this shipment' }, 409);
+  }
 
   // Get shipment + customer + tenant
   const shipConditions: ReturnType<typeof eq>[] = [eq(shipments.id, shipmentId), eq(shipments.tenantId, scope.tenantId)];
