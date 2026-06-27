@@ -61,7 +61,7 @@ function ForgotPasswordForm() {
           <Label>Email</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" className="border" />
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
           </InputGroup>
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>

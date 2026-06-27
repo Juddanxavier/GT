@@ -93,7 +93,7 @@ function ResetPasswordForm() {
         <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
           <Label>Verification code</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} className="border" />
+            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
           </InputGroup>
         </TextField>
 
@@ -101,7 +101,7 @@ function ResetPasswordForm() {
           <Label>New password</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" className="border" />
+            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -114,7 +114,7 @@ function ResetPasswordForm() {
           <Label>Confirm password</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" className="border" />
+            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}

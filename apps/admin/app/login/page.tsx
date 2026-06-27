@@ -59,7 +59,7 @@ function LoginForm() {
           <Label>Email</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" className="border" />
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
           </InputGroup>
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
@@ -67,7 +67,7 @@ function LoginForm() {
         <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" className="border" />
+            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
