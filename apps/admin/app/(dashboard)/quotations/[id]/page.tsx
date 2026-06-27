@@ -9,11 +9,11 @@ import { usePageTitle } from '@/lib/use-page-title';
 
 const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' | 'warning'> = { draft: 'default', sent: 'accent', accepted: 'success', rejected: 'danger', converted: 'warning' };
 
-const STATUS_ACTIONS: { from: string[]; action: string; label: string; color?: 'primary' | 'success' | 'danger' }[] = [
-  { from: ['draft'], action: 'sent', label: 'Send', color: 'primary' },
-  { from: ['sent'], action: 'accepted', label: 'Accept', color: 'success' },
-  { from: ['draft', 'sent'], action: 'rejected', label: 'Reject', color: 'danger' },
-  { from: ['accepted'], action: 'convert', label: 'Convert to Shipment', color: 'primary' },
+const STATUS_ACTIONS: { from: string[]; action: string; label: string }[] = [
+  { from: ['draft'], action: 'sent', label: 'Send' },
+  { from: ['sent'], action: 'accepted', label: 'Accept' },
+  { from: ['draft', 'sent'], action: 'rejected', label: 'Reject' },
+  { from: ['accepted'], action: 'convert', label: 'Convert to Shipment' },
 ];
 
 export default function QuotationDetailPage() {
@@ -185,7 +185,7 @@ export default function QuotationDetailPage() {
 
       <div className="flex gap-2 flex-wrap">
         {STATUS_ACTIONS.filter((a) => a.from.includes(quotation.status)).map((a) => (
-          <Button key={a.action} size="sm" color={a.color} isDisabled={actionLoading !== null} onPress={() => handleAction(a.action)}>
+          <Button key={a.action} size="sm" variant={a.action === 'rejected' ? 'danger' : 'primary'} isDisabled={actionLoading !== null} onPress={() => handleAction(a.action)}>
             {actionLoading === a.action ? 'Processing...' : a.label}
           </Button>
         ))}
