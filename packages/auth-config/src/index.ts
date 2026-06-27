@@ -159,7 +159,15 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       },
     },
     user: {
-      deleteUser: { enabled: true },
+      deleteUser: {
+        enabled: true,
+        beforeDelete: async (user: Record<string, any>) => {
+          // Prevent superadmins from deleting themselves
+          if ((user as Record<string, unknown>).role === 'superadmin') {
+            throw new Error('Super admin accounts cannot be deleted');
+          }
+        },
+      },
       additionalFields: {
         tenantId: {
           type: 'string' as const,

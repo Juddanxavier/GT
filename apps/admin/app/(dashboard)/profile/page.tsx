@@ -427,7 +427,14 @@ export default function ProfilePage() {
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-4">
-          {deleteConfirm === 'confirm' ? (
+          {role === 'superadmin' ? (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
+              <AlertTriangle size={16} className="text-warning shrink-0" />
+              <p className="text-xs text-muted">
+                <span className="font-medium text-warning">Super admin accounts cannot be deleted.</span> Contact another super admin to manage this account.
+              </p>
+            </div>
+          ) : deleteConfirm === 'confirm' ? (
             <div className="space-y-3">
               <div className="flex items-start gap-2 p-3 rounded-lg bg-danger/10 border border-danger/20">
                 <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
