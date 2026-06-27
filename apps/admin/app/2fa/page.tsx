@@ -66,7 +66,7 @@ export default function TwoFactorPage() {
         ) : (
           <Input
             placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus
-            className="bg-field-background border text-center tracking-[0.2em] font-mono" />
+            className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl text-center tracking-[0.2em] font-mono" />
         )}
 
         <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth className="h-11">

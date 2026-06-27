@@ -54,13 +54,13 @@ function LoginForm() {
 
         <TextField fullWidth isInvalid={!!fieldErrors.email} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <Input placeholder="name@example.com" autoComplete="email" className="bg-field-background border" />
+          <Input placeholder="name@example.com" autoComplete="email" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
 
         <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
-          <Input placeholder="Enter your password" autoComplete="current-password" className="bg-field-background border" />
+          <Input placeholder="Enter your password" autoComplete="current-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 
