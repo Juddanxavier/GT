@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, TextField, Label } from '@heroui/react';
-import { Lock, Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
@@ -16,8 +15,6 @@ function ResetPasswordForm() {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -95,24 +92,14 @@ function ResetPasswordForm() {
           <Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
         </TextField>
 
-        <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
+        <TextField fullWidth name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
           <Label>New password</Label>
-          <div className="relative">
-            <Input placeholder="At least 8 characters" autoComplete="new-password" />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors">
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
+          <Input placeholder="At least 8 characters" autoComplete="new-password" />
         </TextField>
 
-        <TextField fullWidth name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
+        <TextField fullWidth name="confirmPassword" type="password" value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
           <Label>Confirm password</Label>
-          <div className="relative">
-            <Input placeholder="Re-enter your new password" autoComplete="new-password" />
-            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors">
-              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
+          <Input placeholder="Re-enter your new password" autoComplete="new-password" />
         </TextField>
 
         <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
