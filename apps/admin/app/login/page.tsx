@@ -22,6 +22,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [terms, setTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ function LoginForm() {
     e.preventDefault();
     setSubmitError('');
     if (honeypot) return;
+    if (!terms) { setSubmitError('You must agree to the Terms of Service'); return; }
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) { setFieldErrors(Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message]))); return; }
     setFieldErrors({});
@@ -45,10 +47,10 @@ function LoginForm() {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
-        <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{submitError}</div>
+        <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{submitError}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
           <input id="hp-field" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
@@ -77,21 +79,26 @@ function LoginForm() {
         </TextField>
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
-            <input type="checkbox" className="rounded border-border bg-field-background text-accent focus:ring-accent/30 h-4 w-4" />
-            I agree to the <Link href="/terms" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Terms</Link>
+          <label className="flex items-center gap-2.5 text-xs text-muted cursor-pointer select-none group">
+            <div className={`relative w-4 h-4 rounded border ${terms ? 'bg-accent border-accent' : 'border-border bg-field-background'} transition-colors flex items-center justify-center`}>
+              {terms && (
+                <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+              <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="absolute inset-0 opacity-0 cursor-pointer" />
+            </div>
+            <span className="group-hover:text-foreground transition-colors">I agree to the <Link href="/terms" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Terms</Link></span>
           </label>
           <Link href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
             Forgot password?
           </Link>
         </div>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
-
-
     </AuthLayout>
   );
 }

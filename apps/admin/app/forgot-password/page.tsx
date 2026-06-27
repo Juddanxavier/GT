@@ -40,7 +40,7 @@ function ForgotPasswordForm() {
     return (
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 ring-1 ring-success/20">
             <CheckCircle size={28} className="text-success" />
           </div>
           <div className="space-y-1">
@@ -54,19 +54,19 @@ function ForgotPasswordForm() {
 
   return (
     <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a code to reset it." backHref="/login" backLabel="Back to sign in">
-      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
-      <form onSubmit={handleSendCode} className="space-y-5" noValidate>
+      <form onSubmit={handleSendCode} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" className="border" />
           </InputGroup>
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
           {loading ? 'Sending code...' : 'Send reset code'}
         </Button>
       </form>

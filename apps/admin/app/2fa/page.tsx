@@ -49,15 +49,15 @@ export default function TwoFactorPage() {
 
   return (
     <AuthLayout title="Two-factor authentication" subtitle={mode === 'otp' ? 'A verification code has been sent to your email' : 'Enter one of your backup codes'}>
-      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
-      <form onSubmit={handleVerify} className="space-y-5">
+      <form onSubmit={handleVerify} className="space-y-6">
         {mode === 'otp' ? (
           <div className="space-y-3">
             <InputOTP maxLength={6} value={code} onChange={(v) => { setCode(v); setError(''); }} pattern="^\d+$" className="justify-center">
               <InputOTP.Group>
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTP.Slot key={i} index={i} className="border border-border rounded-md" />
+                  <InputOTP.Slot key={i} index={i} className="border border-border rounded-xl" />
                 ))}
               </InputOTP.Group>
             </InputOTP>
@@ -65,11 +65,11 @@ export default function TwoFactorPage() {
           </div>
         ) : (
           <input
-            className="w-full h-11 px-4 rounded-lg bg-field-background border border-field-border text-sm text-field-foreground placeholder:text-field-placeholder text-center tracking-[0.2em] font-mono focus:outline-none focus:ring-2 focus:ring-focus"
+            className="w-full h-11 px-4 rounded-xl bg-field-background border border-border text-sm text-field-foreground placeholder:text-field-placeholder text-center tracking-[0.2em] font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
             placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus />
         )}
 
-        <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth>
+        <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth className="h-11">
           Verify
         </Button>
       </form>

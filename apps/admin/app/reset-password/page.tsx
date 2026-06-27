@@ -62,7 +62,7 @@ function ResetPasswordForm() {
     return (
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 ring-1 ring-success/20">
             <Lock size={24} className="text-success" />
           </div>
           <div className="space-y-1">
@@ -77,8 +77,8 @@ function ResetPasswordForm() {
   if (!codeSent) {
     return (
       <AuthLayout title="Set up your password" subtitle={`Verify your email to set a password for ${email}`} backHref="/forgot-password" backLabel="Back">
-        {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
-        <Button fullWidth onPress={handleSendCode} isDisabled={sendingCode} isLoading={sendingCode}>
+        {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+        <Button fullWidth onPress={handleSendCode} isDisabled={sendingCode} isLoading={sendingCode} className="h-11">
           Send verification code
         </Button>
       </AuthLayout>
@@ -87,13 +87,13 @@ function ResetPasswordForm() {
 
   return (
     <AuthLayout title="Enter verification code" subtitle={`Enter the code sent to ${email}`} backHref={`/forgot-password?email=${encodeURIComponent(email)}`} backLabel="Back">
-      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
-      <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
+      <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
         <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
           <Label>Verification code</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
+            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} className="border" />
           </InputGroup>
         </TextField>
 
@@ -101,7 +101,7 @@ function ResetPasswordForm() {
           <Label>New password</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
+            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" className="border" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -114,7 +114,7 @@ function ResetPasswordForm() {
           <Label>Confirm password</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
+            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" className="border" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -123,7 +123,7 @@ function ResetPasswordForm() {
           </InputGroup>
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
           {loading ? 'Setting password...' : 'Set password'}
         </Button>
 
