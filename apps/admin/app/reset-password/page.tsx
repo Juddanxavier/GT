@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Button, InputGroup, TextField, Label } from '@heroui/react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -61,12 +62,12 @@ function ResetPasswordForm() {
     return (
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200">
-            <Lock size={24} className="text-emerald-500" />
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20">
+            <Lock size={24} className="text-success" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-900">Password reset successfully!</p>
-            <p className="text-xs text-gray-500">Redirecting to sign in...</p>
+            <p className="text-sm font-medium text-foreground">Password reset successfully!</p>
+            <p className="text-xs text-muted">Redirecting to sign in...</p>
           </div>
         </div>
       </AuthLayout>
@@ -76,61 +77,60 @@ function ResetPasswordForm() {
   if (!codeSent) {
     return (
       <AuthLayout title="Set up your password" subtitle={`Verify your email to set a password for ${email}`} backHref="/forgot-password" backLabel="Back">
-        {error && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">{error}</div>}
-        <button type="button" onClick={handleSendCode} disabled={sendingCode}
-          className="w-full h-11 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-          {sendingCode && <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
-          {sendingCode ? 'Sending...' : 'Send verification code'}
-        </button>
+        {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+        <Button fullWidth onPress={handleSendCode} isDisabled={sendingCode} isLoading={sendingCode}>
+          Send verification code
+        </Button>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout title="Enter verification code" subtitle={`Enter the code sent to ${email}`} backHref={`/forgot-password?email=${encodeURIComponent(email)}`} backLabel="Back">
-      {error && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
       <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Verification code</label>
-          <input type="text" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="000000" autoComplete="one-time-code" maxLength={6}
-            className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 text-center tracking-[0.3em] font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors hover:border-gray-300" />
-        </div>
+        <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
+          <Label>Verification code</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
+          </InputGroup>
+        </TextField>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">New password</label>
-          <div className="relative">
-            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
-            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password"
-              className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors hover:border-gray-300" />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
+        <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
+          <Label>New password</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
+            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
+            <InputGroup.Suffix className="pr-0">
+              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </InputGroup.Suffix>
+          </InputGroup>
+        </TextField>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Confirm password</label>
-          <div className="relative">
-            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
-            <input type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your new password" autoComplete="new-password"
-              className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors hover:border-gray-300" />
-            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
+        <TextField fullWidth name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
+          <Label>Confirm password</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
+            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
+            <InputGroup.Suffix className="pr-0">
+              <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </InputGroup.Suffix>
+          </InputGroup>
+        </TextField>
 
-        <button type="submit" disabled={loading}
-          className="w-full h-11 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-          {loading && <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
           {loading ? 'Setting password...' : 'Set password'}
-        </button>
+        </Button>
 
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-muted">
           Didn&apos;t get a code?{' '}
           <button type="button" onClick={handleSendCode} disabled={sendingCode}
-            className="text-gray-900 hover:text-accent underline underline-offset-2 transition-colors">
+            className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">
             {sendingCode ? 'Sending...' : 'Resend code'}
           </button>
         </p>
