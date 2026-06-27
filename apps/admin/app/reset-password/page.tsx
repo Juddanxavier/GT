@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, InputGroup, TextField, Label } from '@heroui/react';
+import { Button, Input, TextField, Label } from '@heroui/react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -92,35 +92,27 @@ function ResetPasswordForm() {
       <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
         <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
           <Label>Verification code</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
-          </InputGroup>
+          <Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
         </TextField>
 
         <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>New password</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
-            <InputGroup.Suffix className="pr-0">
-              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </InputGroup.Suffix>
-          </InputGroup>
+          <div className="relative">
+            <Input placeholder="At least 8 characters" autoComplete="new-password" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors">
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </TextField>
 
         <TextField fullWidth name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
           <Label>Confirm password</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
-            <InputGroup.Suffix className="pr-0">
-              <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
-                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </InputGroup.Suffix>
-          </InputGroup>
+          <div className="relative">
+            <Input placeholder="Re-enter your new password" autoComplete="new-password" />
+            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors">
+              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </TextField>
 
         <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">

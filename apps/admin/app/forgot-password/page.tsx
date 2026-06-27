@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { Button, InputGroup, TextField, Label, FieldError } from '@heroui/react';
+import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
 import { Mail, CheckCircle } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
@@ -59,10 +59,7 @@ function ForgotPasswordForm() {
       <form onSubmit={handleSendCode} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
-          </InputGroup>
+          <Input placeholder="name@example.com" autoComplete="email" />
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 

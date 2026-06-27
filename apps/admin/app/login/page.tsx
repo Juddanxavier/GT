@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { z } from 'zod';
-import { Button, InputGroup, TextField, Label, FieldError } from '@heroui/react';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
+import { Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
@@ -57,23 +57,18 @@ function LoginForm() {
 
         <TextField fullWidth isInvalid={!!fieldErrors.email} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
-          </InputGroup>
+          <Input placeholder="name@example.com" autoComplete="email" />
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
 
         <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" />
-            <InputGroup.Suffix className="pr-0">
-              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </InputGroup.Suffix>
-          </InputGroup>
+          <div className="relative">
+            <Input placeholder="Enter your password" autoComplete="current-password" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors">
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 

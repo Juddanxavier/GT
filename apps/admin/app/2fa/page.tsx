@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, InputOTP } from '@heroui/react';
+import { Button, Input, InputOTP } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
 import { ShieldAlert, RefreshCw } from 'lucide-react';
@@ -64,9 +64,9 @@ export default function TwoFactorPage() {
             {cooldown > 0 && <p className="text-center text-xs text-muted">Resend available in {cooldown}s</p>}
           </div>
         ) : (
-          <input
-            className="w-full h-11 px-4 rounded-xl bg-field-background border border-border text-sm text-field-foreground placeholder:text-field-placeholder text-center tracking-[0.2em] font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
-            placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus />
+          <Input
+            placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus
+            className="text-center tracking-[0.2em] font-mono" />
         )}
 
         <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth className="h-11">
