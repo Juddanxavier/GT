@@ -29,11 +29,13 @@ export async function runArchive(): Promise<ArchiveResult> {
       WHERE tracking_event.shipment_id = newly_archived.id
         AND tracking_event.archived_at IS NULL
     )
-    UPDATE invoice
-    SET archived_at = newly_archived.archived_at
-    FROM newly_archived
-    WHERE invoice.shipment_id = newly_archived.id
-      AND invoice.archived_at IS NULL
+    , archived_invoices AS (
+      UPDATE invoice
+      SET archived_at = newly_archived.archived_at
+      FROM newly_archived
+      WHERE invoice.shipment_id = newly_archived.id
+        AND invoice.archived_at IS NULL
+    )
     SELECT COUNT(*)::int AS count FROM newly_archived
   `);
   const archived = Number(archiveRows[0]?.count ?? 0);

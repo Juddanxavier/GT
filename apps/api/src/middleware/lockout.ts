@@ -22,36 +22,44 @@ export async function signInHandler(c: Context) {
   const email = await extractEmail(c);
 
   if (email && cacheClient) {
-    const locked = await cacheClient.get(`lockout:${email}`);
-    if (locked) {
-      const ttl = await cacheClient.ttl(`lockout:${email}`);
-      await logAudit('LOGIN_BLOCKED', null, { email, remainingSeconds: ttl }, c);
-      return c.json(
-        {
-          error: `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`,
-        },
-        423,
-      );
+    try {
+      const locked = await cacheClient.get(`lockout:${email}`);
+      if (locked) {
+        const ttl = await cacheClient.ttl(`lockout:${email}`);
+        await logAudit('LOGIN_BLOCKED', null, { email, remainingSeconds: ttl }, c);
+        return c.json(
+          {
+            error: `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`,
+          },
+          423,
+        );
+      }
+    } catch (err) {
+      console.warn('[lockout] Redis error during lockout check — allowing:', (err as Error).message);
     }
   }
 
   const res = await auth.handler(c.req.raw);
 
   if (email && cacheClient) {
-    if (res.status === 200) {
-      await cacheClient.del(`lockout:${email}`);
-      await cacheClient.del(`attempts:${email}`);
-      await logAudit('LOGIN_SUCCESS', null, { email }, c);
-    } else if (res.status === 401) {
-      const attempts = await cacheClient.incr(`attempts:${email}`);
-      if (attempts === 1) {
-        await cacheClient.expire(`attempts:${email}`, ATTEMPT_WINDOW_SECONDS);
+    try {
+      if (res.status === 200) {
+        await cacheClient.del(`lockout:${email}`);
+        await cacheClient.del(`attempts:${email}`);
+        await logAudit('LOGIN_SUCCESS', null, { email }, c);
+      } else if (res.status === 401) {
+        const attempts = await cacheClient.incr(`attempts:${email}`);
+        if (attempts === 1) {
+          await cacheClient.expire(`attempts:${email}`, ATTEMPT_WINDOW_SECONDS);
+        }
+        await logAudit('LOGIN_FAILED', null, { email, attempts: `${attempts}/${MAX_ATTEMPTS}` }, c);
+        if (attempts >= MAX_ATTEMPTS) {
+          await cacheClient.setex(`lockout:${email}`, LOCKOUT_SECONDS, '1');
+          await logAudit('USER_BANNED', null, { email, reason: `${MAX_ATTEMPTS} failed attempts - locked 30m` }, c);
+        }
       }
-      await logAudit('LOGIN_FAILED', null, { email, attempts: `${attempts}/${MAX_ATTEMPTS}` }, c);
-      if (attempts >= MAX_ATTEMPTS) {
-        await cacheClient.setex(`lockout:${email}`, LOCKOUT_SECONDS, '1');
-        await logAudit('USER_BANNED', null, { email, reason: `${MAX_ATTEMPTS} failed attempts - locked 30m` }, c);
-      }
+    } catch (err) {
+      console.warn('[lockout] Redis error during attempt tracking:', (err as Error).message);
     }
   }
 
