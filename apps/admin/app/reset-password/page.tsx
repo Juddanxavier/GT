@@ -89,17 +89,17 @@ function ResetPasswordForm() {
       <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
         <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
           <Label>Verification code</Label>
-          <Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
+          <Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} className="bg-field-background border" />
         </TextField>
 
         <TextField fullWidth name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
           <Label>New password</Label>
-          <Input placeholder="At least 8 characters" autoComplete="new-password" />
+          <Input placeholder="At least 8 characters" autoComplete="new-password" className="bg-field-background border" />
         </TextField>
 
         <TextField fullWidth name="confirmPassword" type="password" value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
           <Label>Confirm password</Label>
-          <Input placeholder="Re-enter your new password" autoComplete="new-password" />
+          <Input placeholder="Re-enter your new password" autoComplete="new-password" className="bg-field-background border" />
         </TextField>
 
         <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">

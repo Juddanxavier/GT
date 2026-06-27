@@ -59,7 +59,7 @@ function ForgotPasswordForm() {
       <form onSubmit={handleSendCode} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <Input placeholder="name@example.com" autoComplete="email" />
+          <Input placeholder="name@example.com" autoComplete="email" className="bg-field-background border" />
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 
