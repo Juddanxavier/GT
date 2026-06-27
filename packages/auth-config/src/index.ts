@@ -118,7 +118,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       cookies: {
         session_token: {
           attributes: {
-            sameSite: 'none',
+            sameSite: 'lax',
           },
         },
       },
