@@ -359,6 +359,37 @@ export const auditLogs = pgTable(
   }),
 );
 
+// ── Notifications ──
+
+export const notifications = pgTable(
+  'notification',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    quotationId: uuid('quotation_id').references(() => quotations.id, {
+      onDelete: 'cascade',
+    }),
+    type: varchar('type', { length: 50 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    message: text('message').notNull(),
+    link: text('link'),
+    read: boolean('read').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    archivedAt: timestamp('archived_at'),
+  },
+  (table) => ({
+    notificationTenantIdx: index('idx_notification_tenant').on(table.tenantId),
+    notificationUserIdx: index('idx_notification_user').on(table.userId),
+    notificationReadIdx: index('idx_notification_read').on(table.read),
+    notificationCreatedAtIdx: index('idx_notification_created_at').on(table.createdAt),
+  }),
+);
+
 export const twoFactor = pgTable('two_factor', {
   id: text('id').primaryKey(),
   secret: text('secret').notNull(),

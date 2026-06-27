@@ -14,6 +14,7 @@ import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
 import { useTenants, useDashboardBranches } from '@/lib/queries';
 import { SearchDialog } from '@/components/search-dialog';
+import { connectSocket } from '@/lib/socket';
 
 const ALLOWED_ROLES = ['superadmin', 'tenant-admin', 'staff'];
 
@@ -177,6 +178,30 @@ function DashboardLayoutInner({
       setTenant(tenants[0].id);
     }
   }, [isSuperadmin, tenants, tenantFilter, setTenant]);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifs, setNotifs] = useState<{ id: string; type: string; title: string; message: string; link?: string | null; read: boolean; createdAt: string }[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setUnreadCount(d.count ?? 0))
+      .catch(() => {});
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications?limit=10`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setNotifs(d.data ?? []))
+      .catch(() => {});
+  }, [session]);
+
+  useEffect(() => {
+    const tenantId = (session?.user as Record<string, unknown>)?.tenantId as string | undefined;
+    if (!tenantId) return;
+    const socket = connectSocket(tenantId);
+    const handler = (data: { count: number }) => setUnreadCount((c) => c + data.count);
+    socket.on('notification:new', handler);
+    return () => { socket.off('notification:new', handler); };
+  }, [session]);
 
   function toggleTheme() {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -402,12 +427,59 @@ function DashboardLayoutInner({
             <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme" className="text-muted hover:text-foreground">
               {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
             </Button>
-            <div className="relative">
-              <Button size="sm" variant="ghost" aria-label="Notifications" className="text-muted hover:text-foreground">
+            <Dropdown>
+              <Dropdown.Trigger className="text-muted hover:text-foreground relative" aria-label="Notifications">
                 <Bell size={16} />
-              </Button>
-              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">3</span>
-            </div>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Dropdown.Trigger>
+              <Dropdown.Popover className="w-80 p-0">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                  <span className="text-xs font-semibold">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button
+                      className="text-xs text-primary hover:underline"
+                      onClick={async () => {
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
+                        setUnreadCount(0);
+                        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+                      }}
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notifs.length === 0 ? (
+                    <p className="text-xs text-muted px-3 py-4 text-center">No notifications</p>
+                  ) : (
+                    notifs.map((n) => (
+                      <button
+                        key={n.id}
+                        className={`w-full text-left px-3 py-2 text-xs border-b border-border hover:bg-muted/20 flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
+                        onClick={async () => {
+                          if (!n.read) {
+                            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`, { method: 'PATCH', credentials: 'include' });
+                            setUnreadCount((c) => Math.max(0, c - 1));
+                            setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
+                          }
+                          if (n.link) router.push(n.link);
+                        }}
+                      >
+                        <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`} />
+                        <div className="min-w-0">
+                          <p className="truncate">{n.title}</p>
+                          <p className="text-muted font-normal truncate">{n.message}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </Dropdown.Popover>
+            </Dropdown>
             <Dropdown>
               <Dropdown.Trigger className="flex items-center gap-2 rounded-full outline-none hover:bg-muted transition-colors px-1 py-1">
                 <Avatar size="md" className="rounded-full">

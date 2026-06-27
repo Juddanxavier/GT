@@ -87,5 +87,30 @@ export async function runArchive(): Promise<ArchiveResult> {
   `);
   const purged = purgeRows.length;
 
+  // Step 4: Archive read notifications older than archiveAfterDays
+  await db.execute(sql`
+    UPDATE notification
+    SET archived_at = NOW()
+    WHERE read = true
+      AND archived_at IS NULL
+      AND created_at < NOW() - INTERVAL '1 day' * ${archiveAfterDays}
+  `);
+
+  // Step 5: Skeletonize archived notifications older than skeletonizeAfterDays
+  await db.execute(sql`
+    UPDATE notification
+    SET title = NULL, message = NULL, link = NULL
+    WHERE archived_at IS NOT NULL
+      AND archived_at < NOW() - INTERVAL '1 day' * ${skeletonizeAfterDays}
+      AND (title IS NOT NULL OR message IS NOT NULL)
+  `);
+
+  // Step 6: Purge skeletonized notifications at purgeAfterDays
+  await db.execute(sql`
+    DELETE FROM notification
+    WHERE archived_at IS NOT NULL
+      AND archived_at < NOW() - INTERVAL '1 day' * ${purgeAfterDays}
+  `);
+
   return { archived, skeletonized, purged };
 }

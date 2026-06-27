@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { sql, eq, and, desc } from 'drizzle-orm';
+import { sql, eq, and, or, desc } from 'drizzle-orm';
 import { db } from '../db';
-import { quotations, quoteItems, shipments } from '../db/schema';
+import { quotations, quoteItems, notifications, shipments, user as userTable } from '../db/schema';
 import { requireRole, requireBranchScope, getUser, getQueryScope } from '../middleware/authorization';
 import { withCache, cacheDel, cacheDelPattern } from '../cache';
 import { createQuotationSchema, updateQuotationSchema, updateQuotationStatusSchema } from '../validators';
@@ -133,6 +133,34 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchS
     await db.insert(quoteItems).values(
       items.map((item) => ({ ...item, quotationId: quote.id })),
     );
+  }
+
+  // Notify tenant admins + branch staff
+  const notifyUsers = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(
+      and(
+        eq(userTable.tenantId, tenantId!),
+        or(
+          eq(userTable.role, 'tenant-admin'),
+          and(eq(userTable.role, 'staff'), eq(userTable.branchId, quote.branchId)),
+        ),
+      ),
+    );
+
+  if (notifyUsers.length > 0) {
+    const notificationRows = notifyUsers.map((u) => ({
+      tenantId: tenantId!,
+      userId: u.id,
+      quotationId: quote.id,
+      type: 'quotation_created',
+      title: 'New Quotation',
+      message: `Quote ${quote.quoteNo} created by ${(user as Record<string, unknown>)?.name as string ?? 'Unknown'}`,
+      link: `/quotations/${quote.id}`,
+    }));
+    await db.insert(notifications).values(notificationRows);
+    emitToTenant(tenantId!, 'notification:new', { count: notifyUsers.length });
   }
 
   await cacheDelPattern(tenantId!, 'quotations:list:*');

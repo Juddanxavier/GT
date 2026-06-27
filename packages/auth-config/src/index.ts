@@ -1,5 +1,5 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { admin, customSession, emailOTP, twoFactor } from 'better-auth/plugins';
+import { admin, customSession, twoFactor } from 'better-auth/plugins';
 import { adminAc, defaultRoles } from 'better-auth/plugins/admin/access';
 import { eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -128,6 +128,29 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       autoSignIn: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+        await sendEmail({
+          to: user.email,
+          subject: 'Reset your password',
+          html: buildEmailHtml({
+            title: 'Reset Password',
+            bodyHtml: `<table role="presentation" style="width:100%">
+              <tr>
+                <td style="text-align:center;padding-bottom:16px">
+                  <p style="font-size:13px;margin:0 0 16px;color:#52525b">Click the button below to reset your password. This link expires in 1 hour.</p>
+                  <a href="${url}" style="display:inline-block;background:#22c55e;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600">Reset password</a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">If the button above doesn't work, copy and paste this URL into your browser:<br><span style="color:#52525b;word-break:break-all">${url}</span></p>
+                </td>
+              </tr>
+            </table>`,
+          }),
+        });
+      },
     },
     socialProviders: {
       google: {
@@ -136,6 +159,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       },
     },
     user: {
+      deleteUser: { enabled: true },
       additionalFields: {
         tenantId: {
           type: 'string' as const,
@@ -158,45 +182,6 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
           'tenant-admin': adminAc,
           staff: defaultRoles.user,
           customer: defaultRoles.user,
-        },
-      }),
-      emailOTP({
-        disableSignUp: true,
-        async sendVerificationOTP({ email, otp, type }) {
-          const subject =
-            type === 'sign-in'
-              ? 'Sign-in verification code'
-              : type === 'email-verification'
-                ? 'Verify your email'
-                : 'Reset your password';
-
-          const title =
-            type === 'sign-in'
-              ? 'Sign In'
-              : type === 'email-verification'
-                ? 'Verify Email'
-                : 'Reset Password';
-
-          await sendEmail({
-            to: email,
-            subject,
-            html: buildEmailHtml({
-              title,
-              bodyHtml: `<table role="presentation" style="width:100%">
-                <tr>
-                  <td style="text-align:center;padding-bottom:20px">
-                    <p style="font-size:13px;margin:0 0 6px;color:#52525b">Your verification code</p>
-                    <div style="background:#f4f4f5;border-radius:8px;padding:16px;font-size:32px;letter-spacing:8px;font-weight:700;color:#18181b;display:inline-block">${otp}</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
-                  </td>
-                </tr>
-              </table>`,
-            }),
-          });
         },
       }),
       twoFactor({
@@ -275,7 +260,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       customRules: {
         '/sign-in/email': { window: 10, max: 3 },
         '/sign-up/email': { window: 3600, max: 5 },
-        '/email-otp/request-password-reset': { window: 300, max: 3 },
+        '/request-password-reset': { window: 300, max: 3 },
         '/two-factor/verify': { window: 10, max: 3 },
         '/get-session': { window: 10, max: 100 },
       },

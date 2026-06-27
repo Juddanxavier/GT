@@ -2,40 +2,34 @@
 
 import { useState, Suspense } from 'react';
 import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
-import { CheckCircle, Timer } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
+import { CheckCircle } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
 import { usePageTitle } from '@/lib/use-page-title';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-function friendlyError(msg: string) {
-  if (!msg) return 'Something went wrong. Try again.';
-  if (msg.includes('Too many requests')) return 'You have sent too many requests. Please wait a moment before trying again.';
-  if (msg.includes('rate limit') || msg.includes('rate_limit')) return 'Please slow down. Try again in a few minutes.';
-  return msg;
-}
+import { useSearchParams } from 'next/navigation';
 
 function ForgotPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState(searchParams.get('email') || '');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
-  async function handleSendCode(e: React.FormEvent) {
+  async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     setError(''); setFieldError(null);
     if (!email) { setFieldError('Enter your email address'); return; }
     setLoading(true);
     try {
-      const { error: sendError } = await authClient.emailOtp.requestPasswordReset({ email });
-      if (sendError) { setError(friendlyError(sendError.message)); setCooldown(30); return; }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectTo: `${window.location.origin}/reset-password` }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Something went wrong. Try again.'); return; }
       setSent(true);
-      setTimeout(() => router.push(`/reset-password?email=${encodeURIComponent(email)}`), 1500);
     } catch { setError('Connection failed. Try again.'); }
     finally { setLoading(false); }
   }
@@ -49,7 +43,7 @@ function ForgotPasswordForm() {
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Check your email</p>
-            <p className="text-xs text-muted">We sent a code to <span className="text-foreground font-medium">{email}</span></p>
+            <p className="text-xs text-muted">We sent a reset link to <span className="text-foreground font-medium">{email}</span></p>
           </div>
         </div>
       </AuthLayout>
@@ -57,23 +51,20 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a code to reset it." backHref="/login" backLabel="Back to sign in">
+    <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a reset link." backHref="/login" backLabel="Back to sign in">
       {error && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
-          <Timer size={16} className="mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>
       )}
 
-      <form onSubmit={handleSendCode} className="space-y-6" noValidate>
+      <form onSubmit={handleSend} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
           <Input placeholder="name@example.com" autoComplete="email" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading || cooldown > 0} isLoading={loading} className="h-11">
-          {cooldown > 0 ? `Wait ${cooldown}s` : loading ? 'Sending code...' : 'Send reset code'}
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
+          {loading ? 'Sending...' : 'Send reset link'}
         </Button>
       </form>
     </AuthLayout>

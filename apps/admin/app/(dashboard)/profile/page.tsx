@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Avatar, Button, Card, Chip, Input, Label, Skeleton } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
-import { Shield, ShieldCheck, ShieldX, Save, Lock, User, Mail, Check, X, Building2, Smartphone, RefreshCw } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldX, Save, Lock, User, Mail, Check, X, Building2, Smartphone, RefreshCw, Trash2, AlertTriangle } from 'lucide-react';
 
 export default function ProfilePage() {
   usePageTitle('Profile');
@@ -29,6 +29,11 @@ export default function ProfilePage() {
   const [twoFactorBackupCodes, setTwoFactorBackupCodes] = useState<string[]>([]);
   const [twoFactorLoading, setTwoFactorLoading] = useState(false);
   const [twoFactorMessage, setTwoFactorMessage] = useState('');
+
+  const [deleteConfirm, setDeleteConfirm] = useState<'idle' | 'confirm'>('idle');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const twoFactorEnabled = (user?.twoFactorEnabled as boolean) ?? false;
 
@@ -106,6 +111,16 @@ export default function ProfilePage() {
     } finally {
       setTwoFactorLoading(false);
     }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      const { error } = await authClient.deleteUser({ password: deletePassword });
+      if (error) { setDeleteError(error.message || 'Failed to delete account'); setDeleteLoading(false); return; }
+      window.location.href = '/login';
+    } catch { setDeleteError('Connection failed. Try again.'); setDeleteLoading(false); }
   }
 
   async function handleRegenerateBackupCodes() {
@@ -396,6 +411,51 @@ export default function ProfilePage() {
               {twoFactorMessage.startsWith('Invalid') || twoFactorMessage.startsWith('Failed') || twoFactorMessage.startsWith('Verification failed') ? <X size={12} /> : <Check size={12} />}
               {twoFactorMessage}
             </div>
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* Delete account */}
+      <Card className="border border-danger/20">
+        <Card.Header>
+          <Card.Title className="flex items-center gap-2 text-sm font-semibold text-danger">
+            <Trash2 size={15} />
+            Danger Zone
+          </Card.Title>
+          <Card.Description className="text-xs text-muted">
+            Permanently delete your account and all associated data
+          </Card.Description>
+        </Card.Header>
+        <Card.Content className="space-y-4">
+          {deleteConfirm === 'confirm' ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-danger/10 border border-danger/20">
+                <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
+                <div className="text-xs text-muted">
+                  <p className="font-medium text-danger mb-1">This action cannot be undone.</p>
+                  <p>Your account, sessions, and all associated data will be permanently deleted. You will be signed out immediately.</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="delete-password">Enter your password to confirm</Label>
+                <Input id="delete-password" type="password" variant="secondary" placeholder="Current password" value={deletePassword} onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(''); }} fullWidth />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="danger" onPress={handleDeleteAccount} isDisabled={!deletePassword} isPending={deleteLoading} className="flex items-center gap-1.5">
+                  <Trash2 size={14} />Permanently delete account
+                </Button>
+                <Button variant="ghost" onPress={() => { setDeleteConfirm('idle'); setDeletePassword(''); setDeleteError(''); }}>Cancel</Button>
+              </div>
+              {deleteError && (
+                <div className="flex items-center gap-1.5 text-xs text-danger">
+                  <X size={12} />{deleteError}
+                </div>
+              )}
+            </div>
+          ) : (
+            <Button variant="danger" onPress={() => setDeleteConfirm('confirm')} className="flex items-center gap-1.5">
+              <Trash2 size={14} />Delete account
+            </Button>
           )}
         </Card.Content>
       </Card>

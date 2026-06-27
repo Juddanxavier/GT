@@ -3,18 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Eye, MoreVertical, Pencil, Trash2, FileText, Send, CheckCircle, XCircle } from 'lucide-react';
-import { Button, Chip, Dropdown, Input, Label, Modal, Pagination, Skeleton, Table, Tabs, cn, type Key, type SortDescriptor } from '@heroui/react';
-import { useQuotations, useCustomers, useCreateQuotation, useDeleteQuotation, useQuotationTrend, type Quotation } from '@/lib/queries';
+import { Button, Dropdown, Input, Modal, Pagination, Skeleton, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
+import { useQuotations, useDeleteQuotation, useUpdateQuotationStatus, useQuotationTrend, type Quotation } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { KpiCard } from '@/components/kpi-card';
-
-const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' | 'warning'> = {
-  draft: 'default',
-  sent: 'accent',
-  accepted: 'success',
-  rejected: 'danger',
-  converted: 'warning',
-};
 
 const ROWS_PER_PAGE = 10;
 
@@ -38,11 +30,11 @@ export default function QuotationsPage() {
   usePageTitle('Quotations');
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'quoteNumber', direction: 'ascending' });
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'quoteNo', direction: 'ascending' });
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Quotation | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [createOpen, setCreateOpen] = useState(false);
+
   const { data: quotations = [], isPending, isError, refetch } = useQuotations();
   const { data: trendData = [] } = useQuotationTrend();
 
@@ -78,37 +70,15 @@ export default function QuotationsPage() {
     return { total: calc(sparklines.total), sent: calc(sparklines.sent), accepted: calc(sparklines.accepted), draft: calc(sparklines.draft) };
   }, [sparklines]);
 
-  const { data: newCustomers = [] } = useCustomers();
-  const createQuotation = useCreateQuotation();
   const deleteQuotation = useDeleteQuotation();
-  const [newCustomerId, setNewCustomerId] = useState('');
-  const [newStatus, setNewStatus] = useState('draft');
-  const [newQuoteNo, setNewQuoteNo] = useState('');
-  const [newValidUntil, setNewValidUntil] = useState('');
-  const [newNotes, setNewNotes] = useState('');
-  const [newItems, setNewItems] = useState<{ description: string; quantity: number; unitPrice: number; total: number }[]>([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
-
-  function updateNewItem(index: number, field: string, value: string | number) {
-    setNewItems((prev) => prev.map((item, i) => {
-      if (i !== index) return item;
-      const updated = { ...item, [field]: value };
-      updated.total = updated.quantity * updated.unitPrice;
-      return updated;
-    }));
-  }
-
-  function addNewItem() { setNewItems((prev) => [...prev, { description: '', quantity: 1, unitPrice: 0, total: 0 }]); }
-
-  function removeNewItem(index: number) { setNewItems((prev) => prev.filter((_, i) => i !== index)); }
-
-  const newGrandTotal = newItems.reduce((sum, item) => sum + item.total, 0);
+  const updateStatus = useUpdateQuotationStatus();
 
   const filtered = useMemo(() => {
     let items = quotations;
     if (statusFilter !== 'all') items = items.filter((q) => q.status === statusFilter);
     if (search) {
       const q = search.toLowerCase();
-      items = items.filter((qt) => qt.quoteNumber.toLowerCase().includes(q) || qt.customerName?.toLowerCase().includes(q));
+      items = items.filter((qt) => qt.quoteNo.toLowerCase().includes(q) || qt.customerName?.toLowerCase().includes(q));
     }
     const col = sortDescriptor.column as keyof Quotation;
     const dir = sortDescriptor.direction;
@@ -134,6 +104,9 @@ export default function QuotationsPage() {
     if (key === 'view') router.push(`/quotations/${quotation.id}`);
     else if (key === 'edit') router.push(`/quotations/${quotation.id}`);
     else if (key === 'delete') setDeleteTarget(quotation);
+    else if (typeof key === 'string' && key.startsWith('status-')) {
+      updateStatus.mutate({ id: quotation.id, status: key.replace('status-', '') });
+    }
   }
 
   async function handleDelete() {
@@ -149,7 +122,7 @@ export default function QuotationsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>
           <p className="text-sm text-muted">Manage customer quotations</p>
         </div>
-        <Button onPress={() => { setNewCustomerId(''); setNewStatus('draft'); setNewValidUntil(''); setNewNotes(''); setNewItems([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]); setCreateOpen(true); }}>New Quotation</Button>
+
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -163,16 +136,17 @@ export default function QuotationsPage() {
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1"><Input placeholder="Search quotations..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
-            <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-1">
-              <Tabs.List>
-                <Tabs.Tab id="all">All</Tabs.Tab>
-                <Tabs.Tab id="draft">Draft</Tabs.Tab>
-                <Tabs.Tab id="sent">Sent</Tabs.Tab>
-                <Tabs.Tab id="accepted">Accepted</Tabs.Tab>
-                <Tabs.Tab id="rejected">Rejected</Tabs.Tab>
-                <Tabs.Tab id="converted">Converted</Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
+            <div className="flex gap-1 flex-wrap">
+              {['all', 'draft', 'sent', 'accepted', 'rejected', 'converted'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setStatusFilter(s); setPage(1); }}
+                  className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${statusFilter === s ? 'bg-primary text-white' : 'bg-muted/10 text-muted hover:text-foreground'}`}
+                >
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <QuotationsTable
@@ -186,90 +160,18 @@ export default function QuotationsPage() {
           setSortDescriptor={setSortDescriptor}
           setPage={setPage}
           handleContextAction={handleContextAction}
+          updateStatus={updateStatus}
           totalPages={totalPages}
           page={page} />
       </div>
 
-      <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
-        <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header>New Quotation</Modal.Header>
-            <Modal.Body>
-              <form id="create-form" onSubmit={async (e) => { e.preventDefault(); await createQuotation.mutateAsync({ quoteNo: newQuoteNo, customerId: newCustomerId, status: newStatus, validUntil: newValidUntil || undefined, notes: newNotes || undefined, items: newItems.map((i) => ({ description: i.description, quantity: i.quantity, rate: i.unitPrice, amount: i.total })) }); setCreateOpen(false); }} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="new-customerId">Customer *</Label>
-                  <select id="new-customerId" value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" required>
-                    <option value="">Select customer...</option>
-                    {newCustomers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-quoteNo">Quote No *</Label>
-                  <Input id="new-quoteNo" value={newQuoteNo} onChange={(e) => setNewQuoteNo(e.target.value)} fullWidth required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="new-status">Status</Label>
-                    <select id="new-status" value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                      {['draft', 'sent'].map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="new-validUntil">Valid Until</Label>
-                    <Input id="new-validUntil" type="date" value={newValidUntil} onChange={(e) => setNewValidUntil(e.target.value)} fullWidth />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-notes">Notes</Label>
-                  <textarea id="new-notes" value={newNotes} onChange={(e) => setNewNotes(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]" />
-                </div>
-
-                <div className="border-t border-border pt-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-medium">Line Items</h3>
-                    <Button size="sm" variant="secondary" type="button" onPress={addNewItem}>Add Item</Button>
-                  </div>
-                  {newItems.map((item, i) => (
-                    <div key={i} className="flex items-end gap-3 p-3 border border-border rounded-lg mb-2">
-                      <div className="flex-1 space-y-1">
-                        <Label>Description</Label>
-                        <Input value={item.description} onChange={(e) => updateNewItem(i, 'description', e.target.value)} fullWidth />
-                      </div>
-                      <div className="w-20 space-y-1">
-                        <Label>Qty</Label>
-                        <Input type="number" value={String(item.quantity)} onChange={(e) => updateNewItem(i, 'quantity', Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="w-28 space-y-1">
-                        <Label>Unit Price</Label>
-                        <Input type="number" value={String(item.unitPrice)} onChange={(e) => updateNewItem(i, 'unitPrice', Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="w-24 space-y-1">
-                        <Label>Total</Label>
-                        <p className="py-2 text-sm font-medium">${item.total.toFixed(2)}</p>
-                      </div>
-                      {newItems.length > 1 && <Button size="sm" variant="ghost" type="button" onPress={() => removeNewItem(i)}>×</Button>}
-                    </div>
-                  ))}
-                  <div className="flex justify-end pt-2">
-                    <p className="font-bold text-lg">Total: ${newGrandTotal.toFixed(2)}</p>
-                  </div>
-                </div>
-              </form>
-            </Modal.Body>
-            <Modal.Footer className="flex gap-2">
-              <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-form" isPending={createQuotation.isPending}>Create Quotation</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
       
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
             <Modal.Header>Delete Quotation</Modal.Header>
             <Modal.Body>
-              <p className="text-sm text-muted">Are you sure you want to delete quotation <strong>{deleteTarget?.quoteNumber}</strong>? This action cannot be undone.</p>
+              <p className="text-sm text-muted">Are you sure you want to delete quotation <strong>{deleteTarget?.quoteNo}</strong>? This action cannot be undone.</p>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteTarget(null)}>Cancel</Button>
@@ -285,13 +187,14 @@ export default function QuotationsPage() {
 function QuotationsTable({
   isPending, isError, refetch, filtered, paginated, start,
   sortDescriptor, setSortDescriptor, setPage,
-  handleContextAction, totalPages, page
+  handleContextAction, updateStatus, totalPages, page
 }: {
   isPending: boolean; isError: boolean; refetch: () => void;
   filtered: Quotation[]; paginated: Quotation[]; start: number;
   sortDescriptor: SortDescriptor; setSortDescriptor: (d: SortDescriptor) => void;
   setPage: (p: number | ((prev: number) => number)) => void;
   handleContextAction: (key: Key, quotation: Quotation) => void;
+  updateStatus: { mutate: (args: { id: string; status: string }) => void };
   totalPages: number; page: number;
 }) {
   if (isPending) return (
@@ -322,13 +225,13 @@ function QuotationsTable({
             <Table.Column id="#" width={48}>
               {() => <span className="text-muted text-xs">#</span>}
             </Table.Column>
-            <Table.Column allowsSorting id="quoteNumber" isRowHeader>
+            <Table.Column allowsSorting id="quoteNo" isRowHeader>
               {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Quote #</SortableHeader>}
             </Table.Column>
-            <Table.Column allowsSorting id="customerName">
-              {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Customer</SortableHeader>}
+            <Table.Column id="customerName">
+              {() => <span className="text-xs text-muted">Customer</span>}
             </Table.Column>
-            <Table.Column allowsSorting id="totalAmount">
+            <Table.Column allowsSorting id="total">
               {({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Amount</SortableHeader>}
             </Table.Column>
             <Table.Column allowsSorting id="status">
@@ -349,11 +252,19 @@ function QuotationsTable({
             {paginated.map((q, i) => (
               <Table.Row key={q.id} id={q.id}>
                 <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
-                <Table.Cell className="font-mono text-xs font-medium">{q.quoteNumber}</Table.Cell>
+                <Table.Cell className="font-mono text-xs font-medium">{q.quoteNo}</Table.Cell>
                 <Table.Cell>{q.customerName || '\u2014'}</Table.Cell>
-                <Table.Cell className="font-medium">${Number(q.totalAmount).toFixed(2)}</Table.Cell>
+                <Table.Cell className="font-medium">${Number(q.total).toFixed(2)}</Table.Cell>
                 <Table.Cell>
-                  <Chip size="sm" variant="soft" color={STATUS_COLORS[q.status] ?? 'default'}>{q.status}</Chip>
+                  <select
+                    value={q.status}
+                    onChange={(e) => updateStatus.mutate({ id: q.id, status: e.target.value })}
+                    className="bg-transparent text-xs border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                  >
+                    {['draft', 'sent', 'accepted', 'rejected', 'converted'].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </Table.Cell>
                 <Table.Cell className="text-muted text-xs">{q.validUntil ? new Date(q.validUntil).toLocaleDateString() : '\u2014'}</Table.Cell>
                 <Table.Cell>
@@ -365,7 +276,7 @@ function QuotationsTable({
                       <Dropdown.Menu onAction={(key) => handleContextAction(key, q)}>
                         <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
                         <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
-                        <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
+                        <Dropdown.Item id="delete" textValue="Delete" className="text-danger"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown.Popover>
                   </Dropdown.Root>

@@ -254,10 +254,10 @@ export function useDeleteInvoice() {
 
 export interface Quotation {
   id: string;
-  quoteNumber: string;
+  quoteNo: string;
   customerId: string;
   customerName: string | null;
-  totalAmount: number;
+  total: number;
   status: string;
   validUntil: string | null;
   notes: string | null;
@@ -329,7 +329,10 @@ export function useUpdateQuotationStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.patch(`/api/quotations/${id}/status`, { status }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['quotation'] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['quotation'] });
+      qc.invalidateQueries({ queryKey: ['quotations'] });
+    },
   });
 }
 

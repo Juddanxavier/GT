@@ -52,9 +52,11 @@ export async function signInHandler(c: Context) {
         await cacheClient.del(`attempts:${email}`);
         await logAudit('LOGIN_SUCCESS', null, { email }, c);
         const oldHeaders = new Headers(res.headers);
-        appendClearCookie(oldHeaders, '__Secure-better-auth.session_token');
-        appendClearCookie(oldHeaders, 'better-auth.session_token');
-        res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
+        if (c.req.url.startsWith('https://')) {
+          appendClearCookie(oldHeaders, '__Secure-better-auth.session_token');
+          appendClearCookie(oldHeaders, 'better-auth.session_token');
+          res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
+        }
       } else if (res.status === 401) {
         const attempts = await cacheClient.incr(`attempts:${email}`);
         if (attempts === 1) {

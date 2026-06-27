@@ -108,6 +108,16 @@ app.use('*', Sentry.sentry(app));
 // Lockout check + forward to auth handler
 app.post('/api/auth/sign-in/email', signInHandler);
 
+// Forgot-password with email existence check
+app.post('/api/auth/forgot-password', async (c) => {
+  const { email, redirectTo } = await c.req.json<{ email: string; redirectTo?: string }>();
+  if (!email) return c.json({ error: 'Email is required' }, 400);
+  const [user] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
+  if (!user) return c.json({ error: 'No account found with this email address' }, 404);
+  await auth.api.requestPasswordReset({ body: { email, redirectTo: redirectTo || '/reset-password' } });
+  return c.json({ success: true });
+});
+
 // Auth handler
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw));
 
@@ -157,6 +167,7 @@ import invoicesRoute from './routes/invoices';
 import dashboard from './routes/dashboard';
 import reports from './routes/reports';
 import searchRoute from './routes/search';
+import notificationsRoute from './routes/notifications';
 import { runArchive } from './services/archive';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { closeTransport } from './email/provider';
@@ -262,6 +273,7 @@ app.route('/api/invoices', invoicesRoute);
 app.route('/api/dashboard', dashboard);
 app.route('/api/reports', reports);
 app.route('/api/search', searchRoute);
+app.route('/api/notifications', notificationsRoute);
 
 // Manual archive trigger (protected)
 app.post('/api/cron/archive', requireRole('superadmin'), async (c) => {
