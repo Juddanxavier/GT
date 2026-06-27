@@ -2,12 +2,19 @@
 
 import { useState, Suspense } from 'react';
 import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Timer } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+function friendlyError(msg: string) {
+  if (!msg) return 'Something went wrong. Try again.';
+  if (msg.includes('Too many requests')) return 'You have sent too many requests. Please wait a moment before trying again.';
+  if (msg.includes('rate limit') || msg.includes('rate_limit')) return 'Please slow down. Try again in a few minutes.';
+  return msg;
+}
 
 function ForgotPasswordForm() {
   const router = useRouter();
@@ -16,6 +23,7 @@ function ForgotPasswordForm() {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   async function handleSendCode(e: React.FormEvent) {
@@ -25,7 +33,7 @@ function ForgotPasswordForm() {
     setLoading(true);
     try {
       const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
-      if (sendError) { setError(sendError.message || 'Failed to send reset code'); return; }
+      if (sendError) { setError(friendlyError(sendError.message)); setCooldown(30); return; }
       setSent(true);
       setTimeout(() => router.push(`/reset-password?email=${encodeURIComponent(email)}`), 1500);
     } catch { setError('Connection failed. Try again.'); }
@@ -50,7 +58,12 @@ function ForgotPasswordForm() {
 
   return (
     <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a code to reset it." backHref="/login" backLabel="Back to sign in">
-      {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
+          <Timer size={16} className="mt-0.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSendCode} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
@@ -59,8 +72,8 @@ function ForgotPasswordForm() {
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
-          {loading ? 'Sending code...' : 'Send reset code'}
+        <Button type="submit" fullWidth isDisabled={loading || cooldown > 0} isLoading={loading} className="h-11">
+          {cooldown > 0 ? `Wait ${cooldown}s` : loading ? 'Sending code...' : 'Send reset code'}
         </Button>
       </form>
     </AuthLayout>

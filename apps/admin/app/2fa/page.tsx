@@ -32,7 +32,7 @@ export default function TwoFactorPage() {
   async function sendCode() {
     setError('');
     const res = await authClient.twoFactor.sendOtp();
-    if (res.error) { setError(res.error.message || 'Failed to send code'); return; }
+    if (res.error) { setError(res.error.message?.includes('Too many requests') ? 'You have sent too many requests. Please wait a moment before trying again.' : res.error.message || 'Failed to send code'); return; }
     setCooldown(30);
   }
 
@@ -41,7 +41,7 @@ export default function TwoFactorPage() {
     try {
       const fn = mode === 'otp' ? authClient.twoFactor.verifyOtp : authClient.twoFactor.verifyBackupCode;
       const { error: verifyError } = await fn({ code, trustDevice: true });
-      if (verifyError) { setError(verifyError.message || 'Invalid code'); return; }
+      if (verifyError) { setError(verifyError.message?.includes('Too many requests') ? 'You have sent too many requests. Please wait a moment before trying again.' : verifyError.message || 'Invalid code'); return; }
       router.push('/');
     } catch { setError('Verification failed. Try again.'); }
     finally { setLoading(false); }

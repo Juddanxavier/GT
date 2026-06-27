@@ -24,6 +24,13 @@ function LoginForm() {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  function friendlyError(msg: string) {
+    if (!msg) return 'Something went wrong. Try again.';
+    if (msg.includes('Too many requests')) return 'You have sent too many requests. Please wait a moment before trying again.';
+    if (msg.includes('Invalid email or password')) return 'The email or password you entered is incorrect.';
+    return msg;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError('');
@@ -34,7 +41,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const { error: signInError } = await authClient.signIn.email({ email, password });
-      if (signInError) setSubmitError(signInError.message || 'Invalid email or password');
+      if (signInError) setSubmitError(friendlyError(signInError.message || 'Invalid email or password'));
       else window.location.href = '/';
     } catch { setSubmitError('Connection failed. Check your network and try again.'); }
     finally { setLoading(false); }

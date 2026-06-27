@@ -21,6 +21,12 @@ function ResetPasswordForm() {
   const [sendingCode, setSendingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
 
+  function friendlyError(msg: string) {
+    if (!msg) return 'Something went wrong. Try again.';
+    if (msg.includes('Too many requests')) return 'You have sent too many requests. Please wait a moment before trying again.';
+    return msg;
+  }
+
   useEffect(() => { if (!email) router.replace('/forgot-password'); }, [email, router]);
 
   async function handleResetPassword(e: React.FormEvent) {
@@ -34,12 +40,12 @@ function ResetPasswordForm() {
       const { error: resetError } = await authClient.emailOtp.resetPassword({ email, otp, password });
       if (resetError) {
         setError(resetError.code === 'OTP_EXPIRED' ? 'This code has expired. Request a new one.'
-          : resetError.code === 'INVALID_OTP' ? 'Invalid verification code. Check your email and try again.'
-          : resetError.code === 'TOO_MANY_ATTEMPTS' ? 'Too many attempts. Request a new code.'
-          : resetError.message || 'Failed to reset password');
+          : resetError.code === 'INVALID_OTP' ? 'The code you entered is incorrect. Check your email and try again.'
+          : resetError.code === 'TOO_MANY_ATTEMPTS' ? 'Too many incorrect attempts. Request a new code.'
+          : friendlyError(resetError.message) || 'Failed to reset password');
         return;
       }
-      setSuccess('Password reset successfully!');
+      setSuccess('Your password has been reset successfully!');
       setTimeout(() => router.push('/login'), 2000);
     } catch { setError('Connection failed. Try again.'); }
     finally { setLoading(false); }
@@ -49,7 +55,7 @@ function ResetPasswordForm() {
     setError(''); setSendingCode(true);
     try {
       const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
-      if (sendError) { setError(sendError.message || 'Failed to send code'); }
+      if (sendError) { setError(friendlyError(sendError.message || 'Failed to send code')); }
       else { setCodeSent(true); }
     } catch { setError('Connection failed. Try again.'); }
     finally { setSendingCode(false); }
