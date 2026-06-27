@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend } from '@/lib/queries';
-
+import { KpiCard } from '@/components/kpi-card';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { getCountryCode } from '@/lib/country-codes';

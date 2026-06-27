@@ -274,6 +274,15 @@ export interface LineItem {
   total: number;
 }
 
+export function useQuotationTrend() {
+  const { filterVersion } = useTenantFilter();
+  return useQuery<{ date: string; total: number; draft: number; sent: number; accepted: number; rejected: number; converted: number }[]>({
+    queryKey: ['quotation-trend', filterVersion],
+    queryFn: () => api.get<{ date: string; total: number; draft: number; sent: number; accepted: number; rejected: number; converted: number }[]>('/api/quotations/trend'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useQuotations() {
   const { filterVersion } = useTenantFilter();
   return useQuery<Quotation[]>({

@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { Button, Card, Label, Modal, Tabs, Table, Skeleton, Chip, DateRangePicker, DateField, RangeCalendar, FieldError } from '@heroui/react';
-import { FileText, Download, LoaderCircle, Filter, Package, Receipt } from 'lucide-react';
+import { FileText, Download, LoaderCircle, Filter, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { KpiCard } from '@/components/kpi-card';
 import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 interface RangeValue<T> { start: T; end: T }
 import { authClient } from '@/lib/auth-client';
@@ -33,6 +34,7 @@ type QuotationRow = {
 
 type ReportMeta = {
   summary: Record<string, number>;
+  revenue?: string;
   statusDistribution: { status: string; count: number }[];
 };
 
@@ -106,7 +108,8 @@ export default function ReportsPage() {
         const aggRes = await api.get<any>(`${aggUrl}?${params}`);
         const summary = aggRes.summary as Record<string, number> ?? {};
         const statusKey = type === 'shipments' ? 'statusDistribution' : 'funnel';
-        setMeta({ summary, statusDistribution: aggRes[statusKey] ?? [] });
+        const revenue = type === 'shipments' ? aggRes.revenue : undefined;
+        setMeta({ summary, revenue, statusDistribution: aggRes[statusKey] ?? [] });
       }
 
       if (pageNum === 1) setFilterOpen(false);
@@ -221,26 +224,27 @@ export default function ReportsPage() {
       {error && <Card><Card.Content><p className="text-sm text-danger">{error}</p></Card.Content></Card>}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
-        {meta
-          ? Object.entries(meta.summary).map(([key, val]) => (
-              <Card key={key}><Card.Content className="p-3">
-                <p className="text-xs text-muted capitalize">{key.replace(/_/g, ' ')}</p>
-                <p className="text-lg font-bold">{val}</p>
-              </Card.Content></Card>
-            ))
-          : reportType === 'shipments'
-            ? ['total', 'delivered', 'in_transit', 'exceptions', 'revenue'].map((key) => (
-                <Card key={key}><Card.Content className="p-3">
-                  <p className="text-xs text-muted capitalize">{key.replace(/_/g, ' ')}</p>
-                  <p className="text-lg font-bold">{key === 'revenue' ? '\u20B90.00' : '0'}</p>
-                </Card.Content></Card>
-              ))
-            : ['total', 'accepted', 'converted', 'rejected', 'sent'].map((key) => (
-                <Card key={key}><Card.Content className="p-3">
-                  <p className="text-xs text-muted capitalize">{key.replace(/_/g, ' ')}</p>
-                  <p className="text-lg font-bold">{key === 'revenue' ? '\u20B90.00' : '0'}</p>
-                </Card.Content></Card>
-              ))}
+        {(reportType === 'shipments' ? [
+          { key: 'total', color: '#3b82f6', icon: Package },
+          { key: 'delivered', color: '#22c55e', icon: CheckCircle },
+          { key: 'in_transit', color: '#8b5cf6', icon: Truck },
+          { key: 'exceptions', color: '#ef4444', icon: AlertTriangle },
+          { key: 'revenue', color: '#f59e0b', icon: IndianRupee, format: 'currency' as const },
+        ] : [
+          { key: 'total', color: '#3b82f6', icon: Receipt },
+          { key: 'accepted', color: '#22c55e', icon: CheckCircle2 },
+          { key: 'converted', color: '#f59e0b', icon: AlertTriangle },
+          { key: 'rejected', color: '#ef4444', icon: XCircle },
+        ]).map(({ key, color, icon, format }) => (
+          <KpiCard
+            key={key}
+            label={key.replace(/_/g, ' ')}
+            count={meta && key === 'revenue' ? Number(meta.revenue || 0) : Number(meta?.summary[key as keyof typeof meta.summary] ?? 0)}
+            color={color}
+            icon={icon}
+            format={format}
+          />
+        ))}
       </div>
 
       <Card>

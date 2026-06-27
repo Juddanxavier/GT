@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, Eye, MoreVertical, Pencil, Trash2, FileText, Send, CheckCircle, XCircle } from 'lucide-react';
 import { Button, Chip, Dropdown, Input, Label, Modal, Pagination, Skeleton, Table, Tabs, cn, type Key, type SortDescriptor } from '@heroui/react';
-import { useQuotations, useCustomers, useCreateQuotation, useDeleteQuotation, type Quotation } from '@/lib/queries';
+import { useQuotations, useCustomers, useCreateQuotation, useDeleteQuotation, useQuotationTrend, type Quotation } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
+import { KpiCard } from '@/components/kpi-card';
 
 const STATUS_COLORS: Record<string, 'default' | 'accent' | 'success' | 'danger' | 'warning'> = {
   draft: 'default',
@@ -43,6 +44,40 @@ export default function QuotationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
   const { data: quotations = [], isPending, isError, refetch } = useQuotations();
+  const { data: trendData = [] } = useQuotationTrend();
+
+  const sparklines = useMemo(() => {
+    const map = new Map(trendData.map((r) => [r.date, r]));
+    const days = 14;
+    const now = new Date();
+    const total: number[] = [];
+    const sent: number[] = [];
+    const accepted: number[] = [];
+    const draft: number[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const row = map.get(key);
+      total.push(row?.total ?? 0);
+      sent.push(row?.sent ?? 0);
+      accepted.push(row?.accepted ?? 0);
+      draft.push(row?.draft ?? 0);
+    }
+    return { total, sent, accepted, draft };
+  }, [trendData]);
+
+  const trend = useMemo(() => {
+    const calc = (data: number[]) => {
+      if (data.length < 14) return 0;
+      const prev = data.slice(0, 7).reduce((a, b) => a + b, 0);
+      const curr = data.slice(7).reduce((a, b) => a + b, 0);
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 100);
+    };
+    return { total: calc(sparklines.total), sent: calc(sparklines.sent), accepted: calc(sparklines.accepted), draft: calc(sparklines.draft) };
+  }, [sparklines]);
+
   const { data: newCustomers = [] } = useCustomers();
   const createQuotation = useCreateQuotation();
   const deleteQuotation = useDeleteQuotation();
@@ -117,75 +152,11 @@ export default function QuotationsPage() {
         <Button onPress={() => { setNewCustomerId(''); setNewStatus('draft'); setNewValidUntil(''); setNewNotes(''); setNewItems([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]); setCreateOpen(true); }}>New Quotation</Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                12.5%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Total</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-q-total" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,18 L10,14 L20,12 L30,8 L40,4 L50,6 L60,4 L70,2 L80,4 L90,2 L100,4 L110,2 L120,2 L120,24 L0,24 Z" fill="url(#g-q-total)" />
-            <polyline points="0,18 10,14 20,12 30,8 40,4 50,6 60,4 70,2 80,4 90,2 100,4 110,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((q) => q.status === 'sent').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                8.3%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Sent</p>
-          </div>
-          <svg className="w-full h-8 text-accent/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-q-sent" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,18 L20,16 L30,14 L40,12 L50,10 L60,8 L70,6 L80,4 L90,6 L100,4 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-q-sent)" />
-            <polyline points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4 90,6 100,4 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((q) => q.status === 'accepted').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-success/10 text-success">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                15.2%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Accepted</p>
-          </div>
-          <svg className="w-full h-8 text-success/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-q-accepted" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,20 L10,18 L20,16 L30,14 L40,12 L50,10 L60,8 L70,6 L80,4 L90,6 L100,4 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-q-accepted)" />
-            <polyline points="0,20 10,18 20,16 30,14 40,12 50,10 60,8 70,6 80,4 90,6 100,4 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block">
-          <div className="p-5 pb-2">
-            <div className="flex items-start justify-between">
-              <p className="text-4xl font-bold tracking-tight text-foreground">{filtered.filter((q) => q.status === 'draft').length}</p>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-warning/10 text-warning">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                3.2%
-              </span>
-            </div>
-            <p className="text-sm text-muted mt-1">Draft</p>
-          </div>
-          <svg className="w-full h-8 text-warning/30" viewBox="0 0 120 24" preserveAspectRatio="none">
-            <defs><linearGradient id="g-q-draft" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity="0.4" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-            <path d="M0,12 L10,14 L20,10 L30,12 L40,8 L50,10 L60,6 L70,8 L80,4 L90,6 L100,8 L110,4 L120,4 L120,24 L0,24 Z" fill="url(#g-q-draft)" />
-            <polyline points="0,12 10,14 20,10 30,12 40,8 50,10 60,6 70,8 80,4 90,6 100,8 110,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </a>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <KpiCard label="Total" count={filtered.length} color="#3b82f6" icon={FileText} data={sparklines.total} trend={trend.total} />
+        <KpiCard label="Sent" count={filtered.filter((q) => q.status === 'sent').length} color="#8b5cf6" icon={Send} data={sparklines.sent} trend={trend.sent} />
+        <KpiCard label="Accepted" count={filtered.filter((q) => q.status === 'accepted').length} color="#22c55e" icon={CheckCircle} data={sparklines.accepted} trend={trend.accepted} />
+        <KpiCard label="Draft" count={filtered.filter((q) => q.status === 'draft').length} color="#f59e0b" icon={XCircle} data={sparklines.draft} trend={trend.draft} />
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { sql, eq, and, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { quotations, quoteItems, shipments } from '../db/schema';
 import { requireRole, requireBranchScope, getUser, getQueryScope } from '../middleware/authorization';
@@ -10,6 +10,28 @@ import { emitToTenant } from '../realtime';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
+
+app.get('/trend', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
+  const scope = getQueryScope(c);
+  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+  const conditions = [eq(quotations.tenantId, scope.tenantId)];
+  if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId));
+  const rows = await db
+    .select({
+      date: sql<string>`DATE(${quotations.createdAt})::text`,
+      total: sql<number>`COUNT(*)::int`,
+      draft: sql<number>`COUNT(*) FILTER (WHERE ${quotations.status} = 'draft')::int`,
+      sent: sql<number>`COUNT(*) FILTER (WHERE ${quotations.status} = 'sent')::int`,
+      accepted: sql<number>`COUNT(*) FILTER (WHERE ${quotations.status} = 'accepted')::int`,
+      rejected: sql<number>`COUNT(*) FILTER (WHERE ${quotations.status} = 'rejected')::int`,
+      converted: sql<number>`COUNT(*) FILTER (WHERE ${quotations.status} = 'converted')::int`,
+    })
+    .from(quotations)
+    .where(and(...conditions))
+    .groupBy(sql`DATE(${quotations.createdAt})`)
+    .orderBy(sql`DATE(${quotations.createdAt})`);
+  return c.json({ data: rows });
+});
 
 app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
   const scope = getQueryScope(c);
