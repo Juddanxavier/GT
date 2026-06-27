@@ -89,7 +89,7 @@ function ResetPasswordForm() {
           <Input placeholder="Re-enter your new password" autoComplete="new-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
+        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11">
           {loading ? 'Resetting...' : 'Reset password'}
         </Button>
       </form>

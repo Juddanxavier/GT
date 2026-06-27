@@ -63,7 +63,7 @@ function ForgotPasswordForm() {
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 
-        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading} className="h-11">
+        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11">
           {loading ? 'Sending...' : 'Send reset link'}
         </Button>
       </form>
