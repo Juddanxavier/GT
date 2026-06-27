@@ -26,11 +26,6 @@ function LoginForm() {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  function validate() {
-    const result = loginSchema.safeParse({ email, password });
-    setFieldErrors(result.success ? {} : Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])));
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError('');
@@ -40,48 +35,38 @@ function LoginForm() {
     setFieldErrors({});
     setLoading(true);
     try {
-      let twoFactorRedirected = false;
-      const { error: signInError } = await authClient.signIn.email({ email, password }, {
-        onSuccess(ctx) {
-          if (ctx.data?.twoFactorRedirect) { twoFactorRedirected = true; window.location.href = '/2fa'; }
-        },
-      });
+      const { error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) setSubmitError(signInError.message || 'Invalid email or password');
-      else if (!twoFactorRedirected) window.location.href = '/';
+      else window.location.href = '/';
     } catch { setSubmitError('Connection failed. Check your network and try again.'); }
     finally { setLoading(false); }
   }
 
   return (
-    <AuthLayout description="Multi-tenant logistics management for businesses across India and Sri Lanka. Track shipments, manage customers, and generate invoices — all in one place.">
-      <div className="hidden lg:block mb-8">
-        <h2 className="text-2xl font-semibold text-foreground tracking-tight">Welcome back</h2>
-        <p className="text-sm text-muted mt-1">Sign in to your account to continue</p>
-      </div>
-
+    <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
-        <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{submitError}</div>
+        <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{submitError}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
           <input id="hp-field" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
         </div>
 
-        <TextField fullWidth isInvalid={!!fieldErrors.email} name="email" type="email" value={email} onChange={(v) => { setEmail(v); if (fieldErrors.email) validate(); }}>
+        <TextField fullWidth isInvalid={!!fieldErrors.email} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" onBlur={validate} />
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
           </InputGroup>
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
 
-        <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => { setPassword(v); if (fieldErrors.password) validate(); }}>
+        <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" onBlur={validate} />
+            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -91,7 +76,7 @@ function LoginForm() {
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 
-        <div className="flex justify-end -mt-2">
+        <div className="flex justify-end">
           <Link href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
             Forgot password?
           </Link>
@@ -102,7 +87,7 @@ function LoginForm() {
         </Button>
       </form>
 
-      <div className="relative my-6">
+      <div className="relative">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
         <div className="relative flex justify-center"><span className="px-3 text-xs text-muted bg-background">or continue with</span></div>
       </div>
@@ -117,7 +102,7 @@ function LoginForm() {
         Google
       </Button>
 
-      <p className="mt-8 text-center text-xs text-muted">
+      <p className="text-center text-xs text-muted">
         By signing in, you agree to our{' '}
         <a href="/privacy" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Privacy Policy</a>
         {' '}and{' '}

@@ -36,42 +36,40 @@ function ForgotPasswordForm() {
     finally { setLoading(false); }
   }
 
-  return (
-    <AuthLayout backHref="/login" backLabel="Back to sign in">
-      {sent ? (
-        <div className="mb-6 px-4 py-4 rounded-lg bg-success/10 border border-success/20 text-sm text-success flex items-start gap-3">
-          <CheckCircle size={18} className="mt-0.5 shrink-0" />
+  if (sent) {
+    return (
+      <AuthLayout backHref="/login" backLabel="Back to sign in">
+        <div className="flex flex-col items-center gap-4 text-center pt-2">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/10 border border-success/20">
+            <CheckCircle size={24} className="text-success" />
+          </div>
           <div>
-            <p className="font-medium">Check your email</p>
-            <p className="text-muted mt-1">We sent a verification code to <span className="text-foreground">{email}</span></p>
-            <p className="text-muted mt-2">Redirecting to reset page...</p>
+            <p className="text-sm font-medium text-foreground">Check your email</p>
+            <p className="text-xs text-muted mt-1">We sent a code to <span className="text-foreground">{email}</span></p>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-foreground tracking-tight">Forgot password</h2>
-            <p className="text-sm text-muted mt-1">Enter your email and we&apos;ll send you a code to reset it.</p>
-          </div>
+      </AuthLayout>
+    );
+  }
 
-          {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+  return (
+    <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a code to reset it." backHref="/login" backLabel="Back to sign in">
+      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
-          <form onSubmit={handleSendCode} className="space-y-5" noValidate>
-            <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => { setEmail(v); setFieldError(null); }}>
-              <Label>Email</Label>
-              <InputGroup fullWidth>
-                <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-                <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
-              </InputGroup>
-              {fieldError && <FieldError>{fieldError}</FieldError>}
-            </TextField>
+      <form onSubmit={handleSendCode} className="space-y-4" noValidate>
+        <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
+          <Label>Email</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
+          </InputGroup>
+          {fieldError && <FieldError>{fieldError}</FieldError>}
+        </TextField>
 
-            <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
-              {loading ? 'Sending code...' : 'Send reset code'}
-            </Button>
-          </form>
-        </>
-      )}
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
+          {loading ? 'Sending code...' : 'Send reset code'}
+        </Button>
+      </form>
     </AuthLayout>
   );
 }

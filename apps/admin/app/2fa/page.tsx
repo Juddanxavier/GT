@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Button, Card, InputOTP } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
-import { ShieldAlert, Check, RefreshCw } from 'lucide-react';
+import { ShieldAlert, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { AuthLayout } from '@/components/auth-layout';
 
 export default function TwoFactorPage() {
   usePageTitle('Two-Factor Verification');
@@ -14,7 +15,6 @@ export default function TwoFactorPage() {
   const [mode, setMode] = useState<'otp' | 'backup'>('otp');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval>>(undefined);
 
@@ -30,10 +30,10 @@ export default function TwoFactorPage() {
   }, [cooldown]);
 
   async function sendCode() {
-    setError(''); setSent(false);
+    setError('');
     const res = await authClient.twoFactor.sendOtp();
     if (res.error) { setError(res.error.message || 'Failed to send code'); return; }
-    setSent(true); setCooldown(30);
+    setCooldown(30);
   }
 
   async function handleVerify(e: React.FormEvent) {
@@ -48,64 +48,44 @@ export default function TwoFactorPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <Card.Content className="p-6 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 mx-auto">
-              <ShieldAlert size={24} className="text-accent" />
-            </div>
-            <h1 className="text-lg font-semibold text-foreground">Two-Factor Authentication</h1>
-            {mode === 'otp' ? (
-              <>
-                <p className="text-sm text-muted">{sent ? 'A verification code has been sent to your email' : 'Sending a verification code to your email...'}</p>
-                {cooldown > 0 && <p className="text-xs text-muted">Resend available in {cooldown}s</p>}
-              </>
-            ) : (
-              <p className="text-sm text-muted">Enter one of your backup codes</p>
+    <AuthLayout title="Two-factor authentication" subtitle={mode === 'otp' ? 'A verification code has been sent to your email' : 'Enter one of your backup codes'}>
+      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+
+      <form onSubmit={handleVerify} className="space-y-4">
+        {mode === 'otp' ? (
+          <div className="space-y-3">
+            <InputOTP maxLength={6} value={code} onChange={(v) => { setCode(v); setError(''); }} pattern="^\d+$" className="justify-center">
+              <InputOTP.Group>
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <InputOTP.Slot key={i} index={i} className="border border-border rounded-md" />
+                ))}
+              </InputOTP.Group>
+            </InputOTP>
+            {cooldown > 0 && (
+              <p className="text-center text-xs text-muted">Resend available in {cooldown}s</p>
             )}
           </div>
+        ) : (
+          <input className="w-full h-9 px-3 rounded-lg bg-field-background border border-field-border text-sm text-field-foreground placeholder:text-field-placeholder focus:outline-none focus:ring-2 focus:ring-focus"
+            placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus />
+        )}
 
-          <form onSubmit={handleVerify} className="space-y-4">
-            {mode === 'otp' ? (
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted mb-1 block text-center">Verification Code</label>
-                <InputOTP maxLength={6} value={code} onChange={(v) => { setCode(v); setError(''); }} pattern="^\d+$" className="justify-center">
-                  <InputOTP.Group>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTP.Slot key={i} index={i} className="border border-border rounded-md" />
-                    ))}
-                  </InputOTP.Group>
-                </InputOTP>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted mb-1 block">Backup Code</label>
-                <input className="w-full h-9 px-3 rounded-lg bg-field-background border border-field-border text-sm text-field-foreground placeholder:text-field-placeholder focus:outline-none focus:ring-2 focus:ring-focus"
-                  placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => { setCode(e.target.value); setError(''); }} autoFocus />
-              </div>
-            )}
+        <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth>
+          Verify
+        </Button>
+      </form>
 
-            {error && <div className="flex items-center gap-1.5 text-xs text-danger bg-danger/10 rounded-lg px-3 py-2"><ShieldAlert size={12} />{error}</div>}
-
-            <Button type="submit" variant="secondary" isDisabled={code.length < 4} isPending={loading} fullWidth>
-              <Check size={15} /> Verify
-            </Button>
-          </form>
-
-          <div className="flex flex-col items-center gap-3">
-            {mode === 'otp' && (
-              <Button size="sm" variant="ghost" isDisabled={cooldown > 0} onPress={sendCode} className="flex items-center gap-1.5 text-xs">
-                <RefreshCw size={12} /> Resend code
-              </Button>
-            )}
-            <button type="button" onClick={() => { setMode(mode === 'otp' ? 'backup' : 'otp'); setError(''); setCode(''); }}
-              className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors">
-              {mode === 'otp' ? 'Use a backup code instead' : 'Use email code instead'}
-            </button>
-          </div>
-        </Card.Content>
-      </Card>
-    </div>
+      <div className="flex flex-col items-center gap-3 pt-1">
+        {mode === 'otp' && (
+          <Button size="sm" variant="ghost" isDisabled={cooldown > 0} onPress={sendCode} className="flex items-center gap-1.5 text-xs">
+            <RefreshCw size={12} /> Resend code
+          </Button>
+        )}
+        <button type="button" onClick={() => { setMode(mode === 'otp' ? 'backup' : 'otp'); setError(''); setCode(''); }}
+          className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
+          {mode === 'otp' ? 'Use a backup code instead' : 'Use email code instead'}
+        </button>
+      </div>
+    </AuthLayout>
   );
 }

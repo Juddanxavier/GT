@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, InputGroup, TextField, Label, FieldError } from '@heroui/react';
-import { Lock, Eye, EyeOff, CheckCircle, KeyRound, SendHorizonal } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
@@ -23,16 +23,15 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
 
   useEffect(() => { if (!email) router.replace('/forgot-password'); }, [email, router]);
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
     setError(''); setSuccess('');
-    if (!otp || otp.length < 4) { setFieldError('Enter the verification code from your email'); return; }
-    if (password.length < 8) { setFieldError('Password must be at least 8 characters'); return; }
-    if (password !== confirmPassword) { setFieldError('Passwords do not match'); return; }
+    if (!otp || otp.length < 4) { setError('Enter the verification code from your email'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
     setLoading(true);
     try {
       const { error: resetError } = await authClient.emailOtp.resetPassword({ email, otp, password });
@@ -59,94 +58,83 @@ function ResetPasswordForm() {
     finally { setSendingCode(false); }
   }
 
-  return (
-    <AuthLayout backHref={codeSent ? `/forgot-password?email=${encodeURIComponent(email)}` : '/login'} backLabel={codeSent ? 'Back' : 'Back'}>
-      {success ? (
-        <div className="mb-6 px-4 py-4 rounded-lg bg-success/10 border border-success/20 text-sm text-success flex items-start gap-3">
-          <CheckCircle size={18} className="mt-0.5 shrink-0" />
+  if (success) {
+    return (
+      <AuthLayout backHref="/login" backLabel="Back to sign in">
+        <div className="flex flex-col items-center gap-4 text-center pt-2">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/10 border border-success/20">
+            <Lock size={24} className="text-success" />
+          </div>
           <div>
-            <p className="font-medium">Password reset successfully!</p>
-            <p className="text-muted mt-1">Redirecting to sign in...</p>
+            <p className="text-sm font-medium text-foreground">Password reset successfully!</p>
+            <p className="text-xs text-muted mt-1">Redirecting to sign in...</p>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 mb-4">
-              <KeyRound size={20} className="text-accent" />
-            </div>
-            <h2 className="text-2xl font-semibold text-foreground tracking-tight">Set up your password</h2>
-            <p className="text-sm text-muted mt-1">
-              {codeSent ? <>Enter the code sent to <span className="text-foreground font-medium">{email}</span></>
-              : <>Verify your email to set a password for <span className="text-foreground font-medium">{email}</span></>}
-            </p>
-          </div>
+      </AuthLayout>
+    );
+  }
 
-          {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+  if (!codeSent) {
+    return (
+      <AuthLayout title="Set up your password" subtitle={`Verify your email to set a password for ${email}`} backHref="/forgot-password" backLabel="Back">
+        {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+        <Button fullWidth onPress={handleSendCode} isDisabled={sendingCode} isLoading={sendingCode}>
+          Send verification code
+        </Button>
+      </AuthLayout>
+    );
+  }
 
-          {!codeSent ? (
-            <div className="space-y-5">
-              <p className="text-sm text-muted">We&apos;ll send a verification code to your email so you can set up your password.</p>
-              <Button fullWidth onPress={handleSendCode} isDisabled={sendingCode} isLoading={sendingCode}>
-                <SendHorizonal size={16} />
-                Send verification code
+  return (
+    <AuthLayout title="Enter verification code" subtitle={`Enter the code sent to ${email}`} backHref={`/forgot-password?email=${encodeURIComponent(email)}`} backLabel="Back">
+      {error && <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+
+      <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
+        <TextField fullWidth name="otp" value={otp} onChange={(v) => setOtp(v)}>
+          <Label>Verification code</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
+          </InputGroup>
+        </TextField>
+
+        <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
+          <Label>New password</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
+            <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
+            <InputGroup.Suffix className="pr-0">
+              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
-              <TextField fullWidth isInvalid={!!fieldError && !otp} name="otp" value={otp} onChange={(v) => { setOtp(v); setFieldError(null); }}>
-                <Label>Verification code</Label>
-                <InputGroup fullWidth>
-                  <InputGroup.Input placeholder="000000" autoComplete="one-time-code" inputMode="numeric" maxLength={6} />
-                </InputGroup>
-                {fieldError && !password && <FieldError>{fieldError}</FieldError>}
-              </TextField>
+            </InputGroup.Suffix>
+          </InputGroup>
+        </TextField>
 
-              <TextField fullWidth isInvalid={!!fieldError && password.length > 0 && password.length < 8}
-                name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => { setPassword(v); setFieldError(null); }}>
-                <Label>New password</Label>
-                <InputGroup fullWidth>
-                  <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-                  <InputGroup.Input placeholder="At least 8 characters" autoComplete="new-password" />
-                  <InputGroup.Suffix className="pr-0">
-                    <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </Button>
-                  </InputGroup.Suffix>
-                </InputGroup>
-                {fieldError && password.length > 0 && password.length < 8 && <FieldError>{fieldError}</FieldError>}
-              </TextField>
-
-              <TextField fullWidth isInvalid={!!fieldError && confirmPassword.length > 0 && password !== confirmPassword}
-                name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => { setConfirmPassword(v); setFieldError(null); }}>
-                <Label>Confirm password</Label>
-                <InputGroup fullWidth>
-                  <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
-                  <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
-                  <InputGroup.Suffix className="pr-0">
-                    <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
-                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </Button>
-                  </InputGroup.Suffix>
-                </InputGroup>
-                {fieldError && confirmPassword.length > 0 && password !== confirmPassword && <FieldError>{fieldError}</FieldError>}
-              </TextField>
-
-              <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
-                {loading ? 'Setting password...' : 'Set password'}
+        <TextField fullWidth name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
+          <Label>Confirm password</Label>
+          <InputGroup fullWidth>
+            <InputGroup.Prefix><Lock size={16} className="text-muted" /></InputGroup.Prefix>
+            <InputGroup.Input placeholder="Re-enter your new password" autoComplete="new-password" />
+            <InputGroup.Suffix className="pr-0">
+              <Button isIconOnly aria-label={showConfirm ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>
+            </InputGroup.Suffix>
+          </InputGroup>
+        </TextField>
 
-              <p className="text-center text-xs text-muted">
-                Didn&apos;t get a code?{' '}
-                <button type="button" onClick={handleSendCode} disabled={sendingCode}
-                  className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">
-                  {sendingCode ? 'Sending...' : 'Resend code'}
-                </button>
-              </p>
-            </form>
-          )}
-        </>
-      )}
+        <Button type="submit" fullWidth isDisabled={loading} isLoading={loading}>
+          {loading ? 'Setting password...' : 'Set password'}
+        </Button>
+
+        <p className="text-center text-xs text-muted">
+          Didn&apos;t get a code?{' '}
+          <button type="button" onClick={handleSendCode} disabled={sendingCode}
+            className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">
+            {sendingCode ? 'Sending...' : 'Resend code'}
+          </button>
+        </p>
+      </form>
     </AuthLayout>
   );
 }
