@@ -5,6 +5,10 @@ import { auth } from '../auth';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
 
+function appendClearCookie(headers: Headers, name: string) {
+  headers.append('Set-Cookie', `${name}=; Path=/; Secure; SameSite=None; Max-Age=0`);
+}
+
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 1800;
 const ATTEMPT_WINDOW_SECONDS = 1800;
@@ -39,7 +43,7 @@ export async function signInHandler(c: Context) {
     }
   }
 
-  const res = await auth.handler(c.req.raw);
+  let res = await auth.handler(c.req.raw);
 
   if (email && cacheClient) {
     try {
@@ -47,6 +51,10 @@ export async function signInHandler(c: Context) {
         await cacheClient.del(`lockout:${email}`);
         await cacheClient.del(`attempts:${email}`);
         await logAudit('LOGIN_SUCCESS', null, { email }, c);
+        const oldHeaders = new Headers(res.headers);
+        appendClearCookie(oldHeaders, '__Secure-better-auth.session_token');
+        appendClearCookie(oldHeaders, 'better-auth.session_token');
+        res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
       } else if (res.status === 401) {
         const attempts = await cacheClient.incr(`attempts:${email}`);
         if (attempts === 1) {
