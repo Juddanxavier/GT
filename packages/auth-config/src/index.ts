@@ -118,8 +118,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       cookies: {
         session_token: {
           attributes: {
-            sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
           },
         },
       },
