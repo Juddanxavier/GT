@@ -54,7 +54,7 @@ function ResetPasswordForm() {
   async function handleSendCode() {
     setError(''); setSendingCode(true);
     try {
-      const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
+      const { error: sendError } = await authClient.emailOtp.requestPasswordReset({ email });
       if (sendError) { setError(friendlyError(sendError.message || 'Failed to send code')); }
       else { setCodeSent(true); }
     } catch { setError('Connection failed. Try again.'); }

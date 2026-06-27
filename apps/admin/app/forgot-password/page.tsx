@@ -32,7 +32,7 @@ function ForgotPasswordForm() {
     if (!email) { setFieldError('Enter your email address'); return; }
     setLoading(true);
     try {
-      const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
+      const { error: sendError } = await authClient.emailOtp.requestPasswordReset({ email });
       if (sendError) { setError(friendlyError(sendError.message)); setCooldown(30); return; }
       setSent(true);
       setTimeout(() => router.push(`/reset-password?email=${encodeURIComponent(email)}`), 1500);
