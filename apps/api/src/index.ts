@@ -105,30 +105,6 @@ app.use('*', securityHeadersMiddleware);
 // Sentry error + performance monitoring
 app.use('*', Sentry.sentry(app));
 
-// Custom forgot-password route — always returns 200 to prevent email enumeration
-app.post('/api/auth/forgot-password', async (c) => {
-  const { email } = await c.req.json<{ email?: string }>();
-
-  if (!email || typeof email !== 'string') {
-    return c.json({ error: 'Email is required' }, 400);
-  }
-
-  const [user] = await db
-    .select({ id: schema.user.id })
-    .from(schema.user)
-    .where(eq(schema.user.email, email))
-    .limit(1);
-
-  if (user) {
-    await auth.api.requestPasswordResetEmailOTP({
-      body: { email },
-    });
-    await logAudit('PASSWORD_RESET', user.id, { email }, c);
-  }
-
-  return c.json({ data: { success: true } });
-});
-
 // Lockout check + forward to auth handler
 app.post('/api/auth/sign-in/email', signInHandler);
 

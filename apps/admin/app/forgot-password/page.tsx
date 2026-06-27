@@ -2,13 +2,12 @@
 
 import { useState, Suspense } from 'react';
 import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
-import { Mail, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 function ForgotPasswordForm() {
   const router = useRouter();
@@ -25,11 +24,8 @@ function ForgotPasswordForm() {
     if (!email) { setFieldError('Enter your email address'); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) { const b = await res.json().catch(() => ({})); setError(b.error || 'Failed to send reset code'); return; }
+      const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
+      if (sendError) { setError(sendError.message || 'Failed to send reset code'); return; }
       setSent(true);
       setTimeout(() => router.push(`/reset-password?email=${encodeURIComponent(email)}`), 1500);
     } catch { setError('Connection failed. Try again.'); }
