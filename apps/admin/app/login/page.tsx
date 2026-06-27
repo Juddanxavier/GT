@@ -58,7 +58,7 @@ function LoginForm() {
           <Label>Email</Label>
           <InputGroup fullWidth>
             <InputGroup.Prefix><Mail size={16} className="text-muted" /></InputGroup.Prefix>
-            <InputGroup.Input placeholder="name@example.com" autoComplete="email" />
+            <InputGroup.Input placeholder="name@example.com" autoComplete="email" className="border" />
           </InputGroup>
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
@@ -66,7 +66,7 @@ function LoginForm() {
         <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" />
+            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" className="border" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -76,7 +76,11 @@ function LoginForm() {
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
+            <input type="checkbox" className="rounded border-border bg-field-background text-accent focus:ring-accent/30 h-4 w-4" />
+            I agree to the <Link href="/terms" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Terms</Link>
+          </label>
           <Link href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
             Forgot password?
           </Link>

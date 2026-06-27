@@ -24,7 +24,7 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
           </Link>
         )}
 
-        <Card>
+        <Card shadow="lg">
           <Card.Content className="p-8 space-y-6">
             <div className="text-center space-y-1">
               <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-accent/10 mx-auto mb-4">
