@@ -73,7 +73,7 @@ const persister = createSyncStoragePersister({
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, error } = authClient.useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -90,10 +90,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isPending) return;
+    if (error) return;
     if (!session) { router.push('/login'); return; }
     const userRole = (session.user as Record<string, unknown>).role as string;
     if (!ALLOWED_ROLES.includes(userRole)) router.push('/unauthorized');
-  }, [session, isPending, router]);
+  }, [session, isPending, error, router]);
 
   const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
 
