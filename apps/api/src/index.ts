@@ -270,6 +270,7 @@ app.get('/api/diagnostics/email', (c) => {
     },
     env: {
       nodeEnv: process.env.NODE_ENV,
+      zeptomailApiKey: !!process.env.ZEPTOMAIL_API_KEY,
       zeptomailPass: !!process.env.ZEPTOMAIL_PASS,
       redisUrl: !!process.env.REDIS_URL,
     },
