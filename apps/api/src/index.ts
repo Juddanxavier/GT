@@ -17,13 +17,14 @@ import { branchMiddleware, type BranchVariables } from './middleware/branch';
 import { requireRole } from './middleware/authorization';
 import { signInHandler } from './middleware/lockout';
 import { logAudit } from './services/audit';
-import { queues } from './queues';
+import { isRedisConnected, queues } from './queues';
 import { connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
 import { tenants as tenantTable, user as userTable, branches as branchTable } from './db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
+import { getEmailProviderStatus, closeTransport } from './email/provider';
 
 // Global crash handlers (before any other code)
 process.on('unhandledRejection', (reason) => {
@@ -170,8 +171,6 @@ import searchRoute from './routes/search';
 import notificationsRoute from './routes/notifications';
 import { runArchive } from './services/archive';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { closeTransport } from './email/provider';
-
 // ── Global error handler ──
 
 app.onError((err, c) => {
@@ -253,6 +252,28 @@ app.get('/api/health', (c) => {
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+  });
+});
+
+// Email diagnostics
+app.get('/api/diagnostics/email', (c) => {
+  const email = getEmailProviderStatus();
+  return c.json({
+    email,
+    redis: {
+      connected: isRedisConnected(),
+      urlConfigured: !!process.env.REDIS_URL,
+    },
+    bullMq: {
+      activeQueues: queues.length,
+      queueNames: queues.map((q) => q.name),
+    },
+    env: {
+      nodeEnv: process.env.NODE_ENV,
+      zeptomailPass: !!process.env.ZEPTOMAIL_PASS,
+      resendKey: !!process.env.RESEND_API_KEY,
+      redisUrl: !!process.env.REDIS_URL,
+    },
   });
 });
 

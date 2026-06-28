@@ -168,6 +168,16 @@ function getSend(): SendFn {
   return send;
 }
 
+export function getEmailProviderStatus() {
+  return {
+    configured: isZeptoMailConfigured() ? 'zeptomail' : isResendConfigured() ? 'resend' : isSmtpConfigured() ? 'smtp' : null,
+    zeptomail: !!emailConfig.zeptomail.pass,
+    resend: !!emailConfig.resend.apiKey,
+    smtp: !!emailConfig.smtp.host,
+    from: emailConfig.defaultFrom,
+  };
+}
+
 export async function sendEmail(params: SendEmailParams): Promise<void> {
   await getSend()(params);
 }
