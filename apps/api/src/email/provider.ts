@@ -10,7 +10,8 @@ type SendEmailParams = {
 
 type SendFn = (params: SendEmailParams) => Promise<void>;
 
-const ZEPTOMAIL_API_KEY = process.env.ZEPTOMAIL_API_KEY || '';
+// ZEPTOMAIL_API_KEY is for the HTTP API. If only ZEPTOMAIL_PASS is set, try it as the API key too.
+const ZEPTOMAIL_API_KEY = process.env.ZEPTOMAIL_API_KEY || process.env.ZEPTOMAIL_PASS || '';
 const ZEPTOMAIL_PASS = process.env.ZEPTOMAIL_PASS || '';
 const SMTP_HOST = process.env.SMTP_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
