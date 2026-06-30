@@ -202,7 +202,7 @@ app.get(
   async (c) => {
     const scope = getQueryScope(c);
     const id = c.req.param('id');
-    if (!id) return c.json({ error: 'Tenant required' }, 400);
+    if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
     const data = await withCache(
       scope.tenantId!,
@@ -228,7 +228,7 @@ app.get(
   async (c) => {
     const scope = getQueryScope(c);
     const id = c.req.param('id');
-    if (!id) return c.json({ error: 'Tenant required' }, 400);
+    if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
     const data = await withCache(
       scope.tenantId!,

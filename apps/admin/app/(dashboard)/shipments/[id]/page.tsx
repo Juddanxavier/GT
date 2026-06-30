@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Card, Chip, Input, Label, ListBox, Modal, ScrollShadow, Select, Skeleton, cn } from '@heroui/react';
-import { api } from '@/lib/api';
+import { api, getTenantFilter } from '@/lib/api';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
 import { useTenants } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -205,21 +205,21 @@ export default function ShipmentDetailPage() {
     e.preventDefault();
     setEditErrors({});
     if ((document.getElementById('hp-edit') as HTMLInputElement)?.value) return;
-    const payload = {
-      billAmount: editBillAmount || undefined,
-      branchId: editBranchId || undefined,
-    };
     setSaving(true);
     try {
       const data = await api.patch<ApiShipment>(`/api/shipments/${id}`, {
-        customerId: editCustomerSelf ? undefined : editCustomerId,
+        customerId: editCustomerSelf ? undefined : (editCustomerId || undefined),
         contactEmail: (!editCustomerId && !editCustomerSelf && editUnclaimedEmail) ? editUnclaimedEmail : undefined,
         contactPhone: (!editCustomerId && !editCustomerSelf && editUnclaimedPhone) ? editUnclaimedPhone : undefined,
+        billAmount: editBillAmount || undefined,
+        branchId: editBranchId || undefined,
         tenantId: editTenantId || undefined,
-        ...payload,
       });
       setShipment(data);
       setEditOpen(false);
+    } catch (e) {
+      const msg = (e as { message?: string })?.message || 'Failed to save';
+      setEditErrors({ form: msg });
     } finally { setSaving(false); }
   }
 
@@ -526,7 +526,15 @@ export default function ShipmentDetailPage() {
                     <span className="text-sm">{invoice.emailCount}/2 today</span>
                   </div>
                   <div className="pt-2 space-y-2 border-t border-border">
-                    <Button className="w-full justify-start" variant="secondary" size="sm" onPress={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invoices/${invoice.id}/pdf`, '_blank')}>
+                    <Button className="w-full justify-start" variant="secondary" size="sm" onPress={async () => {
+                      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                      const headers: Record<string, string> = {};
+                      const tid = getTenantFilter();
+                      if (tid) headers['X-Tenant-ID'] = tid;
+                      const res = await fetch(`${base}/api/invoices/${invoice.id}/pdf`, { credentials: 'include', headers });
+                      const blob = await res.blob();
+                      window.open(URL.createObjectURL(blob), '_blank');
+                    }}>
                       <FileText size={16} />
                       View Invoice
                     </Button>

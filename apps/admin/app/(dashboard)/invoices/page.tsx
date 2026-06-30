@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Eye, FileText, MoreVertical, Send, Trash2, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Dropdown, Input, Modal, Pagination, Skeleton, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useInvoices, useSendInvoice, useDeleteInvoice } from '@/lib/queries';
+import { getTenantFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -92,8 +93,14 @@ export default function InvoicesPage() {
     else if (key === 'delete') setDeleteTarget(inv);
   }
 
-  function downloadPdf(id: string) {
-    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invoices/${id}/pdf`, '_blank');
+  async function downloadPdf(id: string) {
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const headers: Record<string, string> = {};
+    const tid = getTenantFilter();
+    if (tid) headers['X-Tenant-ID'] = tid;
+    const res = await fetch(`${base}/api/invoices/${id}/pdf`, { credentials: 'include', headers });
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), '_blank');
   }
 
   return (

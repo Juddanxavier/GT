@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Download, Send, Trash2, FileText } from 'lucide-react';
 import { Button, Chip, Modal, Spinner } from '@heroui/react';
-import { api } from '@/lib/api';
+import { api, getTenantFilter } from '@/lib/api';
 import { useSendInvoice, useDeleteInvoice } from '@/lib/queries';
 
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
@@ -84,7 +84,15 @@ export default function InvoiceDetailPage() {
       </div>
 
       <div className="flex gap-2">
-        <Button variant="secondary" size="sm" onPress={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invoices/${id}/pdf`, '_blank')}>
+        <Button variant="secondary" size="sm" onPress={async () => {
+          const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          const headers: Record<string, string> = {};
+          const tid = getTenantFilter();
+          if (tid) headers['X-Tenant-ID'] = tid;
+          const res = await fetch(`${base}/api/invoices/${id}/pdf`, { credentials: 'include', headers });
+          const blob = await res.blob();
+          window.open(URL.createObjectURL(blob), '_blank');
+        }}>
           <Download size={14} /> Download PDF
         </Button>
         <Button variant="secondary" size="sm" onPress={() => setSendOpen(true)}>

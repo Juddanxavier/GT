@@ -360,13 +360,6 @@ app.patch(
       return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
     }
 
-    if (
-      (user as Record<string, unknown> | null)?.role === 'staff' &&
-      parsed.data.billAmount !== undefined
-    ) {
-      return c.json({ error: 'Only admins can change bill amount' }, 403);
-    }
-
     // Field-level permissions by role
     const role = (user as Record<string, unknown> | null)?.role as string;
     const allowedFields: Record<string, string[]> = {
@@ -408,9 +401,9 @@ app.patch(
       Object.entries(parsed.data).filter(([key]) => allowed.includes(key)),
     );
 
-    const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id!)];
+    const findConditions: (ReturnType<typeof eq> | SQL)[] = [eq(shipments.id, id!)];
     if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId!));
-    if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId!));
+    if (scope.branchId) findConditions.push(sql`COALESCE(${shipments.branchId}, '') = ${scope.branchId!}`);
 
     const [existing] = await db
       .select()
@@ -433,6 +426,16 @@ app.patch(
     await cacheDel(scope.tenantId!, `shipments:${row.id}:tracking`);
     await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
     await cacheDelPattern(scope.tenantId!, 'dashboard:*');
+
+    // Sync invoice customerId when shipment customerId changes
+    if ('customerId' in filteredData && existing.customerId !== filteredData.customerId) {
+      const newCustomerId = filteredData.customerId;
+      await db
+        .update(invoices)
+        .set({ customerId: (typeof newCustomerId === 'string' ? newCustomerId : null), updatedAt: new Date() })
+        .where(and(eq(invoices.shipmentId, row.id), eq(invoices.tenantId, scope.tenantId!)));
+      await cacheDelPattern(scope.tenantId!, 'invoices:*');
+    }
 
     const changes: Record<string, { from: unknown; to: unknown }> = {};
     for (const key of Object.keys(filteredData)) {
