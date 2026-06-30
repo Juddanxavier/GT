@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Card, Chip, Input, Label, ListBox, Modal, ScrollShadow, Select, Skeleton, cn } from '@heroui/react';
+import { CustomerAssigner } from '@/components/customer-assigner';
 import { api, getTenantFilter } from '@/lib/api';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
 import { useTenants } from '@/lib/queries';
@@ -73,16 +74,11 @@ export default function ShipmentDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string } | null | undefined>(undefined);
 
-  const [editCustomerId, setEditCustomerId] = useState('');
-  const [editCustomerSelf, setEditCustomerSelf] = useState(false);
-  const [editCustomerEmail, setEditCustomerEmail] = useState('');
-  const [editCustomerPhone, setEditCustomerPhone] = useState('');
-  const [editCustomerPhoneLocal, setEditCustomerPhoneLocal] = useState('');
-  const [editCustomerLookup, setEditCustomerLookup] = useState<Customer | null | 'not-found'>(null);
-  const [editCustomerLookupLoading, setEditCustomerLookupLoading] = useState(false);
-  const [editUnclaimedEmail, setEditUnclaimedEmail] = useState('');
-  const [editUnclaimedPhone, setEditUnclaimedPhone] = useState('');
-  const [editUnclaimedPhoneLocal, setEditUnclaimedPhoneLocal] = useState('');
+  const [editAssigner, setEditAssigner] = useState<{ customerId: string | null; contactEmail: string; contactPhone: string }>({
+    customerId: null,
+    contactEmail: '',
+    contactPhone: '',
+  });
 
   const [editTenantId, setEditTenantId] = useState('');
   const { data: editTenants = [] } = useTenants();
@@ -99,31 +95,6 @@ export default function ShipmentDetailPage() {
   const clearEditError = (field: string) => setEditErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
 
   useEffect(() => { load(); }, []);
-
-  async function lookupEditCustomer() {
-    const fullPhone = editCustomerPhoneLocal ? `${editPhoneDialCode} ${editCustomerPhoneLocal}` : '';
-    const q = editCustomerEmail || fullPhone;
-    if (!q) return;
-    setEditCustomerLookupLoading(true);
-    try {
-      const results = await api.get<Customer[]>(`/api/customers?search=${encodeURIComponent(q)}`);
-      if (results.length > 0) {
-        setEditCustomerLookup(results[0]!);
-        setEditCustomerId(results[0]!.id);
-      } else {
-        setEditCustomerLookup('not-found');
-        setEditUnclaimedEmail(editCustomerEmail);
-        setEditUnclaimedPhone(fullPhone);
-        setEditUnclaimedPhoneLocal(editCustomerPhoneLocal);
-      }
-    } catch {
-      setEditCustomerLookup('not-found');
-      setEditUnclaimedEmail(editCustomerEmail);
-      setEditUnclaimedPhone(fullPhone);
-      setEditUnclaimedPhoneLocal(editCustomerPhoneLocal);
-    }
-    setEditCustomerLookupLoading(false);
-  }
 
   const isStaff = userRole === 'staff';
   const isAdmin = userRole === 'superadmin' || userRole === 'tenant-admin';
@@ -142,10 +113,11 @@ export default function ShipmentDetailPage() {
       setUserRole(me.role);
       setShipment(data);
       setCustomers(custs);
-      const s = custs.find((c) => c.id === data.customerId);
-      setEditCustomerId(data.customerId ?? '');
-      setEditCustomerSelf(!data.customerId);
-      setEditCustomerLookup(s ?? null);
+      setEditAssigner({
+        customerId: data.customerId ?? null,
+        contactEmail: data.contactEmail ?? '',
+        contactPhone: data.contactPhone ?? '',
+      });
 
       setEditBillAmount(Number(data.billAmount) || 0);
       setEditTenantId(data.tenantId ?? '');
@@ -208,9 +180,9 @@ export default function ShipmentDetailPage() {
     setSaving(true);
     try {
       const data = await api.patch<ApiShipment>(`/api/shipments/${id}`, {
-        customerId: editCustomerSelf ? undefined : (editCustomerId || undefined),
-        contactEmail: (!editCustomerId && !editCustomerSelf && editUnclaimedEmail) ? editUnclaimedEmail : undefined,
-        contactPhone: (!editCustomerId && !editCustomerSelf && editUnclaimedPhone) ? editUnclaimedPhone : undefined,
+        customerId: editAssigner.customerId === 'self' ? undefined : (editAssigner.customerId ?? undefined),
+        contactEmail: editAssigner.contactEmail || undefined,
+        contactPhone: editAssigner.contactPhone || undefined,
         billAmount: editBillAmount || undefined,
         branchId: editBranchId || undefined,
         tenantId: editTenantId || undefined,
@@ -231,14 +203,12 @@ export default function ShipmentDetailPage() {
 
   function openEdit() {
     if (!shipment) return;
-    const s = customers.find((c) => c.id === shipment.customerId);
     setEditErrors({});
-    setEditCustomerId(shipment.customerId ?? '');
-    setEditCustomerSelf(!shipment.customerId);
-    setEditCustomerLookup(s ?? null);
-    setEditCustomerEmail(''); setEditCustomerPhone('');
-    setEditCustomerPhoneLocal(stripDialCode(shipment.contactPhone ?? '', editPhoneDialCode));
-
+    setEditAssigner({
+      customerId: shipment.customerId ?? null,
+      contactEmail: shipment.contactEmail ?? '',
+      contactPhone: shipment.contactPhone ?? '',
+    });
     setEditBillAmount(Number(shipment.billAmount) || 0);
     setEditTenantId(shipment.tenantId ?? '');
     setEditBranchId(shipment.branchId ?? '');
@@ -691,49 +661,17 @@ export default function ShipmentDetailPage() {
                   <label htmlFor="hp-edit">Leave empty</label>
                   <input id="hp-edit" name="website" type="text" tabIndex={-1} autoComplete="off" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Customer</Label>
-                  {editCustomerSelf ? (
-                    <div className="flex items-center gap-2 text-sm text-muted bg-surface rounded-lg border border-border px-3 py-2">
-                      <span className="italic">Self — no notifications</span>
-                      <button type="button" className="text-xs underline ml-auto" onClick={() => { setEditCustomerSelf(false); setEditCustomerId(''); setEditCustomerLookup(null); }}>Change</button>
-                    </div>
-                  ) : editCustomerId && editCustomerLookup && typeof editCustomerLookup !== 'string' ? (
-                    <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
-                      <span>{editCustomerLookup.name}</span>
-                      <button type="button" className="text-xs text-muted underline ml-auto" onClick={() => { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhoneLocal(''); }}>Change</button>
-                    </div>
-                  ) : editCustomerLookup === 'not-found' ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
-                        <span className="font-medium">{editUnclaimedEmail || editUnclaimedPhone}</span>
-                        <span className="text-xs text-muted">— assignable later</span>
-                        <button type="button" className="text-xs underline ml-auto" onClick={() => { setEditCustomerLookup(null); setEditUnclaimedPhoneLocal(''); }}>Change</button>
-                      </div>
-                      {editUnclaimedEmail && <p className="text-xs text-muted">Invite link will be sent to {editUnclaimedEmail}</p>}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input variant="secondary" placeholder="Email" value={editCustomerEmail} onChange={(e) => setEditCustomerEmail(e.target.value)} fullWidth />
-                        <div className="flex">
-                          <div className="flex items-center gap-1.5 px-3 border border-r-0 border-border rounded-l-xl bg-muted/10 text-sm text-muted font-medium shrink-0">
-                            {editPhoneFlag && <Flag country={editPhoneFlag} size={14} />}
-                            {editPhoneDialCode}
-                          </div>
-                          <Input variant="secondary" placeholder="Phone" value={editCustomerPhoneLocal} onChange={(e) => setEditCustomerPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
-                        </div>
-                      </div>
-                      <Button size="sm" variant="secondary" isPending={editCustomerLookupLoading} onPress={lookupEditCustomer}>Lookup</Button>
-                    </div>
-                  )}
-                  {!editCustomerId && editCustomerLookup !== 'not-found' && (
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={editCustomerSelf} onChange={(e) => { setEditCustomerSelf(e.target.checked); if (e.target.checked) { setEditCustomerId(''); setEditCustomerLookup(null); setEditCustomerEmail(''); setEditCustomerPhoneLocal(''); } }} className="rounded border-border" />
-                      Self — no notifications
-                    </label>
-                  )}
-                </div>
+                <CustomerAssigner
+                  customers={customers}
+                  customerId={editAssigner.customerId ?? ''}
+                  contactEmail={editAssigner.contactEmail}
+                  contactPhone={editAssigner.contactPhone}
+                  onChange={(data) => setEditAssigner(data)}
+                  phoneDialCode={editPhoneDialCode}
+                  phoneFlag={editPhoneFlag}
+                  clearError={() => {}}
+                  showSelf
+                />
                 {(userRole === 'superadmin' || userRole === 'tenant-admin') && (
                   <div className="space-y-1">
                     <Label>Branch</Label>

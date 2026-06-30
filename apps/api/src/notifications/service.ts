@@ -38,6 +38,8 @@ export async function notifyTrackingEvents(
         destination: shipments.destination,
         estimatedDelivery: shipments.estimatedDelivery,
         customerId: shipments.customerId,
+        contactEmail: shipments.contactEmail,
+        contactPhone: shipments.contactPhone,
       })
       .from(shipments)
       .where(and(eq(shipments.id, shipmentId), eq(shipments.tenantId, tenantId)))
@@ -61,6 +63,14 @@ export async function notifyTrackingEvents(
         customerPhone = cust.phone;
         customerName = cust.name;
       }
+    }
+
+    // Fallback: fill in any missing contact fields from the shipment-level fields
+    if (!customerEmail) {
+      customerEmail = ship.contactEmail;
+    }
+    if (!customerPhone) {
+      customerPhone = ship.contactPhone;
     }
 
     const brief: ShipmentBrief = {

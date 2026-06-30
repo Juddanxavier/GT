@@ -183,6 +183,7 @@ import reports from './routes/reports';
 import searchRoute from './routes/search';
 import notificationsRoute from './routes/notifications';
 import publicTrack from './routes/public-track';
+import claimShipment from './routes/claim-shipment';
 import auditLogsRoute from './routes/audit-logs';
 import { runArchive } from './services/archive';
 import { logAudit } from './services/audit';
@@ -326,8 +327,9 @@ app.route('/api/reports', reports);
 app.route('/api/search', searchRoute);
 app.route('/api/notifications', notificationsRoute);
 
-// Public tracking endpoint (no auth required)
+// Public tracking endpoints (no auth required)
 app.route('/api/track', publicTrack);
+app.route('/api/track', claimShipment);
 
 // Audit log viewer
 app.route('/api/audit-logs', auditLogsRoute);

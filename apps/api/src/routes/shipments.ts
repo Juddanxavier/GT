@@ -11,6 +11,9 @@ import { createShipment } from '../services/shipment';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
+import { statusToEventType } from '../notifications/event-map';
+import { notificationQueue } from '../queues';
+import type { InternalStatus } from '../shipment-providers/types';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 
@@ -165,6 +168,18 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     parsed.data.branchId = overrideBranchId;
   }
 
+  // Validate customerId belongs to the same tenant
+  if (parsed.data.customerId) {
+    const [cust] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.id, parsed.data.customerId), eq(customers.tenantId, tenantId!)))
+      .limit(1);
+    if (!cust) {
+      return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
+    }
+  }
+
   // Delegate to service: core transaction + async tracking/invoice
   const { shipment } = await createShipment({
     trackingNo: parsed.data.trackingNo,
@@ -294,6 +309,18 @@ app.patch(
 
     if (!existing) return c.json({ error: 'Shipment not found' }, 404);
 
+    // Validate customerId belongs to the same tenant
+    if (filteredData.customerId) {
+      const [cust] = await db
+        .select({ id: customers.id })
+        .from(customers)
+        .where(and(eq(customers.id, filteredData.customerId as string), eq(customers.tenantId, scope.tenantId!)))
+        .limit(1);
+      if (!cust) {
+        return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
+      }
+    }
+
     const updateData: Record<string, unknown> = { ...filteredData, updatedAt: new Date() };
     const [row] = await db
       .update(shipments)
@@ -316,6 +343,46 @@ app.patch(
         .set({ customerId: (typeof newCustomerId === 'string' ? newCustomerId : null), updatedAt: new Date() })
         .where(and(eq(invoices.shipmentId, row.id), eq(invoices.tenantId, scope.tenantId!)));
       await cacheDelPattern(scope.tenantId!, 'invoices:*');
+
+      // Trigger notification for newly assigned customer
+      if (typeof newCustomerId === 'string') {
+        const [cust] = await db
+          .select({ name: customers.name, email: customers.email, phone: customers.phone })
+          .from(customers)
+          .where(eq(customers.id, newCustomerId))
+          .limit(1);
+
+        if (cust && (cust.email || cust.phone)) {
+          const eventType = statusToEventType(row.status as InternalStatus);
+          if (eventType && notificationQueue) {
+            await notificationQueue.add('notify', {
+              shipmentId: row.id,
+              eventId: `assigned:${newCustomerId}:${Date.now()}`,
+              eventType,
+              tenantId: scope.tenantId!,
+              trackingNo: row.trackingNo,
+              labelCode: row.labelCode ?? undefined,
+              carrier: row.carrier ?? undefined,
+              origin: row.origin ?? undefined,
+              destination: row.destination ?? undefined,
+              estimatedDelivery: row.estimatedDelivery?.toISOString() ?? undefined,
+              customerName: cust.name ?? undefined,
+              customerEmail: cust.email ?? undefined,
+              customerPhone: cust.phone ?? undefined,
+            });
+
+            await logAudit('NOTIFICATION_SENT', c.get('user')?.id ?? null, {
+              channel: 'notification_queue',
+              type: 'customer_assigned',
+              shipmentId: row.id,
+              trackingNo: row.trackingNo,
+              customerId: newCustomerId,
+              eventType,
+              tenantId: scope.tenantId,
+            }, c);
+          }
+        }
+      }
     }
 
     const changes: Record<string, { from: unknown; to: unknown }> = {};

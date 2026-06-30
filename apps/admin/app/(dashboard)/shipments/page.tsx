@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
+import { CustomerAssigner } from '@/components/customer-assigner';
 import { api } from '@/lib/api';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
@@ -44,15 +45,11 @@ export default function ShipmentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
-  const [newCustomerId, setNewCustomerId] = useState('');
-  const [newCustomerSelf, setNewCustomerSelf] = useState(false);
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhoneLocal, setCustomerPhoneLocal] = useState('');
-  const [customerLookupResult, setCustomerLookupResult] = useState<Customer | null | 'not-found'>(null);
-  const [customerLookupLoading, setCustomerLookupLoading] = useState(false);
-  const [unclaimedEmail, setUnclaimedEmail] = useState('');
-  const [unclaimedPhone, setUnclaimedPhone] = useState('');
-  const [unclaimedPhoneLocal, setUnclaimedPhoneLocal] = useState('');
+  const [assignerData, setAssignerData] = useState<{ customerId: string | null; contactEmail: string; contactPhone: string }>({
+    customerId: null,
+    contactEmail: '',
+    contactPhone: '',
+  });
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [billAmount, setBillAmount] = useState(0);
   const [customerName, setCustomerName] = useState('');
@@ -116,31 +113,6 @@ export default function ShipmentsPage() {
   const clearError = (field: string) => setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
   const createShipment = useCreateShipment();
   const deleteShipment = useDeleteShipment();
-
-  async function lookupCustomer() {
-    const fullPhone = customerPhoneLocal ? `${phoneDialCode} ${customerPhoneLocal}` : '';
-    const q = customerEmail || fullPhone;
-    if (!q) return;
-    setCustomerLookupLoading(true);
-    try {
-      const results = await api.get<Customer[]>(`/api/customers?search=${encodeURIComponent(q)}`);
-      if (results.length > 0) {
-        setCustomerLookupResult(results[0]!);
-        setNewCustomerId(results[0]!.id);
-      } else {
-        setCustomerLookupResult('not-found');
-        setUnclaimedEmail(customerEmail);
-        setUnclaimedPhone(fullPhone);
-        setUnclaimedPhoneLocal(customerPhoneLocal);
-      }
-    } catch {
-      setCustomerLookupResult('not-found');
-      setUnclaimedEmail(customerEmail);
-      setUnclaimedPhone(fullPhone);
-      setUnclaimedPhoneLocal(customerPhoneLocal);
-    }
-    setCustomerLookupLoading(false);
-  }
 
   const customerMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -210,7 +182,7 @@ export default function ShipmentsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Shipments</h1>
           <p className="text-sm text-muted">Track and manage shipments</p>
         </div>
-        <Button onPress={() => { setErrors({}); setNewCustomerId(''); setNewCustomerSelf(false); setCustomerEmail(''); setCustomerPhoneLocal(''); setCustomerLookupResult(null); setUnclaimedEmail(''); setUnclaimedPhone(''); setNewTrackingNumber(''); setBillAmount(0); setCustomerName(''); setCreateOpen(true); }}>New Shipment</Button>
+        <Button onPress={() => { setErrors({}); setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' }); setNewTrackingNumber(''); setBillAmount(0); setCustomerName(''); setCreateOpen(true); }}>New Shipment</Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -380,12 +352,11 @@ export default function ShipmentsPage() {
                 if (!payload.trackingNo?.trim()) { setErrors({ trackingNo: 'Tracking number is required' }); return; }
                 const dup = shipmentsRaw.find((s) => s.trackingNo.toLowerCase() === newTrackingNumber.trim().toLowerCase());
                 if (dup) { setErrors({ trackingNo: `Already exists (${dup.id.slice(0, 8)}...)` }); return; }
-                const fullPhone = customerPhoneLocal ? `${phoneDialCode} ${customerPhoneLocal}` : '';
-                const fullUnclaimedPhone = unclaimedPhoneLocal ? `${phoneDialCode} ${unclaimedPhoneLocal}` : '';
-                const email = customerEmail || unclaimedEmail || undefined;
-                const phone = fullPhone || fullUnclaimedPhone || undefined;
+                const customerId = assignerData.customerId === 'self' ? undefined : assignerData.customerId;
+                const email = assignerData.contactEmail || undefined;
+                const phone = assignerData.contactPhone || undefined;
                 createShipment.mutate({
-                  customerId: newCustomerSelf || !newCustomerId ? undefined : newCustomerId,
+                  customerId,
                   contactEmail: email,
                   contactPhone: phone,
                   ...payload,
@@ -444,50 +415,14 @@ export default function ShipmentsPage() {
                   <Input id="new-customerName" variant="secondary" value={customerName} onChange={(e) => { setCustomerName(e.target.value); clearError('customerName'); }} required fullWidth />
                   {errors.customerName && <p className="text-xs text-danger">{errors.customerName}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label>Customer</Label>
-                  {newCustomerSelf ? (
-                    <div className="flex items-center gap-2 text-sm text-muted bg-surface rounded-lg border border-border px-3 py-2">
-                      <span className="italic">Self — no notifications</span>
-                      <Button size="sm" variant="secondary" onPress={() => setNewCustomerSelf(false)}>Change</Button>
-                    </div>
-                  ) : newCustomerId ? (
-                    <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
-                      <span>{customerLookupResult && typeof customerLookupResult !== 'string' ? customerLookupResult.name : 'Customer'}</span>
-                      <button type="button" className="text-xs text-muted underline ml-auto" onClick={() => { setNewCustomerId(''); setCustomerLookupResult(null); setCustomerEmail(''); setCustomerPhoneLocal(''); }}>Change</button>
-                    </div>
-                  ) : customerLookupResult === 'not-found' ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm bg-surface rounded-lg border border-border px-3 py-2">
-                        <span className="font-medium">{unclaimedEmail || unclaimedPhone}</span>
-                        <span className="text-xs text-muted">— will be assignable later</span>
-                        <button type="button" className="text-xs underline ml-auto" onClick={() => { setCustomerLookupResult(null); setUnclaimedPhoneLocal(''); }}>Change</button>
-                      </div>
-                      {unclaimedEmail && <p className="text-xs text-muted">Invite link will be sent to {unclaimedEmail} (Phase 6)</p>}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Description>Enter email or phone to find an existing customer</Description>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input variant="secondary" placeholder="Email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} fullWidth />
-                        <div className="flex">
-                          <div className="flex items-center gap-1.5 px-3 border border-r-0 border-border rounded-l-xl bg-muted/10 text-sm text-muted font-medium shrink-0">
-                            {phoneFlag && <Flag country={phoneFlag} size={14} />}
-                            {phoneDialCode}
-                          </div>
-                          <Input variant="secondary" placeholder="Phone" value={customerPhoneLocal} onChange={(e) => setCustomerPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button size="sm" variant="secondary" isPending={customerLookupLoading} onPress={lookupCustomer}>Lookup Customer</Button>
-                        <Button size="sm" variant={newCustomerSelf ? "secondary" : "outline"} onPress={() => { setNewCustomerSelf(true); setNewCustomerId(''); setCustomerLookupResult(null); setCustomerEmail(''); setCustomerPhoneLocal(''); }}>
-                          Self
-                        </Button>
-                      </div>
-                      <Description>Self means no customer assignment - shipment will not receive any email or WhatsApp notifications</Description>
-                    </div>
-                  )}
-                </div>
+                <CustomerAssigner
+                  customers={allCustomers}
+                  customerId={assignerData.customerId ?? ''}
+                  onChange={(data) => setAssignerData(data)}
+                  phoneDialCode={phoneDialCode}
+                  phoneFlag={phoneFlag}
+                  clearError={() => {}}
+                />
               </form>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
