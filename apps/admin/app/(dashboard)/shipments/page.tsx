@@ -41,12 +41,6 @@ export default function ShipmentsPage() {
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'trackingNumber', direction: 'ascending' });
   const [page, setPage] = useState(1);
-  const [editTarget, setEditTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
-  const [editStatus, setEditStatus] = useState('');
-  const [editBill, setEditBill] = useState(0);
-  const [editCustomerName, setEditCustomerName] = useState('');
-  const [editBranchId, setEditBranchId] = useState('');
-  const [editSaving, setEditSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
@@ -194,14 +188,7 @@ export default function ShipmentsPage() {
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
   function handleContextAction(key: Key, shipment: typeof paginated[number]) {
-    if (key === 'view') router.push(`/shipments/${shipment.id}`);
-    else if (key === 'edit') {
-      setEditCustomerName(shipment.customerName === 'Self' ? '' : shipment.customerName === '—' ? '' : shipment.customerName);
-      setEditStatus(shipment.status);
-      setEditBill(Number(shipment.billAmount) || 0);
-      setEditBranchId('');
-      setEditTarget(shipment);
-    }
+    if (key === 'view' || key === 'edit') router.push(`/shipments/${shipment.id}`);
     else if (key === 'delete') setDeleteTarget(shipment);
   }
 
@@ -506,77 +493,6 @@ export default function ShipmentsPage() {
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
               <Button type="submit" form="create-form" isPending={createShipment.isPending} isDisabled={!newTrackingNumber}>Create Shipment</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-
-      <Modal.Backdrop isOpen={!!editTarget} onOpenChange={(v: boolean) => { if (!v) setEditTarget(null); }}>
-        <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header>Edit Shipment</Modal.Header>
-            <Modal.Body>
-              <form id="edit-form-list" onSubmit={async (e) => {
-                e.preventDefault();
-                if (!editTarget) return;
-                setEditSaving(true);
-                const payload: Record<string, unknown> = { status: editStatus };
-                if (editBill > 0) payload.billAmount = editBill;
-                if (editCustomerName.trim()) payload.customerName = editCustomerName.trim();
-                if (editBranchId) payload.branchId = editBranchId;
-                try {
-                  await api.patch(`/api/shipments/${editTarget.id}`, payload);
-                  setEditTarget(null);
-                  refetchShipments();
-                } finally { setEditSaving(false); }
-              }} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="edit-status-list">Status</Label>
-                  <select id="edit-status-list" value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full h-10 px-3 border border-border rounded-xl bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="pending">Pending</option>
-                    <option value="info_received">Info Received</option>
-                    <option value="in_transit">In Transit</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="delivery_failure">Delivery Failure</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="exception">Exception</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-customer-name-list">Customer Name</Label>
-                  <Input id="edit-customer-name-list" variant="secondary" value={editCustomerName} onChange={(e) => setEditCustomerName(e.target.value)} fullWidth />
-                </div>
-                {(isSuperAdmin || isTenantAdmin) && (
-                  <div className="space-y-1">
-                    <Label>Branch</Label>
-                    <Select selectedKey={editBranchId} onSelectionChange={(k) => setEditBranchId(k as string)} placeholder="None" variant="secondary" aria-label="Select branch">
-                      <Select.Trigger className="h-10 text-sm"><Select.Value /><Select.Indicator /></Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {newBranches.filter((b) => b.tenantId === effectiveTenantId).map((b) => (
-                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <Label htmlFor="edit-bill-list">Bill Amount</Label>
-                  <NumberField.Root variant="secondary" fullWidth value={editBill} onChange={(v) => setEditBill(v)} isDisabled={userRole === 'staff'}>
-                    <NumberField.Group>
-                      <NumberField.DecrementButton />
-                      <NumberField.Input id="edit-bill-list" placeholder="0.00" />
-                      <NumberField.IncrementButton />
-                    </NumberField.Group>
-                  </NumberField.Root>
-                </div>
-              </form>
-            </Modal.Body>
-            <Modal.Footer className="flex gap-2">
-              <Button variant="secondary" onPress={() => setEditTarget(null)}>Cancel</Button>
-              <Button type="submit" form="edit-form-list" isPending={editSaving}>Save</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
