@@ -182,6 +182,7 @@ import dashboard from './routes/dashboard';
 import reports from './routes/reports';
 import searchRoute from './routes/search';
 import notificationsRoute from './routes/notifications';
+import publicTrack from './routes/public-track';
 import { runArchive } from './services/archive';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 // ── Global error handler ──
@@ -322,6 +323,9 @@ app.route('/api/dashboard', dashboard);
 app.route('/api/reports', reports);
 app.route('/api/search', searchRoute);
 app.route('/api/notifications', notificationsRoute);
+
+// Public tracking endpoint (no auth required)
+app.route('/api/track', publicTrack);
 
 // Manual archive trigger (protected)
 app.post('/api/cron/archive', requireRole('superadmin'), async (c) => {

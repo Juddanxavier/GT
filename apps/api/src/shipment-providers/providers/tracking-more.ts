@@ -1,4 +1,4 @@
-import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent } from '../types';
+import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent, WebhookResult } from '../types';
 import { normalizeEvent, normalizeTrackResponse } from '../normalizer';
 
 const BASE = 'https://api.trackingmore.com/v4';
@@ -159,5 +159,39 @@ export class TrackingMoreProvider implements ShipmentProvider {
     const secret = process.env.TRACKINGMORE_WEBHOOK_SECRET;
     if (!secret || !signature) return false;
     return signature === secret;
+  }
+
+  async processWebhook(body: unknown): Promise<WebhookResult | null> {
+    try {
+      const data = body as Record<string, unknown>;
+      const trackingNo = data.tracking_number as string | undefined;
+      if (!trackingNo) return null;
+
+      const courierCode = (data.courier_code as string | undefined) ?? 'trackingmore';
+
+      const originInfo = data.origin_info as Record<string, unknown> | undefined;
+      const destInfo = data.destination_info as Record<string, unknown> | undefined;
+      const originEvents = (originInfo?.trackinfo as Array<Record<string, unknown>> | undefined) ?? [];
+      const destEvents = (destInfo?.trackinfo as Array<Record<string, unknown>> | undefined) ?? [];
+      const allRaw = [...originEvents, ...destEvents];
+
+      const events: NormalizedEvent[] = allRaw.map((e) =>
+        normalizeEvent({
+          status: e.checkpoint_delivery_status as string | undefined,
+          subStatus: (e.checkpoint_delivery_substatus as string | undefined) ?? (data.substatus as string | undefined) ?? '',
+          description: (e.tracking_detail as string | undefined) ?? '',
+          location: (e.location as string | undefined) ?? [e.city, e.state, e.country_iso2].filter(Boolean).join(', '),
+          time: e.checkpoint_date as string | undefined,
+          carrier: courierCode,
+          carrierCode: courierCode,
+        }),
+      );
+
+      const result = normalizeTrackResponse(courierCode, events);
+      return { trackingNo, events: result.events, currentStatus: result.currentStatus };
+    } catch (err) {
+      console.error('[trackingmore] processWebhook error:', err);
+      return null;
+    }
   }
 }

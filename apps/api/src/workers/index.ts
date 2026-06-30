@@ -18,11 +18,13 @@ import {
   isRedisConnected,
   notificationQueue,
   pdfQueue,
+  shipmentQueue,
   whatsappQueue,
 } from '../queues';
 import { bullConnectionOptions, cacheClient } from '../redis';
 import { runArchive } from '../services/archive';
 import { logAudit } from '../services/audit';
+import { performTracking, autoCreateInvoice } from '../services/shipment';
 
 function getConnection() {
   if (!bullConnectionOptions) {
@@ -350,12 +352,90 @@ if (archiveQueue) {
     );
 }
 
+// ── Shipment Worker (tracking + invoice retries) ──
+
+// Job data types for the shipment worker
+type ShipmentTrackJobData = {
+  shipmentId: string;
+  tenantId: string;
+  trackingNo: string;
+  courierCode?: string;
+  carrier?: string;
+  origin?: string;
+  destination?: string;
+  customerName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  labelCode?: string;
+};
+
+type ShipmentInvoiceJobData = {
+  shipmentId: string;
+  tenantId: string;
+  customerId?: string;
+  billAmount: number;
+};
+
+export const shipmentWorker = createWorker(
+  'shipment',
+  async (data) => {
+    // Note: `createWorker` passes `job.data` to the processor, so `data` is the raw payload.
+    // We use a `type` discriminator field set by the service to distinguish job types.
+
+    if (data.type === 'track') {
+      const trackData = data as unknown as ShipmentTrackJobData;
+      const shipment = await db
+        .select({ id: shipments.id, trackingNo: shipments.trackingNo, carrier: shipments.carrier })
+        .from(shipments)
+        .where(eq(shipments.id, trackData.shipmentId))
+        .limit(1)
+        .then((r) => r[0] ?? null);
+
+      if (!shipment) {
+        console.warn(`[worker/shipment] track: shipment ${trackData.shipmentId} not found`);
+        return;
+      }
+
+      await performTracking(
+        shipment,
+        {
+          courierCode: trackData.courierCode,
+          carrier: trackData.carrier,
+          origin: trackData.origin,
+          destination: trackData.destination,
+          customerName: trackData.customerName,
+          contactEmail: trackData.contactEmail,
+          contactPhone: trackData.contactPhone,
+          labelCode: trackData.labelCode,
+        },
+        trackData.tenantId,
+      );
+      return;
+    }
+
+    if (data.type === 'invoice') {
+      const invoiceData = data as unknown as ShipmentInvoiceJobData;
+      await autoCreateInvoice(
+        { id: invoiceData.shipmentId, trackingNo: '' },
+        invoiceData.billAmount,
+        invoiceData.tenantId,
+        invoiceData.customerId,
+      );
+      return;
+    }
+
+    console.warn(`[worker/shipment] unknown job type: ${String(data.type)}`);
+  },
+  5,
+);
+
 export const workers = [
   notificationWorker,
   emailWorker,
   whatsappWorker,
   pdfWorker,
   archiveWorker,
+  shipmentWorker,
 ].filter((w): w is Worker => w !== null);
 
 export function closeWorkers(): Promise<void[]> {

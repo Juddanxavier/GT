@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
 import { shipments } from '../db/schema';
+import { checkWebhookIdempotency } from '../notifications/idempotency';
 import { notifyTrackingEvents } from '../notifications/service';
 import { emitToTenant } from '../realtime';
 import { getProvider } from '../shipment-providers';
@@ -26,19 +27,16 @@ async function handleWebhook(
       return c.json({ error: 'Invalid signature' }, 401);
     }
 
-    const payload = body as {
-      tracking_number?: string;
-      events?: Array<{
-        status: string;
-        sub_status: string;
-        description: string;
-        location: string;
-        time_utc: string;
-      }>;
-    };
+    // Idempotency: check if this exact webhook payload was already processed
+    const alreadySeen = await checkWebhookIdempotency(rawBody);
+    if (alreadySeen) {
+      return c.json({ received: true, duplicate: true });
+    }
 
-    if (!payload.tracking_number) {
-      return c.json({ error: 'Missing tracking_number' }, 400);
+    // Parse events directly from the webhook payload — no API call to the provider.
+    const result = await provider.processWebhook(body);
+    if (!result) {
+      return c.json({ error: 'Failed to parse webhook payload' }, 400);
     }
 
     const shipment = await db
@@ -54,14 +52,13 @@ async function handleWebhook(
         customerId: shipments.customerId,
       })
       .from(shipments)
-      .where(eq(shipments.trackingNo, payload.tracking_number))
+      .where(eq(shipments.trackingNo, result.trackingNo))
       .limit(1);
 
     if (!shipment.length) {
       return c.json({ error: 'Unknown tracking number' }, 404);
     }
 
-    const result = await provider.track(payload.tracking_number);
     const inserted = await insertEvents(shipment[0]!.id, shipment[0]!.tenantId, result.events);
 
     if (inserted > 0) {

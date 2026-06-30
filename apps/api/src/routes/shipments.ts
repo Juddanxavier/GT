@@ -1,16 +1,16 @@
-import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
 import { customers, invoices, shipments, tenants, trackingEvents } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
-import { notifyTrackingEvents } from '../notifications/service';
-import { emailQueue, pdfQueue } from '../queues';
 import { emitToTenant } from '../realtime';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
+import { createShipment } from '../services/shipment';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
+import { notifyTrackingEvents } from '../notifications/service';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 
@@ -34,8 +34,12 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [eq(shipments.tenantId, scope.tenantId!)];
-    if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId!));
+    // T003: exclude archived shipments from list
+    const conditions: ReturnType<typeof eq | typeof isNull>[] = [
+      eq(shipments.tenantId, scope.tenantId!),
+      isNull(shipments.archivedAt),
+    ];
+    if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
     if (status) conditions.push(eq(shipments.status, status!));
     if (customerId) conditions.push(eq(shipments.customerId, customerId!));
     if (search) conditions.push(sql`${like(shipments.trackingNo, `%${search}%`)}`);
@@ -81,8 +85,12 @@ app.get(
   async (c) => {
     const scope = getQueryScope(c);
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
-    const conditions = [eq(shipments.tenantId, scope.tenantId!)];
-    if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId!));
+    // T003: exclude archived shipments from trend
+    const conditions: (ReturnType<typeof eq> | ReturnType<typeof isNull> | ReturnType<typeof or>)[] = [
+      eq(shipments.tenantId, scope.tenantId!),
+      isNull(shipments.archivedAt),
+    ];
+    if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
     const rows = await db
       .select({
         date: sql<string>`DATE(${shipments.createdAt})::text`,
@@ -118,13 +126,14 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
+  // Superadmin can create shipments for any tenant
   if (user?.role === 'superadmin' && parsed.data.tenantId) {
     tenantId = parsed.data.tenantId;
   }
 
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  // Duplicate tracking number check
+  // Duplicate tracking number check (route-level concern)
   const [dup] = await db
     .select({ id: shipments.id })
     .from(shipments)
@@ -133,7 +142,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   if (dup)
     return c.json({ error: `Tracking number "${parsed.data.trackingNo}" already exists` }, 409);
 
-  // Branch scope enforcement on creation
+  // Branch scope enforcement on creation (route-level concern)
   const bodyBranchId = parsed.data.branchId;
   const overrideBranchId = c.get('branchId');
 
@@ -156,154 +165,24 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     parsed.data.branchId = overrideBranchId;
   }
 
-  let row: typeof shipments.$inferSelect | undefined;
-  let labelCode: string | undefined;
-
-  await db.transaction(async (tx) => {
-    [row] = await tx
-      .insert(shipments)
-      .values({
-        tenantId,
-        trackingNo: parsed.data.trackingNo,
-        customerId: parsed.data.customerId,
-        branchId: parsed.data.branchId,
-        courierCode: parsed.data.courierCode,
-        carrier: parsed.data.carrier,
-        origin: parsed.data.origin,
-        destination: parsed.data.destination,
-        status: parsed.data.status ?? 'pending',
-        billAmount: parsed.data.billAmount ? String(parsed.data.billAmount) : undefined,
-        contactEmail: parsed.data.contactEmail,
-        contactPhone: parsed.data.contactPhone,
-        customerName: parsed.data.customerName,
-      })
-      .returning();
-
-    if (!row) return c.json({ error: 'Failed to create shipment' }, 500);
-
-    labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
-    await tx
-      .update(shipments)
-      .set({ labelCode, updatedAt: new Date() })
-      .where(eq(shipments.id, row.id));
+  // Delegate to service: core transaction + async tracking/invoice
+  const { shipment } = await createShipment({
+    trackingNo: parsed.data.trackingNo,
+    tenantId,
+    customerId: parsed.data.customerId,
+    branchId: parsed.data.branchId,
+    courierCode: parsed.data.courierCode,
+    carrier: parsed.data.carrier,
+    origin: parsed.data.origin,
+    destination: parsed.data.destination,
+    status: parsed.data.status ?? 'pending',
+    billAmount: parsed.data.billAmount,
+    contactEmail: parsed.data.contactEmail,
+    contactPhone: parsed.data.contactPhone,
+    customerName: parsed.data.customerName,
   });
 
-  if (!row) return c.json({ error: 'Failed to create shipment' }, 500);
-
-  try {
-    const provider = getProvider();
-    const courierCode = parsed.data.courierCode;
-    const carrierName = parsed.data.carrier;
-
-    if (provider.registerShipment && courierCode) {
-      const [tenant] = await db
-        .select({ name: tenants.name, country: tenants.country })
-        .from(tenants)
-        .where(eq(tenants.id, tenantId!))
-        .limit(1);
-
-      await provider.registerShipment({
-        trackingNo: row.trackingNo,
-        orderNo: labelCode,
-        courierCode,
-        customerName: parsed.data.customerName ?? undefined,
-        email: parsed.data.contactEmail ?? undefined,
-        phone: parsed.data.contactPhone ?? undefined,
-        companyName: tenant?.name ?? undefined,
-        countryName: tenant?.country ?? undefined,
-      });
-    }
-
-    const trackResult = await provider.track(
-      row.trackingNo,
-      courierCode ?? carrierName ?? undefined,
-    );
-    const inserted = await insertEvents(row.id, tenantId!, trackResult.events);
-
-    if (inserted > 0) {
-      notifyTrackingEvents(row.id, tenantId!, trackResult.events, trackResult.currentStatus);
-    }
-
-    const updateData: Record<string, unknown> = {
-      status: trackResult.currentStatus,
-      trackingProvider: provider.name,
-      lastTrackedAt: new Date(),
-      trackingRegistered: inserted > 0,
-      updatedAt: new Date(),
-      origin: trackResult.origin ?? parsed.data.origin ?? null,
-      destination: trackResult.destination ?? parsed.data.destination ?? null,
-      estimatedDelivery: trackResult.estimatedDelivery
-        ? new Date(trackResult.estimatedDelivery)
-        : null,
-      actualDelivery: trackResult.actualDelivery ? new Date(trackResult.actualDelivery) : null,
-    };
-    if (trackResult.events.length > 0) {
-      updateData.carrier = trackResult.events[0]?.carrier || carrierName || null;
-    } else if (carrierName) {
-      updateData.carrier = carrierName;
-    }
-    await db.update(shipments).set(updateData).where(eq(shipments.id, row.id));
-  } catch (err) {
-    console.error('[shipments] auto-track failed:', err);
-  }
-
-  // Auto-create invoice
-  if (parsed.data.billAmount != null && parsed.data.billAmount > 0) {
-    try {
-      const [existingInv] = await db
-        .select({ id: invoices.id })
-        .from(invoices)
-        .where(eq(invoices.shipmentId, row.id))
-        .limit(1);
-
-      if (!existingInv) {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const shortId = row.id.slice(0, 5).toUpperCase();
-        const invoiceNo = `INV-${y}${m}-${shortId}`;
-
-        const [tenantRow] = await db
-          .select({ name: tenants.name })
-          .from(tenants)
-          .where(eq(tenants.id, tenantId!))
-          .limit(1);
-
-        const [inv] = await db
-          .insert(invoices)
-          .values({
-            tenantId,
-            shipmentId: row.id,
-            customerId: parsed.data.customerId ?? null,
-            invoiceNo,
-            amount: String(parsed.data.billAmount),
-            status: 'paid',
-            emailCount: 1,
-            paidAt: now,
-            lastEmailSentAt: now,
-          })
-          .returning();
-
-        if (inv && pdfQueue) {
-          await pdfQueue.add('invoice', {
-            type: 'invoice',
-            invoiceId: inv.id,
-            tenantId,
-          });
-        }
-      }
-    } catch (err) {
-      console.error('[shipments] auto-invoice failed:', err);
-    }
-  }
-
-  const [updated] = await db.select().from(shipments).where(eq(shipments.id, row.id)).limit(1);
-
-  // ponytail: list cache expires in 60s, no need to enumerate keys
-
-  emitToTenant(tenantId!, 'dashboard:update', {});
-
-  return c.json({ data: updated ?? row }, 201);
+  return c.json({ data: shipment }, 201);
 });
 
 app.get(
@@ -316,11 +195,12 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [
+    // T002: match either explicit branch or unassigned (NULL)
+    const conditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
       eq(shipments.id, id!),
       eq(shipments.tenantId, scope.tenantId!),
     ];
-    if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId!));
+    if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
     const row = await withCache(
       scope.tenantId!,
@@ -401,9 +281,10 @@ app.patch(
       Object.entries(parsed.data).filter(([key]) => allowed.includes(key)),
     );
 
-    const findConditions: (ReturnType<typeof eq> | SQL)[] = [eq(shipments.id, id!)];
+    // T002: use or(eq, isNull) instead of COALESCE so NULL-branch shipments can be found
+    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, id!)];
     if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId!));
-    if (scope.branchId) findConditions.push(sql`COALESCE(${shipments.branchId}, '') = ${scope.branchId!}`);
+    if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
     const [existing] = await db
       .select()
@@ -471,11 +352,12 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const shipmentScope: ReturnType<typeof eq>[] = [
+  // T002: match either explicit branch or unassigned
+  const shipmentScope: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
     eq(shipments.id, id!),
     eq(shipments.tenantId, scope.tenantId!),
   ];
-  if (scope.branchId) shipmentScope.push(eq(shipments.branchId, scope.branchId!));
+  if (scope.branchId) shipmentScope.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
   await db
     .delete(invoices)
@@ -516,11 +398,12 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const findConditions: ReturnType<typeof eq>[] = [
+    // T002: match either explicit branch or unassigned
+    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
       eq(shipments.id, id!),
       eq(shipments.tenantId, scope.tenantId!),
     ];
-    if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId!));
+    if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
     const data = await withCache(
       scope.tenantId!,
@@ -582,9 +465,10 @@ app.post(
       }
     }
 
-    const findConditions: ReturnType<typeof eq>[] = [eq(shipments.id, id!)];
+    // T002: match either explicit branch or unassigned
+    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, id!)];
     if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId!));
-    if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId!));
+    if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
     const [shipment] = await db
       .select({
@@ -639,11 +523,12 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const findConditions: ReturnType<typeof eq>[] = [
+  // T002: match either explicit branch or unassigned
+  const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
     eq(shipments.id, id!),
     eq(shipments.tenantId, scope.tenantId!),
   ];
-  if (scope.branchId) findConditions.push(eq(shipments.branchId, scope.branchId!));
+  if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
   const [shipment] = await db
     .select({ id: shipments.id, trackingNo: shipments.trackingNo, carrier: shipments.carrier })

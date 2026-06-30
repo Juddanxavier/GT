@@ -1,0 +1,328 @@
+/** @format */
+
+/**
+ * Shipment service — encapsulates the shipment creation pipeline with
+ * proper transaction boundaries and retryable async operations.
+ *
+ * Transaction 1 (sync, committed before response):
+ *   INSERT shipment + labelCode UPDATE
+ *
+ * After commit (async, retryable via BullMQ):
+ *   - Job 'track':  register with provider → track → insert events → notify → update shipment
+ *   - Job 'invoice': create invoice record → queue PDF generation
+ *
+ * If Redis/BullMQ is unavailable, falls back to synchronous execution
+ * to maintain backward compatibility.
+ */
+
+import { and, eq } from 'drizzle-orm';
+import { db } from '../db';
+import { invoices, shipments, tenants } from '../db/schema';
+import { notifyTrackingEvents } from '../notifications/service';
+import { pdfQueue, shipmentQueue } from '../queues';
+import { emitToTenant } from '../realtime';
+import { getProvider } from '../shipment-providers';
+import { insertEvents } from '../shipment-providers/dedup';
+
+// ── Types ──
+
+export interface CreateShipmentInput {
+  trackingNo: string;
+  tenantId: string;
+  customerId?: string;
+  branchId?: string;
+  courierCode?: string;
+  carrier?: string;
+  origin?: string;
+  destination?: string;
+  status?: string;
+  billAmount?: number;
+  contactEmail?: string;
+  contactPhone?: string;
+  customerName?: string;
+}
+
+export interface CreateShipmentResult {
+  shipment: typeof shipments.$inferSelect;
+}
+
+// ── Core Creation ──
+
+/**
+ * Create a shipment in a transaction, then enqueue async operations.
+ *
+ * Returns as soon as the DB write is committed. Tracking and invoicing
+ * happen in background jobs with automatic retry (3 attempts, exponential backoff).
+ *
+ * If no Redis is available, runs tracking + invoice synchronously as a fallback.
+ */
+export async function createShipment(input: CreateShipmentInput): Promise<CreateShipmentResult> {
+  // ── Transaction 1: Core creation ──
+  // This is the only synchronous DB operation. It must succeed before we respond.
+  let row: typeof shipments.$inferSelect | undefined;
+  let labelCode: string | undefined;
+
+  await db.transaction(async (tx) => {
+    [row] = await tx
+      .insert(shipments)
+      .values({
+        tenantId: input.tenantId,
+        trackingNo: input.trackingNo,
+        customerId: input.customerId,
+        branchId: input.branchId,
+        courierCode: input.courierCode,
+        carrier: input.carrier,
+        origin: input.origin,
+        destination: input.destination,
+        status: input.status ?? 'pending',
+        billAmount: input.billAmount ? String(input.billAmount) : undefined,
+        contactEmail: input.contactEmail,
+        contactPhone: input.contactPhone,
+        customerName: input.customerName,
+      })
+      .returning();
+
+    if (!row) throw new Error('Failed to insert shipment');
+
+    labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
+    await tx
+      .update(shipments)
+      .set({ labelCode, updatedAt: new Date() })
+      .where(eq(shipments.id, row.id));
+  });
+
+  // The transaction returned `row` with the labelCode update applied.
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const created = row!;
+
+  // ── Async operations ──
+  // These are fire-and-forget from the request perspective.
+  // BullMQ retries them automatically on failure (3 attempts, exponential backoff).
+
+  if (shipmentQueue) {
+    // Redis available — enqueue background jobs
+    await shipmentQueue.add('track', {
+      type: 'track',
+      shipmentId: created.id,
+      tenantId: input.tenantId,
+      trackingNo: input.trackingNo,
+      courierCode: input.courierCode,
+      carrier: input.carrier,
+      customerName: input.customerName,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone,
+      labelCode,
+      origin: input.origin,
+      destination: input.destination,
+    });
+
+    if (input.billAmount != null && input.billAmount > 0) {
+      await shipmentQueue.add('invoice', {
+        type: 'invoice',
+        shipmentId: created.id,
+        tenantId: input.tenantId,
+        customerId: input.customerId,
+        billAmount: input.billAmount,
+      });
+    }
+  } else {
+    // No Redis — run synchronously (current behavior)
+    await performTracking(
+      created,
+      {
+        courierCode: input.courierCode,
+        carrier: input.carrier,
+        origin: input.origin,
+        destination: input.destination,
+        customerName: input.customerName,
+        contactEmail: input.contactEmail,
+        contactPhone: input.contactPhone,
+        labelCode,
+      },
+      input.tenantId,
+    );
+
+    if (input.billAmount != null && input.billAmount > 0) {
+      await autoCreateInvoice(created, input.billAmount, input.tenantId, input.customerId);
+    }
+  }
+
+  emitToTenant(input.tenantId, 'dashboard:update', {});
+
+  return { shipment: created };
+}
+
+// ── Async: Tracking (register + track + events + notify + update) ──
+
+export interface TrackingJobData {
+  shipmentId: string;
+  tenantId: string;
+  trackingNo: string;
+  courierCode?: string;
+  carrier?: string;
+  customerName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  labelCode?: string;
+  origin?: string;
+  destination?: string;
+}
+
+/**
+ * Register shipment with the tracking provider, fetch initial tracking data,
+ * insert deduplicated events, trigger notifications, and update the shipment record.
+ *
+ * This is designed to run as a BullMQ job with automatic retry.
+ */
+export async function performTracking(
+  shipment: { id: string; trackingNo: string; carrier?: string | null },
+  extra: {
+    courierCode?: string;
+    carrier?: string;
+    origin?: string;
+    destination?: string;
+    customerName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    labelCode?: string;
+  },
+  tenantId: string,
+): Promise<void> {
+  try {
+    const provider = getProvider();
+    const courierCode = extra.courierCode;
+    const carrierName = extra.carrier;
+
+    // 1. Register with tracking provider (if courier code is available)
+    if (provider.registerShipment && courierCode) {
+      const [tenant] = await db
+        .select({ name: tenants.name, country: tenants.country })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      await provider.registerShipment({
+        trackingNo: shipment.trackingNo,
+        orderNo: extra.labelCode,
+        courierCode,
+        customerName: extra.customerName ?? undefined,
+        email: extra.contactEmail ?? undefined,
+        phone: extra.contactPhone ?? undefined,
+        companyName: tenant?.name ?? undefined,
+        countryName: tenant?.country ?? undefined,
+      });
+    }
+
+    // 2. Fetch tracking data
+    const trackResult = await provider.track(
+      shipment.trackingNo,
+      courierCode ?? carrierName ?? undefined,
+    );
+
+    // 3. Insert deduplicated events
+    const inserted = await insertEvents(shipment.id, tenantId, trackResult.events);
+
+    // 4. Trigger notifications for new events
+    if (inserted > 0) {
+      notifyTrackingEvents(shipment.id, tenantId, trackResult.events, trackResult.currentStatus);
+    }
+
+    // 5. Update shipment with tracking data
+    const updateData: Record<string, unknown> = {
+      status: trackResult.currentStatus,
+      trackingProvider: provider.name,
+      lastTrackedAt: new Date(),
+      trackingRegistered: inserted > 0,
+      updatedAt: new Date(),
+      origin: trackResult.origin ?? extra.origin ?? null,
+      destination: trackResult.destination ?? extra.destination ?? null,
+      estimatedDelivery: trackResult.estimatedDelivery
+        ? new Date(trackResult.estimatedDelivery)
+        : null,
+      actualDelivery: trackResult.actualDelivery ? new Date(trackResult.actualDelivery) : null,
+    };
+
+    if (trackResult.events.length > 0) {
+      updateData.carrier = trackResult.events[0]?.carrier || carrierName || null;
+    } else if (carrierName) {
+      updateData.carrier = carrierName;
+    }
+
+    await db.update(shipments).set(updateData).where(eq(shipments.id, shipment.id));
+  } catch (err) {
+    // Log and rethrow — BullMQ will retry with backoff
+    console.error(`[shipment/track] failed for ${shipment.trackingNo} (${shipment.id}):`, err);
+    throw err;
+  }
+}
+
+// ── Async: Invoice creation ──
+
+export interface InvoiceJobData {
+  shipmentId: string;
+  tenantId: string;
+  customerId?: string;
+  billAmount: number;
+}
+
+/**
+ * Auto-create an invoice for a shipment when billAmount is set.
+ * Runs as a BullMQ job with retry.
+ *
+ * Fixes T001: emailCount starts at 0 (not 1) since no email is sent.
+ */
+export async function autoCreateInvoice(
+  shipment: { id: string; trackingNo: string },
+  billAmount: number,
+  tenantId: string,
+  customerId?: string,
+): Promise<void> {
+  try {
+    // Check for existing invoice (idempotency)
+    const [existingInv] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(eq(invoices.shipmentId, shipment.id))
+      .limit(1);
+
+    if (existingInv) return;
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const shortId = shipment.id.slice(0, 5).toUpperCase();
+    const invoiceNo = `INV-${y}${m}-${shortId}`;
+
+    const [tenantRow] = await db
+      .select({ name: tenants.name })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+
+    const [inv] = await db
+      .insert(invoices)
+      .values({
+        tenantId,
+        shipmentId: shipment.id,
+        customerId: customerId ?? null,
+        invoiceNo,
+        amount: String(billAmount),
+        status: 'paid',
+        emailCount: 0, // Fixed: no email sent on auto-creation
+        paidAt: now,
+        lastEmailSentAt: now,
+      })
+      .returning();
+
+    if (inv && pdfQueue) {
+      await pdfQueue.add('invoice', {
+        type: 'invoice',
+        invoiceId: inv.id,
+        tenantId,
+      });
+    }
+  } catch (err) {
+    console.error(`[shipment/invoice] failed for shipment ${shipment.id}:`, err);
+    throw err;
+  }
+}

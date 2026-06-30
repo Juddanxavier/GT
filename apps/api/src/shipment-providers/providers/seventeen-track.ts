@@ -1,4 +1,4 @@
-import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent } from '../types';
+import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent, WebhookResult } from '../types';
 import { normalizeEvent, normalizeTrackResponse } from '../normalizer';
 import { createHmac } from 'node:crypto';
 
@@ -205,5 +205,44 @@ export class SeventeenTrackProvider implements ShipmentProvider {
     if (!secret || !signature) return false;
     const hmac = createHmac('sha256', secret).update(body).digest('hex');
     return hmac === signature;
+  }
+
+  async processWebhook(body: unknown): Promise<WebhookResult | null> {
+    try {
+      // 17TRACK webhooks may wrap the payload in { event: 'tracking', data: { ... } }
+      // or send the raw tracking object directly.
+      const raw = (body as Record<string, unknown>)?.data as Record<string, unknown> | undefined ?? body as Record<string, unknown>;
+      const trackingNo = raw.number as string | undefined;
+      if (!trackingNo) return null;
+
+      const carrierCode = String(raw.carrier ?? '17track');
+      const trackInfo = raw.track_info as Record<string, unknown> | undefined;
+
+      const rawEvents: NormalizedEvent[] = [];
+      const providers = (trackInfo?.tracking as Record<string, unknown> | undefined)?.providers as Array<Record<string, unknown>> | undefined;
+      for (const p of providers ?? []) {
+        const providerName = (p.provider as Record<string, unknown> | undefined)?.name as string | undefined;
+        for (const e of (p.events as Array<Record<string, unknown>> | undefined) ?? []) {
+          const stage = (e.stage ?? e.sub_status ?? (trackInfo?.latest_status as Record<string, unknown> | undefined)?.status) as string | undefined;
+          rawEvents.push(
+            normalizeEvent({
+              status: stage,
+              subStatus: (e.sub_status as string | undefined) ?? stage,
+              description: (e.description as string | undefined) ?? '',
+              location: (e.location as string | undefined) ?? '',
+              time: (e.time_utc as string | undefined) ?? (e.time_iso as string | undefined),
+              carrier: providerName ?? carrierCode,
+              carrierCode,
+            }),
+          );
+        }
+      }
+
+      const result = normalizeTrackResponse(carrierCode, rawEvents);
+      return { trackingNo, events: result.events, currentStatus: result.currentStatus };
+    } catch (err) {
+      console.error('[17track] processWebhook error:', err);
+      return null;
+    }
   }
 }

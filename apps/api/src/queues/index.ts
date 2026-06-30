@@ -37,6 +37,16 @@ const archiveOpts: QueueOptions = {
 };
 export const archiveQueue = createOrSkip('archive', archiveOpts);
 
+const shipmentOpts: QueueOptions = {
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: { age: 3600, count: 100 },
+    removeOnFail: { age: 86400, count: 500 },
+  },
+};
+export const shipmentQueue = createOrSkip('shipment', shipmentOpts);
+
 export const deadLetterQueue = createOrSkip('dead-letter', {
   defaultJobOptions: {
     attempts: 1,
@@ -51,6 +61,7 @@ export const queues = [
   pdfQueue,
   whatsappQueue,
   archiveQueue,
+  shipmentQueue,
   deadLetterQueue,
 ]
   .filter((q): q is Queue => q !== null);

@@ -32,6 +32,12 @@ export type DetectResult = {
   name: string;
 };
 
+export type WebhookResult = {
+  trackingNo: string;
+  events: NormalizedEvent[];
+  currentStatus: string;
+};
+
 export interface ShipmentProvider {
   readonly name: string;
   detectCarrier(trackingNo: string): Promise<DetectResult | null>;
@@ -52,4 +58,9 @@ export interface ShipmentProvider {
     carrier?: string;
   }): Promise<boolean>;
   verifyWebhook(body: string, signature: string | null): boolean;
+  /**
+   * Parse tracking events directly from a webhook payload instead of
+   * making an API call. Returns null if the payload can't be parsed.
+   */
+  processWebhook(body: unknown): Promise<WebhookResult | null>;
 }
