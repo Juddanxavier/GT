@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
 import { api } from '@/lib/api';
 import { CopyButton, Flag } from '@/components/copy-button';
@@ -52,7 +53,7 @@ export default function ShipmentsPage() {
   });
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [billAmount, setBillAmount] = useState(0);
-  const [customerName, setCustomerName] = useState('');
+
   const { data: session } = authClient.useSession();
   const userData = session?.user as Record<string, unknown> | undefined;
   const userRole = userData?.role as string | undefined;
@@ -107,12 +108,21 @@ export default function ShipmentsPage() {
   const sparklineKeys = ['total', 'inTransit', 'delivered', 'pending'] as const;
   const { data: allCustomers = [] } = useCustomers();
   const { data: newBranches = [] } = useBranches();
+  const queryClient = useQueryClient();
 
   const [selectedBranchId, setSelectedBranchId] = useState(branchFilter);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const clearError = (field: string) => setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
   const createShipment = useCreateShipment();
   const deleteShipment = useDeleteShipment();
+
+  const LAST_CUSTOMER_KEY = 'gt:lastCustomerId';
+  function handleAssignerChange(data: { customerId: string | null; contactEmail: string; contactPhone: string }) {
+    setAssignerData(data);
+    if (data.customerId && data.customerId !== 'self') {
+      try { localStorage.setItem(LAST_CUSTOMER_KEY, data.customerId); } catch {}
+    }
+  }
 
   const customerMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -182,7 +192,12 @@ export default function ShipmentsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Shipments</h1>
           <p className="text-sm text-muted">Track and manage shipments</p>
         </div>
-        <Button onPress={() => { setErrors({}); setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' }); setNewTrackingNumber(''); setBillAmount(0); setCustomerName(''); setCreateOpen(true); }}>New Shipment</Button>
+        <Button onPress={() => {
+          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true);
+          const lastId = typeof window !== 'undefined' ? localStorage.getItem(LAST_CUSTOMER_KEY) : null;
+          const lastCust = lastId && allCustomers.find((c) => c.id === lastId);
+          setAssignerData({ customerId: lastCust?.id ?? null, contactEmail: '', contactPhone: '' });
+        }}>New Shipment</Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -345,7 +360,6 @@ export default function ShipmentsPage() {
                 if ((document.getElementById('hp-create') as HTMLInputElement)?.value) return;
                 const payload = {
                   trackingNo: newTrackingNumber.trim(),
-                  customerName: customerName.trim(),
                   billAmount: billAmount || undefined,
                   branchId: selectedBranchId || undefined,
                 };
@@ -410,18 +424,18 @@ export default function ShipmentsPage() {
                     {errors.branchId && <p className="text-xs text-danger">{errors.branchId}</p>}
                   </div>
                 )}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="new-customerName">Customer Name *</Label>
-                  <Input id="new-customerName" variant="secondary" value={customerName} onChange={(e) => { setCustomerName(e.target.value); clearError('customerName'); }} required fullWidth />
-                  {errors.customerName && <p className="text-xs text-danger">{errors.customerName}</p>}
-                </div>
                 <CustomerAssigner
                   customers={allCustomers}
                   customerId={assignerData.customerId ?? ''}
-                  onChange={(data) => setAssignerData(data)}
+                  onChange={handleAssignerChange}
                   phoneDialCode={phoneDialCode}
                   phoneFlag={phoneFlag}
                   clearError={() => {}}
+                  onCreateCustomer={async (data) => {
+                    const newCust = await api.post<{ id: string; name: string; email?: string; phone?: string }>('/api/customers', data);
+                    queryClient.invalidateQueries({ queryKey: ['customers'] });
+                    return newCust;
+                  }}
                 />
               </form>
             </Modal.Body>

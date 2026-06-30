@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Chip, Input, Label } from '@heroui/react';
-import { Check, Search, User, Phone, Mail, UserX, ChevronDown } from 'lucide-react';
+import { Check, Search, User, Phone, Mail, UserX, ChevronDown, Plus } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -36,6 +36,8 @@ interface CustomerAssignerProps {
   clearError?: (field: string) => void;
   /** Whether to show the "Self" option */
   showSelf?: boolean;
+  /** Called to create a new customer; returns the created customer */
+  onCreateCustomer?: (data: { name: string; email?: string; phone?: string }) => Promise<Customer>;
 }
 
 type Mode = 'search' | 'selected' | 'self' | 'contact-only';
@@ -55,6 +57,7 @@ export function CustomerAssigner({
   errors = {},
   clearError,
   showSelf = true,
+  onCreateCustomer,
 }: CustomerAssignerProps) {
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === customerId) ?? null,
@@ -77,6 +80,12 @@ export function CustomerAssigner({
   const [contactPhoneLocal, setContactPhoneLocal] = useState(
     initialContactPhone && !selectedCustomer ? stripDialCode(initialContactPhone, phoneDialCode) : '',
   );
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickEmail, setQuickEmail] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickSaving, setQuickSaving] = useState(false);
+  const [quickError, setQuickError] = useState('');
 
   // Track previous props to detect meaningful changes (modal re-opens, different shipment)
   const prevPropsRef = useRef<{ customerId: string | null; initialContactEmail: string; initialContactPhone: string }>({
@@ -308,16 +317,60 @@ export function CustomerAssigner({
         {showDropdown && (
           <>
             {/* Backdrop to close dropdown */}
-            <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
+            <div className="fixed inset-0 z-10" onClick={() => { setShowDropdown(false); setShowQuickAdd(false); setQuickError(''); }} />
             <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-xl border border-border bg-surface shadow-lg overflow-hidden">
               {/* Search results */}
               <div className="max-h-56 overflow-y-auto divide-y divide-border/40">
-                {filtered.length === 0 ? (
+                {filtered.length === 0 && !onCreateCustomer ? (
                   <div className="px-4 py-6 text-center">
                     <p className="text-sm text-muted font-medium">No customers found</p>
                     <p className="text-xs text-muted mt-1">
                       Enter contact info below to save for later claiming
                     </p>
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="px-4 py-4 space-y-3">
+                    {searchQuery.trim() && (
+                      <p className="text-sm text-muted text-center">
+                        No customers match &ldquo;{searchQuery}&rdquo;
+                      </p>
+                    )}
+                    {!showQuickAdd ? (
+                      <Button size="sm" variant="secondary" fullWidth onPress={() => { setShowQuickAdd(true); setQuickName(searchQuery); }}>
+                        <Plus size={14} />
+                        Add {searchQuery.trim() ? `"${searchQuery}"` : 'new customer'}
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <input type="text" placeholder="Full name *" value={quickName} onChange={(e) => setQuickName(e.target.value)}
+                          className="w-full px-3 py-1.5 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <input type="email" placeholder="Email" value={quickEmail} onChange={(e) => setQuickEmail(e.target.value)}
+                          className="w-full px-3 py-1.5 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <div className="flex gap-2">
+                          <div className="flex items-center gap-1 px-2.5 border border-border rounded-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
+                            {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+                          </div>
+                          <input type="tel" placeholder="Phone" value={quickPhone} onChange={(e) => setQuickPhone(e.target.value.replace(/\D/g, ''))}
+                            className="flex-1 px-3 py-1.5 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        </div>
+                        {quickError && <p className="text-xs text-danger">{quickError}</p>}
+                        <div className="flex gap-2 pt-1">
+                          <Button size="sm" variant="primary" isDisabled={!quickName.trim() || quickSaving} isPending={quickSaving}
+                            onPress={async () => {
+                              if (!onCreateCustomer) return;
+                              setQuickSaving(true); setQuickError('');
+                              try {
+                                const cust = await onCreateCustomer({ name: quickName.trim(), email: quickEmail.trim() || undefined, phone: quickPhone ? `${phoneDialCode} ${quickPhone}` : undefined });
+                                selectCustomer(cust);
+                              } catch (e) { setQuickError(e instanceof Error ? e.message : 'Failed to create customer'); }
+                              finally { setQuickSaving(false); }
+                            }}>
+                            Create & Select
+                          </Button>
+                          <Button size="sm" variant="outline" onPress={() => setShowQuickAdd(false)}>Cancel</Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   filtered.map((cust) => (
