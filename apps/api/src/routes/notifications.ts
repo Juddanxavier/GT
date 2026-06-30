@@ -88,6 +88,13 @@ app.patch('/:id/read', async (c) => {
     .returning();
 
   if (!updated) return c.json({ error: 'Notification not found' }, 404);
+
+  await logAudit('NOTIFICATION_READ', user.id, {
+    notificationId: id,
+    type: updated.type,
+    title: updated.title,
+  }, c);
+
   return c.json({ data: updated });
 });
 
@@ -96,6 +103,17 @@ app.patch('/read-all', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
   if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
+
+  const [countRow] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.tenantId, tenantId),
+        eq(notifications.userId, user.id),
+        eq(notifications.read, false),
+      ),
+    );
 
   await db
     .update(notifications)
@@ -107,6 +125,11 @@ app.patch('/read-all', async (c) => {
         eq(notifications.read, false),
       ),
     );
+
+  await logAudit('NOTIFICATION_READ', user.id, {
+    action: 'read_all',
+    count: Number(countRow?.count ?? 0),
+  }, c);
 
   return c.json({ success: true });
 });

@@ -5,6 +5,17 @@ import { createAuthConfig, buildEmailHtml, type AuthSchema } from '@repo/auth-co
 import { sendEmail } from './email/provider';
 import { db } from './db';
 import * as schema from './db/schema';
+import { logAudit as logAuditImpl } from './services/audit';
+
+const logAudit: (
+  event: string,
+  userId: string | null,
+  metadata?: Record<string, unknown>,
+) => Promise<void> = logAuditImpl as (
+  event: string,
+  userId: string | null,
+  metadata?: Record<string, unknown>,
+) => Promise<void>;
 
 export const auth = betterAuth({
   ...createAuthConfig({
@@ -22,6 +33,7 @@ export const auth = betterAuth({
     ],
     sendEmail,
     buildEmailHtml,
+    logAudit,
   }),
 });
 

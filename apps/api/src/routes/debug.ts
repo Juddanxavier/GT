@@ -4,6 +4,7 @@ import { db } from '../db';
 import { customers, shipments } from '../db/schema';
 import { requireRole } from '../middleware/authorization';
 import { notificationQueue } from '../queues';
+import { logAudit } from '../services/audit';
 
 const app = new Hono();
 
@@ -42,6 +43,16 @@ app.post('/fire-notification', requireRole('superadmin'), async (c) => {
     tenantId: ship[0]!.tenantId,
     trackingNo: ship[0]!.trackingNo,
   });
+
+  const currentUser = (c as any).get('user') as { id: string } | undefined;
+  await logAudit('NOTIFICATION_SENT', currentUser?.id ?? null, {
+    channel: 'email',
+    queue: 'notification',
+    type: 'debug_manual',
+    shipmentId,
+    eventType,
+    tenantId: ship[0]!.tenantId,
+  }, c);
 
   return c.json({ message: `Notification queued for ${shipmentId} (${eventType})` });
 });

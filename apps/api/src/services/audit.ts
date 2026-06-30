@@ -17,6 +17,7 @@ export type AuditEvent =
   | 'NOTIFICATION_FAILED'
   | 'SHIPMENT_DELETED'
   | 'SHIPMENT_UPDATED'
+  | 'USER_UPDATED'
   | 'INVOICE_CREATED'
   | 'INVOICE_SENT'
   | 'INVOICE_UPDATED'
@@ -29,7 +30,10 @@ export type AuditEvent =
   | 'QUOTATION_DELETED'
   | 'QUOTATION_CONVERTED'
   | 'INVITATION_CREATED'
-  | 'INVITATION_CANCELLED';
+  | 'INVITATION_CANCELLED'
+  | 'NOTIFICATION_SENT'
+  | 'NOTIFICATION_READ'
+  | 'ARCHIVE_RUN';
 
 export async function logAudit(
   event: AuditEvent,

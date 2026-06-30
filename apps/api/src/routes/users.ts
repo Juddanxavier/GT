@@ -175,12 +175,20 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     return c.json({ error: 'No valid fields to update' }, 400);
   }
 
-  // Capture current role before update for audit
+  // Capture full before state for audit
   const [before] = await db
-    .select({ role: user.role })
+    .select({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      branchId: user.branchId,
+      tenantId: user.tenantId,
+    })
     .from(user)
     .where(and(...conditions) as SQL | undefined)
     .limit(1);
+
+  if (!before) return c.json({ error: 'User not found' }, 404);
 
   const [row] = await db
     .update(user)
@@ -202,8 +210,23 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
 
   if (!row) return c.json({ error: 'User not found' }, 404);
 
-  if (updates.role && before && before.role !== row.role) {
-    await logAudit('USER_ROLE_CHANGED', id, { from: before.role, to: row.role }, c);
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of ['name', 'email', 'role', 'branchId', 'tenantId'] as const) {
+    if (key in updates) {
+      const oldVal = before[key];
+      const newVal = row[key];
+      if (String(oldVal) !== String(newVal)) {
+        changes[key] = { from: oldVal, to: newVal };
+      }
+    }
+  }
+
+  if (Object.keys(changes).length > 0) {
+    if (changes.role) {
+      await logAudit('USER_ROLE_CHANGED', id ?? null, changes, c);
+    } else {
+      await logAudit('USER_UPDATED', id ?? null, changes, c);
+    }
   }
 
   const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
@@ -400,9 +423,97 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }),
   });
 
+  await logAudit('NOTIFICATION_SENT', createdUserId, {
+    channel: 'email',
+    type: 'activation',
+    recipient: email,
+    role,
+    tenantId: tenantId ?? undefined,
+  }, c);
+
   const tenantForCache = c.get('tenantId') || tenantId;
   if (tenantForCache) await cacheFlushTenant(tenantForCache!);
   return c.json({ data: { id: createdUserId, email } }, 201);
+});
+
+app.post('/:id/ban', requireRole('superadmin', 'tenant-admin'), async (c) => {
+  const currentUser = getUser(c);
+  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+
+  const { id } = c.req.param();
+  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const banReason = (body.banReason as string) || 'Banned by admin';
+
+  // Verify access
+  const conditions: ReturnType<typeof eq>[] = [eq(user.id, id!)];
+  if (currentUser.role === 'superadmin') {
+    const overrideTenantId = c.get('tenantId');
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(eq(user.tenantId, overrideTenantId!));
+  } else {
+    if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
+    conditions.push(eq(user.tenantId, currentUser.tenantId!));
+  }
+
+  const [target] = await db
+    .select({ id: user.id, email: user.email, role: user.role })
+    .from(user)
+    .where(and(...conditions) as SQL | undefined)
+    .limit(1);
+
+  if (!target) return c.json({ error: 'User not found' }, 404);
+
+  try {
+    await (auth.api as any).banUser({
+      body: { userId: id!, banReason },
+      headers: c.req.raw.headers,
+    });
+  } catch (err) {
+    console.error('[users/ban] error:', err);
+    return c.json({ error: 'Failed to ban user' }, 500);
+  }
+
+  await logAudit('USER_BANNED', id ?? null, { email: target.email, role: target.role, reason: banReason }, c);
+  return c.json({ data: { success: true } });
+});
+
+app.post('/:id/unban', requireRole('superadmin', 'tenant-admin'), async (c) => {
+  const currentUser = getUser(c);
+  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+
+  const { id } = c.req.param();
+
+  // Verify access
+  const conditions: ReturnType<typeof eq>[] = [eq(user.id, id!)];
+  if (currentUser.role === 'superadmin') {
+    const overrideTenantId = c.get('tenantId');
+    if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+    conditions.push(eq(user.tenantId, overrideTenantId!));
+  } else {
+    if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
+    conditions.push(eq(user.tenantId, currentUser.tenantId!));
+  }
+
+  const [target] = await db
+    .select({ id: user.id, email: user.email, role: user.role })
+    .from(user)
+    .where(and(...conditions) as SQL | undefined)
+    .limit(1);
+
+  if (!target) return c.json({ error: 'User not found' }, 404);
+
+  try {
+    await (auth.api as any).unbanUser({
+      body: { userId: id! },
+      headers: c.req.raw.headers,
+    });
+  } catch (err) {
+    console.error('[users/unban] error:', err);
+    return c.json({ error: 'Failed to unban user' }, 500);
+  }
+
+  await logAudit('USER_UNBANNED', id ?? null, { email: target.email, role: target.role }, c);
+  return c.json({ data: { success: true } });
 });
 
 app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
@@ -448,7 +559,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await db.delete(account).where(eq(account.userId, id!));
   await db.delete(user).where(eq(user.id, id!));
 
-  await logAudit('USER_DELETED', id, { email: target.email, role: target.role }, c);
+  await logAudit('USER_DELETED', id ?? null, { email: target.email, role: target.role }, c);
   const tenantForCache = c.get('tenantId') ?? currentUser.tenantId;
   if (tenantForCache) await cacheFlushTenant(tenantForCache!);
   return c.json({ data: { success: true } });

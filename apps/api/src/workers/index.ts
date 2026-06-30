@@ -250,6 +250,15 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
         },
       ],
     });
+
+    await logAudit('NOTIFICATION_SENT', null, {
+      channel: 'email',
+      type: 'invoice',
+      recipient: cust.email,
+      invoiceId,
+      invoiceNo: inv.invoiceNo,
+      tenantId: inv.tenantId,
+    });
     return;
   }
 
@@ -258,6 +267,13 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
   const html = await renderEmail(eventType, shipment, branding);
   const subject = getEmailSubject(eventType, shipment);
   await sendEmail({ to, subject, html });
+
+  await logAudit('NOTIFICATION_SENT', null, {
+    channel: 'email',
+    recipient: to,
+    eventType,
+    trackingNo: shipment.trackingNo,
+  });
 }
 
 export const emailWorker = createWorker<EmailJobData>('email', emailProcessor, 5);
@@ -289,6 +305,13 @@ export const whatsappWorker = createWorker<WhatsAppJobData>(
     }
     const { sendWhatsApp } = await import('../notifications/whatsapp/provider');
     await sendWhatsApp({ to, templateId, variables });
+
+    await logAudit('NOTIFICATION_SENT', null, {
+      channel: 'whatsapp',
+      recipient: to,
+      templateId,
+      tenantId,
+    });
   },
   3,
 );
@@ -329,28 +352,41 @@ export const archiveWorker = createWorker<ArchiveJobData>(
   async () => {
     const result = await runArchive();
     console.log(
-      `[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}`,
+      `[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}, notifications ${result.notificationsArchived}/${result.notificationsSkeletonized}/${result.notificationsPurged}`,
     );
   },
   1,
 );
 
-// Register the daily repeatable job (3 AM). BullMQ deduplicates by name + pattern.
-if (archiveQueue) {
-  archiveQueue
-    .add(
-      'archive-run',
-      {},
-      {
-        repeat: { pattern: '0 3 * * *' },
-        removeOnComplete: { age: 86400 * 7, count: 50 },
-        removeOnFail: { age: 86400 * 30, count: 100 },
-      },
-    )
-    .catch((err: Error) =>
-      console.error('[archive] failed to register repeatable job:', err.message),
-    );
+// Register the daily repeatable job (3 AM) with retries.
+async function registerArchiveRepeatable(maxRetries = 3): Promise<void> {
+  if (!archiveQueue) return;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await archiveQueue.add(
+        'archive-run',
+        {},
+        {
+          repeat: { pattern: '0 3 * * *' },
+          removeOnComplete: { age: 86400 * 7, count: 50 },
+          removeOnFail: { age: 86400 * 30, count: 100 },
+        },
+      );
+      console.log('[archive] repeatable job registered (3 AM daily)');
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[archive] failed to register repeatable job (attempt ${attempt}/${maxRetries}): ${message}`,
+      );
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      }
+    }
+  }
 }
+
+registerArchiveRepeatable();
 
 // ── Shipment Worker (tracking + invoice retries) ──
 

@@ -1,5 +1,5 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { admin, customSession, twoFactor } from 'better-auth/plugins';
+import { admin, customSession } from 'better-auth/plugins';
 import { adminAc, defaultRoles } from 'better-auth/plugins/admin/access';
 import { eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -19,6 +19,12 @@ export type BuildEmailHtmlFn = (opts: {
   previewText?: string;
   companyName?: string;
 }) => string;
+
+export type LogAuditFn = (
+  event: string,
+  userId: string | null,
+  metadata?: Record<string, unknown>,
+) => Promise<void>;
 
 const brandGreen = '#22c55e';
 
@@ -93,10 +99,11 @@ export interface AuthConfigDeps {
   trustedOrigins: string[];
   sendEmail: SendEmailFn;
   buildEmailHtml: BuildEmailHtmlFn;
+  logAudit?: LogAuditFn;
 }
 
 export function createAuthConfig(deps: AuthConfigDeps): any {
-  const { db, schema, baseURL, trustedOrigins, sendEmail, buildEmailHtml } = deps;
+  const { db, schema, baseURL, trustedOrigins, sendEmail, buildEmailHtml, logAudit } = deps;
 
   return {
     database: drizzleAdapter(db, {
@@ -107,7 +114,6 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
         session: schema.session,
         account: schema.account,
         verification: schema.verification,
-        twoFactor: schema.twoFactor,
       },
     }),
     advanced: {
@@ -130,6 +136,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       maxPasswordLength: 128,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+        await logAudit?.('PASSWORD_RESET', null, { email: user.email });
         await sendEmail({
           to: user.email,
           subject: 'Reset your password',
@@ -149,6 +156,11 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
               </tr>
             </table>`,
           }),
+        });
+        await logAudit?.('NOTIFICATION_SENT', null, {
+          channel: 'email',
+          type: 'password_reset',
+          recipient: user.email,
         });
       },
     },
@@ -192,40 +204,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
           customer: defaultRoles.user,
         },
       }),
-      twoFactor({
-        issuer: 'Gajan Traders',
-        // Require verification when enabling 2FA — prevents attacker with hijacked session from locking user out
-        skipVerificationOnEnable: false,
-        twoFactorCookieMaxAge: 600,
-        totpOptions: { digits: 6, period: 30 },
-        backupCodeOptions: { amount: 10, length: 10 },
-        otpOptions: {
-          digits: 6,
-          period: 5,
-          async sendOTP({ user, otp }) {
-            await sendEmail({
-              to: user.email,
-              subject: 'Your 2FA verification code',
-              html: buildEmailHtml({
-                title: 'Two-Factor Authentication',
-                bodyHtml: `<table role="presentation" style="width:100%">
-                  <tr>
-                    <td style="text-align:center;padding-bottom:20px">
-                      <p style="font-size:13px;margin:0 0 6px;color:#52525b">Your 2FA verification code</p>
-                      <div style="background:#f4f4f5;border-radius:8px;padding:16px;font-size:32px;letter-spacing:8px;font-weight:700;color:#18181b;display:inline-block">${otp}</div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <p style="font-size:11px;margin:0;color:#a1a1aa;text-align:center">This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.</p>
-                    </td>
-                  </tr>
-                </table>`,
-              }),
-            });
-          },
-        },
-      }),
+
       customSession(async ({ user, session }) => {
         const typedUser = user as { tenantId?: string | null; branchId?: string | null };
         let tenantName: string | null = null;
@@ -270,7 +249,6 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
         '/sign-in/email': { window: 10, max: 3 },
         '/sign-up/email': { window: 3600, max: 5 },
         '/request-password-reset': { window: 300, max: 3 },
-        '/two-factor/verify': { window: 10, max: 3 },
         '/get-session': { window: 10, max: 100 },
       },
     },

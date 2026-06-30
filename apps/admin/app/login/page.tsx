@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { z } from 'zod';
-import { Button, Input, TextField, Label, FieldError } from '@heroui/react';
+import { Button, Input, InputGroup, TextField, Label, FieldError } from '@heroui/react';
+import { Eye, EyeOff } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
@@ -19,6 +20,7 @@ type FieldErrors = Partial<Record<keyof z.infer<typeof loginSchema>, string>>;
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState('');
@@ -65,9 +67,16 @@ function LoginForm() {
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
 
-        <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
+        <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
-          <Input placeholder="Enter your password" autoComplete="current-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+          <InputGroup fullWidth>
+            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+            <InputGroup.Suffix className="pr-0">
+              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </InputGroup.Suffix>
+          </InputGroup>
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 

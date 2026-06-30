@@ -7,6 +7,7 @@ import { tenants } from '../db/schema';
 import { sendEmail } from '../email/provider';
 import { generateReportPdf } from '../invoice/report-service';
 import { getQueryScope, requireRole } from '../middleware/authorization';
+import { logAudit } from '../services/audit';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -292,6 +293,15 @@ app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => 
         },
       ],
     });
+
+    await logAudit('NOTIFICATION_SENT', (user.id as string) ?? null, {
+      channel: 'email',
+      type: 'report',
+      reportType: body.type ?? 'shipments',
+      recipient: user.email as string,
+      dateRange: dateLabel,
+      tenantId: scope.tenantId,
+    }, c);
 
     return c.json({ data: { sent: true } });
   } catch (err) {

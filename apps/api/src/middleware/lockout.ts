@@ -50,7 +50,15 @@ export async function signInHandler(c: Context) {
       if (res.status === 200) {
         await cacheClient.del(`lockout:${email}`);
         await cacheClient.del(`attempts:${email}`);
-        await logAudit('LOGIN_SUCCESS', null, { email }, c);
+        // Extract userId from the login response body
+        let userId: string | null = null;
+        try {
+          const body = await res.clone().json() as Record<string, unknown>;
+          userId = (body?.user as Record<string, unknown> | undefined)?.id as string ?? null;
+        } catch {
+          // Non-JSON or empty response — userId stays null
+        }
+        await logAudit('LOGIN_SUCCESS', userId, { email }, c);
         const oldHeaders = new Headers(res.headers);
         if (c.req.url.startsWith('https://')) {
           appendClearCookie(oldHeaders, '__Secure-better-auth.session_token');

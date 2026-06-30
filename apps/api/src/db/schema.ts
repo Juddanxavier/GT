@@ -267,8 +267,7 @@ export const user = pgTable(
     banned: boolean('banned').notNull().default(false),
     banReason: text('ban_reason'),
     banExpires: timestamp('ban_expires'),
-    // Two-factor plugin fields
-    twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
+
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
   },
@@ -418,19 +417,4 @@ export const notifications = pgTable(
   }),
 );
 
-export const twoFactor = pgTable('two_factor', {
-  id: text('id').primaryKey(),
-  secret: text('secret').notNull(),
-  backupCodes: text('backup_codes').notNull(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  verified: boolean('verified').notNull().default(true),
-  createdAt: timestamp('created_at').notNull(),
-  updatedAt: timestamp('updated_at').notNull(),
-},
-  (table) => ({
-    twoFactorUserIdIdx: index('idx_two_factor_user_id').on(table.userId),
-    twoFactorSecretIdx: index('idx_two_factor_secret').on(table.secret),
-  }),
-);
+

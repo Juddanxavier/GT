@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
 import { Modal } from '@heroui/react/modal';
-import { BarChart3, HelpCircle, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Search, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronDown, Bell, LogOut, Menu, User, UserPlus } from 'lucide-react';
+import { Activity, BarChart3, HelpCircle, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Search, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronDown, Bell, LogOut, Menu, User, UserPlus } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
 import { useTenants, useDashboardBranches } from '@/lib/queries';
@@ -60,6 +60,11 @@ function NavItems(role?: string) {
       label: 'Reports',
       icon: <BarChart3 size={18} />,
     },
+    ...(role !== 'staff' ? [{
+      href: '/audit',
+      label: 'Audit Log',
+      icon: <Activity size={18} />,
+    }] : []),
   ];
   return items;
 }

@@ -183,7 +183,9 @@ import reports from './routes/reports';
 import searchRoute from './routes/search';
 import notificationsRoute from './routes/notifications';
 import publicTrack from './routes/public-track';
+import auditLogsRoute from './routes/audit-logs';
 import { runArchive } from './services/archive';
+import { logAudit } from './services/audit';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 // ── Global error handler ──
 
@@ -327,16 +329,23 @@ app.route('/api/notifications', notificationsRoute);
 // Public tracking endpoint (no auth required)
 app.route('/api/track', publicTrack);
 
+// Audit log viewer
+app.route('/api/audit-logs', auditLogsRoute);
+
 // Manual archive trigger (protected)
 app.post('/api/cron/archive', requireRole('superadmin'), async (c) => {
   const result = await runArchive();
-  return c.json({
-    data: {
-      archived: result.archived,
-      skeletonized: result.skeletonized,
-      purged: result.purged,
-    },
-  });
+  const user = c.get('user');
+  await logAudit('ARCHIVE_RUN', user?.id ?? null, {
+    archived: result.archived,
+    skeletonized: result.skeletonized,
+    purged: result.purged,
+    notificationsArchived: result.notificationsArchived,
+    notificationsSkeletonized: result.notificationsSkeletonized,
+    notificationsPurged: result.notificationsPurged,
+    trigger: 'manual',
+  }, c);
+  return c.json({ data: result });
 });
 
 app.get('/api/staff/ping', requireRole('superadmin', 'tenant-admin', 'staff'), (c) => {
@@ -387,6 +396,17 @@ async function main() {
   await import('./workers/index.js');
   const { startDlqMonitor } = await import('./workers/dlq-monitor.js');
   startDlqMonitor();
+
+  // Run archive on startup to catch up (non-blocking — runs in background)
+  runArchive()
+    .then((result) => {
+      console.log(
+        `[archive] startup run — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}, notifications ${result.notificationsArchived}/${result.notificationsSkeletonized}/${result.notificationsPurged}`,
+      );
+    })
+    .catch((err: Error) => {
+      console.error('[archive] startup run failed:', err.message);
+    });
 
   server = serve({
     fetch: app.fetch,

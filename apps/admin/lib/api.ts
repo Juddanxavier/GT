@@ -85,8 +85,34 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return data;
 }
 
+async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(tenantOverride ? { 'X-Tenant-ID': tenantOverride } : {}),
+    ...(branchOverride ? { 'X-Branch-ID': branchOverride } : {}),
+    ...(options?.headers as Record<string, string> | undefined),
+  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  try {
+    const res = await fetch(`${BASE}${path}`, { credentials: 'include', headers, signal: controller.signal, ...options });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      const parts: string[] = [];
+      if (body && typeof body.error === 'string') parts.push(body.error);
+      if (body && body.detail) parts.push(`(${body.detail})`);
+      if (body && body.code) parts.push(`[${body.code}]`);
+      throw new ApiError(res.status, parts.join(' ') || `Request failed (${res.status})`);
+    }
+    return body as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const api = {
   get: <T>(path: string, options?: RequestInit) => request<T>(path, options),
+  getFull: <T>(path: string, options?: RequestInit) => requestFull<T>(path, options),
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
   patch: <T>(path: string, data: unknown) =>

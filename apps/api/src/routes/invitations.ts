@@ -134,6 +134,14 @@ app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }),
   });
 
+  await logAudit('NOTIFICATION_SENT', invite.id, {
+    channel: 'email',
+    type: 'invitation',
+    recipient: email,
+    role,
+    tenantId: tenantId ?? undefined,
+  }, c);
+
   const tenantForCache = c.get('tenantId') || tenantId;
   if (tenantForCache) await cacheFlushTenant(tenantForCache!);
   return c.json({ data: { id: invite.id, email } }, 201);
