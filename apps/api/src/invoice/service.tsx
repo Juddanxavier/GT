@@ -15,7 +15,7 @@ export type InvoiceData = {
   notes: string | null;
   emailCount: number;
   lastEmailSentAt: Date;
-  paidAt: Date;
+  paidAt: Date | null;
   createdAt: Date;
   trackingNo: string;
   carrier: string | null;
@@ -97,7 +97,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     amount: data.amount,
     customerName: data.customerName ?? '—',
     createdAt: formatDate(data.createdAt),
-    paidAt: formatDate(data.paidAt),
+    paidAt: data.paidAt ? formatDate(data.paidAt) : '—',
   }} />;
 
   return await renderToBuffer(doc);

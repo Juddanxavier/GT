@@ -1,7 +1,7 @@
-import { Worker, type ConnectionOptions } from 'bullmq';
 import * as Sentry from '@sentry/hono/node';
-import { bullConnectionOptions } from '../redis';
+import { type ConnectionOptions, Worker } from 'bullmq';
 import { isRedisConnected } from '../queues';
+import { bullConnectionOptions } from '../redis';
 
 export function startDlqMonitor(): void {
   if (!isRedisConnected() || !bullConnectionOptions) return;

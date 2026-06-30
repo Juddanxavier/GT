@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
+let mockRedisEnabled = true;
 const mockRedis = { incr: vi.fn(), expire: vi.fn() };
 
 vi.mock('../redis.js', () => ({
   get cacheClient() {
-    return mockRedis.incr ? mockRedis : null;
+    return mockRedisEnabled ? mockRedis : null;
   },
 }));
 
@@ -24,13 +25,11 @@ describe('globalRateLimit', () => {
   });
 
   it('passes through when Redis is unavailable', async () => {
-    const origIncr = mockRedis.incr;
-    // @ts-expect-error: temporarily disable mock to simulate null cacheClient
-    mockRedis.incr = null;
+    mockRedisEnabled = false;
     const app = createApp();
     const res = await app.request('/test');
     expect(res.status).toBe(200);
-    mockRedis.incr = origIncr;
+    mockRedisEnabled = true;
   });
 
   it('sets rate limit headers', async () => {

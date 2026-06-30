@@ -1,9 +1,9 @@
-import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { db } from '../db';
-import { shipments, customers } from '../db/schema';
-import { notificationQueue } from '../queues';
+import { customers, shipments } from '../db/schema';
 import { requireRole } from '../middleware/authorization';
+import { notificationQueue } from '../queues';
 
 const app = new Hono();
 

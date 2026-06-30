@@ -1,44 +1,52 @@
+import { and, eq, like, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { eq, and, like, sql } from 'drizzle-orm';
+import { cacheDel, withCache } from '../cache';
 import { db } from '../db';
 import { customers } from '../db/schema';
-import { requireRole, requireBranchScope, getQueryScope } from '../middleware/authorization';
-import { withCache, cacheDel } from '../cache';
+import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { createCustomerSchema, updateCustomerSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
-app.get('/', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
-  const scope = getQueryScope(c);
+app.get(
+  '/',
+  requireRole('superadmin', 'tenant-admin', 'staff'),
+  requireBranchScope(),
+  async (c) => {
+    const scope = getQueryScope(c);
 
-  const search = c.req.query('search');
-  const branchId = c.req.query('branchId');
+    const search = c.req.query('search');
+    const branchId = c.req.query('branchId');
 
-  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+    if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const conditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, scope.tenantId)];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
-  if (search) {
-    conditions.push(
-      sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
+    const conditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, scope.tenantId!)];
+    if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
+    if (search) {
+      conditions.push(
+        sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
+      );
+    }
+    if (branchId) {
+      conditions.push(eq(customers.branchId, branchId!));
+    }
+
+    const rows = await withCache(
+      scope.tenantId!,
+      'customers:list',
+      () =>
+        db
+          .select()
+          .from(customers)
+          .where(and(...conditions) as SQL | undefined)
+          .orderBy(customers.name),
+      600,
     );
-  }
-  if (branchId) {
-    conditions.push(eq(customers.branchId, branchId));
-  }
 
-  const rows = await withCache(scope.tenantId!, 'customers:list', () =>
-    db
-      .select()
-      .from(customers)
-      .where(and(...conditions))
-      .orderBy(customers.name),
-    600,
-  );
-
-  return c.json({ data: rows });
-});
+    return c.json({ data: rows });
+  },
+);
 
 app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const tenantId = c.get('tenantId');
@@ -48,7 +56,9 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const parsed = createCustomerSchema.safeParse(body);
   if (!parsed.success) {
     const flat = parsed.error.flatten();
-    const fields = Object.entries(flat.fieldErrors).map(([k, v]) => `${k}: ${v?.join(', ')}`).join('; ');
+    const fields = Object.entries(flat.fieldErrors)
+      .map(([k, v]) => `${k}: ${v?.join(', ')}`)
+      .join('; ');
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
@@ -61,28 +71,39 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   return c.json({ data: row }, 201);
 });
 
-app.get('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), requireBranchScope(), async (c) => {
-  const scope = getQueryScope(c);
-  const { id } = c.req.param();
+app.get(
+  '/:id',
+  requireRole('superadmin', 'tenant-admin', 'staff'),
+  requireBranchScope(),
+  async (c) => {
+    const scope = getQueryScope(c);
+    const { id } = c.req.param();
 
-  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+    if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
+    const conditions: ReturnType<typeof eq>[] = [
+      eq(customers.id, id!),
+      eq(customers.tenantId, scope.tenantId!),
+    ];
+    if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
 
-  const row = await withCache(scope.tenantId!, `customers:${id}`, () =>
-    db
-      .select()
-      .from(customers)
-      .where(and(...conditions))
-      .limit(1)
-      .then((r) => r[0] ?? null),
-    600,
-  );
+    const row = await withCache(
+      scope.tenantId!,
+      `customers:${id}`,
+      () =>
+        db
+          .select()
+          .from(customers)
+          .where(and(...conditions) as SQL | undefined)
+          .limit(1)
+          .then((r) => r[0] ?? null),
+      600,
+    );
 
-  if (!row) return c.json({ error: 'Customer not found' }, 404);
-  return c.json({ data: row });
-});
+    if (!row) return c.json({ error: 'Customer not found' }, 404);
+    return c.json({ data: row });
+  },
+);
 
 app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
   const scope = getQueryScope(c);
@@ -93,17 +114,22 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   const parsed = updateCustomerSchema.safeParse(body);
   if (!parsed.success) {
     const flat = parsed.error.flatten();
-    const fields = Object.entries(flat.fieldErrors).map(([k, v]) => `${k}: ${v?.join(', ')}`).join('; ');
+    const fields = Object.entries(flat.fieldErrors)
+      .map(([k, v]) => `${k}: ${v?.join(', ')}`)
+      .join('; ');
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
-  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
+  const conditions: ReturnType<typeof eq>[] = [
+    eq(customers.id, id!),
+    eq(customers.tenantId, scope.tenantId!),
+  ];
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
 
   const [row] = await db
     .update(customers)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(and(...conditions))
+    .where(and(...conditions) as SQL | undefined)
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
@@ -118,13 +144,16 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const conditions: ReturnType<typeof eq>[] = [eq(customers.id, id), eq(customers.tenantId, scope.tenantId)];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId));
+  const conditions: ReturnType<typeof eq>[] = [
+    eq(customers.id, id!),
+    eq(customers.tenantId, scope.tenantId!),
+  ];
+  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
 
   const [row] = await db
     .update(customers)
     .set({ isActive: false, updatedAt: new Date() })
-    .where(and(...conditions))
+    .where(and(...conditions) as SQL | undefined)
     .returning();
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);

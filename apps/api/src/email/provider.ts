@@ -13,6 +13,7 @@ type SendFn = (params: SendEmailParams) => Promise<void>;
 // ZEPTOMAIL_API_KEY is for the HTTP API. If only ZEPTOMAIL_PASS is set, try it as the API key too.
 const ZEPTOMAIL_API_KEY = process.env.ZEPTOMAIL_API_KEY || process.env.ZEPTOMAIL_PASS || '';
 const ZEPTOMAIL_PASS = process.env.ZEPTOMAIL_PASS || '';
+const ZEPTOMAIL_API_HOST = process.env.ZEPTOMAIL_API_HOST || 'api.zeptomail.com';
 const SMTP_HOST = process.env.SMTP_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
 const SMTP_USER = process.env.SMTP_USER || '';
@@ -38,9 +39,10 @@ function createSendFn(): SendFn {
           content: a.content.toString('base64'),
         })));
       }
-      const res = await fetch('https://api.zeptomail.com/v1.1/email', {
+      const res = await fetch(`https://${ZEPTOMAIL_API_HOST}/v1.1/email`, {
         method: 'POST',
         headers: {
+          Accept: 'application/json',
           'Content-Type': 'application/json',
           Authorization: `Zoho-enczapikey ${ZEPTOMAIL_API_KEY}`,
         },
@@ -48,7 +50,9 @@ function createSendFn(): SendFn {
       });
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`ZeptoMail API ${res.status}: ${text}`);
+        const errMsg = `ZeptoMail API ${res.status} from ${ZEPTOMAIL_API_HOST}: ${text || '(empty body)'}`;
+        console.error(`[email] HTTP API error: ${errMsg}`);
+        throw new Error(errMsg);
       }
       console.log(`[email] sent via HTTP API to ${params.to}: "${params.subject}"`);
     };

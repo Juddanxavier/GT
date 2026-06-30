@@ -27,7 +27,9 @@ export type AuditEvent =
   | 'QUOTATION_CREATED'
   | 'QUOTATION_UPDATED'
   | 'QUOTATION_DELETED'
-  | 'QUOTATION_CONVERTED';
+  | 'QUOTATION_CONVERTED'
+  | 'INVITATION_CREATED'
+  | 'INVITATION_CANCELLED';
 
 export async function logAudit(
   event: AuditEvent,

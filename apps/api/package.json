@@ -45,6 +45,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.17",

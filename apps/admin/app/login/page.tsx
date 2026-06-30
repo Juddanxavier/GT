@@ -83,7 +83,7 @@ function LoginForm() {
 
         <p className="text-center text-xs text-muted">
           By clicking Sign in, you agree to our{' '}
-          <Link href="/terms" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Terms of Service</Link>
+          <a href="/terms" className="text-foreground hover:text-accent underline underline-offset-2 transition-colors">Terms of Service</a>
         </p>
       </form>
     </AuthLayout>

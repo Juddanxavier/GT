@@ -1,8 +1,9 @@
-import { Hono } from 'hono';
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { db } from '../db';
-import { onboardTokens, user } from '../db/schema';
+import { Hono } from 'hono';
 import { auth } from '../auth';
+import { db } from '../db';
+import { invitation, onboardTokens, user, verification } from '../db/schema';
 
 const app = new Hono();
 
@@ -12,7 +13,8 @@ app.get('/validate', async (c) => {
     return c.json({ error: 'Token is required' }, 400);
   }
 
-  const [row] = await db
+  // Check onboard tokens first (legacy flow)
+  const [onboardRow] = await db
     .select({
       id: onboardTokens.id,
       userId: onboardTokens.userId,
@@ -26,23 +28,37 @@ app.get('/validate', async (c) => {
     .where(eq(onboardTokens.token, token))
     .limit(1);
 
-  if (!row) {
-    return c.json({ error: 'Invalid token' }, 404);
+  if (onboardRow) {
+    if (onboardRow.usedAt) return c.json({ error: 'This link has already been used' }, 410);
+    if (new Date() > onboardRow.expiresAt) return c.json({ error: 'This link has expired' }, 410);
+    return c.json({ data: { email: onboardRow.userEmail, name: onboardRow.userName } });
   }
 
-  if (row.usedAt) {
-    return c.json({ error: 'This link has already been used' }, 410);
-  }
+  // Check invitation table (new flow)
+  const [inviteRow] = await db
+    .select({
+      id: invitation.id,
+      email: invitation.email,
+      name: invitation.name,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+      usedAt: invitation.usedAt,
+    })
+    .from(invitation)
+    .where(eq(invitation.token, token))
+    .limit(1);
 
-  if (new Date() > row.expiresAt) {
-    return c.json({ error: 'This link has expired' }, 410);
-  }
+  if (!inviteRow) return c.json({ error: 'Invalid token' }, 404);
+  if (inviteRow.status !== 'pending')
+    return c.json({ error: 'This invitation has already been used' }, 410);
+  if (new Date() > inviteRow.expiresAt)
+    return c.json({ error: 'This invitation has expired' }, 410);
 
-  return c.json({ data: { email: row.userEmail, name: row.userName } });
+  return c.json({ data: { email: inviteRow.email, name: inviteRow.name } });
 });
 
 app.post('/complete', async (c) => {
-  const body = await c.req.json() as Record<string, string | undefined>;
+  const body = (await c.req.json()) as Record<string, string | undefined>;
   const token = body.token?.trim();
   const password = body.password;
   const displayName = body.name?.trim();
@@ -52,7 +68,8 @@ app.post('/complete', async (c) => {
     return c.json({ error: 'Password must be at least 8 characters' }, 400);
   }
 
-  const [row] = await db
+  // Check onboard tokens first (legacy flow)
+  const [onboardRow] = await db
     .select({
       id: onboardTokens.id,
       userId: onboardTokens.userId,
@@ -63,36 +80,122 @@ app.post('/complete', async (c) => {
     .where(eq(onboardTokens.token, token))
     .limit(1);
 
-  if (!row) return c.json({ error: 'Invalid token' }, 404);
-  if (row.usedAt) return c.json({ error: 'This link has already been used' }, 410);
-  if (new Date() > row.expiresAt) return c.json({ error: 'This link has expired' }, 410);
+  if (onboardRow) {
+    if (onboardRow.usedAt) return c.json({ error: 'This link has already been used' }, 410);
+    if (new Date() > onboardRow.expiresAt) return c.json({ error: 'This link has expired' }, 410);
 
+    try {
+      await auth.api.resetPassword({
+        body: { newPassword: password, token },
+      });
+    } catch (err) {
+      const baErr = err as { status?: number; message?: string };
+      console.error('[onboard] resetPassword error:', err);
+      return c.json(
+        { error: baErr.message || 'Failed to set password' },
+        (baErr.status ?? 500) as 400 | 500 | 410,
+      );
+    }
+
+    await db
+      .update(user)
+      .set({
+        ...(displayName ? { name: displayName } : {}),
+        emailVerified: true,
+        banned: false,
+        banReason: null,
+        banExpires: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, onboardRow.userId));
+
+    await db
+      .update(onboardTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(onboardTokens.id, onboardRow.id));
+
+    return c.json({ data: { success: true } }, 200);
+  }
+
+  // Check invitation table (new flow)
+  const [inviteRow] = await db
+    .select({
+      id: invitation.id,
+      email: invitation.email,
+      name: invitation.name,
+      role: invitation.role,
+      tenantId: invitation.tenantId,
+      branchId: invitation.branchId,
+      token: invitation.token,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+      usedAt: invitation.usedAt,
+    })
+    .from(invitation)
+    .where(eq(invitation.token, token))
+    .limit(1);
+
+  if (!inviteRow) return c.json({ error: 'Invalid token' }, 404);
+  if (inviteRow.status !== 'pending')
+    return c.json({ error: 'This invitation has already been used' }, 410);
+  if (new Date() > inviteRow.expiresAt)
+    return c.json({ error: 'This invitation has expired' }, 410);
+
+  // Create the user and associated records in a transaction
+  // to prevent orphan users if the server crashes partway through
+  const userId = randomUUID();
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    await tx.insert(user).values({
+      id: userId,
+      email: inviteRow.email,
+      name: displayName || inviteRow.name || inviteRow.email.split('@')[0] || 'User',
+      emailVerified: true,
+      role: inviteRow.role,
+      banned: false,
+      tenantId: inviteRow.tenantId,
+      branchId: inviteRow.branchId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Create verification record for password reset
+    await tx.insert(verification).values({
+      id: randomUUID(),
+      identifier: `reset-password:${token}`,
+      value: userId,
+      expiresAt: inviteRow.expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Mark invitation accepted (within the same transaction)
+    await tx
+      .update(invitation)
+      .set({ status: 'accepted', usedAt: now, updatedAt: now })
+      .where(eq(invitation.id, inviteRow.id));
+  });
+
+  // Set password via resetPassword (outside transaction — uses Better Auth's internal DB)
   try {
     await auth.api.resetPassword({
       body: { newPassword: password, token },
     });
   } catch (err) {
+    // Cleanup on failure: delete the user and reset the invitation
+    await db.delete(user).where(eq(user.id, userId));
+    await db
+      .update(invitation)
+      .set({ status: 'pending', usedAt: null, updatedAt: now })
+      .where(eq(invitation.id, inviteRow.id));
     const baErr = err as { status?: number; message?: string };
-    console.error('[onboard] resetPassword error:', err);
-    return c.json({ error: baErr.message || 'Failed to set password' }, baErr.status ?? 500);
+    console.error('[onboard] invitation resetPassword error:', err);
+    return c.json(
+      { error: baErr.message || 'Failed to set password' },
+      (baErr.status ?? 500) as 400 | 500 | 410,
+    );
   }
-
-  await db
-    .update(user)
-    .set({
-      ...(displayName ? { name: displayName } : {}),
-      emailVerified: true,
-      banned: false,
-      banReason: null,
-      banExpires: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(user.id, row.userId));
-
-  await db
-    .update(onboardTokens)
-    .set({ usedAt: new Date() })
-    .where(eq(onboardTokens.id, row.id));
 
   return c.json({ data: { success: true } }, 200);
 });

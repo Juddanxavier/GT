@@ -118,42 +118,63 @@
       "idx": 16,
       "version": "7",
       "when": 1750000000002,
-      "tag": "0018_allow_null_customer_id",
+      "tag": "0018_add_notifications",
       "breakpoints": true
     },
     {
       "idx": 17,
       "version": "7",
       "when": 1750000000003,
-      "tag": "0019_add_courier_code_customer_name",
+      "tag": "0018_allow_null_customer_id",
       "breakpoints": true
     },
     {
       "idx": 18,
       "version": "7",
       "when": 1750000000004,
-      "tag": "0020_change_paid_at_default",
+      "tag": "0019_add_courier_code_customer_name",
       "breakpoints": true
     },
     {
       "idx": 19,
       "version": "7",
       "when": 1750000000005,
-      "tag": "0021_unique_customer_email",
+      "tag": "0020_change_paid_at_default",
       "breakpoints": true
     },
     {
       "idx": 20,
       "version": "7",
       "when": 1750000000006,
-      "tag": "0022_add_missing_indexes",
+      "tag": "0021_unique_customer_email",
       "breakpoints": true
     },
     {
       "idx": 21,
       "version": "7",
       "when": 1750000000007,
+      "tag": "0022_add_missing_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1750000000008,
       "tag": "0023_add_two_factor",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1750000000009,
+      "tag": "0024_add_audit_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1750000000010,
+      "tag": "0025_add_invitations",
       "breakpoints": true
     }
   ]

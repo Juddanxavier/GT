@@ -1,19 +1,27 @@
+import { buildEmailHtml } from '@repo/auth-config';
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
-import { bullConnectionOptions, cacheClient } from '../redis';
 import { db } from '../db';
-import { isRedisConnected, notificationQueue, emailQueue, whatsappQueue, pdfQueue, archiveQueue, deadLetterQueue } from '../queues';
-import type { EventType } from '../email/templates';
-import { renderEmail } from '../email/render';
+import { customers, invoices as invoiceSchema, shipments } from '../db/schema';
 import { sendEmail } from '../email/provider';
-import { buildEmailHtml } from '@repo/auth-config';
-import type { Branding, ShipmentData } from '../email/provider';
+import { renderEmail } from '../email/render';
+import type { EventType } from '../email/templates';
+import type { Branding, ShipmentData } from '../email/types';
+import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';
-import { invoices as invoiceSchema, shipments, customers } from '../db/schema';
+import {
+  archiveQueue,
+  deadLetterQueue,
+  emailQueue,
+  isRedisConnected,
+  notificationQueue,
+  pdfQueue,
+  whatsappQueue,
+} from '../queues';
+import { bullConnectionOptions, cacheClient } from '../redis';
 import { runArchive } from '../services/archive';
-import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
 import { logAudit } from '../services/audit';
 
 function getConnection() {
@@ -23,9 +31,9 @@ function getConnection() {
   return bullConnectionOptions;
 }
 
-function createWorker<T = unknown>(
+function createWorker<T extends Record<string, unknown> = Record<string, unknown>>(
   name: string,
-  processor: (job: { id?: string; data: T }) => Promise<void>,
+  processor: (data: T) => Promise<void>,
   concurrency: number,
 ): Worker | null {
   if (!isRedisConnected()) {
@@ -45,7 +53,7 @@ function createWorker<T = unknown>(
     console.error(`[worker] ${name} job ${job?.id} failed:`, err.message);
     if (job && deadLetterQueue && name !== 'dead-letter') {
       await deadLetterQueue.add(name, {
-        ...job.data,
+        ...(job.data as Record<string, unknown>),
         queueName: name,
         failedReason: err.message,
       });
@@ -55,10 +63,18 @@ function createWorker<T = unknown>(
         queue: name,
         jobId: job.id,
         failedReason: err.message,
-        ...('tenantId' in job.data ? { tenantId: job.data.tenantId as string } : {}),
-        ...('to' in job.data ? { recipient: job.data.to as string } : {}),
-        ...('shipmentId' in job.data ? { shipmentId: job.data.shipmentId as string } : {}),
-        ...('eventType' in job.data ? { eventType: job.data.eventType as string } : {}),
+        ...('tenantId' in (job.data as Record<string, unknown>)
+          ? { tenantId: (job.data as Record<string, unknown>).tenantId as string }
+          : {}),
+        ...('to' in (job.data as Record<string, unknown>)
+          ? { recipient: (job.data as Record<string, unknown>).to as string }
+          : {}),
+        ...('shipmentId' in (job.data as Record<string, unknown>)
+          ? { shipmentId: (job.data as Record<string, unknown>).shipmentId as string }
+          : {}),
+        ...('eventType' in (job.data as Record<string, unknown>)
+          ? { eventType: (job.data as Record<string, unknown>).eventType as string }
+          : {}),
       });
     }
   });
@@ -84,7 +100,21 @@ type NotifyJobData = {
 };
 
 export async function notificationProcessor(job: NotifyJobData): Promise<void> {
-  const { shipmentId, eventId, eventType, tenantId, trackingNo, labelCode, carrier, origin, destination, estimatedDelivery, customerName, customerEmail, customerPhone } = job;
+  const {
+    shipmentId,
+    eventId,
+    eventType,
+    tenantId,
+    trackingNo,
+    labelCode,
+    carrier,
+    origin,
+    destination,
+    estimatedDelivery,
+    customerName,
+    customerEmail,
+    customerPhone,
+  } = job;
 
   const shipmentData: ShipmentData = {
     trackingNo,
@@ -94,7 +124,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
     destination,
     estimatedDelivery,
     customerName,
-    status: eventType,
+    status: eventType ?? 'InTransit',
   };
 
   // Fan out: email
@@ -102,12 +132,14 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
     const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
     if (!emailAlreadySent) {
       await emailQueue.add('send', {
-        to: customerEmail,
+        to: customerEmail!,
         eventType,
         shipment: shipmentData,
       });
     } else {
-      console.log(`[notifications] Skipping duplicate email for event ${eventId} / shipment ${shipmentId}`);
+      console.log(
+        `[notifications] Skipping duplicate email for event ${eventId} / shipment ${shipmentId}`,
+      );
     }
   }
 
@@ -124,7 +156,9 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
         });
       }
     } else {
-      console.log(`[notifications] Skipping duplicate WhatsApp for event ${eventId} / shipment ${shipmentId}`);
+      console.log(
+        `[notifications] Skipping duplicate WhatsApp for event ${eventId} / shipment ${shipmentId}`,
+      );
     }
   }
 }
@@ -147,7 +181,7 @@ function getEmailSubject(eventType: EventType, shipment: ShipmentData): string {
   return map[eventType] ?? `Shipment ${ref} - Status Update`;
 }
 
-type EmailJobData = {
+export type EmailJobData = {
   to?: string;
   eventType?: EventType;
   shipment?: ShipmentData;
@@ -178,7 +212,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
     const [cust] = await db
       .select({ email: customers.email, name: customers.name })
       .from(customers)
-      .where(eq(customers.id, inv.customerId))
+      .where(eq(customers.id, inv.customerId!))
       .limit(1);
 
     if (!cust?.email) {
@@ -206,11 +240,13 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
           </tr>
         </table>`,
       }),
-      attachments: [{
-        filename: `invoice-${inv.invoiceNo}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      }],
+      attachments: [
+        {
+          filename: `invoice-${inv.invoiceNo}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
     });
     return;
   }
@@ -222,11 +258,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
   await sendEmail({ to, subject, html });
 }
 
-export const emailWorker = createWorker<EmailJobData>(
-  'email',
-  emailProcessor,
-  5,
-);
+export const emailWorker = createWorker<EmailJobData>('email', emailProcessor, 5);
 
 type WhatsAppJobData = {
   to: string;
@@ -294,18 +326,28 @@ export const archiveWorker = createWorker<ArchiveJobData>(
   'archive',
   async () => {
     const result = await runArchive();
-    console.log(`[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}`);
+    console.log(
+      `[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}`,
+    );
   },
   1,
 );
 
 // Register the daily repeatable job (3 AM). BullMQ deduplicates by name + pattern.
 if (archiveQueue) {
-  archiveQueue.add('archive-run', {}, {
-    repeat: { pattern: '0 3 * * *' },
-    removeOnComplete: { age: 86400 * 7, count: 50 },
-    removeOnFail: { age: 86400 * 30, count: 100 },
-  }).catch((err: Error) => console.error('[archive] failed to register repeatable job:', err.message));
+  archiveQueue
+    .add(
+      'archive-run',
+      {},
+      {
+        repeat: { pattern: '0 3 * * *' },
+        removeOnComplete: { age: 86400 * 7, count: 50 },
+        removeOnFail: { age: 86400 * 30, count: 100 },
+      },
+    )
+    .catch((err: Error) =>
+      console.error('[archive] failed to register repeatable job:', err.message),
+    );
 }
 
 export const workers = [
@@ -314,8 +356,7 @@ export const workers = [
   whatsappWorker,
   pdfWorker,
   archiveWorker,
-]
-  .filter((w): w is Worker => w !== null);
+].filter((w): w is Worker => w !== null);
 
 export function closeWorkers(): Promise<void[]> {
   return Promise.all(workers.map((w) => w.close()));

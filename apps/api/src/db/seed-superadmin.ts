@@ -4,7 +4,10 @@ import { auth } from '../auth';
 import { eq } from 'drizzle-orm';
 
 async function seedSuperAdmin() {
-  const email = 'juddan2008@gmail.com';
+  const email = process.env.SEED_SUPERADMIN_EMAIL || 'juddan2008@gmail.com';
+  const password = process.env.SEED_SUPERADMIN_PASSWORD || 'B7a90sfd@12';
+  const name = process.env.SEED_SUPERADMIN_NAME || 'Super Admin';
+
   const existing = await db.select().from(user).where(eq(user.email, email)).limit(1);
 
   if (existing.length > 0) {
@@ -12,16 +15,17 @@ async function seedSuperAdmin() {
     process.exit(0);
   }
 
-  await auth.api.createUser({
+  await (auth.api as any).createUser({
     body: {
       email,
-      password: 'B7a90sfd@12',
-      name: 'Super Admin',
+      password,
+      name,
       role: 'superadmin',
     },
   });
 
-  console.log('Super admin created: juddan2008@gmail.com / B7a90sfd@12');
+  console.log(`Super admin created: ${email}`);
+  console.warn('WARNING: Super admin credentials were set from environment variables. If SEED_SUPERADMIN_PASSWORD is not set, the default fallback is used — change it in production!');
   process.exit(0);
 }
 

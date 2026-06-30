@@ -339,6 +339,34 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// ── Invitations ──
+
+export const invitation = pgTable(
+  'invitation',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    email: varchar('email', { length: 255 }).notNull(),
+    name: varchar('name', { length: 255 }),
+    role: varchar('role', { length: 50 }).notNull().default('staff'),
+    tenantId: uuid('tenant_id'),
+    branchId: varchar('branch_id', { length: 255 }),
+    token: text('token').notNull().unique(),
+    invitedById: text('invited_by_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    invitationEmailIdx: index('idx_invitation_email').on(table.email),
+    invitationTokenIdx: index('idx_invitation_token').on(table.token),
+    invitationStatusIdx: index('idx_invitation_status').on(table.status),
+  }),
+);
+
 // ── Phase 24: Audit Log ──
 
 export const auditLogs = pgTable(

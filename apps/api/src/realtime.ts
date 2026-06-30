@@ -75,7 +75,7 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
       const session = await auth.api.getSession({ headers });
       if (!session) return next(new Error('Session expired or invalid'));
 
-      const user = session.user as {
+      const user = session.user as unknown as {
         id: string;
         role: string;
         tenantId?: string;
@@ -92,7 +92,7 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
   });
 
   io.on('connection', (socket) => {
-    const user = socket.data.user as {
+    const user = socket.data.user as unknown as {
       id: string;
       role: string;
       tenantId?: string;

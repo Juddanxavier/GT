@@ -76,7 +76,7 @@ export const createShipmentSchema = z.object({
   destination: z.string().optional(),
   labelCode: z.string().max(20).optional(),
   billAmount: z.coerce.number().positive().optional(),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
   branchId: uuidSchema.optional(),
   tenantId: uuidSchema.optional(),
   status: z.string().max(50).optional(),

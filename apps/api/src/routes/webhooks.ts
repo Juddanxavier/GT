@@ -1,11 +1,11 @@
-import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { db } from '../db';
 import { shipments } from '../db/schema';
-import { getProvider } from '../shipment-providers';
-import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
 import { emitToTenant } from '../realtime';
+import { getProvider } from '../shipment-providers';
+import { insertEvents } from '../shipment-providers/dedup';
 
 const app = new Hono();
 
@@ -76,7 +76,12 @@ async function handleWebhook(
         .where(eq(shipments.id, shipment[0]!.id));
 
       // Trigger notifications for new events
-      notifyTrackingEvents(shipment[0]!.id, shipment[0]!.tenantId, result.events, result.currentStatus);
+      notifyTrackingEvents(
+        shipment[0]!.id,
+        shipment[0]!.tenantId,
+        result.events,
+        result.currentStatus,
+      );
       emitToTenant(shipment[0]!.tenantId, 'dashboard:update', {});
     }
 

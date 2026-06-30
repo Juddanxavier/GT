@@ -1,10 +1,16 @@
 import { cacheClient } from './redis';
 
+function sanitizeKeyPart(part: string): string {
+  // Replace colons, newlines, spaces, and other Redis-problematic characters
+  return part.replace(/[\s:;\r\n]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
+}
+
 function prefixKey(tenantId: string | null, key: string): string {
+  const safeKey = sanitizeKeyPart(key);
   if (tenantId) {
-    return `t:${tenantId}:${key}`;
+    return `t:${sanitizeKeyPart(tenantId)}:${safeKey}`;
   }
-  return `global:${key}`;
+  return `global:${safeKey}`;
 }
 
 export async function cacheGet<T>(tenantId: string | null, key: string): Promise<T | null> {
@@ -67,7 +73,7 @@ export async function cacheFlushTenant(tenantId: string): Promise<void> {
     const pattern = `t:${tenantId}:*`;
     let cursor = '0';
     do {
-      const result = await cacheClient.scan(cursor, { match: pattern, count: 100 });
+      const result = await cacheClient.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
       cursor = result[0];
       const keys = result[1];
       if (keys.length > 0) {
@@ -86,7 +92,7 @@ export async function cacheDelPattern(tenantId: string | null, suffix: string): 
     const pattern = `${prefix}${suffix}`;
     let cursor = '0';
     do {
-      const result = await cacheClient.scan(cursor, { match: pattern, count: 100 });
+      const result = await cacheClient.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
       cursor = result[0];
       const keys = result[1];
       if (keys.length > 0) {

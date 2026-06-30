@@ -43,10 +43,17 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
     const routeConfig = getLimit(method, path);
     const merged: RateLimitConfig = { ...routeConfig, ...config };
 
-    const key = `${merged.keyPrefix ?? 'ratelimit'}:${identifier}:${method}:${path}`;
+    // Sanitize key parts to prevent Redis key injection
+    // \s already covers \r and \n, so no need to list them separately
+    const sanitize = (s: string) => s.replace(/[\s:;]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
+    const safeIdentifier = sanitize(identifier);
+    const safePrefix = sanitize(merged.keyPrefix ?? 'ratelimit');
+    const key = `${safePrefix}:${safeIdentifier}:${method}:${path}`;
 
     try {
-      const count = await cacheClient.incr(key);
+      const rawCount = await cacheClient.incr(key);
+      // Handle non-numeric results (Redis errors return null/Error objects in pipelines)
+      const count = typeof rawCount === 'number' ? rawCount : 1;
       if (count === 1) {
         await cacheClient.expire(key, merged.windowSeconds);
       }

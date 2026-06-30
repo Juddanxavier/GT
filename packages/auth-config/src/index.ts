@@ -194,7 +194,8 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       }),
       twoFactor({
         issuer: 'Gajan Traders',
-        skipVerificationOnEnable: true,
+        // Require verification when enabling 2FA — prevents attacker with hijacked session from locking user out
+        skipVerificationOnEnable: false,
         twoFactorCookieMaxAge: 600,
         totpOptions: { digits: 6, period: 30 },
         backupCodeOptions: { amount: 10, length: 10 },

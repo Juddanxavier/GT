@@ -1,14 +1,14 @@
 /** @format */
 
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { and, eq, desc, sql } from 'drizzle-orm';
+import { cacheDelPattern } from '../cache';
 import { db } from '../db';
 import { notifications } from '../db/schema';
-import { sessionMiddleware, type AuthVariables } from '../middleware/auth';
-import { tenantMiddleware, type TenantVariables } from '../middleware/tenant';
-import { cacheDelPattern } from '../cache';
-import { logAudit } from '../services/audit';
+import { type AuthVariables, sessionMiddleware } from '../middleware/auth';
+import { type TenantVariables, tenantMiddleware } from '../middleware/tenant';
 import { emitToTenant } from '../realtime';
+import { logAudit } from '../services/audit';
 
 type Env = { Variables: AuthVariables & TenantVariables };
 
@@ -57,7 +57,13 @@ app.get('/unread-count', async (c) => {
   const [row] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(notifications)
-    .where(and(eq(notifications.tenantId, tenantId), eq(notifications.userId, user.id), eq(notifications.read, false)));
+    .where(
+      and(
+        eq(notifications.tenantId, tenantId),
+        eq(notifications.userId, user.id),
+        eq(notifications.read, false),
+      ),
+    );
 
   return c.json({ count: Number(row?.count ?? 0) });
 });
@@ -72,7 +78,13 @@ app.patch('/:id/read', async (c) => {
   const [updated] = await db
     .update(notifications)
     .set({ read: true })
-    .where(and(eq(notifications.id, id), eq(notifications.tenantId, tenantId), eq(notifications.userId, user.id)))
+    .where(
+      and(
+        eq(notifications.id, id),
+        eq(notifications.tenantId, tenantId),
+        eq(notifications.userId, user.id),
+      ),
+    )
     .returning();
 
   if (!updated) return c.json({ error: 'Notification not found' }, 404);
@@ -88,7 +100,13 @@ app.patch('/read-all', async (c) => {
   await db
     .update(notifications)
     .set({ read: true })
-    .where(and(eq(notifications.tenantId, tenantId), eq(notifications.userId, user.id), eq(notifications.read, false)));
+    .where(
+      and(
+        eq(notifications.tenantId, tenantId),
+        eq(notifications.userId, user.id),
+        eq(notifications.read, false),
+      ),
+    );
 
   return c.json({ success: true });
 });

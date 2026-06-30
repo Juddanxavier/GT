@@ -1,7 +1,7 @@
 /** @format */
 
-import { Hono } from 'hono';
 import { eq, or } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { db } from '../db';
 import { tenants } from '../db/schema';
 import { getUser } from '../middleware/authorization';

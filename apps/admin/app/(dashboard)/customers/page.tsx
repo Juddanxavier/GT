@@ -1,19 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord, type ApiBranch } from '@/lib/queries';
-import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
-import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, cn, type SortDescriptor } from '@heroui/react';
+import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
 
 type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
 
-const SUPERADMIN_CREATE_ROLES = ['superadmin', 'tenant-admin', 'staff'];
-const TENANT_ADMIN_CREATE_ROLES = ['staff'];
 const EDIT_ROLES = ['tenant-admin', 'staff', 'customer'];
 
 const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> = {
@@ -31,6 +29,7 @@ const ROWS_PER_PAGE = 10;
 
 export default function UsersPage() {
   usePageTitle('Users');
+  const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: users = [], isLoading } = useUsers();
@@ -43,19 +42,11 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createSaving, setCreateSaving] = useState(false);
-  const [createError, setCreateError] = useState('');
-  const [createEmail, setCreateEmail] = useState('');
-  const [createName, setCreateName] = useState('');
-  const [createRole, setCreateRole] = useState('staff');
-  const [createTenantId, setCreateTenantId] = useState('');
-  const [createBranchId, setCreateBranchId] = useState('');
+
 
   const { data: session } = authClient.useSession();
   const sessionUser = session?.user as Record<string, unknown> | undefined;
-  const sessionTenantId = (sessionUser?.tenantId as string) ?? '';
-  const isTenantAdmin = userRole === 'tenant-admin';
+
 
   const [editTarget, setEditTarget] = useState<UserRecord | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -114,12 +105,6 @@ export default function UsersPage() {
   const start = (page - 1) * ROWS_PER_PAGE + 1;
   const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
 
-  const effectiveTenantId = createTenantId || (isTenantAdmin ? sessionTenantId : '');
-  const { data: createBranches = [] } = useQuery<ApiBranch[]>({
-    queryKey: ['branches', 'tenant', effectiveTenantId],
-    queryFn: () => api.get<ApiBranch[]>(`/api/branches`, { headers: { 'X-Tenant-ID': effectiveTenantId } as Record<string, string> }),
-    enabled: !!effectiveTenantId,
-  });
   const editFilteredBranches = branches.filter((b) => !editTenantId || b.tenantId === editTenantId);
 
   const activeCount = users.filter((u) => !u.banned).length;
@@ -208,13 +193,8 @@ export default function UsersPage() {
             <h1 className="text-2xl font-bold tracking-tight">Users</h1>
             <p className="text-sm text-muted">Manage user accounts and permissions</p>
           </div>
-          {userRole !== 'staff' && (
-            <Button onPress={() => {
-              setCreateEmail(''); setCreateName(''); setCreateRole('staff'); setCreateError('');
-              setCreateTenantId(isTenantAdmin ? sessionTenantId : '');
-              setCreateBranchId('');
-              setCreateOpen(true);
-            }}>Create User</Button>
+          {userRole !== 'staff' && userRole !== 'customer' && (
+            <Button onPress={() => router.push('/invitations')}>Invite User</Button>
           )}
         </div>
 
@@ -362,131 +342,6 @@ export default function UsersPage() {
         </Table>
         )}
       </div>
-
-      {/* Create User Modal */}
-      <Modal.Backdrop isOpen={createOpen} onOpenChange={(v) => { if (!v) setCreateOpen(false); }}>
-        <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header>Create User</Modal.Header>
-            <Modal.Body>
-              <form id="create-user-form" onSubmit={async (e) => {
-                e.preventDefault();
-                setCreateError('');
-                if (!createEmail.trim()) { setCreateError('Email is required'); return; }
-                setCreateSaving(true);
-                try {
-                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/create`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      email: createEmail.trim(),
-                      name: createName.trim() || undefined,
-                      role: createRole,
-                      tenantId: createTenantId || undefined,
-                      branchId: createBranchId || undefined,
-                    }),
-                  });
-                  const body = await res.json();
-                  if (!res.ok) throw new Error(body.error || 'Failed to create user');
-                  setCreateOpen(false);
-                  setCreateEmail(''); setCreateName(''); setCreateRole('staff'); setCreateTenantId(''); setCreateBranchId('');
-                  queryClient.invalidateQueries({ queryKey: ['users'] });
-                } catch (err) {
-                  setCreateError(err instanceof Error ? err.message : 'Failed to create user');
-                }
-                setCreateSaving(false);
-              }} className="space-y-4">
-                {createError && <p className="text-sm text-danger">{createError}</p>}
-                <div className="space-y-1">
-                  <Label htmlFor="create-email">Email *</Label>
-                  <Input id="create-email" type="email" variant="secondary" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} required fullWidth />
-                  <Description>An activation email will be sent to this address</Description>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="create-name">Name</Label>
-                  <Input id="create-name" variant="secondary" value={createName} onChange={(e) => setCreateName(e.target.value)} fullWidth />
-                  <Description>Display name for the user</Description>
-                </div>
-                <div className="space-y-1">
-                  <Label>Role</Label>
-                  <Select
-                    selectedKey={createRole}
-                    onSelectionChange={(k) => { setCreateRole(k as string); if (k === 'tenant-admin') setCreateBranchId(''); }}
-                    variant="secondary"
-                    aria-label="Select role"
-                  >
-                    <Select.Trigger className="h-10 text-sm">
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {(userRole === 'superadmin' ? SUPERADMIN_CREATE_ROLES : TENANT_ADMIN_CREATE_ROLES).map((r) => (
-                          <ListBox.Item key={r} id={r} textValue={r}>{r}</ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                  <Description>Controls what the user can access</Description>
-                </div>
-                {userRole === 'superadmin' && createRole !== 'superadmin' && (
-                  <div className="space-y-1">
-                    <Label>Tenant</Label>
-                    <Select
-                      selectedKey={createTenantId}
-                      onSelectionChange={(k) => { setCreateTenantId(k as string); setCreateBranchId(''); }}
-                      variant="secondary"
-                      aria-label="Select tenant"
-                    >
-                      <Select.Trigger className="h-10 text-sm">
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {tenants.map((t: Tenant) => (
-                            <ListBox.Item key={t.id} id={t.id} textValue={t.name}>{t.name}</ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <Description>Which organization this user belongs to</Description>
-                  </div>
-                )}
-                {createRole !== 'tenant-admin' && createRole !== 'superadmin' && (
-                  <div className="space-y-1">
-                    <Label>Branch</Label>
-                    <Select
-                      selectedKey={createBranchId || undefined}
-                      onSelectionChange={(k) => setCreateBranchId((k as string) ?? '')}
-                      variant="secondary"
-                      aria-label="Select branch"
-                    >
-                      <Select.Trigger className="h-10 text-sm">
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
-                          {createBranches.map((b: ApiBranch) => (
-                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-                )}
-              </form>
-            </Modal.Body>
-            <Modal.Footer className="flex gap-2">
-              <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-user-form" isPending={createSaving}>Create User</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
 
       {/* Edit Modal */}
       <Modal.Backdrop isOpen={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>

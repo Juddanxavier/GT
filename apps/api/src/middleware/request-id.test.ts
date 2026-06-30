@@ -27,7 +27,7 @@ describe('requestIdMiddleware', () => {
   it('sets requestId variable', async () => {
     const app = new Hono();
     app.use('*', requestIdMiddleware);
-    app.get('/test', (c) => c.json({ requestId: c.get('requestId') }));
+    app.get('/test', (c) => c.json({ requestId: (c as any).get('requestId') }));
     const res = await app.request('/test', {
       headers: { 'x-request-id': 'req-456' },
     });
