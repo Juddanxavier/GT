@@ -8,6 +8,7 @@ import {
 import { api, getTenantFilter, getBranchFilter } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
+import { useTenantFilter } from '@/lib/tenant-filter-context';
 import {
   Activity, Clock, Download, RefreshCw, Monitor, Globe, Eye, X, List, Layout,
 } from 'lucide-react';
@@ -60,6 +61,7 @@ export default function AuditLogPage() {
   usePageTitle('Audit Log');
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const { tenantFilter } = useTenantFilter();
   const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
   const isSuperadmin = userRole === 'superadmin';
   const isTenantAdmin = userRole === 'tenant-admin';
@@ -96,7 +98,7 @@ export default function AuditLogPage() {
     api.get<string[]>('/api/audit-logs/events')
       .then(setEventTypes)
       .catch(() => {});
-  }, []);
+  }, [tenantFilter]);
 
   const buildParams = useCallback((pageNum: number, limit: number) => {
     const params = new URLSearchParams({
@@ -126,7 +128,7 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [buildParams]);
+  }, [buildParams, tenantFilter]);
 
   const fetchTimeline = useCallback(async () => {
     setLoading(true);
@@ -146,7 +148,7 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [buildParams]);
+  }, [buildParams, tenantFilter]);
 
   useEffect(() => {
     if (!isSuperadmin && !isTenantAdmin) return;
@@ -155,7 +157,7 @@ export default function AuditLogPage() {
     } else {
       fetchTimeline();
     }
-  }, [viewMode, fetchLogs, fetchTimeline, isSuperadmin, isTenantAdmin]);
+  }, [viewMode, fetchLogs, fetchTimeline, isSuperadmin, isTenantAdmin, tenantFilter]);
 
   function handleRefresh() {
     if (viewMode === 'table') {
