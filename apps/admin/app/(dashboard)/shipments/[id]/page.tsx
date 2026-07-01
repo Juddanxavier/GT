@@ -671,11 +671,6 @@ export default function ShipmentDetailPage() {
                   phoneFlag={editPhoneFlag}
                   clearError={() => {}}
                   showSelf
-                  onCreateCustomer={async (data) => {
-                    const newCust = await api.post<{ id: string; name: string; email?: string; phone?: string }>('/api/customers', data);
-                    setCustomers((prev) => [...prev, newCust]);
-                    return newCust;
-                  }}
                 />
                 {(userRole === 'superadmin' || userRole === 'tenant-admin') && (
                   <div className="space-y-1">

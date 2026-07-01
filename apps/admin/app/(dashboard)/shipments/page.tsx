@@ -6,7 +6,6 @@ import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock }
 import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
-import { api } from '@/lib/api';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend } from '@/lib/queries';
@@ -431,11 +430,6 @@ export default function ShipmentsPage() {
                   phoneDialCode={phoneDialCode}
                   phoneFlag={phoneFlag}
                   clearError={() => {}}
-                  onCreateCustomer={async (data) => {
-                    const newCust = await api.post<{ id: string; name: string; email?: string; phone?: string }>('/api/customers', data);
-                    queryClient.invalidateQueries({ queryKey: ['customers'] });
-                    return newCust;
-                  }}
                 />
               </form>
             </Modal.Body>
