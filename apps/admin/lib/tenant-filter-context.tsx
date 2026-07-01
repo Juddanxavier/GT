@@ -33,8 +33,16 @@ const FilterContext = createContext<FilterContextValue>({
 });
 
 export function TenantFilterProvider({ children }: { children: ReactNode }) {
-  const [tenantFilter, setTenantFilterState] = useState(() => load(STORAGE_TENANT));
-  const [branchFilter, setBranchFilterState] = useState(() => load(STORAGE_BRANCH));
+  const [tenantFilter, setTenantFilterState] = useState(() => {
+    const saved = load(STORAGE_TENANT);
+    if (saved) setTenantFilter(saved);
+    return saved;
+  });
+  const [branchFilter, setBranchFilterState] = useState(() => {
+    const saved = load(STORAGE_BRANCH);
+    if (saved) setBranchFilter(saved);
+    return saved;
+  });
   const [filterVersion, setFilterVersion] = useState(0);
   const { data: session } = authClient.useSession();
   const prevUserId = useRef<string | undefined>(undefined);
