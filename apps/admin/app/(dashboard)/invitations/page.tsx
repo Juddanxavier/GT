@@ -48,6 +48,12 @@ export default function InvitationsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (inviteOpen && userRole === 'superadmin' && tenantFilter) {
+      setInviteTenantId(tenantFilter);
+    }
+  }, [inviteOpen, userRole, tenantFilter]);
+
+  useEffect(() => {
     authClient.getSession().then((res) => {
       const u = res.data?.user as Record<string, unknown> | undefined;
       setUserRole((u?.role as string) ?? null);
@@ -95,6 +101,8 @@ export default function InvitationsPage() {
       if (!res.ok) throw new Error(body.error || 'Failed to send invitation');
       setInviteOpen(false);
       setInviteEmail(''); setInviteName(''); setInviteRole('staff'); setInviteTenantId(''); setInviteBranchId('');
+      setInviteOpen(false);
+      setInviteTenantId('');
       refetch();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Failed to send invitation');

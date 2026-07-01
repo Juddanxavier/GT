@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { buildEmailHtml } from '@repo/auth-config';
-import { and, eq, type SQL } from 'drizzle-orm';
+import { and, eq, isNull, or, type SQL } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { auth } from '../auth';
 import { cacheFlushTenant } from '../cache';
@@ -63,7 +63,7 @@ app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   let tenantId: string;
   if (currentUser.role === 'superadmin') {
-    tenantId = body.tenantId || '';
+    tenantId = body.tenantId || c.get('tenantId') || '';
     if (tenantId) {
       const [tenantExists] = await db
         .select({ id: tenants.id })
@@ -153,14 +153,19 @@ app.get('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   const overrideTenantId = c.get('tenantId');
 
-  const conditions: ReturnType<typeof eq>[] = [];
   if (currentUser.role === 'superadmin') {
     if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
-    conditions.push(eq(invitation.tenantId, overrideTenantId!));
-  } else {
-    if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
-    conditions.push(eq(invitation.tenantId, currentUser.tenantId!));
+    const rows = await db
+      .select()
+      .from(invitation)
+      .where(and(or(eq(invitation.tenantId, overrideTenantId!), isNull(invitation.tenantId))) as SQL | undefined)
+      .orderBy(invitation.createdAt);
+    return c.json({ data: rows });
   }
+
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
+  conditions.push(eq(invitation.tenantId, currentUser.tenantId!));
 
   const rows = await db
     .select()
