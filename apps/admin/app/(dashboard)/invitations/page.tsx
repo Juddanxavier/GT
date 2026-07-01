@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { api } from '@/lib/api';
 import { useTenants, useBranches, type ApiBranch } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
+import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { Mail, MailX, Plus, LoaderCircle } from 'lucide-react';
 
 const SUPERADMIN_INVITE_ROLES = ['superadmin', 'tenant-admin', 'staff'];
@@ -29,6 +30,7 @@ type Invitation = {
 export default function InvitationsPage() {
   usePageTitle('Invitations');
   const queryClient = useQueryClient();
+  const { tenantFilter } = useTenantFilter();
   const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useBranches();
 
@@ -54,7 +56,7 @@ export default function InvitationsPage() {
   }, []);
 
   const { data: invitations = [], isLoading, refetch } = useQuery<Invitation[]>({
-    queryKey: ['invitations'],
+    queryKey: ['invitations', tenantFilter],
     queryFn: () => api.get<Invitation[]>('/api/invitations'),
   });
 
