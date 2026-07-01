@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Button, Card, Label, Modal, Tabs, Table, Skeleton, Chip, DateRangePicker, DateField, RangeCalendar, FieldError } from '@heroui/react';
+import { Button, Card, Label, Modal, Tabs, Table, Skeleton, Chip } from '@heroui/react';
 import { FileText, Download, LoaderCircle, Filter, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { KpiCard } from '@/components/kpi-card';
-import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
-interface RangeValue<T> { start: T; end: T }
 import { authClient } from '@/lib/auth-client';
 import { api, getTenantFilter, getBranchFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -59,7 +57,8 @@ export default function ReportsPage() {
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [reportType, setReportType] = useState<string>('shipments');
-  const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [allTime, setAllTime] = useState(true);
 
   const [records, setRecords] = useState<ShipmentRow[] | QuotationRow[]>([]);
@@ -73,30 +72,18 @@ export default function ReportsPage() {
 
   const totalPages = Math.ceil(total / ROWS_PER_PAGE);
 
-  function fmtDate(date: DateValue): string {
-    return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
-  }
+  const startStr = startDate;
+  const endStr = endDate;
 
-  const startStr = dateRange ? fmtDate(dateRange.start) : '';
-  const endStr = dateRange ? fmtDate(dateRange.end) : '';
-  const todayVal = today(getLocalTimeZone());
-  const dateInvalid = dateRange != null && dateRange.end.compare(todayVal) > 0;
-
-  const fetchReport = useCallback(async (type: string, range: RangeValue<DateValue> | null, pageNum: number) => {
+  const fetchReport = useCallback(async (type: string, start: string, end: string, pageNum: number) => {
     setError('');
-    if (range && range.end.compare(today(getLocalTimeZone())) > 0) {
-      setError('Cannot generate report with future dates');
-      return;
-    }
     setLoading(true);
     setReportType(type);
     try {
-      const s = range ? fmtDate(range.start) : '';
-      const e = range ? fmtDate(range.end) : '';
       const offset = (pageNum - 1) * ROWS_PER_PAGE;
       const params = new URLSearchParams({ limit: String(ROWS_PER_PAGE), offset: String(offset) });
-      if (s) params.set('start', s);
-      if (e) params.set('end', e);
+      if (start) params.set('start', start);
+      if (end) params.set('end', end);
 
       const dataUrl = type === 'shipments' ? '/api/reports/shipments/data' : '/api/reports/quotations/data';
       const dataRes = await api.get<{ rows: ShipmentRow[] | QuotationRow[]; total: number }>(`${dataUrl}?${params}`);
@@ -197,24 +184,23 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2">
           <Button onPress={() => setFilterOpen(true)}>
             <Filter size={16} />
-            {dateRange ? 'Change Filter' : allTime ? 'All Time' : 'Filter Report'}
+            {startDate ? 'Change Filter' : allTime ? 'All Time' : 'Filter Report'}
           </Button>
-          {(dateRange || allTime) && (
+          {(startDate || allTime) && (
             <Button variant="secondary" onPress={downloadPdf} isDisabled={genPdf}>
               {genPdf ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
               {genPdf ? 'Generating...' : 'Download PDF'}
             </Button>
           )}
-          {(dateRange || allTime) && (
+          {(startDate || allTime) && (
             <Button variant="secondary" onPress={sendEmailReport} isDisabled={sendingEmail}>
-              {sendingEmail ? <LoaderCircle size={16} className="animate-spin" /> : <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}
               {sendingEmail ? 'Sending...' : 'Send Email'}
             </Button>
           )}
         </div>
       </div>
 
-      {(allTime || dateRange) && (
+      {(allTime || startDate) && (
         <p className="text-sm text-muted">
           {reportType === 'shipments' ? 'Shipment' : 'Quotation'} report
           {allTime ? ' — All time' : startStr ? ` from ${startStr}` : ''}{!allTime && endStr ? ` to ${endStr}` : ''}
@@ -356,53 +342,23 @@ export default function ReportsPage() {
               <div className="space-y-2">
                 <Label>Date Range</Label>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" id="allTime" checked={allTime} onChange={(e) => { setAllTime(e.target.checked); if (e.target.checked) setDateRange(null); }} className="accent-primary" />
+                  <input type="checkbox" id="allTime" checked={allTime} onChange={(e) => { setAllTime(e.target.checked); if (e.target.checked) { setStartDate(''); setEndDate(''); } }} className="accent-primary" />
                   <label htmlFor="allTime" className="text-sm">All time (no date filter)</label>
                 </div>
                 {!allTime && (
-                <DateRangePicker className="w-full" value={dateRange} onChange={setDateRange} maxValue={todayVal} isInvalid={dateInvalid}>
-                  <DateField.Group fullWidth variant="secondary">
-                    <DateField.Input slot="start">
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                    <DateRangePicker.RangeSeparator />
-                    <DateField.Input slot="end">
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                    <DateField.Suffix>
-                      <DateRangePicker.Trigger>
-                        <DateRangePicker.TriggerIndicator />
-                      </DateRangePicker.Trigger>
-                    </DateField.Suffix>
-                  </DateField.Group>
-                  <FieldError>End date cannot be in the future</FieldError>
-                  <DateRangePicker.Popover>
-                    <RangeCalendar aria-label="Date range">
-                      <RangeCalendar.Header>
-                        <RangeCalendar.YearPickerTrigger>
-                          <RangeCalendar.YearPickerTriggerHeading />
-                          <RangeCalendar.YearPickerTriggerIndicator />
-                        </RangeCalendar.YearPickerTrigger>
-                        <RangeCalendar.NavButton slot="previous" />
-                        <RangeCalendar.NavButton slot="next" />
-                      </RangeCalendar.Header>
-                      <RangeCalendar.Grid>
-                        <RangeCalendar.GridHeader>
-                          {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                        </RangeCalendar.GridHeader>
-                        <RangeCalendar.GridBody>
-                          {(date) => <RangeCalendar.Cell date={date} />}
-                        </RangeCalendar.GridBody>
-                      </RangeCalendar.Grid>
-                    </RangeCalendar>
-                  </DateRangePicker.Popover>
-                </DateRangePicker>
+                <div className="flex items-center gap-2">
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <span className="text-muted text-sm">to</span>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
                 )}
               </div>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setFilterOpen(false)}>Cancel</Button>
-              <Button isDisabled={dateInvalid} isPending={loading} onPress={() => fetchReport(reportType, dateRange, 1)}>Generate Report</Button>
+              <Button isDisabled={false} isPending={loading} onPress={() => fetchReport(reportType, startDate, endDate, 1)}>Generate Report</Button>
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
