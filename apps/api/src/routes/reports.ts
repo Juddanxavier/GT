@@ -151,7 +151,7 @@ app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) 
       const total = (countResult?.total as number) ?? 0;
 
       const rows = await db.execute<Record<string, unknown>>(
-        sql`SELECT s.id, s.tracking_no, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(c.name, '') AS customer_name, COALESCE(b.name, '') AS branch_name FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT s.id, s.tracking_no, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(c.name, '') AS customer_name, COALESCE(c.phone, '') AS customer_phone, COALESCE(c.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       );
 
       return { rows, total };

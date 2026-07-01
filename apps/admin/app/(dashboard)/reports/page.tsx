@@ -17,6 +17,8 @@ type ShipmentRow = {
   carrier: string;
   created_at: string;
   customer_name: string;
+  customer_phone: string;
+  customer_email: string;
   branch_name: string;
 };
 
@@ -248,6 +250,8 @@ export default function ReportsPage() {
                   <>
                     <Table.Column isRowHeader>Tracking #</Table.Column>
                     <Table.Column>Customer</Table.Column>
+                    <Table.Column>Phone</Table.Column>
+                    <Table.Column>Email</Table.Column>
                     <Table.Column>Status</Table.Column>
                     <Table.Column>Origin</Table.Column>
                     <Table.Column>Destination</Table.Column>
@@ -267,19 +271,21 @@ export default function ReportsPage() {
                 )}
               </Table.Header>
               <Table.Body renderEmptyState={() => <div className="text-center py-16 text-muted text-sm">No records</div>}>
-                {reportType === 'shipments'
-                  ? (records as ShipmentRow[]).map((r) => (
-                      <Table.Row key={r.id}>
-                        <Table.Cell className="font-mono text-xs font-medium">{r.tracking_no}</Table.Cell>
-                        <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>
-                        <Table.Cell><Chip size="sm" variant="soft" color={STATUS_COLORS[r.status] ?? 'default'}>{r.status}</Chip></Table.Cell>
-                        <Table.Cell className="text-xs text-muted">{r.origin || '\u2014'}</Table.Cell>
-                        <Table.Cell className="text-xs text-muted">{r.destination || '\u2014'}</Table.Cell>
-                        <Table.Cell className="text-xs">{r.carrier || '\u2014'}</Table.Cell>
-                        <Table.Cell className="text-xs text-muted">{r.branch_name || '\u2014'}</Table.Cell>
-                        <Table.Cell className="text-xs text-muted">{new Date(r.created_at).toLocaleDateString()}</Table.Cell>
-                      </Table.Row>
-                    ))
+                    {reportType === 'shipments'
+                      ? (records as ShipmentRow[]).map((r) => (
+                          <Table.Row key={r.id}>
+                            <Table.Cell className="font-mono text-xs font-medium">{r.tracking_no}</Table.Cell>
+                            <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs">{r.customer_phone || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs">{r.customer_email || '\u2014'}</Table.Cell>
+                            <Table.Cell><Chip size="sm" variant="soft" color={STATUS_COLORS[r.status] ?? 'default'}>{r.status}</Chip></Table.Cell>
+                            <Table.Cell className="text-xs text-muted">{r.origin || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs text-muted">{r.destination || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs">{r.carrier || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs text-muted">{r.branch_name || '\u2014'}</Table.Cell>
+                            <Table.Cell className="text-xs text-muted">{new Date(r.created_at).toLocaleDateString()}</Table.Cell>
+                          </Table.Row>
+                        ))
                   : (records as QuotationRow[]).map((r) => (
                       <Table.Row key={r.id}>
                         <Table.Cell className="font-mono text-xs font-medium">{r.quote_no}</Table.Cell>
