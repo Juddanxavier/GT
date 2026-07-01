@@ -68,7 +68,7 @@ export default function InvoiceDetailPage() {
               { label: 'Invoice No', value: invoice.invoiceNo as string },
               { label: 'Tracking No', value: invoice.trackingNo as string },
               { label: 'Customer', value: (invoice.customerName as string) ?? '—' },
-              { label: 'Amount', value: fmtINR(invoice.amount) },
+               { label: 'Amount', value: fmtINR(invoice.amount) },
               { label: 'Status', value: invoice.status as string },
               { label: 'Created', value: invoice.createdAt ? new Date(invoice.createdAt as string).toLocaleDateString() : '—' },
               { label: 'Emails Sent', value: `${invoice.emailCount ?? 0}/2 today` },
