@@ -41,25 +41,29 @@ function ShipmentTable({ rows }: { rows: Record<string, unknown>[] }) {
   return (
     <View>
       <View style={styles.tableHeaderRow}>
-        <Text style={[styles.tableHeaderText, { width: '14%' }]}>Tracking #</Text>
-        <Text style={[styles.tableHeaderText, { width: '14%' }]}>Label Code</Text>
-        <Text style={[styles.tableHeaderText, { width: '14%' }]}>Customer</Text>
-        <Text style={[styles.tableHeaderText, { width: '13%' }]}>Phone</Text>
-        <Text style={[styles.tableHeaderText, { width: '15%' }]}>Email</Text>
-        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Bill Amt</Text>
-        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Status</Text>
-        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Date</Text>
+        <Text style={[styles.tableHeaderText, { width: '13%' }]}>Tracking #</Text>
+        <Text style={[styles.tableHeaderText, { width: '12%' }]}>Customer</Text>
+        <Text style={[styles.tableHeaderText, { width: '11%' }]}>Phone</Text>
+        <Text style={[styles.tableHeaderText, { width: '13%' }]}>Email</Text>
+        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Destination</Text>
+        <Text style={[styles.tableHeaderText, { width: '9%' }]}>Carrier</Text>
+        <Text style={[styles.tableHeaderText, { width: '9%' }]}>Branch</Text>
+        <Text style={[styles.tableHeaderText, { width: '8%' }]}>Bill Amt</Text>
+        <Text style={[styles.tableHeaderText, { width: '8%' }]}>Status</Text>
+        <Text style={[styles.tableHeaderText, { width: '7%' }]}>Date</Text>
       </View>
       {rows.map((r, i) => (
         <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.altRow : {}]}>
-          <Text style={[styles.tableCell, { width: '14%', fontFamily: 'Courier', fontSize: 6.5 }]}>{(r.tracking_no as string) || ''}</Text>
-          <Text style={[styles.tableCell, { width: '14%', fontFamily: 'Courier', fontSize: 6.5 }]}>{(r.label_code as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '14%', fontSize: 6.5 }]}>{(r.customer_name as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '13%', fontSize: 6.5 }]}>{(r.customer_phone as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '15%', fontSize: 6.5 }]}>{(r.customer_email as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '10%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `\u20B9${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '10%', fontSize: 6.5 }]}>{(r.status as string) || ''}</Text>
-          <Text style={[styles.tableCellMuted, { width: '10%', fontSize: 6.5 }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
+          <Text style={[styles.tableCell, { width: '13%', fontFamily: 'Courier', fontSize: 6.5 }]}>{(r.tracking_no as string) || ''}</Text>
+          <Text style={[styles.tableCell, { width: '12%', fontSize: 6.5 }]}>{(r.customer_name as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '11%', fontSize: 6.5 }]}>{(r.customer_phone as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '13%', fontSize: 6.5 }]}>{(r.customer_email as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '10%', fontSize: 6.5 }]}>{(r.destination as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.carrier as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.branch_name as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `\u20B9${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.status as string) || ''}</Text>
+          <Text style={[styles.tableCellMuted, { width: '7%', fontSize: 6.5 }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
         </View>
       ))}
     </View>

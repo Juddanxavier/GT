@@ -5,6 +5,8 @@ import { Button, Card, Label, Modal, Tabs, Table, Skeleton, Chip } from '@heroui
 import { FileText, Download, LoaderCircle, Filter, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { KpiCard } from '@/components/kpi-card';
 import { authClient } from '@/lib/auth-client';
+import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { useDashboardBranches } from '@/lib/queries';
 import { api, getTenantFilter, getBranchFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
 
@@ -56,6 +58,9 @@ export default function ReportsPage() {
   usePageTitle('Reports');
   const { data: session } = authClient.useSession();
   const isStaff = (session?.user as Record<string, unknown>)?.role === 'staff';
+  const userRole = (session?.user as Record<string, unknown>)?.role as string;
+  const { branchFilter, setBranch } = useTenantFilter();
+  const { data: branches = [] } = useDashboardBranches();
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [reportType, setReportType] = useState<string>('shipments');
@@ -361,6 +366,16 @@ export default function ReportsPage() {
                 </div>
                 )}
               </div>
+              {userRole !== 'staff' && (
+              <div className="space-y-1">
+                <Label>Branch</Label>
+                <select value={branchFilter} onChange={(e) => setBranch(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">All Branches</option>
+                  {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              )}
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setFilterOpen(false)}>Cancel</Button>
