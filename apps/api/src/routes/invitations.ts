@@ -182,11 +182,11 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   const { id } = c.req.param();
 
-  const conditions: ReturnType<typeof eq>[] = [eq(invitation.id, id!)];
+  const conditions: SQL[] = [eq(invitation.id, id!) as SQL];
   if (currentUser.role === 'superadmin') {
     const overrideTenantId = c.get('tenantId');
     if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
-    conditions.push(eq(invitation.tenantId, overrideTenantId!));
+    conditions.push(or(eq(invitation.tenantId, overrideTenantId!), isNull(invitation.tenantId)));
   } else {
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(invitation.tenantId, currentUser.tenantId!));

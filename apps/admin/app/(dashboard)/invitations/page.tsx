@@ -113,9 +113,12 @@ export default function InvitationsPage() {
   async function cancelInvitation(id: string) {
     setCancellingId(id);
     try {
+      const h: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (tenantFilter) h['X-Tenant-ID'] = tenantFilter;
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invitations/${id}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: h,
       });
       refetch();
     } catch { /* ignore */ }
