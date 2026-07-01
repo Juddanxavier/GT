@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
   Clock, CalendarClock, CheckCircle2, RefreshCw,
-  ArrowRight, Users, FileText, Building2,
-  TrendingDown, Sunrise, Sun, Moon,
+  ArrowRight, Users, FileText, Building2, Activity,
+  TrendingDown, Sunrise, Sun, Moon, LogIn, Bell, Mail,
 } from 'lucide-react';
 import { Button, Card, Badge, Chip, Heading, Paragraph, Select, ListBox } from '@heroui/react';
 import {
@@ -564,7 +564,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
         </div>
       </div>
 
-      {renderAlerts(stats.alerts)}
+      <ActivityLog />
     </div>
   );
 }
@@ -1102,10 +1102,10 @@ function OperationalDashboard({
         </Card>
       </div>
 
-      {/* Alerts + Quick Actions */}
+      {/* Activity + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          {renderAlerts(stats.alerts)}
+          <ActivityLog />
         </div>
         <ActionCard router={router} onRetry={onRetry} />
       </div>
@@ -1148,6 +1148,95 @@ function QuickActionButton({ icon, label, onClick }: { icon: React.ReactNode; la
       <span className="flex-1">{label}</span>
       <ArrowRight size={14} className="text-muted shrink-0" />
     </button>
+  );
+}
+
+function ActivityLog() {
+  const [entries, setEntries] = useState<{ id: string; event: string; userId: string | null; metadata: Record<string, unknown>; createdAt: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const fetched = useRef(false);
+
+  useEffect(() => {
+    if (fetched.current) return;
+    fetched.current = true;
+    api.getFull<{ data: typeof entries }>('/api/audit-logs?page=1&limit=5')
+      .then((b) => setEntries(b.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  function formatTime(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  }
+
+  const iconMap: Record<string, React.ReactNode> = {
+    LOGIN_SUCCESS: <LogIn size={14} />,
+    LOGIN_FAILED: <LogIn size={14} />,
+    NOTIFICATION_SENT: <Bell size={14} />,
+    NOTIFICATION_READ: <Bell size={14} />,
+    NOTIFICATION_FAILED: <Bell size={14} />,
+    INVITATION_CREATED: <Mail size={14} />,
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <Card.Title className="text-sm font-semibold">Recent Activity</Card.Title>
+            <Card.Description className="text-xs text-muted">
+              Latest system events
+            </Card.Description>
+          </div>
+          <a href="/audit" className="text-xs text-accent hover:underline shrink-0">
+            View all
+          </a>
+        </div>
+      </Card.Header>
+      <Card.Content>
+        {loading ? (
+          <div className="space-y-3 py-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-12 w-full rounded-lg bg-muted/20 animate-pulse" />
+            ))}
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="flex items-center gap-2 text-muted text-sm py-4">
+            <Activity size={18} />
+            <span>No recent activity</span>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {entries.map((e) => (
+              <div key={e.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/30 transition-colors">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-muted/10 text-muted shrink-0 mt-0.5">
+                  {iconMap[e.event] ?? <Activity size={14} />}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Chip size="sm" variant="soft" color="default" className="text-[10px]">
+                      {e.event.replace(/_/g, ' ')}
+                    </Chip>
+                    <span className="text-[11px] text-muted/60 shrink-0">{formatTime(e.createdAt)}</span>
+                  </div>
+                  <p className="text-xs text-muted truncate mt-0.5">
+                    {((e.metadata as Record<string, unknown>)?.email as string) ||
+                     ((e.metadata as Record<string, unknown>)?.recipient as string) ||
+                     (e.userId ? `${e.userId.slice(0, 8)}…` : '—')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card.Content>
+    </Card>
   );
 }
 
