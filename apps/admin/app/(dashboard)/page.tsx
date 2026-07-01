@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
@@ -1154,16 +1154,15 @@ function QuickActionButton({ icon, label, onClick }: { icon: React.ReactNode; la
 function ActivityLog() {
   const [entries, setEntries] = useState<{ id: string; event: string; userId: string | null; metadata: Record<string, unknown>; createdAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const fetched = useRef(false);
+  const { tenantFilter } = useTenantFilter();
 
   useEffect(() => {
-    if (fetched.current) return;
-    fetched.current = true;
+    setLoading(true);
     api.getFull<{ data: typeof entries }>('/api/audit-logs?page=1&limit=5')
       .then((b) => setEntries(b.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [tenantFilter]);
 
   function formatTime(iso: string) {
     const d = new Date(iso);
