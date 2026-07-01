@@ -1,5 +1,9 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+export function fmtINR(n: number | string) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(Number(n));
+}
+
 let tenantOverride: string | null = null;
 let branchOverride: string | null = null;
 

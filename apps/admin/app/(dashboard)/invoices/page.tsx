@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Eye, FileText, MoreVertical, Send, Trash2, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Dropdown, Input, Modal, Pagination, Skeleton, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useInvoices, useSendInvoice, useDeleteInvoice } from '@/lib/queries';
-import { getTenantFilter } from '@/lib/api';
+import { api, fmtINR, getTenantFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -185,7 +185,7 @@ export default function InvoicesPage() {
                       <Table.Cell><span className="font-mono text-xs font-medium">{inv.invoiceNo}</span></Table.Cell>
                       <Table.Cell className="font-mono text-xs">{inv.trackingNo || '—'}</Table.Cell>
                       <Table.Cell>{inv.customerName}</Table.Cell>
-                      <Table.Cell className="font-medium">₹{Number(inv.amount).toLocaleString()}</Table.Cell>
+                      <Table.Cell className="font-medium">{fmtINR(inv.amount)}</Table.Cell>
                       <Table.Cell>
                         <Chip size="sm" variant="soft" color={STATUS_COLORS[inv.status] ?? 'default'}>{inv.status}</Chip>
                       </Table.Cell>

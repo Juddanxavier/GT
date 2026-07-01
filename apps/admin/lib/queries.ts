@@ -133,8 +133,9 @@ export function useDashboardBranches() {
 // ─── Customer queries ───────────────────────────────────────────────
 
 export function useCustomers() {
+  const { filterVersion } = useTenantFilter();
   return useQuery<Customer[]>({
-    queryKey: ['customers'],
+    queryKey: ['customers', filterVersion],
     queryFn: () => api.get<Customer[]>('/api/customers'),
   });
 }

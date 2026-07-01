@@ -336,7 +336,7 @@ export function CustomerAssigner({
                       </p>
                     )}
                     {!showQuickAdd ? (
-                      <Button size="sm" variant="secondary" fullWidth onPress={() => { setShowQuickAdd(true); setQuickName(searchQuery); }}>
+                      <Button size="sm" variant="secondary" fullWidth onPress={() => { setShowQuickAdd(true); setQuickName(searchQuery); setQuickPhone(/^\d{6,}$/.test(searchQuery.trim()) ? searchQuery.trim() : ''); }}>
                         <Plus size={14} />
                         Add {searchQuery.trim() ? `"${searchQuery}"` : 'new customer'}
                       </Button>
