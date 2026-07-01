@@ -58,6 +58,7 @@ export default function InvitationsPage() {
   const { data: invitations = [], isLoading, refetch } = useQuery<Invitation[]>({
     queryKey: ['invitations', tenantFilter],
     queryFn: () => api.get<Invitation[]>('/api/invitations'),
+    refetchOnMount: 'always',
   });
 
   const isTenantAdmin = userRole === 'tenant-admin';
