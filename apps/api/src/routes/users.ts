@@ -391,7 +391,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await logAudit('USER_CREATED', createdUserId, { email, role, tenantId, branchId }, c);
 
   // Send activation email
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = c.req.header('Origin') || process.env.APP_URL || `https://${c.req.header('Host') || 'localhost:3000'}`;
   const activateLink = `${appUrl}/onboard?token=${onboardToken}`;
 
   await sendEmail({

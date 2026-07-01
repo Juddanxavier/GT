@@ -102,7 +102,7 @@ app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await logAudit('INVITATION_CREATED', invite.id, { email, role, tenantId }, c);
 
   // Send invitation email
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = c.req.header('Origin') || process.env.APP_URL || `https://${c.req.header('Host') || 'localhost:3000'}`;
   const inviteLink = `${appUrl}/onboard?token=${token}`;
 
   await sendEmail({
