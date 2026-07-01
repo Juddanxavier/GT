@@ -60,6 +60,7 @@ export default function ReportsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reportType, setReportType] = useState<string>('shipments');
   const [dateRange, setDateRange] = useState<RangeValue<DateValue> | null>(null);
+  const [allTime, setAllTime] = useState(true);
 
   const [records, setRecords] = useState<ShipmentRow[] | QuotationRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -196,15 +197,15 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2">
           <Button onPress={() => setFilterOpen(true)}>
             <Filter size={16} />
-            {dateRange ? 'Change Filter' : 'Filter Report'}
+            {dateRange ? 'Change Filter' : allTime ? 'All Time' : 'Filter Report'}
           </Button>
-          {dateRange && (
+          {(dateRange || allTime) && (
             <Button variant="secondary" onPress={downloadPdf} isDisabled={genPdf}>
               {genPdf ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
               {genPdf ? 'Generating...' : 'Download PDF'}
             </Button>
           )}
-          {dateRange && (
+          {(dateRange || allTime) && (
             <Button variant="secondary" onPress={sendEmailReport} isDisabled={sendingEmail}>
               {sendingEmail ? <LoaderCircle size={16} className="animate-spin" /> : <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}
               {sendingEmail ? 'Sending...' : 'Send Email'}
@@ -213,10 +214,10 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {dateRange && (
+      {(allTime || dateRange) && (
         <p className="text-sm text-muted">
           {reportType === 'shipments' ? 'Shipment' : 'Quotation'} report
-          {startStr ? ` from ${startStr}` : ''}{endStr ? ` to ${endStr}` : ''}
+          {allTime ? ' — All time' : startStr ? ` from ${startStr}` : ''}{!allTime && endStr ? ` to ${endStr}` : ''}
           {' \u2014 '}{total} record{total !== 1 ? 's' : ''}
         </p>
       )}
@@ -352,8 +353,13 @@ export default function ReportsPage() {
                   </Tabs.List>
                 </Tabs>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label>Date Range</Label>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="allTime" checked={allTime} onChange={(e) => { setAllTime(e.target.checked); if (e.target.checked) setDateRange(null); }} className="accent-primary" />
+                  <label htmlFor="allTime" className="text-sm">All time (no date filter)</label>
+                </div>
+                {!allTime && (
                 <DateRangePicker className="w-full" value={dateRange} onChange={setDateRange} maxValue={todayVal} isInvalid={dateInvalid}>
                   <DateField.Group fullWidth variant="secondary">
                     <DateField.Input slot="start">
@@ -391,6 +397,7 @@ export default function ReportsPage() {
                     </RangeCalendar>
                   </DateRangePicker.Popover>
                 </DateRangePicker>
+                )}
               </div>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
