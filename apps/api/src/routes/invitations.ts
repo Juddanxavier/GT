@@ -186,7 +186,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (currentUser.role === 'superadmin') {
     const overrideTenantId = c.get('tenantId');
     if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
-    conditions.push(or(eq(invitation.tenantId, overrideTenantId!), isNull(invitation.tenantId)));
+    conditions.push(or(eq(invitation.tenantId, overrideTenantId!), isNull(invitation.tenantId)) as SQL);
   } else {
     if (!currentUser.tenantId) return c.json({ error: 'No tenant assigned' }, 400);
     conditions.push(eq(invitation.tenantId, currentUser.tenantId!));
@@ -205,7 +205,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
     .set({ status: 'cancelled', updatedAt: new Date() })
     .where(eq(invitation.id, id!));
 
-  await logAudit('INVITATION_CANCELLED', id, { email: target.email }, c);
+  await logAudit('INVITATION_CANCELLED', id!, { email: target.email }, c);
   return c.json({ data: { success: true } });
 });
 
