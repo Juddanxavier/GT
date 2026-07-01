@@ -80,12 +80,15 @@ const app = new Hono<{
 // 11. Branch middleware — validates X-Branch-ID against tenant (depends on tenant)
 // 12. Rate limiting — limits per-route requests (depends on session for authenticated limits)
 
-const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? ['http://localhost:3000'];
+const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim());
+const corsOrigin = corsOrigins && corsOrigins.length > 0
+  ? corsOrigins
+  : (origin: string) => origin;
 
 app.use(
   '/api/auth/*',
   cors({
-    origin: corsOrigins,
+    origin: corsOrigin,
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['POST', 'GET', 'OPTIONS'],
     exposeHeaders: ['Content-Length'],
@@ -95,7 +98,7 @@ app.use(
 );
 
 app.use('*', cors({
-  origin: corsOrigins,
+  origin: corsOrigin,
   credentials: true,
 }));
 
