@@ -195,7 +195,7 @@ export default function ShipmentsPage() {
         <Button onPress={() => {
           setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true);
           const lastId = typeof window !== 'undefined' ? localStorage.getItem(LAST_CUSTOMER_KEY) : null;
-          const lastCust = lastId && allCustomers.find((c) => c.id === lastId);
+          const lastCust = lastId ? allCustomers.find((c) => c.id === lastId) : undefined;
           setAssignerData({ customerId: lastCust?.id ?? null, contactEmail: '', contactPhone: '' });
         }}>New Shipment</Button>
       </div>
