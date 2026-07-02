@@ -1,0 +1,63 @@
+# Roadmap: Gajan Traders Shipment Tracking
+
+## Overview
+
+The project has a fully functional backend API, a comprehensive admin panel, and a basic customer portal. The next milestone focuses on UI restructuring and customer portal enhancements: extract shared component patterns into `@repo/ui`, refactor admin pages for consistency and maintainability, then build out the customer portal with dashboard, profile, quotes, invoices, and notification preferences.
+
+## Phases
+
+- [ ] **Phase 1: UI Foundation** — Extract shared UI component library from admin patterns into `@repo/ui` with design tokens
+- [ ] **Phase 2: Admin UI Restructuring** — Refactor all admin pages to use shared components, improve mobile layout, add consistent states
+- [ ] **Phase 3: Customer Portal Enhancement** — Build customer dashboard, profile, quotes, invoices, notification prefs, improved tracking UX
+
+## Phase Details
+
+### Phase 1: UI Foundation
+**Goal**: A reusable component library in `@repo/ui` with consistent design tokens that all apps consume
+**Depends on**: Nothing (first phase)
+**Requirements**: UI-FOUND-01, UI-FOUND-02, UI-FOUND-03, UI-FOUND-04, UI-FOUND-05, UI-FOUND-06, UI-FOUND-07, UI-FOUND-08, UI-FOUND-09
+**Success Criteria** (what must be TRUE):
+  1. Admin and customer apps import shared components from `@repo/ui` instead of inline definitions
+  2. Design tokens (color semantics, spacing scale, typography) are defined in a single place and consumed by both apps
+  3. A DataTable component supports sorting, pagination, column visibility, and action slots — used by at least one admin page
+  4. Shared EmptyState, ErrorState, and LoadingState components exist and render correctly in dark/light mode
+  5. PageHeader, StatusBadge, FilterBar, ConfirmDialog, and KpiCard components exist with documented props
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 2: Admin UI Restructuring
+**Goal**: All admin pages are consistent, maintainable, mobile-responsive, and use shared components
+**Depends on**: Phase 1
+**Requirements**: ADMIN-UI-01, ADMIN-UI-02, ADMIN-UI-03, ADMIN-UI-04, ADMIN-UI-05, ADMIN-UI-06, ADMIN-UI-07, ADMIN-UI-08, ADMIN-UI-09, ADMIN-UI-10, ADMIN-UI-11, ADMIN-UI-12, ADMIN-UI-13
+**Success Criteria** (what must be TRUE):
+  1. Every admin list page (shipments, customers, quotations, invoices, branches, users, invitations, reports, audit log) uses shared DataTable, FilterBar, StatusBadge, and PageHeader from `@repo/ui`
+  2. Admin navigation and data tables are usable on mobile viewports (sidebar collapses, tables scroll horizontally)
+  3. Every admin page displays a loading skeleton on fetch and a meaningful error state on failure
+  4. Empty states show a helpful illustration/message and a CTA rather than a blank page
+  5. Dashboard sections are extracted into named components and the dashboard page loads without duplication
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 3: Customer Portal Enhancement
+**Goal**: Customers have a full-featured portal with dashboard, profile management, quotes, invoices, notification preferences, and polished tracking UX
+**Depends on**: Phase 2
+**Requirements**: CUST-PORTAL-04, CUST-PORTAL-05, CUST-PORTAL-06, CUST-PORTAL-07, CUST-PORTAL-08, CUST-PORTAL-09, CUST-PORTAL-10, CUST-PORTAL-11, CUST-PORTAL-12
+**Success Criteria** (what must be TRUE):
+  1. Customer dashboard shows shipment count KPIs, recent tracking updates, and alerts for exceptions/stale shipments
+  2. Customer can view and edit their profile (name, email, password change)
+  3. Customer can view their quotations (list + detail with line items) and invoices (list + detail with payment status)
+  4. Customer can configure notification preferences (email/WhatsApp opt-in per event type) and they persist
+  5. "My Shipments" page has search, status filtering, and pagination
+  6. Tracking timeline shows carrier logos, rich status descriptions, and estimated delivery visualization
+  7. Customer portal is fully responsive on mobile — nav collapses, tables scroll, touch targets are adequate
+  8. Every page shows appropriate loading, error, and empty states
+**Plans**: TBD
+**UI hint**: yes
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. UI Foundation | 0/0 | Not started | - |
+| 2. Admin UI Restructuring | 0/0 | Not started | - |
+| 3. Customer Portal Enhancement | 0/0 | Not started | - |
