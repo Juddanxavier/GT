@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Eye, FileText, MoreVertical, Send, Trash2, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Dropdown, Input, Modal, Pagination, Skeleton, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
-import { useInvoices, useSendInvoice, useDeleteInvoice } from '@/lib/queries';
+import { useInvoices, useSendInvoice, useDeleteInvoice, type PaginatedResult } from '@/lib/queries';
+import type { Invoice } from '@/lib/queries';
 import { api, fmtINR, getTenantFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,20 +33,25 @@ export default function InvoicesPage() {
   const [sendSuccess, setSendSuccess] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; invoiceNo: string } | null>(null);
 
-  const { data: invoicesRaw = [], isPending: loading, isError, refetch } = useInvoices(searchQuery);
+  const invoicesQuery = useInvoices(searchQuery, page, ROWS_PER_PAGE, statusFilter);
+  const invoicesResp = invoicesQuery.data as PaginatedResult<Invoice> | undefined;
+  const invoicesRaw = Array.isArray(invoicesResp) ? invoicesResp : (invoicesResp?.data ?? []);
+  const totalCount = Array.isArray(invoicesResp) ? invoicesRaw.length : (invoicesResp?.total ?? 0);
+  const counts = !Array.isArray(invoicesResp) ? invoicesResp?.counts : undefined;
+  const { isPending: loading, isError, refetch } = invoicesQuery;
+
   const sendInvoice = useSendInvoice();
   const deleteInvoice = useDeleteInvoice();
 
   const invoices = useMemo(() => {
-    let items = invoicesRaw.map((inv) => ({
+    const items = invoicesRaw.map((inv) => ({
       ...inv,
       customerName: inv.customerName ?? '—',
     }));
-    if (statusFilter !== 'all') items = items.filter((inv) => inv.status === statusFilter);
     if (sortDescriptor.column) {
       const col = sortDescriptor.column as string;
       const dir = sortDescriptor.direction;
-      items = [...items].sort((a, b) => {
+      items.sort((a, b) => {
         const valA = String((a as Record<string, unknown>)[col] ?? '');
         const valB = String((b as Record<string, unknown>)[col] ?? '');
         const cmp = valA.localeCompare(valB);
@@ -53,20 +59,16 @@ export default function InvoicesPage() {
       });
     }
     return items;
-  }, [invoicesRaw, statusFilter, sortDescriptor]);
+  }, [invoicesRaw, sortDescriptor]);
 
-  const totalPages = Math.max(1, Math.ceil(invoices.length / ROWS_PER_PAGE));
-  const paginated = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return invoices.slice(start, start + ROWS_PER_PAGE);
-  }, [page, invoices]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
+  const paginated = invoices; // Data is already server-paginated
   const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, invoices.length);
+  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
 
-  const kpiTotal = invoicesRaw.length;
-  const kpiSentToday = invoicesRaw.filter((inv) => inv.emailCount > 0).length;
-  const kpiPaid = invoicesRaw.filter((inv) => inv.status === 'paid').length;
-  const kpiPending = invoicesRaw.filter((inv) => inv.status === 'unpaid').length;
+  const kpiTotal = totalCount;
+  const kpiPaid = counts?.paid ?? 0;
+  const kpiPending = counts?.unpaid ?? 0;
 
   function handleSearch() {
     setPage(1);
@@ -117,7 +119,6 @@ export default function InvoicesPage() {
           { label: 'Total', count: kpiTotal, color: '#3b82f6', icon: FileText },
           { label: 'Paid', count: kpiPaid, color: '#22c55e', icon: CheckCircle },
           { label: 'Unpaid', count: kpiPending, color: '#f59e0b', icon: Clock },
-          { label: 'Sent Today', count: kpiSentToday, color: '#8b5cf6', icon: Send },
         ].map(({ label, count, color, icon: Icon }) => (
           <div key={label} className="rounded-xl border border-border bg-surface overflow-hidden flex flex-col">
             <div className="p-5 pb-3 flex-1">
@@ -213,7 +214,7 @@ export default function InvoicesPage() {
             </Table.ScrollContainer>
             <Table.Footer>
               <Pagination size="sm">
-                <Pagination.Summary>{start} to {end} of {invoices.length} results</Pagination.Summary>
+                <Pagination.Summary>{start} to {end} of {totalCount} results</Pagination.Summary>
                 <Pagination.Content>
                   <Pagination.Item>
                     <Pagination.Previous isDisabled={page === 1} onPress={() => setPage(Math.max(1, page - 1))}>

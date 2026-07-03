@@ -1,4 +1,4 @@
-import { and, desc, eq, or, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -56,28 +56,90 @@ app.get(
 
     const status = c.req.query('status');
     const customerId = c.req.query('customerId');
+    const search = c.req.query('search');
+    const page = Math.max(1, parseInt(c.req.query('page') ?? '', 10) || 0);
+    const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') ?? '', 10) || 50));
+    const hasPagination = page > 0;
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [eq(quotations.tenantId, scope.tenantId!)];
+    const conditions: (ReturnType<typeof eq> | ReturnType<typeof like> | SQL)[] = [eq(quotations.tenantId, scope.tenantId!)];
     if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId!));
     if (status) conditions.push(eq(quotations.status, status!));
     if (customerId) conditions.push(eq(quotations.customerId, customerId!));
+    if (search) conditions.push(like(quotations.quoteNo, `%${search}%`));
 
-    const cacheKey = `quotations:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}`;
-    const rows = await withCache(
+    const cacheKey = hasPagination
+      ? `quotations:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}:${page}:${limit}`
+      : `quotations:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}`;
+
+    const result = await withCache(
       scope.tenantId!,
       cacheKey,
-      () =>
-        db
+      async () => {
+        if (hasPagination) {
+          const [countRow] = await db
+            .select({ count: sql<number>`COUNT(*)::int` })
+            .from(quotations)
+            .where(and(...conditions) as SQL | undefined);
+          const count = countRow?.count ?? 0;
+          const offset = (page - 1) * limit;
+          const rows = await db
+            .select()
+            .from(quotations)
+            .where(and(...conditions) as SQL | undefined)
+            .orderBy(desc(quotations.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+          // Compute status counts from ALL matching records (ignoring status/customerId filter)
+          const countConditions: ReturnType<typeof eq>[] = [eq(quotations.tenantId, scope.tenantId!)];
+          if (scope.branchId) countConditions.push(eq(quotations.branchId, scope.branchId!));
+
+          const countRows = await db
+            .select({
+              status: quotations.status,
+              count: sql<number>`COUNT(*)::int`,
+            })
+            .from(quotations)
+            .where(and(...countConditions) as SQL | undefined)
+            .groupBy(quotations.status);
+
+          const counts: Record<string, number> = {};
+          for (const r of countRows) {
+            counts[r.status!] = r.count;
+          }
+
+          return { rows, total: count, page, limit, counts };
+        }
+
+        const rows = await db
           .select()
           .from(quotations)
           .where(and(...conditions) as SQL | undefined)
-          .orderBy(desc(quotations.createdAt)),
-      120,
+          .orderBy(desc(quotations.createdAt));
+        return { rows };
+      },
+      hasPagination ? 120 : 120,
     );
 
-    return c.json({ data: rows });
+    if (hasPagination) {
+      const r = result as {
+        rows: typeof quotations.$inferSelect[];
+        total: number;
+        page: number;
+        limit: number;
+        counts?: Record<string, number>;
+      };
+      return c.json({
+        data: r.rows,
+        total: r.total,
+        page: r.page,
+        limit: r.limit,
+        counts: r.counts,
+      });
+    }
+    return c.json({ data: (result as { rows: typeof quotations.$inferSelect[] }).rows });
   },
 );
 

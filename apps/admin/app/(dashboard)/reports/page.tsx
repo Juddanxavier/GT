@@ -310,7 +310,7 @@ export default function ReportsPage() {
                 <span className="text-muted">{total > 0 ? `${(page - 1) * ROWS_PER_PAGE + 1}\u2013${Math.min(page * ROWS_PER_PAGE, total)} of ${total}` : '0 results'}</span>
                 {totalPages > 0 && (
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="secondary" isDisabled={page === 1} onPress={() => fetchReport(reportType, dateRange, page - 1)}>Prev</Button>
+                    <Button size="sm" variant="secondary" isDisabled={page === 1} onPress={() => fetchReport(reportType, startDate, endDate, page - 1)}>Prev</Button>
                     {(() => {
                       const pages: (number | '...')[] = [];
                       const start = Math.max(1, page - 2);
@@ -322,11 +322,11 @@ export default function ReportsPage() {
                         p === '...' ? (
                           <span key={`e${i}`} className="px-1 text-muted">...</span>
                         ) : (
-                          <Button key={p} size="sm" variant={p === page ? 'primary' : 'secondary'} onPress={() => fetchReport(reportType, dateRange, p)}>{p}</Button>
+                          <Button key={p} size="sm" variant={p === page ? 'primary' : 'secondary'} onPress={() => fetchReport(reportType, startDate, endDate, p)}>{p}</Button>
                         )
                       );
                     })()}
-                    <Button size="sm" variant="secondary" isDisabled={page === totalPages} onPress={() => fetchReport(reportType, dateRange, page + 1)}>Next</Button>
+                    <Button size="sm" variant="secondary" isDisabled={page === totalPages} onPress={() => fetchReport(reportType, startDate, endDate, page + 1)}>Next</Button>
                   </div>
                 )}
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { api } from './api';
 import { useTenantFilter } from './tenant-filter-context';
 
@@ -47,11 +47,23 @@ export interface Customer {
 
 // ─── Branch queries ──────────────────────────────────────────────────
 
-export function useBranches() {
+export function useBranches(): UseQueryResult<ApiBranch[], Error>;
+export function useBranches(page: number, limit?: number, search?: string): UseQueryResult<PaginatedResult<ApiBranch>, Error>;
+export function useBranches(page?: number, limit?: number, search?: string) {
   const { filterVersion } = useTenantFilter();
-  return useQuery<ApiBranch[]>({
-    queryKey: ['branches', filterVersion],
-    queryFn: () => api.get<ApiBranch[]>('/api/branches'),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<ApiBranch[] | PaginatedResult<ApiBranch>>({
+    queryKey: ['branches', filterVersion, page, limit, search],
+    queryFn: async () => {
+      if (hasPage) {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('limit', String(limit ?? 10));
+        if (search) params.set('search', search);
+        return api.getFull<PaginatedResult<ApiBranch>>(`/api/branches?${params}`);
+      }
+      return api.get<ApiBranch[]>('/api/branches');
+    },
   });
 }
 
@@ -132,21 +144,51 @@ export function useDashboardBranches() {
 
 // ─── Customer queries ───────────────────────────────────────────────
 
-export function useCustomers() {
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  counts?: Record<string, number>;
+}
+
+export function useCustomers(): UseQueryResult<Customer[], Error>;
+export function useCustomers(page: number, limit?: number): UseQueryResult<PaginatedResult<Customer>, Error>;
+export function useCustomers(page?: number, limit?: number) {
   const { filterVersion } = useTenantFilter();
-  return useQuery<Customer[]>({
-    queryKey: ['customers', filterVersion],
-    queryFn: () => api.get<Customer[]>('/api/customers'),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<Customer[] | PaginatedResult<Customer>>({
+    queryKey: ['customers', filterVersion, page, limit],
+    queryFn: async () => {
+      if (hasPage) {
+        const params = new URLSearchParams({ page: String(page), limit: String(limit ?? 50) });
+        return api.getFull<PaginatedResult<Customer>>(`/api/customers?${params}`);
+      }
+      return api.get<Customer[]>('/api/customers');
+    },
   });
 }
 
 // ─── Shipment queries ───────────────────────────────────────────────
 
-export function useShipments() {
+export function useShipments(): UseQueryResult<Shipment[], Error>;
+export function useShipments(page: number, limit?: number, status?: string, search?: string): UseQueryResult<PaginatedResult<Shipment>, Error>;
+export function useShipments(page?: number, limit?: number, status?: string, search?: string) {
   const { filterVersion } = useTenantFilter();
-  return useQuery<Shipment[]>({
-    queryKey: ['shipments', filterVersion],
-    queryFn: () => api.get<Shipment[]>('/api/shipments'),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<Shipment[] | PaginatedResult<Shipment>>({
+    queryKey: ['shipments', filterVersion, page, limit, status, search],
+    queryFn: async () => {
+      if (hasPage) {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('limit', String(limit ?? 10));
+        if (status && status !== 'all') params.set('status', status);
+        if (search) params.set('search', search);
+        return api.getFull<PaginatedResult<Shipment>>(`/api/shipments?${params}`);
+      }
+      return api.get<Shipment[]>('/api/shipments');
+    },
   });
 }
 
@@ -187,11 +229,25 @@ export interface UserRecord {
   updatedAt: string;
 }
 
-export function useUsers() {
+export function useUsers(): UseQueryResult<UserRecord[], Error>;
+export function useUsers(page: number, limit?: number, search?: string, role?: string, banned?: string): UseQueryResult<PaginatedResult<UserRecord>, Error>;
+export function useUsers(page?: number, limit?: number, search?: string, role?: string, banned?: string) {
   const { filterVersion } = useTenantFilter();
-  return useQuery<UserRecord[]>({
-    queryKey: ['users', filterVersion],
-    queryFn: () => api.get<UserRecord[]>('/api/users'),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<UserRecord[] | PaginatedResult<UserRecord>>({
+    queryKey: ['users', filterVersion, page, limit, search, role, banned],
+    queryFn: async () => {
+      if (hasPage) {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('limit', String(limit ?? 10));
+        if (search) params.set('search', search);
+        if (role) params.set('role', role);
+        if (banned && banned !== 'all') params.set('banned', banned === 'banned' ? 'true' : 'false');
+        return api.getFull<PaginatedResult<UserRecord>>(`/api/users?${params}`);
+      }
+      return api.get<UserRecord[]>('/api/users');
+    },
   });
 }
 
@@ -227,12 +283,27 @@ export interface Invoice {
   createdAt: string;
 }
 
-export function useInvoices(search?: string) {
+export function useInvoices(search?: string): UseQueryResult<Invoice[], Error>;
+export function useInvoices(search: string | undefined, page: number, limit?: number, status?: string): UseQueryResult<PaginatedResult<Invoice>, Error>;
+export function useInvoices(search?: string, page?: number, limit?: number, status?: string) {
   const { filterVersion } = useTenantFilter();
-  const params = search ? `?search=${encodeURIComponent(search)}` : '';
-  return useQuery<Invoice[]>({
-    queryKey: ['invoices', filterVersion, search],
-    queryFn: () => api.get<Invoice[]>(`/api/invoices${params}`),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<Invoice[] | PaginatedResult<Invoice>>({
+    queryKey: ['invoices', filterVersion, search, page, limit, status],
+    queryFn: async () => {
+      const q = new URLSearchParams();
+      if (search) q.set('search', search);
+      if (hasPage) {
+        q.set('page', String(page));
+        q.set('limit', String(limit ?? 10));
+        if (status && status !== 'all') q.set('status', status);
+      }
+      const qs = q.toString();
+      if (hasPage) {
+        return api.getFull<PaginatedResult<Invoice>>(`/api/invoices?${qs}`);
+      }
+      return api.get<Invoice[]>(`/api/invoices${qs ? `?${qs}` : ''}`);
+    },
   });
 }
 
@@ -284,11 +355,24 @@ export function useQuotationTrend() {
   });
 }
 
-export function useQuotations() {
+export function useQuotations(): UseQueryResult<Quotation[], Error>;
+export function useQuotations(page: number, limit?: number, status?: string, search?: string): UseQueryResult<PaginatedResult<Quotation>, Error>;
+export function useQuotations(page?: number, limit?: number, status?: string, search?: string) {
   const { filterVersion } = useTenantFilter();
-  return useQuery<Quotation[]>({
-    queryKey: ['quotations', filterVersion],
-    queryFn: () => api.get<Quotation[]>('/api/quotations'),
+  const hasPage = page !== undefined && page > 0;
+  return useQuery<Quotation[] | PaginatedResult<Quotation>>({
+    queryKey: ['quotations', filterVersion, page, limit, status, search],
+    queryFn: async () => {
+      if (hasPage) {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('limit', String(limit ?? 10));
+        if (status && status !== 'all') params.set('status', status);
+        if (search) params.set('search', search);
+        return api.getFull<PaginatedResult<Quotation>>(`/api/quotations?${params}`);
+      }
+      return api.get<Quotation[]>('/api/quotations');
+    },
   });
 }
 

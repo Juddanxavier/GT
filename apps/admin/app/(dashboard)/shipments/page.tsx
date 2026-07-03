@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
-import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend } from '@/lib/queries';
+import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend, type PaginatedResult, type Shipment } from '@/lib/queries';
 import { KpiCard } from '@/components/kpi-card';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
@@ -69,7 +69,13 @@ export default function ShipmentsPage() {
   const phoneDialCode = getCountryCode(tenantCountry).dialCode;
   const phoneFlag = getCountryCode(tenantCountry).flag;
 
-  const { data: shipmentsRaw = [], isPending: shipmentsLoading, isError: shipmentsError, refetch: refetchShipments } = useShipments();
+  // Server-side pagination: pass page, ROWS_PER_PAGE, status, and search to the API
+  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, statusFilter, search);
+  const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
+  const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
+  const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
+  const counts = !Array.isArray(shipmentsResp) ? shipmentsResp?.counts : undefined;
+
   const { data: trendData = [] } = useShipmentTrend();
 
   const sparklines = useMemo(() => {
@@ -129,8 +135,9 @@ export default function ShipmentsPage() {
     return map;
   }, [allCustomers]);
 
-  const filtered = useMemo(() => {
-    let items = shipmentsRaw.map((s) => ({
+  // Client-side: resolve customer names and apply column sorting on current page
+  const paginated = useMemo(() => {
+    const items = shipmentRows.map((s) => ({
       id: s.id,
       trackingNumber: s.trackingNo,
       labelCode: s.labelCode,
@@ -140,33 +147,24 @@ export default function ShipmentsPage() {
       billAmount: s.billAmount as string | undefined,
       createdAt: s.createdAt,
     }));
-    if (statusFilter !== 'all') items = items.filter((s) => s.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter(
-        (s) => s.trackingNumber.toLowerCase().includes(q) || s.carrier.toLowerCase().includes(q) || s.customerName?.toLowerCase().includes(q),
-      );
-    }
     const col = sortDescriptor.column as keyof typeof items[number];
     const dir = sortDescriptor.direction;
-    items = [...items].sort((a, b) => {
+    items.sort((a, b) => {
       const valA = String(a[col] ?? '');
       const valB = String(b[col] ?? '');
       const cmp = valA.localeCompare(valB);
       return dir === 'descending' ? -cmp : cmp;
     });
     return items;
-  }, [search, sortDescriptor, statusFilter, shipmentsRaw, customerMap]);
+  }, [shipmentRows, sortDescriptor, customerMap]);
 
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
-  const paginated = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return filtered.slice(start, start + ROWS_PER_PAGE);
-  }, [page, filtered]);
-
+  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
+  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
+  const isPending = shipmentsQuery.isPending;
+  const isError = shipmentsQuery.isError;
+  const refetch = shipmentsQuery.refetch;
 
   function handleContextAction(key: Key, shipment: typeof paginated[number]) {
     if (key === 'view' || key === 'edit') router.push(`/shipments/${shipment.id}`);
@@ -175,14 +173,14 @@ export default function ShipmentsPage() {
 
   return (
     <div className="space-y-6">
-      {shipmentsLoading ? (
+      {isPending ? (
         <div className="flex items-center justify-center min-h-[60vh]">
           <Spinner />
         </div>
-      ) : shipmentsError ? (
+      ) : isError ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
           <p className="text-danger text-sm">Failed to load shipments</p>
-          <Button variant="secondary" size="sm" onPress={() => refetchShipments()}>Retry</Button>
+          <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
         </div>
       ) : (
       <>
@@ -201,10 +199,10 @@ export default function ShipmentsPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total', count: filtered.length, color: '#3b82f6', icon: Package, key: 'total' },
-          { label: 'In Transit', count: filtered.filter((s) => s.status === 'in_transit').length, color: '#8b5cf6', icon: Truck, key: 'inTransit' },
-          { label: 'Delivered', count: filtered.filter((s) => s.status === 'delivered').length, color: '#22c55e', icon: CheckCircle, key: 'delivered' },
-          { label: 'Pending', count: filtered.filter((s) => s.status === 'pending').length, color: '#f59e0b', icon: Clock, key: 'pending' },
+          { label: 'Total', count: totalCount, color: '#3b82f6', icon: Package, key: 'total' },
+          { label: 'In Transit', count: counts?.in_transit ?? 0, color: '#8b5cf6', icon: Truck, key: 'inTransit' },
+          { label: 'Delivered', count: counts?.delivered ?? 0, color: '#22c55e', icon: CheckCircle, key: 'delivered' },
+          { label: 'Pending', count: counts?.pending ?? 0, color: '#f59e0b', icon: Clock, key: 'pending' },
         ].map(({ label, count, color, icon: Icon, key }) => {
           const data = sparklines[key as keyof typeof sparklines];
           const t = trend[key as keyof typeof trend];
@@ -325,7 +323,7 @@ export default function ShipmentsPage() {
           </Table.ScrollContainer>
           <Table.Footer>
               <Pagination size="sm">
-                <Pagination.Summary>{start} to {end} of {filtered.length} results</Pagination.Summary>
+                <Pagination.Summary>{start} to {end} of {totalCount} results</Pagination.Summary>
                 <Pagination.Content>
                   <Pagination.Item>
                     <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
@@ -363,7 +361,7 @@ export default function ShipmentsPage() {
                   branchId: selectedBranchId || undefined,
                 };
                 if (!payload.trackingNo?.trim()) { setErrors({ trackingNo: 'Tracking number is required' }); return; }
-                const dup = shipmentsRaw.find((s) => s.trackingNo.toLowerCase() === newTrackingNumber.trim().toLowerCase());
+                const dup = shipmentRows.find((s) => s.trackingNo.toLowerCase() === newTrackingNumber.trim().toLowerCase());
                 if (dup) { setErrors({ trackingNo: `Already exists (${dup.id.slice(0, 8)}...)` }); return; }
                 const customerId = assignerData.customerId === 'self' ? undefined : assignerData.customerId;
                 const email = assignerData.contactEmail || undefined;

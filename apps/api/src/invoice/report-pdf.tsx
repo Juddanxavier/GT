@@ -41,27 +41,30 @@ function ShipmentTable({ rows }: { rows: Record<string, unknown>[] }) {
   return (
     <View>
       <View style={styles.tableHeaderRow}>
-        <Text style={[styles.tableHeaderText, { width: '13%' }]}>Tracking #</Text>
-        <Text style={[styles.tableHeaderText, { width: '12%' }]}>Customer</Text>
-        <Text style={[styles.tableHeaderText, { width: '11%' }]}>Phone</Text>
-        <Text style={[styles.tableHeaderText, { width: '13%' }]}>Email</Text>
-        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Destination</Text>
-        <Text style={[styles.tableHeaderText, { width: '9%' }]}>Carrier</Text>
-        <Text style={[styles.tableHeaderText, { width: '9%' }]}>Branch</Text>
+        <Text style={[styles.tableHeaderText, { width: '16%' }]}>Tracking / Code</Text>
+        <Text style={[styles.tableHeaderText, { width: '11%' }]}>Customer</Text>
+        <Text style={[styles.tableHeaderText, { width: '10%' }]}>Phone</Text>
+        <Text style={[styles.tableHeaderText, { width: '11%' }]}>Email</Text>
+        <Text style={[styles.tableHeaderText, { width: '9%' }]}>Destination</Text>
+        <Text style={[styles.tableHeaderText, { width: '8%' }]}>Carrier</Text>
+        <Text style={[styles.tableHeaderText, { width: '8%' }]}>Branch</Text>
         <Text style={[styles.tableHeaderText, { width: '8%' }]}>Bill Amt</Text>
         <Text style={[styles.tableHeaderText, { width: '8%' }]}>Status</Text>
         <Text style={[styles.tableHeaderText, { width: '7%' }]}>Date</Text>
       </View>
       {rows.map((r, i) => (
         <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.altRow : {}]}>
-          <Text style={[styles.tableCell, { width: '13%', fontFamily: 'Courier', fontSize: 6.5 }]}>{(r.tracking_no as string) || ''}</Text>
-          <Text style={[styles.tableCell, { width: '12%', fontSize: 6.5 }]}>{(r.customer_name as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '11%', fontSize: 6.5 }]}>{(r.customer_phone as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '13%', fontSize: 6.5 }]}>{(r.customer_email as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '10%', fontSize: 6.5 }]}>{(r.destination as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.carrier as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.branch_name as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `\u20B9${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
+          <View style={{ width: '16%', flexDirection: 'column' }}>
+            <Text style={{ fontFamily: 'Courier', fontSize: 6.5, color: black }}>{(r.tracking_no as string) || ''}</Text>
+            {(r.label_code as string) ? <Text style={{ fontSize: 5.5, color: gray }}>{(r.label_code as string)}</Text> : null}
+          </View>
+          <Text style={[styles.tableCell, { width: '11%', fontSize: 6.5 }]}>{(r.customer_name as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '10%', fontSize: 6.5 }]}>{(r.customer_phone as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '11%', fontSize: 6.5 }]}>{(r.customer_email as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.destination as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.carrier as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.branch_name as string) || '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `Rs. ${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.status as string) || ''}</Text>
           <Text style={[styles.tableCellMuted, { width: '7%', fontSize: 6.5 }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
         </View>
@@ -86,7 +89,7 @@ function QuotationTable({ rows }: { rows: Record<string, unknown>[] }) {
           <Text style={[styles.tableCell, { width: '20%', fontFamily: 'Courier' }]}>{(r.quote_no as string) || ''}</Text>
           <Text style={[styles.tableCell, { width: '25%' }]}>{(r.customer_name as string) || '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '15%' }]}>{(r.status as string) || ''}</Text>
-          <Text style={[styles.tableCell, { width: '15%' }]}>₹{(r.total as string) ? Number(r.total).toFixed(2) : '0.00'}</Text>
+          <Text style={[styles.tableCell, { width: '15%' }]}>Rs. {(r.total as string) ? Number(r.total).toFixed(2) : '0.00'}</Text>
           <Text style={[styles.tableCellMuted, { width: '13%' }]}>{(r.valid_until as string)?.slice(5) || '\u2014'}</Text>
           <Text style={[styles.tableCellMuted, { width: '12%' }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
         </View>

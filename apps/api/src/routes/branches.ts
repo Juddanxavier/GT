@@ -1,4 +1,4 @@
-import { and, eq, type SQL } from 'drizzle-orm';
+import { and, eq, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -22,43 +22,99 @@ app.get(
   requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
   async (c) => {
+    const scope = getQueryScope(c);
     const curUser = getUser(c);
     const isSuperAdmin = curUser?.role === 'superadmin';
+
+    const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
+    const offset = (page - 1) * limit;
+    const search = c.req.query('search');
+    const hasPagination = c.req.query('page') !== undefined;
+
+    if (search && search.length > 100) return c.json({ error: 'Search query too long' }, 400);
 
     if (isSuperAdmin) {
       const tenantId = c.get('tenantId');
       if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
-      const rows = await withCache(
-        tenantId!,
-        'branches:list',
-        () =>
-          db.select().from(branches).where(eq(branches.tenantId, tenantId!)).orderBy(branches.name),
-        900,
-      );
-      return c.json({ data: rows });
+
+      if (!hasPagination) {
+        const rows = await withCache(
+          tenantId!,
+          'branches:list',
+          () =>
+            db.select().from(branches).where(eq(branches.tenantId, tenantId!)).orderBy(branches.name),
+          900,
+        );
+        return c.json({ data: rows });
+      }
+
+      const conditions: ReturnType<typeof eq | typeof like>[] = [eq(branches.tenantId, tenantId!)];
+      if (search) {
+        const q = `%${search}%`;
+        conditions.push(sql`(${like(branches.name, q)} OR ${like(branches.email, q)} OR ${like(branches.address, q)})`);
+      }
+
+      const [countRow] = await db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(branches)
+        .where(and(...conditions) as SQL | undefined);
+      const total = countRow?.count ?? 0;
+
+      const rows = await db
+        .select()
+        .from(branches)
+        .where(and(...conditions) as SQL | undefined)
+        .orderBy(branches.name)
+        .limit(limit)
+        .offset(offset);
+
+      return c.json({ data: rows, total, page, limit });
     }
 
     const tenantId = c.get('tenantId');
     if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [eq(branches.tenantId, tenantId!)];
+    const conditions: ReturnType<typeof eq | typeof like>[] = [eq(branches.tenantId, tenantId!)];
     if (curUser?.role === 'staff' && curUser.branchId) {
       conditions.push(eq(branches.id, curUser.branchId!));
     }
 
-    const rows = await withCache(
-      tenantId!,
-      `branches:list:${curUser?.branchId ?? 'all'}`,
-      () =>
-        db
-          .select()
-          .from(branches)
-          .where(and(...conditions) as SQL | undefined)
-          .orderBy(branches.name),
-      900,
-    );
+    if (!hasPagination && !search) {
+      const rows = await withCache(
+        tenantId!,
+        `branches:list:${curUser?.branchId ?? 'all'}`,
+        () =>
+          db
+            .select()
+            .from(branches)
+            .where(and(...conditions) as SQL | undefined)
+            .orderBy(branches.name),
+        900,
+      );
+      return c.json({ data: rows });
+    }
 
-    return c.json({ data: rows });
+    if (search) {
+      const q = `%${search}%`;
+      conditions.push(sql`(${like(branches.name, q)} OR ${like(branches.email, q)} OR ${like(branches.address, q)})`);
+    }
+
+    const [countRow] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(branches)
+      .where(and(...conditions) as SQL | undefined);
+    const total = countRow?.count ?? 0;
+
+    const rows = await db
+      .select()
+      .from(branches)
+      .where(and(...conditions) as SQL | undefined)
+      .orderBy(branches.name)
+      .limit(limit)
+      .offset(offset);
+
+    return c.json({ data: rows, total, page, limit });
   },
 );
 

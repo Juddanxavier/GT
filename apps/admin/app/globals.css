@@ -5,6 +5,29 @@
 
 @theme {
   --color-brand-green: oklch(81.00% 0.2100 143.00);
+  --anim-slow: 12s;
+  --anim-medium: 8s;
+  --anim-fast: 4s;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(30px, -40px) rotate(90deg); }
+  50% { transform: translate(-20px, -60px) rotate(180deg); }
+  75% { transform: translate(-40px, -10px) rotate(270deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 30px) scale(1.1); }
+  66% { transform: translate(30px, -30px) scale(0.9); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
 *, *::before, *::after {

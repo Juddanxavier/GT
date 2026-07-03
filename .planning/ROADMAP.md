@@ -39,20 +39,17 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 **UI hint**: yes
 
 ### Phase 3: Customer Portal Enhancement
-**Goal**: Customers have a full-featured portal with dashboard, profile management, quotes, invoices, notification preferences, and polished tracking UX
+**Goal**: Customers have a full-featured portal with dashboard, profile management, quotes, invoices, notifications, and polished UX
 **Depends on**: Phase 2
-**Requirements**: CUST-PORTAL-04, CUST-PORTAL-05, CUST-PORTAL-06, CUST-PORTAL-07, CUST-PORTAL-08, CUST-PORTAL-09, CUST-PORTAL-10, CUST-PORTAL-11, CUST-PORTAL-12
-**Success Criteria** (what must be TRUE):
-  1. Customer dashboard shows shipment count KPIs, recent tracking updates, and alerts for exceptions/stale shipments
-  2. Customer can view and edit their profile (name, email, password change)
-  3. Customer can view their quotations (list + detail with line items) and invoices (list + detail with payment status)
-  4. Customer can configure notification preferences (email/WhatsApp opt-in per event type) and they persist
-  5. "My Shipments" page has search, status filtering, and pagination
-  6. Tracking timeline shows carrier logos, rich status descriptions, and estimated delivery visualization
-  7. Customer portal is fully responsive on mobile — nav collapses, tables scroll, touch targets are adequate
-  8. Every page shows appropriate loading, error, and empty states
-**Plans**: TBD
-**UI hint**: yes
+**Sub-phases**:
+  - **3a: Dashboard & Home** — Dashboard API + UI (KPI cards, recent shipments, alerts); home landing page redesign (CUST-PORTAL-04, CUST-PORTAL-01)
+  - **3b: Profile** — Profile edit page (name, email, password change) — new API endpoints (CUST-PORTAL-05)
+  - **3c: Quotations** — Quotations list + detail with line items — new API endpoints (CUST-PORTAL-06)
+  - **3d: Invoices** — Invoices list + detail + PDF download — new API endpoints (CUST-PORTAL-07)
+  - **3e: Notifications** — Bell icon with unread count, notification list, mark read — API exists (CUST-PORTAL-08)
+  - **3f: My Shipments & Tracking** — Search, status filtering, enhanced tracking timeline — API exists (CUST-PORTAL-09, CUST-PORTAL-12)
+  - **3g: Mobile & States** — Responsive nav, loading/error/empty states across all pages (CUST-PORTAL-10, CUST-PORTAL-11)
+  - **3h: Auth & Theme** — Polish auth pages, consistent brand theming, custom fonts (CUST-PORTAL-02, CUST-PORTAL-03)
 
 ## Progress
 
@@ -60,4 +57,11 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 |-------|----------------|--------|-----------|
 | 1. UI Foundation | 0/0 | Not started | - |
 | 2. Admin UI Restructuring | 0/0 | Not started | - |
-| 3. Customer Portal Enhancement | 0/0 | Not started | - |
+| 3a. Dashboard & Home | 1/1 | **Planned** | - |
+| 3b. Profile | 0/0 | Not started | - |
+| 3c. Quotations | 0/0 | Not started | - |
+| 3d. Invoices | 0/0 | Not started | - |
+| 3e. Notifications | 0/0 | Not started | - |
+| 3f. My Shipments & Tracking | 0/0 | Not started | - |
+| 3g. Mobile & States | 0/0 | Not started | - |
+| 3h. Auth & Theme | 0/0 | Not started | - |

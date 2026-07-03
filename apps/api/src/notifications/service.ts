@@ -120,13 +120,15 @@ export async function handleTrackingEvent(
         console.log(`[notifications] cooldown active for ${shipment.id} status ${status}`);
         return;
       }
-    } catch {
-      console.warn('[notifications] Redis error — skipping cooldown');
+    } catch (err) {
+      console.error('[notifications] Redis error — notification cooldown disabled:', err instanceof Error ? err.message : err);
     }
+  } else {
+    console.warn('[notifications] Redis unavailable — notification cooldown DISABLED. Duplicate notifications may be sent.');
   }
 
   if (!notificationQueue) {
-    console.warn('[notifications] Redis not available — skipping notification');
+    console.error('[notifications] Redis/BullMQ not available — notification SKIPPED. Customer will NOT receive status update.', shipment.id, shipment.trackingNo);
     return;
   }
 

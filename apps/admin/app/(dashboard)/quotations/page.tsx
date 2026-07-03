@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Eye, MoreVertical, Pencil, Trash2, FileText, Send, CheckCircle, XCircle } from 'lucide-react';
 import { Button, Dropdown, Input, Modal, Pagination, Skeleton, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
-import { useQuotations, useDeleteQuotation, useUpdateQuotationStatus, useQuotationTrend, type Quotation } from '@/lib/queries';
+import { useQuotations, useDeleteQuotation, useUpdateQuotationStatus, useQuotationTrend, type Quotation, type PaginatedResult } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { KpiCard } from '@/components/kpi-card';
 
@@ -35,7 +35,13 @@ export default function QuotationsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Quotation | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { data: quotations = [], isPending, isError, refetch } = useQuotations();
+  const quotationsQuery = useQuotations(page, ROWS_PER_PAGE, statusFilter, search);
+  const quotationsResp = quotationsQuery.data as PaginatedResult<Quotation> | undefined;
+  const quotations = Array.isArray(quotationsResp) ? quotationsResp : (quotationsResp?.data ?? []);
+  const totalCount = Array.isArray(quotationsResp) ? quotations.length : (quotationsResp?.total ?? 0);
+  const counts = !Array.isArray(quotationsResp) ? quotationsResp?.counts : undefined;
+  const { isPending, isError, refetch } = quotationsQuery;
+
   const { data: trendData = [] } = useQuotationTrend();
 
   const sparklines = useMemo(() => {
@@ -74,31 +80,22 @@ export default function QuotationsPage() {
   const updateStatus = useUpdateQuotationStatus();
 
   const filtered = useMemo(() => {
-    let items = quotations;
-    if (statusFilter !== 'all') items = items.filter((q) => q.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter((qt) => qt.quoteNo.toLowerCase().includes(q) || qt.customerName?.toLowerCase().includes(q));
-    }
+    // Client-side: sort the current page only (search/status are server-side)
     const col = sortDescriptor.column as keyof Quotation;
     const dir = sortDescriptor.direction;
-    items = [...items].sort((a, b) => {
+    const items = [...quotations].sort((a, b) => {
       const valA = String(a[col] ?? '');
       const valB = String(b[col] ?? '');
       const cmp = valA.localeCompare(valB);
       return dir === 'descending' ? -cmp : cmp;
     });
     return items;
-  }, [search, sortDescriptor, statusFilter]);
+  }, [sortDescriptor, quotations]);
 
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
-  const paginated = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return filtered.slice(start, start + ROWS_PER_PAGE);
-  }, [page, filtered]);
-
+  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
+  const paginated = filtered; // Data is already server-paginated
   const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
+  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
 
   function handleContextAction(key: Key, quotation: Quotation) {
     if (key === 'view') router.push(`/quotations/${quotation.id}`);
@@ -126,10 +123,10 @@ export default function QuotationsPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Total" count={filtered.length} color="#3b82f6" icon={FileText} data={sparklines.total} trend={trend.total} />
-        <KpiCard label="Sent" count={filtered.filter((q) => q.status === 'sent').length} color="#8b5cf6" icon={Send} data={sparklines.sent} trend={trend.sent} />
-        <KpiCard label="Accepted" count={filtered.filter((q) => q.status === 'accepted').length} color="#22c55e" icon={CheckCircle} data={sparklines.accepted} trend={trend.accepted} />
-        <KpiCard label="Draft" count={filtered.filter((q) => q.status === 'draft').length} color="#f59e0b" icon={XCircle} data={sparklines.draft} trend={trend.draft} />
+        <KpiCard label="Total" count={totalCount} color="#3b82f6" icon={FileText} data={sparklines.total} trend={trend.total} />
+        <KpiCard label="Sent" count={counts?.sent ?? 0} color="#8b5cf6" icon={Send} data={sparklines.sent} trend={trend.sent} />
+        <KpiCard label="Accepted" count={counts?.accepted ?? 0} color="#22c55e" icon={CheckCircle} data={sparklines.accepted} trend={trend.accepted} />
+        <KpiCard label="Draft" count={counts?.draft ?? 0} color="#f59e0b" icon={XCircle} data={sparklines.draft} trend={trend.draft} />
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
@@ -156,6 +153,7 @@ export default function QuotationsPage() {
           filtered={filtered}
           paginated={paginated}
           start={start}
+          totalCount={totalCount}
           sortDescriptor={sortDescriptor}
           setSortDescriptor={setSortDescriptor}
           setPage={setPage}
@@ -185,12 +183,13 @@ export default function QuotationsPage() {
 }
 
 function QuotationsTable({
-  isPending, isError, refetch, filtered, paginated, start,
+  isPending, isError, refetch, filtered, paginated, start, totalCount,
   sortDescriptor, setSortDescriptor, setPage,
   handleContextAction, updateStatus, totalPages, page
 }: {
   isPending: boolean; isError: boolean; refetch: () => void;
   filtered: Quotation[]; paginated: Quotation[]; start: number;
+  totalCount: number;
   sortDescriptor: SortDescriptor; setSortDescriptor: (d: SortDescriptor) => void;
   setPage: (p: number | ((prev: number) => number)) => void;
   handleContextAction: (key: Key, quotation: Quotation) => void;
@@ -286,10 +285,10 @@ function QuotationsTable({
           </Table.Body>
         </Table.Content>
       </Table.ScrollContainer>
-      {filtered.length > ROWS_PER_PAGE && (
+      {totalCount > ROWS_PER_PAGE && (
         <Table.Footer>
           <Pagination size="sm">
-            <Pagination.Summary>{start} to {start + paginated.length - 1} of {filtered.length} results</Pagination.Summary>
+            <Pagination.Summary>{start} to {start + paginated.length - 1} of {totalCount} results</Pagination.Summary>
             <Pagination.Content>
               <Pagination.Item>
                 <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>

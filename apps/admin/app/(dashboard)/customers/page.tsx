@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord } from '@/lib/queries';
+import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord, type PaginatedResult } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
@@ -32,7 +32,6 @@ export default function UsersPage() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading } = useUsers();
   const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useBranches();
   const { mutateAsync: updateUser } = useUpdateUser();
@@ -42,6 +41,13 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
 
+  // Server-side pagination
+  const usersQuery = useUsers(page, ROWS_PER_PAGE, search, undefined, statusFilter);
+  const usersResp = usersQuery.data as PaginatedResult<UserRecord> | undefined;
+  const users = Array.isArray(usersResp) ? usersResp : (usersResp?.data ?? []);
+  const totalCount = Array.isArray(usersResp) ? users.length : (usersResp?.total ?? 0);
+  const counts = !Array.isArray(usersResp) ? usersResp?.counts : undefined;
+  const isLoading = usersQuery.isPending;
 
 
   const { data: session } = authClient.useSession();
@@ -70,45 +76,28 @@ export default function UsersPage() {
     });
   }, []);
 
+  // Client-side: sort the current page only (search/status are server-side)
   const filtered = useMemo(() => {
-    let items = [...users];
-
-    if (statusFilter !== 'all') {
-      const isBanned = statusFilter === 'banned';
-      items = items.filter((u) => !!u.banned === isBanned);
-    }
-
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.role.toLowerCase().includes(q));
-    }
-
     const col = sortDescriptor.column as keyof UserRecord;
     const dir = sortDescriptor.direction;
-    items.sort((a, b) => {
+    const items = [...users].sort((a, b) => {
       const valA = String(a[col] ?? '');
       const valB = String(b[col] ?? '');
       const cmp = valA.localeCompare(valB);
       return dir === 'descending' ? -cmp : cmp;
     });
-
     return items;
-  }, [users, search, sortDescriptor, statusFilter]);
+  }, [users, sortDescriptor]);
 
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
-  const paginated = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return filtered.slice(start, start + ROWS_PER_PAGE);
-  }, [page, filtered]);
-
+  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
+  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
 
   const editFilteredBranches = branches.filter((b) => !editTenantId || b.tenantId === editTenantId);
 
-  const activeCount = users.filter((u) => !u.banned).length;
-  const bannedCount = users.filter((u) => u.banned).length;
+  const activeCount = counts?.active ?? 0;
+  const bannedCount = counts?.banned ?? 0;
 
   function openEdit(user: UserRecord) {
     setEditTarget(user);
@@ -200,7 +189,7 @@ export default function UsersPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
-          <p className="text-4xl font-bold tracking-tight text-foreground">{users.length}</p>
+          <p className="text-4xl font-bold tracking-tight text-foreground">{totalCount}</p>
           <p className="text-sm text-muted mt-1">Total Users</p>
         </a>
         <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
@@ -262,7 +251,7 @@ export default function UsersPage() {
                     <div className="flex items-center justify-center py-20 text-muted text-sm">No users found</div>
                   )}
                 >
-                  {paginated.map((user) => (
+                  {filtered.map((user) => (
                     <Table.Row key={user.id}>
                       <Table.Cell>
                         <div className="flex items-center gap-2.5">
@@ -317,28 +306,30 @@ export default function UsersPage() {
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
-            <Table.Footer>
-                <Pagination size="sm">
-                  <Pagination.Summary>{start} to {end} of {filtered.length} users</Pagination.Summary>
-                  <Pagination.Content>
-                    <Pagination.Item>
-                      <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
-                        <Pagination.PreviousIcon /> Prev
-                      </Pagination.Previous>
-                    </Pagination.Item>
-                    {pages.map((p) => (
-                      <Pagination.Item key={p}>
-                        <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+            {totalCount > ROWS_PER_PAGE && (
+              <Table.Footer>
+                  <Pagination size="sm">
+                    <Pagination.Summary>{start} to {end} of {totalCount} users</Pagination.Summary>
+                    <Pagination.Content>
+                      <Pagination.Item>
+                        <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
+                          <Pagination.PreviousIcon /> Prev
+                        </Pagination.Previous>
                       </Pagination.Item>
-                    ))}
-                    <Pagination.Item>
-                      <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                        Next <Pagination.NextIcon />
-                      </Pagination.Next>
-                    </Pagination.Item>
-                  </Pagination.Content>
-            </Pagination>
-          </Table.Footer>
+                      {pages.map((p) => (
+                        <Pagination.Item key={p}>
+                          <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+                        </Pagination.Item>
+                      ))}
+                      <Pagination.Item>
+                        <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                          Next <Pagination.NextIcon />
+                        </Pagination.Next>
+                      </Pagination.Item>
+                    </Pagination.Content>
+              </Pagination>
+            </Table.Footer>
+            )}
         </Table>
         )}
       </div>

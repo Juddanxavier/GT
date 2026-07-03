@@ -68,8 +68,17 @@ function OnboardForm() {
 
     const errors: Record<string, string> = {};
     if (!name.trim()) errors.name = 'Name is required';
-    if (!password) errors.password = 'Password is required';
-    else if (password.length < 8) errors.password = 'Must be at least 8 characters';
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 8) {
+      errors.password = 'Must be at least 8 characters';
+    } else if (!/[A-Z]/.test(password)) {
+      errors.password = 'Must include an uppercase letter';
+    } else if (!/[0-9]/.test(password)) {
+      errors.password = 'Must include a number';
+    } else if (!/[!@#$%^&*(),.?"':{}|<>]/.test(password)) {
+      errors.password = 'Must include a special character';
+    }
     if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);

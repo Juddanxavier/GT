@@ -52,10 +52,13 @@ function LoginForm() {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
-        <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{submitError}</div>
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger mb-6">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
+          {submitError}
+        </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
           <input id="hp-field" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
@@ -80,13 +83,17 @@ function LoginForm() {
           {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
         </TextField>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
+            <input type="checkbox" defaultChecked className="rounded border-zinc-600 bg-zinc-800 accent-current" />
+            Remember me
+          </label>
           <Link href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
             Forgot password?
           </Link>
         </div>
 
-        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11">
+        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11 font-medium shadow-sm shadow-black/10">
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
 

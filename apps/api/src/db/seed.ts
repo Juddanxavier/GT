@@ -7,35 +7,58 @@ import {
   user,
   customers,
   shipments,
+  trackingEvents,
   quotations,
   quoteItems,
   invoices,
 } from './schema';
 import { auth } from '../auth';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 async function seed() {
-  const allTenants = await db.select().from(tenants);
+  // ── Tenants — upsert by canonical slug (idempotent; safe to run multiple times) ──
 
-  // ── Tenants — update old names, insert if none exist ──
-  let gajan = allTenants.find((t) => t.slug === 'gajan-india' || t.slug === 'gajan-traders');
-  let lanka = allTenants.find((t) => t.slug === 'gajan-sri-lanka' || t.slug === 'lanka-mahal');
+  // Migrate old-slug tenants to canonical slugs (safe — UPDATE never triggers FK
+  // RESTRICT). Guard with NOT EXISTS so the UPDATE is a no-op if the canonical
+  // slug already exists (duplicate scenario), avoiding unique constraint violations.
+  await db.update(tenants)
+    .set({ slug: 'gajan-traders', updatedAt: new Date() })
+    .where(
+      and(
+        eq(tenants.slug, 'gajan-india'),
+        sql`NOT EXISTS (SELECT 1 FROM "tenant" WHERE slug = 'gajan-traders')`,
+      ),
+    );
+  await db.update(tenants)
+    .set({ slug: 'lanka-mahal', updatedAt: new Date() })
+    .where(
+      and(
+        eq(tenants.slug, 'gajan-sri-lanka'),
+        sql`NOT EXISTS (SELECT 1 FROM "tenant" WHERE slug = 'lanka-mahal')`,
+      ),
+    );
 
-  if (gajan) {
-    const [r] = await db.update(tenants).set({ name: 'Gajan Traders', country: 'India' }).where(eq(tenants.id, gajan.id)).returning();
-    gajan = r;
-  } else {
-    const [r] = await db.insert(tenants).values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' }).returning();
-    gajan = r;
-  }
+  // Upsert canonical tenants — ON CONFLICT DO UPDATE ensures idempotency.
+  // If the slug was migrated above, this is a no-op (same slug, same data).
+  // If the slug already existed (duplicate case), this updates its data.
+  // If neither existed, this inserts a fresh record.
+  const [gajan] = await db
+    .insert(tenants)
+    .values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' })
+    .onConflictDoUpdate({
+      target: tenants.slug,
+      set: { name: 'Gajan Traders', country: 'India', updatedAt: new Date() },
+    })
+    .returning();
 
-  if (lanka) {
-    const [r] = await db.update(tenants).set({ name: 'Lanka Mahal', country: 'Sri Lanka' }).where(eq(tenants.id, lanka.id)).returning();
-    lanka = r;
-  } else {
-    const [r] = await db.insert(tenants).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' }).returning();
-    lanka = r;
-  }
+  const [lanka] = await db
+    .insert(tenants)
+    .values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' })
+    .onConflictDoUpdate({
+      target: tenants.slug,
+      set: { name: 'Lanka Mahal', country: 'Sri Lanka', updatedAt: new Date() },
+    })
+    .returning();
 
   console.log(`  Tenant: ${gajan!.name} (${gajan!.country})`);
   console.log(`  Tenant: ${lanka!.name} (${lanka!.country})`);
@@ -166,6 +189,7 @@ async function seed() {
       const createdAt = new Date(Date.now() - daysAgo * 86400000);
       const billAmount = (Math.random() * 50000 + 1000).toFixed(2);
       const trackNum = `GT${String(Date.now()).slice(-6)}${String(shipmentCount).padStart(3, '0')}`;
+      const labelCode = `${carrier.toUpperCase().slice(0, 2)}${String(Date.now()).slice(-8)}${String(shipmentCount).padStart(4, '0')}`;
 
       const [s] = await db
         .insert(shipments)
@@ -177,6 +201,7 @@ async function seed() {
           origin,
           destination: dest,
           billAmount,
+          labelCode,
           branchId: branch.id,
           tenantId: branch.tenantId,
           contactEmail: customer.email,
@@ -192,6 +217,68 @@ async function seed() {
     }
   }
   console.log(`  Created ${shipmentCount} shipments`);
+
+  // ── Tracking Events ──
+  const statusFlow: Record<string, { status: string; sub: string; desc: string }[]> = {
+    pending:          [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' }],
+    info_received:    [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' },
+                       { status: 'info_received',    sub: 'info_received',         desc: 'Shipping information received from carrier' }],
+    in_transit:       [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' },
+                       { status: 'info_received',    sub: 'info_received',         desc: 'Shipping information received from carrier' },
+                       { status: 'in_transit',       sub: 'picked_up',             desc: 'Package picked up and in transit' }],
+    out_for_delivery: [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' },
+                       { status: 'info_received',    sub: 'info_received',         desc: 'Shipping information received from carrier' },
+                       { status: 'in_transit',       sub: 'arrived_at_sort',       desc: 'Arrived at sorting facility' },
+                       { status: 'out_for_delivery', sub: 'out_for_delivery',      desc: 'Out for delivery' }],
+    delivered:        [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' },
+                       { status: 'info_received',    sub: 'info_received',         desc: 'Shipping information received from carrier' },
+                       { status: 'in_transit',       sub: 'arrived_at_sort',       desc: 'Arrived at sorting facility' },
+                       { status: 'out_for_delivery', sub: 'out_for_delivery',      desc: 'Out for delivery' },
+                       { status: 'delivered',        sub: 'delivered',             desc: 'Package delivered successfully' }],
+    exception:        [{ status: 'pending',          sub: 'order_placed',          desc: 'Shipment created and pending pickup' },
+                       { status: 'in_transit',       sub: 'exception_scan',        desc: 'Exception encountered during transit' },
+                       { status: 'exception',        sub: 'delivery_delayed',      desc: 'Delivery delayed due to operational issue' }],
+  };
+
+  const locations: Record<string, string[]> = {
+    pending:          [],
+    info_received:    [],
+    in_transit:       ['Mumbai, India', 'Delhi, India', 'Chennai, India', 'Colombo, Sri Lanka', 'Singapore', 'Dubai, UAE', 'Hong Kong'],
+    out_for_delivery: ['New York, USA', 'London, UK', 'Sydney, Australia', 'Toronto, Canada', 'Berlin, Germany'],
+    delivered:        ['New York, USA', 'London, UK', 'Sydney, Australia', 'Toronto, Canada', 'Berlin, Germany'],
+    exception:        ['Mumbai, India', 'Delhi, India', 'Singapore', 'Dubai, UAE'],
+  };
+
+  let eventCount = 0;
+  for (const s of allShipments) {
+    const flow = statusFlow[(s.status as string) ?? 'pending'] ?? statusFlow.pending!;
+    const createdAt = new Date(s.createdAt as string);
+    const branchId = s.branchId as string;
+    const tenantId = s.tenantId as string;
+    const carrier = s.carrier as string;
+
+    const events = flow.map((e, i) => {
+      const locs = locations[e.status] ?? [];
+      const location = locs.length > 0 ? locs[Math.floor(Math.random() * locs.length)]! : null;
+      const eventTime = new Date(createdAt.getTime() + (i + 1) * 3600000 * (2 + Math.floor(Math.random() * 6)));
+      return {
+        shipmentId: s.id as string,
+        status: e.status,
+        subStatus: e.sub,
+        description: e.desc,
+        location,
+        carrier,
+        carrierCode: (s.labelCode as string) ?? null,
+        eventTime,
+        branchId,
+        tenantId,
+      };
+    });
+
+    await db.insert(trackingEvents).values(events as any);
+    eventCount += events.length;
+  }
+  console.log(`  Created ${eventCount} tracking events`);
 
   // ── Quotations ──
   const quoteStatuses = ['draft', 'sent', 'accepted', 'rejected', 'converted'];

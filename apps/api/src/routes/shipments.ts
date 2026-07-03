@@ -43,7 +43,7 @@ app.get(
     if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
     if (status) conditions.push(eq(shipments.status, status!));
     if (customerId) conditions.push(eq(shipments.customerId, customerId!));
-    if (search) conditions.push(sql`${like(shipments.trackingNo, `%${search}%`)}`);
+    if (search) conditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)})`);
 
     const cacheKey = `shipments:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
 
@@ -53,6 +53,7 @@ app.get(
       total,
       page: pg,
       limit: lm,
+      counts,
     } = await withCache(
       cacheTenantId,
       cacheKey,
@@ -71,12 +72,37 @@ app.get(
           .limit(limit)
           .offset(offset);
 
-        return { rows, total: count, page, limit };
+        // Compute status counts from ALL matching records (ignoring status filter)
+        const countConditions: (ReturnType<typeof eq | typeof isNull>)[] = [
+          isNull(shipments.archivedAt),
+        ];
+        if (scope.tenantId) countConditions.push(eq(shipments.tenantId, scope.tenantId));
+        if (scope.branchId) countConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
+        if (customerId) countConditions.push(eq(shipments.customerId, customerId!));
+        if (search) countConditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)})`);
+        // NOTE: status filter is intentionally excluded from counts
+        // so KPI cards always show the full breakdown regardless of status filter
+
+        const countRows = await db
+          .select({
+            status: shipments.status,
+            count: sql<number>`COUNT(*)::int`,
+          })
+          .from(shipments)
+          .where(and(...countConditions) as SQL | undefined)
+          .groupBy(shipments.status);
+
+        const counts: Record<string, number> = {};
+        for (const r of countRows) {
+          counts[r.status!] = r.count;
+        }
+
+        return { rows, total: count, page, limit, counts };
       },
       60,
     );
 
-    return c.json({ data: rows, total, page: pg, limit: lm });
+    return c.json({ data: rows, total, page: pg, limit: lm, counts });
   },
 );
 
@@ -424,14 +450,19 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   if (scope.tenantId) shipmentScope.push(eq(shipments.tenantId, scope.tenantId));
   if (scope.branchId) shipmentScope.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
+  // Soft-delete: set archivedAt on shipment and related invoices instead of hard-deleting
+  const now = new Date();
+
   const invoiceConditions: (ReturnType<typeof eq>)[] = [eq(invoices.shipmentId, id!)];
   if (scope.tenantId) invoiceConditions.push(eq(invoices.tenantId, scope.tenantId));
   await db
-    .delete(invoices)
+    .update(invoices)
+    .set({ archivedAt: now, updatedAt: now })
     .where(and(...invoiceConditions) as SQL | undefined);
 
   const [row] = await db
-    .delete(shipments)
+    .update(shipments)
+    .set({ archivedAt: now, updatedAt: now })
     .where(and(...shipmentScope) as SQL | undefined)
     .returning();
 

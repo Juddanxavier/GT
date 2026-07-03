@@ -17,7 +17,7 @@ import { branchMiddleware, type BranchVariables } from './middleware/branch';
 import { requireRole } from './middleware/authorization';
 import { signInHandler } from './middleware/lockout';
 import { isRedisConnected, queues } from './queues';
-import { connectRedis, disconnectRedis } from './redis';
+import { cacheClient, connectRedis, disconnectRedis } from './redis';
 import { db } from './db';
 import { tenants as tenantTable, user as userTable, branches as branchTable } from './db/schema';
 import { eq } from 'drizzle-orm';
@@ -54,7 +54,7 @@ function validateEnv(): void {
       console.warn('[env] REDIS_URL is empty — job queues and real-time features will be unavailable');
     }
     if (!process.env.SEED_SECRET) {
-      console.warn('[env] SEED_SECRET is empty — superadmin seed endpoint is unprotected');
+      console.warn('[env] SEED_SECRET is empty — superadmin seed endpoint will reject all requests. Set SEED_SECRET to enable it.');
     }
   }
 }
@@ -124,10 +124,30 @@ app.use('*', Sentry.sentry(app));
 // Lockout check + forward to auth handler
 app.post('/api/auth/sign-in/email', signInHandler);
 
-// Forgot-password with email existence check
+// Forgot-password with email existence check + rate limiting
 app.post('/api/auth/forgot-password', async (c) => {
   const { email, redirectTo } = await c.req.json<{ email: string; redirectTo?: string }>();
   if (!email) return c.json({ error: 'Email is required' }, 400);
+
+  // Rate limit: 3 requests per 5 minutes per email
+  // (Better Auth's built-in rate limiter is bypassed by this custom handler)
+  if (cacheClient) {
+    try {
+      const key = `forgot-pw:${email.toLowerCase().trim()}`;
+      const count = await cacheClient.incr(key);
+      if (count === 1) {
+        await cacheClient.expire(key, 300);
+      }
+      if (count > 3) {
+        return c.json({ error: 'Too many password reset requests. Please try again later.' }, 429);
+      }
+    } catch (err) {
+      console.error('[forgot-password] Redis rate limit error:', err instanceof Error ? err.message : err);
+    }
+  } else {
+    console.warn('[forgot-password] Redis unavailable — rate limiting disabled!');
+  }
+
   const [user] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
   if (!user) return c.json({ error: 'No account found with this email address' }, 404);
   await auth.api.requestPasswordReset({ body: { email, redirectTo: redirectTo || '/reset-password' } });
@@ -256,15 +276,24 @@ app.post('/api/seed/tenant', async (c) => {
   const jaffna = lBranches[2]!;
 
   // ── Users ──
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123';
+  const seedStaffPassword = process.env.SEED_STAFF_PASSWORD || 'Staff@123';
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('[seed] SEED_ADMIN_PASSWORD not set — using default password. Set it in production!');
+  }
+  if (!process.env.SEED_STAFF_PASSWORD) {
+    console.warn('[seed] SEED_STAFF_PASSWORD not set — using default password. Set it in production!');
+  }
+
   const usersData = [
-    { name: 'Gajan Admin', email: 'admin@gajantraders.com', password: 'Admin@123', role: 'tenant-admin', tenantId: gajan!.id, branchId: mumbaiHq.id },
-    { name: 'Gajan Staff Mumbai', email: 'staff-mumbai@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan!.id, branchId: mumbaiHq.id },
-    { name: 'Gajan Staff Delhi', email: 'staff-delhi@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan!.id, branchId: delhi.id },
-    { name: 'Gajan Staff Chennai', email: 'staff-chennai@gajantraders.com', password: 'Staff@123', role: 'staff', tenantId: gajan!.id, branchId: chennai.id },
-    { name: 'Lanka Admin', email: 'admin@lankamahal.lk', password: 'Admin@123', role: 'tenant-admin', tenantId: lanka!.id, branchId: colomboHq.id },
-    { name: 'Lanka Staff Colombo', email: 'staff-colombo@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka!.id, branchId: colomboHq.id },
-    { name: 'Lanka Staff Kandy', email: 'staff-kandy@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka!.id, branchId: kandy.id },
-    { name: 'Lanka Staff Jaffna', email: 'staff-jaffna@lankamahal.lk', password: 'Staff@123', role: 'staff', tenantId: lanka!.id, branchId: jaffna.id },
+    { name: 'Gajan Admin', email: 'admin@gajantraders.com', password: seedAdminPassword, role: 'tenant-admin', tenantId: gajan!.id, branchId: mumbaiHq.id },
+    { name: 'Gajan Staff Mumbai', email: 'staff-mumbai@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: mumbaiHq.id },
+    { name: 'Gajan Staff Delhi', email: 'staff-delhi@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: delhi.id },
+    { name: 'Gajan Staff Chennai', email: 'staff-chennai@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: chennai.id },
+    { name: 'Lanka Admin', email: 'admin@lankamahal.lk', password: seedAdminPassword, role: 'tenant-admin', tenantId: lanka!.id, branchId: colomboHq.id },
+    { name: 'Lanka Staff Colombo', email: 'staff-colombo@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: colomboHq.id },
+    { name: 'Lanka Staff Kandy', email: 'staff-kandy@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: kandy.id },
+    { name: 'Lanka Staff Jaffna', email: 'staff-jaffna@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: jaffna.id },
   ];
   for (const u of usersData) {
     const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
@@ -396,6 +425,15 @@ async function main() {
 
   // Run DB migrations on startup
   await migrate(db, { migrationsFolder: './src/db/migrations' });
+
+  // Ensure default tenants exist
+  const existingTenants = await db.select().from(tenantTable);
+  if (!existingTenants.find((t) => t.slug === 'gajan-traders')) {
+    await db.insert(tenantTable).values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' });
+  }
+  if (!existingTenants.find((t) => t.slug === 'lanka-mahal')) {
+    await db.insert(tenantTable).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' });
+  }
 
   // Start BullMQ workers (importing triggers instantiation)
   await import('./workers/index.js');

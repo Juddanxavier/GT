@@ -176,6 +176,13 @@
       "when": 1750000000010,
       "tag": "0025_add_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1750000000011,
+      "tag": "0026_add_audit_log_tenant_id",
+      "breakpoints": true
     }
   ]
 }

@@ -69,7 +69,12 @@ async function fetchJson<T>(path: string, options?: RequestInit, retries = 1): P
         if (body && typeof body.error === 'string') parts.push(body.error);
         if (body && body.detail) parts.push(`(${body.detail})`);
         if (body && body.code) parts.push(`[${body.code}]`);
-        throw new ApiError(res.status, parts.join(' ') || `Request failed (${res.status})`);
+        const msg = parts.join(' ') || `Request failed (${res.status})`;
+        if (msg.includes('Branch not found')) {
+          branchOverride = null;
+          try { localStorage.removeItem('branchFilter'); } catch {}
+        }
+        throw new ApiError(res.status, msg);
       }
 
       return { data: body.data as T, res };
@@ -106,7 +111,12 @@ async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
       if (body && typeof body.error === 'string') parts.push(body.error);
       if (body && body.detail) parts.push(`(${body.detail})`);
       if (body && body.code) parts.push(`[${body.code}]`);
-      throw new ApiError(res.status, parts.join(' ') || `Request failed (${res.status})`);
+      const msg = parts.join(' ') || `Request failed (${res.status})`;
+      if (msg.includes('Branch not found')) {
+        branchOverride = null;
+        try { localStorage.removeItem('branchFilter'); } catch {}
+      }
+      throw new ApiError(res.status, msg);
     }
     return body as T;
   } finally {

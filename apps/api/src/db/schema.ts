@@ -224,7 +224,7 @@ export const invoices = pgTable(
       .references(() => customers.id, { onDelete: 'restrict' }),
     invoiceNo: varchar('invoice_no', { length: 50 }).notNull(),
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
-    status: varchar('status', { length: 20 }).notNull().default('paid'),
+    status: varchar('status', { length: 20 }).notNull().default('unpaid'),
     notes: text('notes'),
     emailCount: integer('email_count').notNull().default(1),
     lastEmailSentAt: timestamp('last_email_sent_at').notNull().defaultNow(),
@@ -374,6 +374,7 @@ export const auditLogs = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     event: varchar('event', { length: 50 }).notNull(),
     userId: text('user_id'),
+    tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'set null' }),
     metadata: jsonb('metadata').notNull().default('{}'),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
@@ -383,6 +384,7 @@ export const auditLogs = pgTable(
     auditLogEventIdx: index('idx_audit_log_event').on(table.event),
     auditLogUserIdIdx: index('idx_audit_log_user_id').on(table.userId),
     auditLogCreatedAtIdx: index('idx_audit_log_created_at').on(table.createdAt),
+    auditLogTenantIdx: index('idx_audit_log_tenant_id').on(table.tenantId),
   }),
 );
 

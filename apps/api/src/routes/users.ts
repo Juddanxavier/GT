@@ -23,8 +23,12 @@ app.get(
 
     const search = c.req.query('search');
     const roleFilter = c.req.query('role');
+    const bannedFilter = c.req.query('banned');
+    const page = Math.max(1, parseInt(c.req.query('page') ?? '', 10) || 0);
+    const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') ?? '', 10) || 50));
+    const hasPagination = page > 0;
 
-    const conditions: ReturnType<typeof eq>[] = [];
+    const conditions: ReturnType<typeof eq | SQL>[] = [];
 
     const overrideTenantId = c.get('tenantId');
     if (currentUser.role === 'superadmin') {
@@ -52,22 +56,86 @@ app.get(
       conditions.push(eq(user.role, roleFilter!));
     }
 
+    if (bannedFilter === 'true') {
+      conditions.push(sql`${user.banned} IS TRUE`);
+    } else if (bannedFilter === 'false') {
+      conditions.push(sql`${user.banned} IS NOT TRUE`);
+    }
+
+    const selectFields = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      image: user.image,
+      role: user.role,
+      banned: user.banned,
+      banReason: user.banReason,
+      banExpires: user.banExpires,
+      tenantId: user.tenantId,
+      branchId: user.branchId,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    if (hasPagination) {
+      const [countRow] = await db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(user)
+        .where(and(...conditions) as SQL | undefined);
+      const count = countRow?.count ?? 0;
+      const offset = (page - 1) * limit;
+
+      const rows = await db
+        .select(selectFields)
+        .from(user)
+        .where(and(...conditions) as SQL | undefined)
+        .orderBy(user.createdAt)
+        .limit(limit)
+        .offset(offset);
+
+      // Compute active/banned counts from ALL matching records (ignoring banned filter)
+      const countConditions: (ReturnType<typeof eq> | SQL)[] = [];
+      if (currentUser.role === 'superadmin') {
+        if (!overrideTenantId) return c.json({ error: 'Tenant required' }, 400);
+        countConditions.push(
+          sql`(${eq(user.tenantId, overrideTenantId!)} OR ${sql`${user.tenantId} IS NULL`})`,
+        );
+      } else if (currentUser.role === 'tenant-admin') {
+        countConditions.push(eq(user.tenantId, currentUser.tenantId!));
+      } else {
+        countConditions.push(eq(user.tenantId, currentUser.tenantId!));
+        countConditions.push(eq(user.branchId, currentUser.branchId!));
+        countConditions.push(eq(user.role, 'customer'));
+      }
+      if (search) {
+        const q = `%${search}%`;
+        countConditions.push(sql`(${sql`${user.name} ILIKE ${q}`} OR ${sql`${user.email} ILIKE ${q}`})`);
+      }
+      if (roleFilter) countConditions.push(eq(user.role, roleFilter!));
+      // NOTE: banned filter is intentionally excluded from counts
+      // so KPI cards always show the full breakdown regardless of banned filter
+
+      const bannedCountRows = await db
+        .select({
+          isBanned: sql<boolean>`${user.banned} IS TRUE`,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(user)
+        .where(and(...countConditions) as SQL | undefined)
+        .groupBy(sql`${user.banned} IS TRUE`);
+
+      const counts: Record<string, number> = { total: count, active: 0, banned: 0 };
+      for (const r of bannedCountRows) {
+        if (r.isBanned) counts.banned = r.count;
+        else counts.active = r.count;
+      }
+
+      return c.json({ data: rows, total: count, page, limit, counts });
+    }
+
     const rows = await db
-      .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        role: user.role,
-        banned: user.banned,
-        banReason: user.banReason,
-        banExpires: user.banExpires,
-        tenantId: user.tenantId,
-        branchId: user.branchId,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      })
+      .select(selectFields)
       .from(user)
       .where(and(...conditions) as SQL | undefined)
       .orderBy(user.createdAt);
@@ -224,6 +292,13 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
   if (Object.keys(changes).length > 0) {
     if (changes.role) {
       await logAudit('USER_ROLE_CHANGED', id ?? null, changes, c);
+      // Revoke all active sessions when role changes, forcing re-login with new permissions
+      try {
+        await db.delete(session).where(eq(session.userId, id!));
+        console.log(`[security] Sessions revoked for user ${id} due to role change`);
+      } catch (err) {
+        console.error('[security] Failed to revoke sessions on role change:', err);
+      }
     } else {
       await logAudit('USER_UPDATED', id ?? null, changes, c);
     }

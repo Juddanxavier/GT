@@ -97,7 +97,7 @@ app.post(
         branchId: ship.branchId ?? null,
         invoiceNo,
         amount: String(amount),
-        status: 'paid' as const,
+        status: 'unpaid' as const,
         emailCount: 0,
         paidAt: now,
         lastEmailSentAt: now,
@@ -144,9 +144,12 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
+    const status = c.req.query('status');
+
     const conditions: ReturnType<typeof eq>[] = [eq(invoices.tenantId, scope.tenantId)];
     if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
     if (search) conditions.push(sql`${like(invoices.invoiceNo, `%${search}%`)}`);
+    if (status) conditions.push(eq(invoices.status, status!));
 
     const cacheKey = `invoices:list:${scope.branchId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
     const result = await withCache(
@@ -181,7 +184,27 @@ app.get(
           .limit(limit)
           .offset(offset);
 
-        return { rows, total: Number(count), page, limit };
+        // Compute status counts from ALL matching records (ignoring status filter)
+          const countConditions: SQL[] = [eq(invoices.tenantId, scope.tenantId!)];
+          if (scope.branchId) countConditions.push(eq(shipments.branchId, scope.branchId));
+          // search filter is intentionally excluded from counts
+
+          const countRows = await db
+            .select({
+              status: invoices.status,
+              count: sql<number>`count(*)::int`,
+            })
+            .from(invoices)
+            .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
+            .where(and(...countConditions) as SQL | undefined)
+            .groupBy(invoices.status);
+
+        const counts: Record<string, number> = {};
+        for (const r of countRows) {
+          counts[r.status!] = r.count;
+        }
+
+        return { rows, total: Number(count), page, limit, counts };
       },
       120,
     );
@@ -191,6 +214,7 @@ app.get(
       total: result.total,
       page: result.page,
       limit: result.limit,
+      counts: result.counts,
     });
   },
 );

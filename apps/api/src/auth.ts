@@ -23,12 +23,23 @@ export const auth = betterAuth({
     schema: schema as AuthSchema,
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
     trustedOrigins: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://admin.gajantraders.com',
-      'https://api.gajantraders.com',
-      'https://gajantraders.com',
-      'https://www.gajantraders.com',
+      // Environment-aware: only the relevant origins for the current environment
+      // plus any explicit overrides via CORS_ORIGIN env var
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            'https://admin.gajantraders.com',
+            'https://api.gajantraders.com',
+            'https://gajantraders.com',
+            'https://www.gajantraders.com',
+            'https://lankamahal.lk',
+            'https://www.lankamahal.lk',
+          ]
+        : [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+          ]
+      ),
       ...(process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? []),
     ],
     sendEmail,

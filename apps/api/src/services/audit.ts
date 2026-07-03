@@ -42,9 +42,23 @@ export async function logAudit(
   c?: Context,
 ): Promise<void> {
   try {
+    // Extract tenantId from metadata or context
+    let tenantId: string | null | undefined = (metadata.tenantId as string) ?? undefined;
+    
+    // If the context has a tenantId set (from tenantMiddleware), use it as fallback
+    if (!tenantId && c && typeof c.get === 'function') {
+      try {
+        const ctxTenantId = c.get('tenantId') as string | undefined;
+        if (ctxTenantId) tenantId = ctxTenantId;
+      } catch {
+        // Context doesn't support .get() - test mock or non-Hono context
+      }
+    }
+
     await db.insert(auditLogs).values({
       event,
       userId: userId ?? undefined,
+      tenantId: tenantId ?? undefined,
       metadata,
       ipAddress: c ? (c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? null) : null,
       userAgent: c ? (c.req.header('user-agent') ?? null) : null,

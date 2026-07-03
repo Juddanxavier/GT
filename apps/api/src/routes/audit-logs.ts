@@ -3,21 +3,20 @@
 import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
-import { auditLogs, user } from '../db/schema';
+import { auditLogs } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
 /**
- * Since audit_logs has no tenantId column, we join with the user table
- * to scope results to a specific tenant.
+ * Scope audit logs by tenant using the dedicated tenantId column.
+ * This is far more efficient than the previous approach of joining
+ * through the user table with a subquery.
  */
 function applyTenantScope(conditions: (ReturnType<typeof eq | typeof like> | SQL)[], tenantId: string | undefined) {
   if (tenantId) {
-    conditions.push(
-      sql`${auditLogs.userId} IN (SELECT id FROM "user" WHERE tenant_id = ${tenantId})`,
-    );
+    conditions.push(eq(auditLogs.tenantId, tenantId));
   }
 }
 

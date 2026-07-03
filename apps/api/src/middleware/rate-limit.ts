@@ -30,13 +30,15 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
     }
 
     if (!cacheClient) {
+      console.warn('[ratelimit] Redis unavailable — rate limiting DISABLED. All requests proceed without rate limits!');
       await next();
       return;
     }
 
-    const user = c.get('user') as { id?: string } | null;
+    const user = c.get('user') as { id?: string; tenantId?: string } | null;
     const ip = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';
     const identifier = user?.id ?? ip;
+    const tenantId = c.get('tenantId');
 
     const method = c.req.method;
     const path = c.req.path;
@@ -48,7 +50,9 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
     const sanitize = (s: string) => s.replace(/[\s:;]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
     const safeIdentifier = sanitize(identifier);
     const safePrefix = sanitize(merged.keyPrefix ?? 'ratelimit');
-    const key = `${safePrefix}:${safeIdentifier}:${method}:${path}`;
+    // Include tenantId in the key for per-tenant rate isolation
+    const tenantSegment = tenantId ? `${sanitize(tenantId)}:` : '';
+    const key = `${safePrefix}:${tenantSegment}${safeIdentifier}:${method}:${path}`;
 
     try {
       const rawCount = await cacheClient.incr(key);
@@ -64,8 +68,8 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
       if (count > merged.maxRequests) {
         return c.json({ error: 'Too many requests. Please try again later.' }, 429);
       }
-    } catch {
-      console.warn('[ratelimit] Redis error — proceeding without rate limit');
+    } catch (err) {
+      console.error('[ratelimit] Redis operation failed — rate limiting bypassed for this request:', err instanceof Error ? err.message : err);
     }
 
     await next();

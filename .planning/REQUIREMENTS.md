@@ -29,15 +29,18 @@
 - [ ] **ADMIN-UI-13**: Code splitting for large admin pages (shipments detail, quotation editor) to reduce initial bundle
 
 ### Customer Portal Enhancement (CUST-PORTAL)
-- [ ] **CUST-PORTAL-04**: Customer dashboard with shipment summary KPIs, recent tracking updates, alerts/warnings
-- [ ] **CUST-PORTAL-05**: Customer profile management — edit name, email, password, view account details
-- [ ] **CUST-PORTAL-06**: Customer quotation viewer — list quotes, view line items, accept/reject status
-- [ ] **CUST-PORTAL-07**: Customer invoice viewer — list invoices, view amounts, payment status, download
-- [ ] **CUST-PORTAL-08**: Customer notification preferences — opt-in/out for email and WhatsApp per event type
-- [ ] **CUST-PORTAL-09**: Improved "My Shipments" page with search, filtering, status charts, pagination
-- [ ] **CUST-PORTAL-10**: Responsive mobile layout for customer portal — nav, tables, tracking timeline
-- [ ] **CUST-PORTAL-11**: Consistent error, loading, and empty states across customer portal
-- [ ] **CUST-PORTAL-12**: Enhanced tracking timeline with carrier logo, richer status descriptions, estimated delivery visualization
+- [ ] **CUST-PORTAL-01**: Customer home page with tracking lookup, claim shipment, and quick links (already exists, refine in 3a)
+- [ ] **CUST-PORTAL-02**: Customer auth pages — login, register, forgot/reset password (already exists, polish in 3h)
+- [ ] **CUST-PORTAL-03**: Consistent brand theming and typography across customer portal (3h)
+- [ ] **CUST-PORTAL-04**: Customer dashboard with shipment summary KPIs, recent tracking updates, alerts/warnings (3a)
+- [ ] **CUST-PORTAL-05**: Customer profile management — edit name, email, password, view account details (3b)
+- [ ] **CUST-PORTAL-06**: Customer quotation viewer — list quotes, view line items, accept/reject status (3c)
+- [ ] **CUST-PORTAL-07**: Customer invoice viewer — list invoices, view amounts, payment status, download (3d)
+- [ ] **CUST-PORTAL-08**: Customer notification center — bell icon with unread count, notification list, mark read (3e)
+- [ ] **CUST-PORTAL-09**: Improved "My Shipments" page with search, status filtering, pagination (3f)
+- [ ] **CUST-PORTAL-10**: Responsive mobile layout for customer portal — nav, tables, tracking timeline (3g)
+- [ ] **CUST-PORTAL-11**: Consistent error, loading, and empty states across customer portal (3g)
+- [ ] **CUST-PORTAL-12**: Enhanced tracking timeline with carrier logo, richer status descriptions, estimated delivery visualization (3f)
 
 ### Out of Scope
 - Payment processing integration — customers pay offline
@@ -73,15 +76,18 @@
 | ADMIN-UI-11 | Phase 2 | Pending |
 | ADMIN-UI-12 | Phase 2 | Pending |
 | ADMIN-UI-13 | Phase 2 | Pending |
-| CUST-PORTAL-04 | Phase 3 | Pending |
-| CUST-PORTAL-05 | Phase 3 | Pending |
-| CUST-PORTAL-06 | Phase 3 | Pending |
-| CUST-PORTAL-07 | Phase 3 | Pending |
-| CUST-PORTAL-08 | Phase 3 | Pending |
-| CUST-PORTAL-09 | Phase 3 | Pending |
-| CUST-PORTAL-10 | Phase 3 | Pending |
-| CUST-PORTAL-11 | Phase 3 | Pending |
-| CUST-PORTAL-12 | Phase 3 | Pending |
+| CUST-PORTAL-01 | Phase 3a | Pending |
+| CUST-PORTAL-02 | Phase 3h | Pending |
+| CUST-PORTAL-03 | Phase 3h | Pending |
+| CUST-PORTAL-04 | Phase 3a | Pending |
+| CUST-PORTAL-05 | Phase 3b | Pending |
+| CUST-PORTAL-06 | Phase 3c | Pending |
+| CUST-PORTAL-07 | Phase 3d | Pending |
+| CUST-PORTAL-08 | Phase 3e | Pending |
+| CUST-PORTAL-09 | Phase 3f | Pending |
+| CUST-PORTAL-10 | Phase 3g | Pending |
+| CUST-PORTAL-11 | Phase 3g | Pending |
+| CUST-PORTAL-12 | Phase 3f | Pending |
 
 ---
 *Last updated: 2026-07-02*

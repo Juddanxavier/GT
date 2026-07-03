@@ -209,17 +209,19 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
         const typedUser = user as { tenantId?: string | null; branchId?: string | null };
         let tenantName: string | null = null;
         let tenantCountry: string | null = null;
+        let tenantSlug: string | null = null;
         let branchName: string | null = null;
 
         if (typedUser.tenantId) {
           const [tenant] = await db
-            .select({ name: schema.tenants.name, country: schema.tenants.country })
+            .select({ name: schema.tenants.name, country: schema.tenants.country, slug: schema.tenants.slug })
             .from(schema.tenants)
             .where(eq(schema.tenants.id as any, typedUser.tenantId))
-            .limit(1) as { name: string; country: string }[];
+            .limit(1) as { name: string; country: string; slug: string }[];
           if (tenant) {
             tenantName = tenant.name;
             tenantCountry = tenant.country;
+            tenantSlug = tenant.slug;
           }
         }
 
@@ -232,7 +234,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
           if (branch) branchName = branch.name;
         }
 
-        return { user: { ...user, tenantName, tenantCountry, branchName }, session };
+        return { user: { ...user, tenantName, tenantCountry, tenantSlug, branchName }, session };
       }),
     ],
     trustedOrigins,

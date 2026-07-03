@@ -71,7 +71,7 @@ export async function generateReportPdf(params: ReportParams) {
   );
 
   const records = await db.execute<Record<string, unknown>>(
-    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(c.name, '') AS customer_name, COALESCE(c.phone, '') AS customer_phone, COALESCE(c.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} ORDER BY s.created_at DESC LIMIT 1000`,
+    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(c.name, '') AS customer_name, COALESCE(c.phone, '') AS customer_phone, COALESCE(c.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.bill_amount, inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} ORDER BY s.created_at DESC LIMIT 1000`,
   );
 
   return await renderToBuffer(ReportDocument({
@@ -84,7 +84,7 @@ export async function generateReportPdf(params: ReportParams) {
         { label: 'Delivered', value: String(s.delivered as number) },
         { label: 'In Transit', value: String(s.in_transit as number) },
         { label: 'Exceptions', value: String(s.exceptions as number) },
-        { label: 'Bill Amount', value: `\u20B9${(rev?.total as string) ?? '0.00'}` },
+        { label: 'Bill Amount', value: `Rs. ${(rev?.total as string) ?? '0.00'}` },
       ],
         records: records as Record<string, unknown>[],
         generatedAt,

@@ -7,7 +7,7 @@ import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Selec
 import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
-import { useBranches, useCreateBranch, useDeleteBranch, useTenants, type ApiBranch } from '@/lib/queries';
+import { useBranches, useCreateBranch, useDeleteBranch, useTenants, type ApiBranch, type PaginatedResult } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { getCountryCode, stripDialCode } from '@/lib/country-codes';
 import { Flag } from '@/components/copy-button';
@@ -64,7 +64,11 @@ export default function BranchesPage() {
   if (!sessionPending && (!userRole || userRole === 'staff')) { router.push('/unauthorized'); return null; }
 
   const { tenantFilter } = useTenantFilter();
-  const { data: branches = [], isPending: branchesLoading } = useBranches();
+  const branchesQuery = useBranches(page, ROWS_PER_PAGE, search || undefined);
+  const branchesResp = branchesQuery.data as PaginatedResult<ApiBranch> | undefined;
+  const branches = Array.isArray(branchesResp) ? branchesResp : (branchesResp?.data ?? []);
+  const totalCount = Array.isArray(branchesResp) ? branches.length : (branchesResp?.total ?? 0);
+  const { isPending: branchesLoading } = branchesQuery;
   const { data: tenants = [] } = useTenants();
   const createBranch = useCreateBranch();
   const deleteBranch = useDeleteBranch();
@@ -78,27 +82,21 @@ export default function BranchesPage() {
   const phoneFlag = useMemo(() => getCountryCode(selectedTenantCountry).flag, [selectedTenantCountry]);
 
   const filtered = useMemo(() => {
-    let items = branches;
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter((b) => b.name.toLowerCase().includes(q) || b.email?.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q));
-    }
     const col = sortDescriptor.column as keyof Branch;
     const dir = sortDescriptor.direction;
-    items = [...items].sort((a, b) => {
-      const cmp = String(a[col]).localeCompare(String(b[col]));
+    const items = [...branches].sort((a, b) => {
+      const valA = String(a[col] ?? '');
+      const valB = String(b[col] ?? '');
+      const cmp = valA.localeCompare(valB);
       return dir === 'descending' ? -cmp : cmp;
     });
     return items;
-  }, [search, sortDescriptor, branches]);
+  }, [sortDescriptor, branches]);
 
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+  const paginated = filtered; // Data is already server-paginated
+  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
   const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, filtered.length);
-  const paginated = useMemo(() => {
-    const s = (page - 1) * ROWS_PER_PAGE;
-    return filtered.slice(s, s + ROWS_PER_PAGE);
-  }, [page, filtered]);
+  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -184,7 +182,7 @@ export default function BranchesPage() {
           </Table.ScrollContainer>
           <Table.Footer>
               <Pagination size="sm">
-                <Pagination.Summary>{start} to {end} of {filtered.length} results</Pagination.Summary>
+                <Pagination.Summary>{start} to {end} of {totalCount} results</Pagination.Summary>
                 <Pagination.Content>
                   <Pagination.Item>
                     <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
