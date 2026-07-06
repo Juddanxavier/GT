@@ -9,6 +9,7 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 - [ ] **Phase 1: UI Foundation** — Extract shared UI component library from admin patterns into `@repo/ui` with design tokens
 - [ ] **Phase 2: Admin UI Restructuring** — Refactor all admin pages to use shared components, improve mobile layout, add consistent states
 - [ ] **Phase 3: Customer Portal Enhancement** — Build customer dashboard, profile, quotes, invoices, notification prefs, improved tracking UX
+- [ ] **Phase 4: Tenant Landing Pages** — Domain-aware home/landing pages for Gajan Traders and Lanka Mahal with shared Navbar, HeroSection, and Footer components in `@repo/ui`
 
 ## Phase Details
 
@@ -51,6 +52,23 @@ The project has a fully functional backend API, a comprehensive admin panel, and
   - **3g: Mobile & States** — Responsive nav, loading/error/empty states across all pages (CUST-PORTAL-10, CUST-PORTAL-11)
   - **3h: Auth & Theme** — Polish auth pages, consistent brand theming, custom fonts (CUST-PORTAL-02, CUST-PORTAL-03)
 
+### Phase 4: Tenant Landing Pages
+**Goal**: Domain-aware home/landing pages for Gajan Traders and Lanka Mahal with shared Navbar, HeroSection, and Footer components in `@repo/ui`
+**Depends on**: Nothing (standalone — shared components built directly into new or existing apps)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+   1. Gajan Traders (gajantraders.com) and Lanka Mahal (lankamahal.lk) each display their own branded home page
+   2. Navbar shows tenant logo, nav links, and is responsive on mobile
+   3. HeroSection displays tenant-specific imagery, headline, and CTA
+   4. Footer shows tenant contact info, links, and social
+   5. All three components are reusable from `@repo/ui` with tenant theming props
+**Plans**: 2 plans, 2 waves
+**UI hint**: yes
+
+Plans:
+- [ ] 04-01-PLAN.md — Tenant types, Navbar extraction, portal layout restructure
+- [ ] 04-02-PLAN.md — HeroSection & Footer components, landing page compose, cleanup
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -65,3 +83,4 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 | 3f. My Shipments & Tracking | 0/0 | Not started | - |
 | 3g. Mobile & States | 0/0 | Not started | - |
 | 3h. Auth & Theme | 0/0 | Not started | - |
+| 4. Tenant Landing Pages | 0/2 | **Planned** | - |
