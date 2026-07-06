@@ -7,6 +7,7 @@ import { db } from '../db';
 import { user as userTable } from '../db/schema';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
+import { errorResponse } from '../error-response';
 
 function appendClearCookie(headers: Headers, name: string) {
   headers.append('Set-Cookie', `${name}=; Path=/; Secure; SameSite=None; Max-Age=0`);
@@ -63,12 +64,7 @@ export async function signInHandler(c: Context) {
         if (locked) {
           const ttl = await cacheClient.ttl(lockoutKey(email, tenantId));
           await logAudit('LOGIN_BLOCKED', null, { email, tenantId, remainingSeconds: ttl }, c);
-          return c.json(
-            {
-              error: `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`,
-            },
-            423,
-          );
+          return errorResponse(c, 'ACCOUNT_LOCKED', `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`, 423);
         }
       } catch (err) {
         console.error('[lockout] Redis error during lockout check — allowing:', err instanceof Error ? err.message : err);

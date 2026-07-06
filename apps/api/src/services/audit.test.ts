@@ -4,6 +4,10 @@ import type { Context } from 'hono';
 const mockInsert = vi.fn();
 const mockValues = vi.fn();
 
+vi.mock('../logger', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}));
+
 vi.mock('../db', () => ({
   db: {
     insert: () => ({
@@ -117,18 +121,16 @@ describe('logAudit', () => {
 
   it('handles DB insertion errors gracefully (no throw)', async () => {
     mockValues.mockRejectedValue(new Error('DB connection lost'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { logger } = await import('../logger');
 
     await expect(
       logAudit('LOGIN_FAILED', null, { email: 'test@test.com' }),
     ).resolves.toBeUndefined();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[audit] log error:',
-      expect.any(Error),
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      'audit log error',
     );
-
-    consoleSpy.mockRestore();
   });
 
   it('uses default empty metadata when not provided', async () => {

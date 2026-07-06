@@ -79,8 +79,8 @@ describe('lockout - signInHandler', () => {
     });
     expect(res.status).toBe(423);
     const body = await res.json();
-    expect(body.error).toContain('Account locked');
-    expect(body.error).toContain('15 minutes');
+    expect(body.error.message).toContain('Account locked');
+    expect(body.error.message).toContain('15 minutes');
     expect(mockAudit).toHaveBeenCalledWith('LOGIN_BLOCKED', null, expect.objectContaining({ email: 'locked@test.com' }), expect.anything());
   });
 
@@ -125,6 +125,6 @@ describe('lockout - signInHandler', () => {
     expect(res.status).toBe(200);
     expect(mockRedis.del).toHaveBeenCalledWith('lockout:success@test.com');
     expect(mockRedis.del).toHaveBeenCalledWith('attempts:success@test.com');
-    expect(mockAudit).toHaveBeenCalledWith('LOGIN_SUCCESS', null, expect.objectContaining({ email: 'success@test.com' }), expect.anything());
+    expect(mockAudit).toHaveBeenCalledWith('LOGIN_SUCCESS', '1', expect.objectContaining({ email: 'success@test.com', tenantId: null }), expect.anything());
   });
 });

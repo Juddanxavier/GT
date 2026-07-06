@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { cacheClient } from '../redis';
+import { errorResponse } from '../error-response';
 
 export type RateLimitConfig = {
   windowSeconds: number;
@@ -66,7 +67,7 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
       c.res.headers.set('X-RateLimit-Remaining', String(Math.max(0, merged.maxRequests - count)));
 
       if (count > merged.maxRequests) {
-        return c.json({ error: 'Too many requests. Please try again later.' }, 429);
+        return errorResponse(c, 'RATE_LIMITED', 'Too many requests. Please try again later.', 429);
       }
     } catch (err) {
       console.error('[ratelimit] Redis operation failed — rate limiting bypassed for this request:', err instanceof Error ? err.message : err);

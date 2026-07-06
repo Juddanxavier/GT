@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { branches } from '../db/schema';
 import { cacheGet, cacheSet, cacheDel } from '../cache';
+import { errorResponse } from '../error-response';
 
 const CACHE_TTL_SEC = 300;
 
@@ -37,12 +38,12 @@ export async function branchMiddleware(c: Context, next: Next) {
   }
 
   if (user?.role !== 'tenant-admin' && user?.role !== 'superadmin') {
-    return c.json({ error: 'Branch filter is only available for tenant-admin users' }, 400);
+    return errorResponse(c, 'BRANCH_FILTER_DENIED', 'Branch filter is only available for tenant-admin users', 400);
   }
 
   const tenantId = c.get('tenantId');
   if (!tenantId) {
-    return c.json({ error: 'Tenant context required for branch filtering' }, 400);
+    return errorResponse(c, 'TENANT_REQUIRED', 'Tenant context required for branch filtering', 400);
   }
 
   // Check cache
@@ -62,7 +63,7 @@ export async function branchMiddleware(c: Context, next: Next) {
     .limit(1);
 
   if (!branch) {
-    return c.json({ error: 'Branch not found or does not belong to your organization' }, 400);
+    return errorResponse(c, 'BRANCH_NOT_FOUND', 'Branch not found or does not belong to your organization', 400);
   }
 
   await cacheSet(null, cacheKey, 'valid', CACHE_TTL_SEC);

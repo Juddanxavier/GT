@@ -8,11 +8,16 @@ import { sendEmail } from '../email/provider';
 import { generateReportPdf } from '../invoice/report-service';
 import { getQueryScope, requireRole } from '../middleware/authorization';
 import { logAudit } from '../services/audit';
+import { errorResponse } from '../error-response';
+import { reportQuerySchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
+const ALLOWED_COLUMNS = new Set(['created_at', 's.created_at', 'q.created_at']);
+
 function dateFilter(col: string, start?: string, end?: string) {
+  if (!ALLOWED_COLUMNS.has(col)) throw new Error(`Invalid column: ${col}`);
   if (start && end)
     return sql`${sql.raw(col)} >= ${start}::date AND ${sql.raw(col)} < (${end}::date + INTERVAL '1 day')`;
   if (start) return sql`${sql.raw(col)} >= ${start}::date`;
@@ -199,8 +204,10 @@ app.get('/quotations/data', requireRole('superadmin', 'tenant-admin'), async (c)
 // Generate PDF
 app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
-  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
-  const body = (await c.req.json()) as { type?: string; startDate?: string; endDate?: string };
+  if (!scope.tenantId) return errorResponse(c, 'TENANT_REQUIRED', 'Tenant required', 400);
+  const parsed = reportQuerySchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const body = parsed.data!;
   const { tFilter, bFilter, sFilter, sbFilter, qFilter, qbFilter } = scopeFilters(scope);
 
   let tenantName: string | undefined;
@@ -234,17 +241,19 @@ app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
     });
   } catch (err) {
     console.error('[reports/pdf]', err);
-    return c.json({ error: 'Failed to generate report' }, 500);
+    return errorResponse(c, 'REPORT_ERROR', 'Failed to generate report', 500);
   }
 });
 
 // Send PDF via email
 app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const scope = getQueryScope(c);
-  if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
-  const body = (await c.req.json()) as { type?: string; startDate?: string; endDate?: string };
+  if (!scope.tenantId) return errorResponse(c, 'TENANT_REQUIRED', 'Tenant required', 400);
+  const parsed = reportQuerySchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const body = parsed.data!;
   const user = c.get('user') as Record<string, unknown> | undefined;
-  if (!user?.email) return c.json({ error: 'No email on your account' }, 400);
+  if (!user?.email) return errorResponse(c, 'NO_EMAIL', 'No email on your account', 400);
 
   const { tFilter, bFilter, sFilter, sbFilter, qFilter, qbFilter } = scopeFilters(scope);
   const startDate = clampEnd(body.startDate);

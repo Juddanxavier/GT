@@ -17,7 +17,10 @@ type ReportParams = {
   tenantName?: string;
 };
 
+const ALLOWED_COLUMNS = new Set(['created_at', 's.created_at', 'q.created_at']);
+
 function dateFilter(col: string, start?: string, end?: string): SQL<unknown> {
+  if (!ALLOWED_COLUMNS.has(col)) throw new Error(`Invalid column: ${col}`);
   if (start && end) return sql`${sql.raw(col)} >= ${start}::date AND ${sql.raw(col)} < (${end}::date + INTERVAL '1 day')`;
   if (start) return sql`${sql.raw(col)} >= ${start}::date`;
   if (end) return sql`${sql.raw(col)} < (${end}::date + INTERVAL '1 day')`;

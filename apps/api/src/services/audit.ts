@@ -3,6 +3,7 @@
 import type { Context } from 'hono';
 import { db } from '../db';
 import { auditLogs } from '../db/schema';
+import { logger } from '../logger';
 
 export type AuditEvent =
   | 'LOGIN_SUCCESS'
@@ -41,11 +42,10 @@ export async function logAudit(
   metadata: Record<string, unknown> = {},
   c?: Context,
 ): Promise<void> {
+  let tenantId: string | null | undefined;
   try {
-    // Extract tenantId from metadata or context
-    let tenantId: string | null | undefined = (metadata.tenantId as string) ?? undefined;
+    tenantId = (metadata.tenantId as string) ?? undefined;
     
-    // If the context has a tenantId set (from tenantMiddleware), use it as fallback
     if (!tenantId && c && typeof c.get === 'function') {
       try {
         const ctxTenantId = c.get('tenantId') as string | undefined;
@@ -63,7 +63,8 @@ export async function logAudit(
       ipAddress: c ? (c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? null) : null,
       userAgent: c ? (c.req.header('user-agent') ?? null) : null,
     });
+    logger.info({ event, userId, tenantId }, 'audit');
   } catch (err) {
-    console.error('[audit] log error:', err);
+    logger.error({ err, event, userId, tenantId }, 'audit log error');
   }
 }

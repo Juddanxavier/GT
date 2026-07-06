@@ -354,7 +354,7 @@ app.patch(
           quantity: String(item.quantity),
           rate: String(item.rate),
           amount: String(item.amount),
-          quotationId: id,
+          quotationId: id!,
         })),
       );
     }

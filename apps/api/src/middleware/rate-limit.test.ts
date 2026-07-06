@@ -49,7 +49,7 @@ describe('globalRateLimit', () => {
     const res = await app.request('/test');
     expect(res.status).toBe(429);
     const body = await res.json();
-    expect(body.error).toContain('Too many requests');
+    expect(body.error.message).toContain('Too many requests');
   });
 
   it('uses custom config', async () => {

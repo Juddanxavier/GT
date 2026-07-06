@@ -8,6 +8,8 @@ import { db } from '../db';
 import { account, onboardTokens, session, tenants, user, verification } from '../db/schema';
 import { sendEmail } from '../email/provider';
 import { getUser, requireBranchScope, requireRole } from '../middleware/authorization';
+import { errorResponse } from '../error-response';
+import { updateUserSchema, createUserSchema, banUserSchema } from '../validators';
 import { logAudit } from '../services/audit';
 import type { AppVariables } from './types';
 
@@ -19,16 +21,16 @@ app.get(
   requireBranchScope(),
   async (c) => {
     const currentUser = getUser(c);
-    if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+  if (!currentUser) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
-    const search = c.req.query('search');
+  const search = c.req.query('search');
     const roleFilter = c.req.query('role');
     const bannedFilter = c.req.query('banned');
     const page = Math.max(1, parseInt(c.req.query('page') ?? '', 10) || 0);
     const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') ?? '', 10) || 50));
     const hasPagination = page > 0;
 
-    const conditions: ReturnType<typeof eq | SQL>[] = [];
+    const conditions: (ReturnType<typeof eq> | SQL)[] = [];
 
     const overrideTenantId = c.get('tenantId');
     if (currentUser.role === 'superadmin') {
@@ -199,10 +201,12 @@ app.get(
 
 app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   const currentUser = getUser(c);
-  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+  if (!currentUser) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
   const { id } = c.req.param();
-  const body = (await c.req.json()) as Record<string, unknown>;
+  const parsed = updateUserSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const body = parsed.data as Record<string, unknown>;
 
   // Verify access
   const conditions: ReturnType<typeof eq>[] = [eq(user.id, id!)];
@@ -311,11 +315,12 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
 
 app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const currentUser = getUser(c);
-  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+  if (!currentUser) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
-  const body = (await c.req.json()) as Record<string, string | undefined>;
-  const email = body.email?.toLowerCase().trim();
-  if (!email) return c.json({ error: 'Email is required' }, 400);
+  const parsed = createUserSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const body = parsed.data!;
+  const email = body.email.toLowerCase().trim();
 
   // Check for existing user with this email globally (needed because email is globally unique)
   const [existing] = await db
@@ -513,11 +518,11 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
 app.post('/:id/ban', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const currentUser = getUser(c);
-  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+  if (!currentUser) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
   const { id } = c.req.param();
-  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
-  const banReason = (body.banReason as string) || 'Banned by admin';
+  const parsed = banUserSchema.safeParse(await c.req.json().catch(() => ({})));
+  const banReason = parsed.success && parsed.data?.banReason ? parsed.data.banReason : 'Banned by admin';
 
   // Verify access
   const conditions: ReturnType<typeof eq>[] = [eq(user.id, id!)];

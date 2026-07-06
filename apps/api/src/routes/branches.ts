@@ -262,7 +262,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await cacheDelPattern(tenantId!, 'branches:list:*');
   await cacheDel(tenantId!, 'dashboard:branches');
   await cacheDel(tenantId!, `branches:${id}`);
-  await invalidateBranchCache(id, tenantId!);
+  await invalidateBranchCache(id!, tenantId!);
   await logAudit(
     'BRANCH_UPDATED',
     getUser(c)?.id ?? null,
@@ -288,7 +288,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   await cacheDelPattern(scope.tenantId!, 'branches:list:*');
   await cacheDel(scope.tenantId!, 'dashboard:branches');
   await cacheDel(scope.tenantId!, `branches:${id}`);
-  await invalidateBranchCache(id, scope.tenantId!);
+  await invalidateBranchCache(id!, scope.tenantId!);
   await logAudit(
     'BRANCH_DELETED',
     getUser(c)?.id ?? null,

@@ -4,6 +4,8 @@ import { Hono } from 'hono';
 import { auth } from '../auth';
 import { db } from '../db';
 import { invitation, onboardTokens, user, verification } from '../db/schema';
+import { errorResponse } from '../error-response';
+import { completeOnboardSchema } from '../validators';
 
 const app = new Hono();
 
@@ -58,15 +60,9 @@ app.get('/validate', async (c) => {
 });
 
 app.post('/complete', async (c) => {
-  const body = (await c.req.json()) as Record<string, string | undefined>;
-  const token = body.token?.trim();
-  const password = body.password;
-  const displayName = body.name?.trim();
-
-  if (!token) return c.json({ error: 'Token is required' }, 400);
-  if (!password || password.length < 8) {
-    return c.json({ error: 'Password must be at least 8 characters' }, 400);
-  }
+  const parsed = completeOnboardSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const { token, password, name: displayName } = parsed.data!;
 
   // Check onboard tokens first (legacy flow)
   const [onboardRow] = await db

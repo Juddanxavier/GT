@@ -10,6 +10,7 @@ import {
   type PermissionContext,
   type ResourceContext,
 } from '@repo/permissions';
+import { errorResponse } from '../error-response';
 
 export type GuardAction = Action;
 export type GuardSubject = Subject;
@@ -19,7 +20,7 @@ export function requireRole(...roles: string[]) {
     const user = c.get('user');
 
     if (!user) {
-      return c.json({ error: 'Authentication required' }, 401);
+      return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
     }
 
     const permissionContext: PermissionContext = {
@@ -34,7 +35,7 @@ export function requireRole(...roles: string[]) {
     if (!hasRole(permissionContext, ...roles)) {
       const accept = c.req.header('Accept') ?? '';
       if (accept.includes('json') || c.req.header('Content-Type')?.includes('json')) {
-        return c.json({ error: 'Forbidden: insufficient permissions' }, 403);
+        return errorResponse(c, 'FORBIDDEN', 'Forbidden: insufficient permissions', 403);
       }
       return c.redirect('/unauthorized');
     }
@@ -55,21 +56,21 @@ export function getUser(c: Context) {
 export function requireBranchScope() {
   return async function branchScopeGuard(c: Context, next: Next) {
     const user = c.get('user');
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
     if (user.role !== 'staff') return await next();
 
     const userBranchId: string | undefined = user.branchId;
-    if (!userBranchId) return c.json({ error: 'No branch assigned to your account' }, 403);
+    if (!userBranchId) return errorResponse(c, 'NO_BRANCH', 'No branch assigned to your account', 403);
 
     const queryBranchId = c.req.query('branchId');
     if (queryBranchId && queryBranchId !== userBranchId) {
-      return c.json({ error: 'Forbidden: you can only access your own branch' }, 403);
+      return errorResponse(c, 'BRANCH_MISMATCH', 'Forbidden: you can only access your own branch', 403);
     }
 
     const paramBranchId = c.req.param('branchId');
     if (paramBranchId && paramBranchId !== userBranchId) {
-      return c.json({ error: 'Forbidden: you can only access your own branch' }, 403);
+      return errorResponse(c, 'BRANCH_MISMATCH', 'Forbidden: you can only access your own branch', 403);
     }
 
     await next();

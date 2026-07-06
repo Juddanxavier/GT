@@ -7,6 +7,7 @@ import { tenantDomains, tenants } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { setRLSTenantContext } from '../db/rls';
 import { cacheGet, cacheSet } from '../cache';
+import { errorResponse } from '../error-response';
 
 const CACHE_TTL_SEC = 300;
 
@@ -133,7 +134,7 @@ export async function tenantMiddleware(c: Context, next: Next) {
     await setRLSTenantContext(tenantId);
   } catch (error) {
     console.error('Failed to set RLS context:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return errorResponse(c, 'INTERNAL_ERROR', 'Internal server error', 500);
   }
 
   await next();

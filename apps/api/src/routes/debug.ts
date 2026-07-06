@@ -2,7 +2,9 @@ import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
 import { tenants, branches, user, customers, shipments, quotations, invoices } from '../db/schema';
+import { errorResponse } from '../error-response';
 import { requireRole } from '../middleware/authorization';
+import { fireNotificationSchema } from '../validators';
 import { notificationQueue } from '../queues';
 import { logAudit } from '../services/audit';
 
@@ -98,14 +100,9 @@ app.get('/seed-status', async (c) => {
 });
 
 app.post('/fire-notification', requireRole('superadmin'), async (c) => {
-  const { shipmentId, eventType } = await c.req.json<{
-    shipmentId: string;
-    eventType: 'InfoReceived' | 'InTransit' | 'OutForDelivery' | 'Delivered' | 'Exception';
-  }>();
-
-  if (!shipmentId || !eventType) {
-    return c.json({ error: 'shipmentId and eventType are required' }, 400);
-  }
+  const parsed = fireNotificationSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const { shipmentId, eventType } = parsed.data!;
 
   const ship = await db
     .select({

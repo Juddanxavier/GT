@@ -299,10 +299,15 @@ describe('Audit Log Routes', () => {
 
       const app = createTestApp();
       const res = await app.request('/api/audit-logs/export');
-      const csv = await res.text();
 
-      // Should start with BOM
-      expect(csv.charCodeAt(0)).toBe(0xFEFF);
+      // Should start with UTF-8 BOM (EF BB BF)
+      const raw = new Uint8Array(await res.arrayBuffer());
+      expect(raw[0]).toBe(0xEF);
+      expect(raw[1]).toBe(0xBB);
+      expect(raw[2]).toBe(0xBF);
+
+      // Decode from bytes (skip BOM) for content checks
+      const csv = new TextDecoder('utf-8').decode(raw.slice(3));
 
       // Should have header row
       expect(csv).toContain('Time,Event,User ID,Details,IP Address,User Agent');
@@ -320,7 +325,8 @@ describe('Audit Log Routes', () => {
       const res = await app.request('/api/audit-logs/export?event=LOGIN_SUCCESS');
       expect(res.status).toBe(200);
 
-      const csv = await res.text();
+      const raw = new Uint8Array(await res.arrayBuffer());
+      const csv = new TextDecoder('utf-8').decode(raw.slice(3));
       expect(csv).toContain('LOGIN_SUCCESS');
       expect(csv).not.toContain('USER_CREATED');
     });
@@ -332,8 +338,9 @@ describe('Audit Log Routes', () => {
       const res = await app.request('/api/audit-logs/export');
       expect(res.status).toBe(200);
 
-      const csv = await res.text();
-      // Should have BOM + header only (no data rows)
+      const raw = new Uint8Array(await res.arrayBuffer());
+      const csv = new TextDecoder('utf-8').decode(raw.slice(3));
+      // Should have header only (no data rows)
       expect(csv.split('\n').filter(Boolean)).toHaveLength(1); // header only
     });
 

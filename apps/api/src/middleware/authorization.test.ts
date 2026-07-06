@@ -41,7 +41,7 @@ describe('requireRole', () => {
     });
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.error).toContain('insufficient permissions');
+    expect(body.error.message).toContain('insufficient permissions');
   });
 
   it('redirects on mismatched role for browser requests', async () => {
@@ -89,7 +89,7 @@ describe('requireBranchScope', () => {
     const res = await app.request('/test?branchId=branch-1');
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.error).toContain('No branch assigned');
+    expect(body.error.message).toContain('No branch assigned');
   });
 
   it('passes staff with matching query branchId', async () => {

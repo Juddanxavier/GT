@@ -6,6 +6,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { ToastProvider } from '@/components/toast';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
 import { Modal } from '@heroui/react/modal';
@@ -14,6 +16,7 @@ import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
 import { useTenants, useDashboardBranches } from '@/lib/queries';
 import { SearchDialog } from '@/components/search-dialog';
+import { useToast } from '@/components/toast';
 import { connectSocket } from '@/lib/socket';
 
 const ALLOWED_ROLES = ['superadmin', 'tenant-admin', 'staff'];
@@ -121,9 +124,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 30 }}>
       <TenantFilterProvider>
-        <DashboardLayoutInner isSuperadmin={isSuperadmin} session={session} userRole={userRole!} sidebarOpen={sidebarOpen} collapsed={collapsed} setSidebarOpen={setSidebarOpen} setCollapsed={setCollapsed}>
-          {children}
-        </DashboardLayoutInner>
+        <ToastProvider>
+          <DashboardLayoutInner isSuperadmin={isSuperadmin} session={session} userRole={userRole!} sidebarOpen={sidebarOpen} collapsed={collapsed} setSidebarOpen={setSidebarOpen} setCollapsed={setCollapsed}>
+            {children}
+          </DashboardLayoutInner>
+        </ToastProvider>
       </TenantFilterProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </PersistQueryClientProvider>
@@ -169,12 +174,26 @@ function DashboardLayoutInner({
   const [searchOpen, setSearchOpen] = useState(false);
   const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
   const navItems = useMemo(() => NavItems(userRole), [userRole]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    return queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'updated' && event.query.state.status === 'error') {
+        const err = event.query.state.error;
+        if (err) toast('error', 'Failed to load data', err instanceof Error ? err.message : undefined);
+      }
+    });
+  }, [toast]);
 
   useIdleTimeout();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
         setSearchOpen(true);
       }
@@ -572,6 +591,7 @@ function DashboardLayoutInner({
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <Breadcrumbs />
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

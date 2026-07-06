@@ -9,7 +9,9 @@ import {
   getInvoiceByShipmentId,
   getInvoiceData,
 } from '../invoice/service';
+import { errorResponse } from '../error-response';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
+import { updateInvoiceSchema } from '../validators';
 import { emailQueue } from '../queues';
 import { emitToTenant } from '../realtime';
 import { logAudit } from '../services/audit';
@@ -370,13 +372,13 @@ app.post(
 app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(), async (c) => {
   const scope = getQueryScope(c);
   const id = c.req.param('id');
-  if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
+  if (!scope.tenantId || !id) return errorResponse(c, 'TENANT_REQUIRED', 'Tenant required', 400);
 
-  const body = await c.req.json();
-  const allowed = ['status', 'notes', 'amount'];
-  const filtered = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+  const parsed = updateInvoiceSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const filtered = parsed.data! as Record<string, unknown>;
   if (Object.keys(filtered).length === 0)
-    return c.json({ error: 'No valid fields to update' }, 400);
+    return errorResponse(c, 'NO_FIELDS', 'No valid fields to update', 400);
 
   const [existing] = await db
     .select()

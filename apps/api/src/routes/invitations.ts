@@ -7,7 +7,9 @@ import { cacheFlushTenant } from '../cache';
 import { db } from '../db';
 import { invitation, tenants, user } from '../db/schema';
 import { sendEmail } from '../email/provider';
+import { errorResponse } from '../error-response';
 import { getUser, requireRole } from '../middleware/authorization';
+import { createInvitationSchema } from '../validators';
 import { logAudit } from '../services/audit';
 import type { AppVariables } from './types';
 
@@ -15,11 +17,12 @@ const app = new Hono<{ Variables: AppVariables }>();
 
 app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const currentUser = getUser(c);
-  if (!currentUser) return c.json({ error: 'Authentication required' }, 401);
+  if (!currentUser) return errorResponse(c, 'AUTH_REQUIRED', 'Authentication required', 401);
 
-  const body = (await c.req.json()) as Record<string, string | undefined>;
-  const email = body.email?.toLowerCase().trim();
-  if (!email) return c.json({ error: 'Email is required' }, 400);
+  const parsed = createInvitationSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const body = parsed.data!;
+  const email = body.email.toLowerCase().trim();
 
   // Check if there's already a pending invitation for this email
   const [pending] = await db

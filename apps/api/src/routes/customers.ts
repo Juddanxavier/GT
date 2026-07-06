@@ -5,7 +5,8 @@ import { db } from '../db';
 import { auth } from '../auth';
 import { customers, invoices as invoicesTable, quotations, quoteItems, shipments, tenants, user } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
-import { createCustomerSchema, updateCustomerSchema } from '../validators';
+import { errorResponse } from '../error-response';
+import { createCustomerSchema, updateCustomerSchema, registerCustomerSchema, updateProfileSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -163,13 +164,9 @@ app.get('/my-dashboard', async (c) => {
 // ── Customer self-registration (no auth required — uses tenant slug from header) ──
 
 app.post('/register', async (c) => {
-  const { email, password, name } = await c.req.json();
-  if (!email || !password || !name) {
-    return c.json({ error: 'Email, password, and name are required' }, 400);
-  }
-  if (password.length < 8) {
-    return c.json({ error: 'Password must be at least 8 characters' }, 400);
-  }
+  const parsed = registerCustomerSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const { email, password, name } = parsed.data!;
 
   const tenantSlug = c.req.header('x-tenant-slug') || c.req.header('x-tenant') || 'gajan-traders';
 
@@ -233,9 +230,11 @@ app.post('/register', async (c) => {
 // ── Customer profile update (name, password) ──
 app.patch('/profile', async (c) => {
   const currentUser = c.get('user') as { id: string; email: string } | null;
-  if (!currentUser) return c.json({ error: 'Unauthorized' }, 401);
+  if (!currentUser) return errorResponse(c, 'UNAUTHORIZED', 'Unauthorized', 401);
 
-  const { name, currentPassword, newPassword } = await c.req.json();
+  const parsed = updateProfileSchema.safeParse(await c.req.json());
+  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  const { name, currentPassword, newPassword } = parsed.data!;
   let updateErrors: string[] = [];
 
   if (name) {

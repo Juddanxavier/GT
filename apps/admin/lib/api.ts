@@ -1,3 +1,6 @@
+import type { z } from 'zod';
+import { validateResponse } from './validation';
+
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function fmtINR(n: unknown) {
@@ -125,8 +128,14 @@ async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  get: <T>(path: string, options?: RequestInit) => request<T>(path, options),
-  getFull: <T>(path: string, options?: RequestInit) => requestFull<T>(path, options),
+  get: <T>(path: string, options?: RequestInit & { schema?: z.ZodType<T> }) => {
+    const { schema, ...fetchOpts } = options ?? {};
+    return request<T>(path, fetchOpts).then((data) => schema ? validateResponse(schema, data, path) : data);
+  },
+  getFull: <T>(path: string, options?: RequestInit & { schema?: z.ZodType<T> }) => {
+    const { schema, ...fetchOpts } = options ?? {};
+    return requestFull<T>(path, fetchOpts).then((data) => schema ? validateResponse(schema, data, path) : data);
+  },
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
   patch: <T>(path: string, data: unknown) =>

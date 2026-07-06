@@ -7,5 +7,8 @@ COPY apps/api/package.json apps/api/
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
 COPY apps/api/ apps/api/
+RUN pnpm --filter=api build
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://localhost:3001/api/health').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"
 CMD ["pnpm", "--filter=api", "start"]
