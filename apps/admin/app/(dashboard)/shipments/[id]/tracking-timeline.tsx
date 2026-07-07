@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { MapPin, Clock, Info } from 'lucide-react';
-import { Chip, Tooltip } from '@heroui/react';
+import { Chip } from '@heroui/react';
 import { STATUS_META } from '@repo/ui/status-config';
 
 interface TrackingEvent {
@@ -47,7 +47,7 @@ function elapsedSince(prev: string, curr: string): string {
 export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
   if (!events?.length) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 animate-in fade-in">
         <Clock size={24} className="mx-auto mb-2 opacity-40 text-muted" />
         <p className="text-sm text-muted">No tracking events yet</p>
       </div>
@@ -63,15 +63,15 @@ export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
         const hasTips = event.providerTips && Object.keys(event.providerTips).length > 0;
 
         return (
-          <div key={event.id ?? idx} className="flex gap-4">
+          <div key={event.id ?? idx} className="flex gap-4 animate-in fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
             {/* Timeline dot + connector */}
             <div className="flex flex-col items-center">
               <div
-                className={`rounded-full shrink-0 ${isLatest ? 'w-4 h-4 ring-2 ring-offset-2' : 'w-3 h-3'}`}
+                className={`rounded-full shrink-0 ${isLatest ? 'w-4 h-4 ring-2 ring-offset-2 ring-[var(--dot-ring)]' : 'w-3 h-3'}`}
                 style={{
                   backgroundColor: dotColor,
-          ringColor: isLatest ? dotColor : undefined,
-        }}
+                  '--dot-ring': isLatest ? dotColor : undefined,
+                } as React.CSSProperties}
               />
               {idx < events.length - 1 && <div className="w-0.5 flex-1 bg-border/50" />}
             </div>
