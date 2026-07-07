@@ -8,6 +8,7 @@ import { renderEmail } from '../email/render';
 import type { EventType } from '../email/templates';
 import type { Branding, ShipmentData } from '../email/types';
 import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
+import './webhook-worker';
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';

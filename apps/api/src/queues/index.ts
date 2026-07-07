@@ -47,6 +47,16 @@ const shipmentOpts: QueueOptions = {
 };
 export const shipmentQueue = createOrSkip('shipment', shipmentOpts);
 
+const webhookOpts: QueueOptions = {
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: { age: 3600 * 24 * 7, count: 1000 },
+    removeOnFail: { age: 3600 * 24 * 30, count: 500 },
+  },
+};
+export const webhookQueue = createOrSkip('webhook-events', webhookOpts);
+
 export const deadLetterQueue = createOrSkip('dead-letter', {
   defaultJobOptions: {
     attempts: 1,
@@ -62,6 +72,7 @@ export const queues = [
   whatsappQueue,
   archiveQueue,
   shipmentQueue,
+  webhookQueue,
   deadLetterQueue,
 ]
   .filter((q): q is Queue => q !== null);

@@ -1,12 +1,6 @@
-import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { db } from '../db';
-import { shipments } from '../db/schema';
-import { checkWebhookIdempotency } from '../notifications/idempotency';
-import { notifyTrackingEvents } from '../notifications/service';
-import { emitToTenant } from '../realtime';
+import { webhookQueue } from '../queues';
 import { getProvider } from '../shipment-providers';
-import { insertEvents } from '../shipment-providers/dedup';
 
 const app = new Hono();
 
@@ -27,62 +21,21 @@ async function handleWebhook(
       return c.json({ error: 'Invalid signature' }, 401);
     }
 
-    // Idempotency: check if this exact webhook payload was already processed
-    const alreadySeen = await checkWebhookIdempotency(rawBody);
-    if (alreadySeen) {
-      return c.json({ received: true, duplicate: true });
+    // Enqueue raw payload to BullMQ for async processing (D-14)
+    // Worker handles: processWebhook() → insertEvents() → notifyTrackingEvents()
+    if (webhookQueue) {
+      await webhookQueue.add('webhook-event', {
+        provider: providerName,
+        body,
+        signature,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      console.error('[webhooks] Redis/BullMQ not available — webhook event SKIPPED');
+      return c.json({ error: 'Queue unavailable' }, 503);
     }
 
-    // Parse events directly from the webhook payload — no API call to the provider.
-    const result = await provider.processWebhook(body);
-    if (!result) {
-      return c.json({ error: 'Failed to parse webhook payload' }, 400);
-    }
-
-    const shipment = await db
-      .select({
-        id: shipments.id,
-        tenantId: shipments.tenantId,
-        trackingNo: shipments.trackingNo,
-        carrier: shipments.carrier,
-        origin: shipments.origin,
-        destination: shipments.destination,
-        estimatedDelivery: shipments.estimatedDelivery,
-        status: shipments.status,
-        customerId: shipments.customerId,
-      })
-      .from(shipments)
-      .where(eq(shipments.trackingNo, result.trackingNo))
-      .limit(1);
-
-    if (!shipment.length) {
-      return c.json({ error: 'Unknown tracking number' }, 404);
-    }
-
-    const inserted = await insertEvents(shipment[0]!.id, shipment[0]!.tenantId, result.events);
-
-    if (inserted > 0) {
-      await db
-        .update(shipments)
-        .set({
-          status: result.currentStatus,
-          lastTrackedAt: new Date(),
-          trackingRegistered: true,
-          updatedAt: new Date(),
-        })
-        .where(eq(shipments.id, shipment[0]!.id));
-
-      // Trigger notifications for new events
-      notifyTrackingEvents(
-        shipment[0]!.id,
-        shipment[0]!.tenantId,
-        result.events,
-        result.currentStatus,
-      );
-      emitToTenant(shipment[0]!.tenantId, 'dashboard:update', {});
-    }
-
-    return c.json({ received: true, newEvents: inserted });
+    return c.json({ received: true }, 200);
   } catch (err) {
     console.error(`[webhooks/${providerName}] error:`, err);
     return c.json({ error: 'Internal error' }, 500);
