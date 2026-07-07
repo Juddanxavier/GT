@@ -62,6 +62,13 @@ Harden and polish the existing shipment module across all three surfaces (API, A
 - **D-28:** Full admin shipment detail page redesign: collapsible sections, tab-based navigation (Details, Tracking, Invoice, Notes), better mobile support. Plus React Query conversion.
 - **D-29:** Color-coded tracking timeline: green=delivered, blue=in_transit, red=exception, gray=pending. Show elapsed time between milestones.
 
+### Customer Claim & Assignment Flow
+- **D-30:** Add OTP verification to claim flow — send OTP to shipment's contact email or phone, customer enters OTP to verify ownership before linking. Rate-limit OTP attempts per IP.
+- **D-31:** Improve admin customer assigner: debounced server-side search (not client filter), show customer details inline, add claim/assignment history timeline on shipment detail page.
+- **D-32:** Add unassign + reassign workflow for admin — admin can unlink a customer from shipment and reassign to a different customer. Track all reassignments in audit log.
+- **D-33:** Auto-match shipments to existing customers by contactEmail on creation — if contactEmail matches an existing customer in same tenant, auto-link `customerId`. Admin can still override.
+- **D-34:** Build step-by-step claim wizard in customer portal: (1) Enter tracking number, (2) OTP verification, (3) Confirm shipment details, (4) Success with next steps.
+
 ### the agent's Discretion
 - Exact loading skeleton design for detail page redesign
 - Timeline animation and transition details
@@ -116,6 +123,16 @@ Harden and polish the existing shipment module across all three surfaces (API, A
 - `apps/customer/app/(portal)/track/[trackingNo]/page.tsx` — Public tracking detail
 - `apps/customer/lib/queries.ts` — React Query hooks: useMyShipments, useTrackShipment
 
+### Customer Claim & Assignment
+- `apps/api/src/routes/claim-shipment.ts` — Existing public claim flow (email/phone match → find-or-create customer → link)
+- `apps/api/src/routes/customers.ts` — Customer-facing my-shipments, my-dashboard
+- `apps/api/src/routes/shipments.ts` — Admin shipment CRUD with customerId assignment (lines 263-438)
+- `apps/admin/components/customer-assigner.tsx` — Existing client-side customer lookup component (to improve with server-side search)
+
+### OTP / Verification
+- Better Auth plugin for OTP/codes — TBD: evaluate built-in 2FA TOTP vs custom OTP endpoint
+- BullMQ notification queue — existing infrastructure for sending OTP emails/WhatsApp
+
 ### Packages
 - `packages/ui/src/` — Existing shared components (button, card, code)
 - `packages/permissions/src/abilities.ts` — CASL ability definitions for roles
@@ -153,6 +170,10 @@ Harden and polish the existing shipment module across all three surfaces (API, A
 - `apps/api/src/email/templates/` — Accept tenant Branding prop
 - `apps/admin/app/(dashboard)/shipments/[id]/page.tsx` — Full redesign + React Query conversion
 - `apps/admin/app/(dashboard)/shipments/page.tsx` — Extract status config to @repo/ui
+- `apps/admin/components/customer-assigner.tsx` — Upgrade to server-side search, add unassign/reassign
+- `apps/api/src/routes/claim-shipment.ts` — Add OTP verification step before linking
+- `apps/api/src/services/shipment.ts` — Add auto-match on creation (find customer by email)
+- `apps/customer/app/(portal)/track/[trackingNo]/page.tsx` — Replace simple claim button with step wizard
 
 </code_context>
 
@@ -165,6 +186,9 @@ Harden and polish the existing shipment module across all three surfaces (API, A
 - Status is automatic from 17TRACK — no manual status override for staff
 - Staff can add bill amount but not edit once set (financial control)
 - Tenant currency: Gajan = INR (₹), Lanka Mahal = LKR (₨)
+- Claim OTP: send via email and/or WhatsApp using existing notification queue infrastructure
+- Auto-match on creation: query existing customers by `contactEmail` in the same tenant — if match found, set `customerId` automatically
+- OTP should be 6 digits, expire after 5 minutes
 
 </specifics>
 
@@ -175,6 +199,8 @@ Harden and polish the existing shipment module across all three surfaces (API, A
 - Configurable retention per tenant for archive — future enhancement
 - Dedicated search endpoint with full-text search (tsvector) — only if pg_trgm not enough
 - Separate notification center page for customer portal — Phase 3e
+- Claim status dashboard page for customer (showing claimed/pending/available) — future phase
+- Email verification link as alternative to OTP — consider if OTP proves cumbersome
 
 </deferred>
 

@@ -309,7 +309,64 @@
 
 ---
 
+## Customer Claim & Assignment Flow
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Improve claim verification | OTP, better matching | |
+| Better claim UX for customers | Step wizard, confirmation | |
+| Admin assignment enhancements | Better search, unassign, history | |
+| Auto-assignment logic | Auto-match at creation | |
+| All of the above | Full pass on claim/assignment | ✓ |
+
+**User's choice:** All of the above.
+
+---
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Add OTP verification | Send OTP to email/phone, verify before linking | ✓ |
+| Keep email/phone match + rate limiting | Current match is fine with rate limits | |
+| Email verification link only | One-time verification link | |
+
+**User's choice:** Add OTP verification. Rate-limit attempts per IP.
+
+---
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Better customer search + claim history | Debounced server search, timeline | |
+| Add unassign + reassign workflow | Unlink and reassign with audit | |
+| Both | Better search AND unassign/reassign | ✓ |
+
+**User's choice:** Both.
+
+---
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Auto-match on creation | Link by contactEmail at create time | ✓ |
+| Auto-match on tracking update | Background job on tracking events | |
+| Both | At creation + periodic background | |
+
+**User's choice:** Auto-match on creation.
+
+---
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Step-by-step claim wizard | Multi-step: tracking → OTP → confirm → success | ✓ |
+| Claim status page | Dashboard of claimed/pending/available | |
+| Both | Wizard + dashboard | |
+
+**User's choice:** Step-by-step claim wizard.
+
+---
+
 ## the agent's Discretion
+- OTP delivery channel preference (email vs WhatsApp vs both) — use both
+- Claim wizard UI design details
+- Unassign confirmation dialog design
 
 - Exact loading skeleton design for detail page
 - Timeline animation and transition details
