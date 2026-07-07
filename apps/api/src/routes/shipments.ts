@@ -295,7 +295,6 @@ app.patch(
         'contactPhone',
         'origin',
         'destination',
-        'status',
       ],
       'tenant-admin': [
         'customerId',
@@ -347,6 +346,13 @@ app.patch(
         .limit(1);
       if (!cust) {
         return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
+      }
+    }
+
+    // Bill amount permission check: staff cannot edit billAmount once set
+    if (filteredData.billAmount !== undefined && role === 'staff') {
+      if (existing.billAmount !== null) {
+        return c.json({ error: 'Only admins can edit bill amount after creation' }, 403);
       }
     }
 
