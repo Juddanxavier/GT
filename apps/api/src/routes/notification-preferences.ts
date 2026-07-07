@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { zValidator } from '@hono/zod-validator';
 import { getPreferences, upsertPreferences } from '../services/notification-prefs';
 import { requireRole } from '../middleware/authorization';
 import type { AppVariables } from './types';
@@ -16,7 +15,6 @@ const updatePrefsSchema = z.object({
   generalWhatsapp: z.boolean().optional(),
 });
 
-// GET /api/notification-preferences — get current user's prefs
 app.get('/', requireRole('superadmin', 'tenant-admin', 'staff', 'customer'), async (c) => {
   const user = c.get('user');
   const tenantId = c.get('tenantId');
@@ -25,13 +23,14 @@ app.get('/', requireRole('superadmin', 'tenant-admin', 'staff', 'customer'), asy
   return c.json(prefs ?? {});
 });
 
-// PUT /api/notification-preferences — update prefs
-app.put('/', requireRole('superadmin', 'tenant-admin', 'staff', 'customer'), zValidator('json', updatePrefsSchema), async (c) => {
+app.put('/', requireRole('superadmin', 'tenant-admin', 'staff', 'customer'), async (c) => {
   const user = c.get('user');
   const tenantId = c.get('tenantId');
   if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
-  const body = c.req.valid('json');
-  const updated = await upsertPreferences(user.id, tenantId, body);
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = updatePrefsSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid body', details: parsed.error.flatten() }, 400);
+  const updated = await upsertPreferences(user.id, tenantId, parsed.data);
   return c.json(updated);
 });
 

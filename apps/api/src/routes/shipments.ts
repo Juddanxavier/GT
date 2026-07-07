@@ -557,6 +557,8 @@ app.post(
     const { id } = c.req.param();
     const scope = getQueryScope(c);
 
+    if (!id) return c.json({ error: 'Invalid shipment ID' }, 400);
+
     const [shipment] = await db
       .select({ id: shipments.id, trackingNo: shipments.trackingNo, archivedAt: shipments.archivedAt })
       .from(shipments)
@@ -595,6 +597,7 @@ app.put(
   requireBranchScope(),
   async (c) => {
     const { id } = c.req.param();
+    if (!id) return c.json({ error: 'Invalid shipment ID' }, 400);
     const scope = getQueryScope(c);
     const body = await c.req.json().catch(() => ({}));
     const { customerId } = body as { customerId?: string | null };
