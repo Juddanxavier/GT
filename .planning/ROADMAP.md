@@ -94,7 +94,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Types, status config & database schema foundation
-- [ ] 05-02-PLAN.md — API backend — routes, services, email branding & permissions
-- [ ] 05-03-PLAN.md — Notification & webhook reliability (BullMQ queue, LRU fallback)
-- [ ] 05-04-PLAN.md — UI — shipment detail redesign, tracking timeline, notification pages
+- [x] 05-01-PLAN.md — Types, status config & database schema foundation
+- [x] 05-02-PLAN.md — API backend — routes, services, email branding & permissions
+- [x] 05-03-PLAN.md — Notification & webhook reliability (BullMQ queue, LRU fallback)
+- [x] 05-04-PLAN.md — UI — shipment detail redesign, tracking timeline, notification pages
