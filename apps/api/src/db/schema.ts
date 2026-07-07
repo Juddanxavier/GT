@@ -21,6 +21,7 @@ export const tenants = pgTable('tenant', {
   name: varchar('name', { length: 255 }).notNull(),
   slug: varchar('slug', { length: 100 }).notNull().unique(),
   country: varchar('country', { length: 100 }),
+  currency: varchar('currency', { length: 3 }).default('INR'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -142,6 +143,7 @@ export const trackingEvents = pgTable(
     details: text('details'),
     eventTime: timestamp('event_time').notNull(),
     raw: jsonb('raw').notNull().default('{}'),
+    providerTips: jsonb('provider_tips').default('{}'),
     branchId: uuid('branch_id').references(() => branches.id, { onDelete: 'set null' }),
     tenantId: uuid('tenant_id')
       .notNull()
