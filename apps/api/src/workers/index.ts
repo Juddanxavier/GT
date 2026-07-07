@@ -2,7 +2,7 @@ import { buildEmailHtml } from '@repo/auth-config';
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { customers, invoices as invoiceSchema, shipments } from '../db/schema';
+import { customers, invoices as invoiceSchema, shipments, tenants } from '../db/schema';
 import { sendEmail } from '../email/provider';
 import { renderEmail } from '../email/render';
 import type { EventType } from '../email/templates';
@@ -130,6 +130,25 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
     status: eventType ?? 'InTransit',
   };
 
+  // Fetch tenant branding for email templates
+  let branding: Branding | undefined;
+  try {
+    const [tenant] = await db
+      .select({ name: tenants.name })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+    if (tenant) {
+      branding = {
+        companyName: tenant.name ?? 'Gajan Traders',
+        supportEmail: 'support@gajantraders.com',
+        primaryColor: tenant.name?.toLowerCase().includes('lanka') ? '#059669' : '#7c3aed',
+      };
+    }
+  } catch {
+    // non-blocking: templates have built-in fallbacks
+  }
+
   // Fan out: email
   if (customerEmail && emailQueue) {
     const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
@@ -138,6 +157,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
         to: customerEmail!,
         eventType,
         shipment: shipmentData,
+        branding,
       });
     } else {
       console.log(

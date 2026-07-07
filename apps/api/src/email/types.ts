@@ -12,10 +12,8 @@ export type ShipmentData = {
 };
 
 export type Branding = {
-  name: string;
-  logo?: string;
+  companyName: string;
   logoUrl?: string;
-  color?: string;
+  supportEmail?: string;
   primaryColor?: string;
-  companyName?: string;
 };
