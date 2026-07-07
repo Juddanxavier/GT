@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useShipment, useShipmentTracking, useShipmentInvoice, useGenerateInvoice, useTrackShipment, useStopTracking, useDeleteShipment, useUpdateShipment } from '@/lib/queries';
 import { STATUS_META } from '@repo/ui/status-config';
 import { TrackingTimeline } from './tracking-timeline';
+import { AssignShipment } from './assign-shipment';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -195,7 +196,8 @@ export default function ShipmentDetailPage(): ReactNode {
               <div className="p-5 space-y-3">
                 <InfoRow label="Name" value={shipment.customerName || shipment.contactEmail || shipment.contactPhone || 'Unassigned'} />
                 {shipment.contactEmail && <InfoRow label="Email" value={shipment.contactEmail} />}
-                {shipment.contactPhone && <InfoRow label="Phone" value={shipment.contactPhone} />
+                {shipment.contactPhone && <InfoRow label="Phone" value={shipment.contactPhone} />}
+                <AssignShipment shipmentId={id} currentCustomerId={shipment.customerId} />
               </div>
             </Card>
 

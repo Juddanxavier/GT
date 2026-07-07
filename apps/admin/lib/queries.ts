@@ -169,6 +169,27 @@ export function useCustomers(page?: number, limit?: number) {
   });
 }
 
+export function useCustomerSearch(search: string) {
+  const { filterVersion } = useTenantFilter();
+  return useQuery<Customer[]>({
+    queryKey: ['customer-search', filterVersion, search],
+    queryFn: () => api.get<Customer[]>(`/api/customers?search=${encodeURIComponent(search)}`),
+    enabled: search.length >= 2,
+  });
+}
+
+export function useAssignShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ shipmentId, customerId }: { shipmentId: string; customerId: string | null }) =>
+      api.put(`/api/shipments/${shipmentId}/assign`, { customerId }),
+    onSuccess: (_, { shipmentId }) => {
+      qc.invalidateQueries({ queryKey: ['shipment', shipmentId] });
+      qc.invalidateQueries({ queryKey: ['shipments'] });
+    },
+  });
+}
+
 // ─── Shipment queries ───────────────────────────────────────────────
 
 export function useShipments(): UseQueryResult<Shipment[], Error>;
