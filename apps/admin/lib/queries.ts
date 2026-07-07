@@ -541,6 +541,14 @@ export function useGenerateInvoice() {
   });
 }
 
+export function useShipmentNotes(shipmentId: string) {
+  return useQuery<Array<{ id: string; content: string; createdAt: string; createdBy: string }>>({
+    queryKey: ['shipment-notes', shipmentId],
+    queryFn: () => api.get(`/api/shipments/${shipmentId}/notes`),
+    enabled: !!shipmentId,
+  });
+}
+
 export function useDeleteShipment() {
   const qc = useQueryClient();
   const { filterVersion } = useTenantFilter();
