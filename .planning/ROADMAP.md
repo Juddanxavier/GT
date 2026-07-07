@@ -84,3 +84,17 @@ Plans:
 | 3g. Mobile & States | 0/0 | Not started | - |
 | 3h. Auth & Theme | 0/0 | Not started | - |
 | 4. Tenant Landing Pages | 0/2 | **Planned** | - |
+| 5. Shipment Module Improvements | 0/4 | **Planned** | - |
+
+### Phase 5: lets improve and debug existing shipment module
+
+**Goal:** Harden and polish the existing shipment module across all three surfaces (API, Admin, Customer Portal). Fix inconsistencies, close gaps, resolve bugs, and improve UX.
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Types, status config & database schema foundation
+- [ ] 05-02-PLAN.md — API backend — routes, services, email branding & permissions
+- [ ] 05-03-PLAN.md — Notification & webhook reliability (BullMQ queue, LRU fallback)
+- [ ] 05-04-PLAN.md — UI — shipment detail redesign, tracking timeline, notification pages
