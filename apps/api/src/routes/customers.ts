@@ -41,6 +41,11 @@ app.get('/my-shipments', async (c) => {
   const statusFilter = c.req.query('status');
   if (statusFilter) conditions.push(eq(shipments.status, statusFilter!));
 
+  const search = c.req.query('search');
+  if (search && search.length <= 100) {
+    conditions.push(sql`${like(shipments.trackingNo, `%${search}%`)}`);
+  }
+
   const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '20', 10) || 20, 1), 50);
   const offset = (page - 1) * limit;

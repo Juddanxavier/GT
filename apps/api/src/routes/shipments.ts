@@ -48,7 +48,7 @@ app.get(
       }
     }
     if (customerId) conditions.push(eq(shipments.customerId, customerId!));
-    if (search) conditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)})`);
+    if (search) conditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)} OR ${like(shipments.origin, `%${search}%`)} OR ${like(shipments.destination, `%${search}%`)})`);
 
     const cacheKey = `shipments:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
 
@@ -84,7 +84,7 @@ app.get(
         if (scope.tenantId) countConditions.push(eq(shipments.tenantId, scope.tenantId));
         if (scope.branchId) countConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
         if (customerId) countConditions.push(eq(shipments.customerId, customerId!));
-        if (search) countConditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)})`);
+        if (search) countConditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)} OR ${like(shipments.origin, `%${search}%`)} OR ${like(shipments.destination, `%${search}%`)})`);
         // NOTE: status filter is intentionally excluded from counts
         // so KPI cards always show the full breakdown regardless of status filter
 
@@ -487,6 +487,12 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
     .set({ archivedAt: now, updatedAt: now })
     .where(and(...invoiceConditions) as SQL | undefined);
 
+  // Cascade archive: tracking events
+  await db
+    .update(trackingEvents)
+    .set({ archivedAt: now })
+    .where(and(eq(trackingEvents.shipmentId, id!), eq(trackingEvents.tenantId, scope.tenantId!), isNull(trackingEvents.archivedAt)) as SQL | undefined);
+
   const [row] = await db
     .update(shipments)
     .set({ archivedAt: now, updatedAt: now })
@@ -513,6 +519,45 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   emitToTenant(scope.tenantId ?? '__all__', 'dashboard:update', {});
   return c.json({ data: row });
 });
+
+app.post(
+  '/:id/restore',
+  requireRole('superadmin', 'tenant-admin'),
+  requireBranchScope(),
+  async (c) => {
+    const { id } = c.req.param();
+    const scope = getQueryScope(c);
+
+    const [shipment] = await db
+      .select({ id: shipments.id, trackingNo: shipments.trackingNo, archivedAt: shipments.archivedAt })
+      .from(shipments)
+      .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
+      .limit(1);
+
+    if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
+    if (!shipment.archivedAt) return c.json({ error: 'Shipment is not archived' }, 400);
+
+    await db
+      .update(shipments)
+      .set({ archivedAt: null, updatedAt: new Date() })
+      .where(eq(shipments.id, id));
+
+    await cacheDel(scope.tenantId!, `shipments:${id}`);
+    await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
+    await cacheDelPattern(scope.tenantId!, 'dashboard:*');
+
+    logAudit('SHIPMENT_UPDATED', c.get('user')?.id ?? null, {
+      shipmentId: shipment.id,
+      trackingNo: shipment.trackingNo,
+      tenantId: scope.tenantId,
+      changes: { archivedAt: { from: shipment.archivedAt.toISOString(), to: null } },
+    }, c);
+
+    emitToTenant(scope.tenantId!, 'shipment:restored', { id });
+
+    return c.json({ success: true });
+  },
+);
 
 app.get(
   '/:id/tracking',
