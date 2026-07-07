@@ -26,6 +26,7 @@ export interface Shipment {
   trackingNo: string;
   status: string;
   customerId: string | null;
+  customerName: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
   carrier: string;

@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo } from 'react';
-import { Card, CardBody, Button, Chip, Select, SelectItem, Pagination, Checkbox } from '@heroui/react';
-import { Bell, CheckCheck, Filter } from 'lucide-react';
+import { Card, Button, Chip, Select, ListBox, Pagination, Checkbox } from '@heroui/react';
+import { Bell, CheckCheck } from 'lucide-react';
 import { useNotifications, useMarkRead } from '@/lib/queries';
 
 export default function NotificationsPage(): ReactNode {
@@ -37,7 +37,7 @@ export default function NotificationsPage(): ReactNode {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Notifications</h1>
         {selected.size > 0 && (
-          <Button size="sm" variant="flat" onPress={handleBulkMarkRead} isLoading={markRead.isPending}>
+          <Button size="sm" variant="primary" onPress={handleBulkMarkRead} isPending={markRead.isPending}>
             <CheckCheck size={16} /> Mark {selected.size} Read
           </Button>
         )}
@@ -46,51 +46,63 @@ export default function NotificationsPage(): ReactNode {
       {/* Filters */}
       <div className="flex items-center gap-3">
         <Select
-          label="Type"
-          size="sm"
+          selectedKey={typeFilter}
+          onSelectionChange={(k) => { setTypeFilter(k as string); setPage(1); }}
           className="w-40"
-          selectedKeys={[typeFilter]}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
         >
-          <SelectItem key="all">All Types</SelectItem>
-          <SelectItem key="status_update">Status Update</SelectItem>
-          <SelectItem key="delivery">Delivery</SelectItem>
-          <SelectItem key="exception">Exception</SelectItem>
-          <SelectItem key="general">General</SelectItem>
+          <Select.Trigger className="h-10 text-sm">
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="all">All Types</ListBox.Item>
+              <ListBox.Item id="status_update">Status Update</ListBox.Item>
+              <ListBox.Item id="delivery">Delivery</ListBox.Item>
+              <ListBox.Item id="exception">Exception</ListBox.Item>
+              <ListBox.Item id="general">General</ListBox.Item>
+            </ListBox>
+          </Select.Popover>
         </Select>
         <Select
-          label="Status"
-          size="sm"
+          selectedKey={statusFilter}
+          onSelectionChange={(k) => { setStatusFilter(k as string); setPage(1); }}
           className="w-40"
-          selectedKeys={[statusFilter]}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
         >
-          <SelectItem key="all">All Status</SelectItem>
-          <SelectItem key="unread">Unread</SelectItem>
-          <SelectItem key="read">Read</SelectItem>
+          <Select.Trigger className="h-10 text-sm">
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="all">All Status</ListBox.Item>
+              <ListBox.Item id="unread">Unread</ListBox.Item>
+              <ListBox.Item id="read">Read</ListBox.Item>
+            </ListBox>
+          </Select.Popover>
         </Select>
       </div>
 
       {/* Notification list */}
       <div className="space-y-2">
         {isLoading ? (
-          <Card><CardBody><div className="flex items-center justify-center py-8 text-muted text-sm">Loading...</div></CardBody></Card>
+          <Card><Card.Content><div className="flex items-center justify-center py-8 text-muted text-sm">Loading...</div></Card.Content></Card>
         ) : filtered.length === 0 ? (
-          <Card><CardBody>
+          <Card><Card.Content>
             <div className="flex flex-col items-center py-8 text-muted">
               <Bell size={32} />
               <p className="mt-2">No notifications</p>
             </div>
-          </CardBody></Card>
+          </Card.Content></Card>
         ) : (
           filtered.map((n: { id: string; type: string; title: string; message: string; read: boolean; createdAt: string }) => (
             <Card key={n.id} className={n.read ? '' : 'border-l-3 border-l-primary'}>
-              <CardBody className="flex items-start gap-3">
+              <Card.Content className="flex items-start gap-3">
                 <Checkbox
                   isSelected={selected.has(n.id)}
-                  onValueChange={(v) => {
+                  onChange={(v) => {
                     const next = new Set(selected);
-                    v ? next.add(n.id) : next.delete(n.id);
+                    if (v) { next.add(n.id); } else { next.delete(n.id); }
                     setSelected(next);
                   }}
                 />
@@ -99,8 +111,8 @@ export default function NotificationsPage(): ReactNode {
                   <p className="text-xs text-muted mt-1">{n.message}</p>
                   <p className="text-xs text-muted mt-1">{new Date(n.createdAt).toLocaleString()}</p>
                 </div>
-                {!n.read && <Chip size="sm" color="primary" variant="flat">New</Chip>}
-              </CardBody>
+                {!n.read && <Chip size="sm" variant="soft" color="accent">New</Chip>}
+              </Card.Content>
             </Card>
           ))
         )}
@@ -108,7 +120,26 @@ export default function NotificationsPage(): ReactNode {
 
       {totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination total={totalPages} page={page} onChange={setPage} />
+          <Pagination size="sm">
+            <Pagination.Summary>Page {page} of {totalPages}</Pagination.Summary>
+            <Pagination.Content>
+              <Pagination.Item>
+                <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
+                  <Pagination.PreviousIcon /> Prev
+                </Pagination.Previous>
+              </Pagination.Item>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Pagination.Item key={p}>
+                  <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+                </Pagination.Item>
+              ))}
+              <Pagination.Item>
+                <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  Next <Pagination.NextIcon />
+                </Pagination.Next>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination>
         </div>
       )}
     </div>

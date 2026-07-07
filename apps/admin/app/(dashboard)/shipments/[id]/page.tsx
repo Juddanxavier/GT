@@ -74,7 +74,7 @@ export default function ShipmentDetailPage(): ReactNode {
         </button>
         <Card className="p-12 text-center">
           <p className="text-danger text-sm mb-3">{error?.message ?? 'Failed to load shipment'}</p>
-          <Button variant="flat" size="sm" onPress={() => refetch()}>Retry</Button>
+          <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
         </Card>
       </div>
     );
@@ -128,7 +128,7 @@ export default function ShipmentDetailPage(): ReactNode {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Chip size="sm" variant="flat" color={cfg.color as 'success' | 'danger' | 'warning' | 'primary' | 'default'}>{cfg.label}</Chip>
+                  <Chip size="sm" variant="soft" color={cfg.color as 'success' | 'danger' | 'warning' | 'default'}>{cfg.label}</Chip>
                   <span className="text-xs text-muted bg-muted/10 px-2 py-0.5 rounded-full">{shipment.carrier || 'Unknown'}</span>
                   {shipment.trackingRegistered && (
                     <span className="text-xs text-success flex items-center gap-1"><Check size={12} />Active</span>
@@ -146,10 +146,10 @@ export default function ShipmentDetailPage(): ReactNode {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="flat" size="sm" onPress={handleTrack} isLoading={trackMutation.isPending}>
+          <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending}>
                 <RefreshCw size={14} /> Track Now
               </Button>
-              <Button variant="flat" size="sm" onPress={() => setEditOpen(true)}>Edit</Button>
+              <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)}>Edit</Button>
               <Button variant="ghost" size="sm" onPress={() => setDeleteOpen(true)}>Delete</Button>
             </div>
           </div>
@@ -179,14 +179,14 @@ export default function ShipmentDetailPage(): ReactNode {
       {/* Tab Navigation */}
       <Tabs selectedKey={tab} onSelectionChange={(key) => setTab(key as TabKey)}>
         <Tabs.List>
-          <Tabs.Tab key="details" title="Details" />
-          <Tabs.Tab key="tracking" title="Tracking" />
-          <Tabs.Tab key="invoice" title="Invoice" />
-          <Tabs.Tab key="notes" title="Notes" />
+          <Tabs.Tab id="details">Details</Tabs.Tab>
+          <Tabs.Tab id="tracking">Tracking</Tabs.Tab>
+          <Tabs.Tab id="invoice">Invoice</Tabs.Tab>
+          <Tabs.Tab id="notes">Notes</Tabs.Tab>
         </Tabs.List>
 
         {/* Details Tab */}
-        <Tabs.Panel key="details" className="space-y-6">
+        <Tabs.Panel id="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Customer & Assignment */}
             <Card>
@@ -260,7 +260,7 @@ export default function ShipmentDetailPage(): ReactNode {
         </Tabs.Panel>
 
         {/* Tracking Tab */}
-        <Tabs.Panel key="tracking">
+        <Tabs.Panel id="tracking">
           <Card>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Package size={14} /> Tracking Timeline</h3>
@@ -275,7 +275,7 @@ export default function ShipmentDetailPage(): ReactNode {
         </Tabs.Panel>
 
         {/* Invoice Tab */}
-        <Tabs.Panel key="invoice">
+        <Tabs.Panel id="invoice">
           <Card>
             <div className="px-5 py-4 border-b border-border">
               <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> Invoice</h3>
@@ -290,7 +290,7 @@ export default function ShipmentDetailPage(): ReactNode {
                   <InfoRow label="Sent" value={`${invoice.emailCount}/2 today`} />
                   <InfoRow label="Created" value={new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="flat" onPress={async () => {
+                    <Button size="sm" variant="secondary" onPress={async () => {
                       const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                       const headers: Record<string, string> = {};
                       const tid = tenantFilter;
@@ -301,7 +301,7 @@ export default function ShipmentDetailPage(): ReactNode {
                     }}>
                       <FileText size={14} /> View PDF
                     </Button>
-                    <Button size="sm" variant="flat" onPress={async () => {
+                    <Button size="sm" variant="secondary" onPress={async () => {
                       try {
                         await api.post(`/api/invoices/${invoice.id}/send`);
                         queryClient.invalidateQueries({ queryKey: ['shipment-invoice', id] });
@@ -314,7 +314,7 @@ export default function ShipmentDetailPage(): ReactNode {
               ) : (
                 <div className="text-center py-8 space-y-3">
                   <p className="text-sm text-muted">No invoice generated yet</p>
-                  <Button size="sm" variant="flat" onPress={async () => {
+                  <Button size="sm" variant="secondary" onPress={async () => {
                     try {
                       await generateInvoice.mutateAsync(id);
                     } catch (e) {
@@ -322,7 +322,7 @@ export default function ShipmentDetailPage(): ReactNode {
                         queryClient.invalidateQueries({ queryKey: ['shipment-invoice', id] });
                       }
                     }
-                  }} isLoading={generateInvoice.isPending}>
+                  }} isPending={generateInvoice.isPending}>
                     <Plus size={14} /> Generate Invoice
                   </Button>
                 </div>
@@ -332,7 +332,7 @@ export default function ShipmentDetailPage(): ReactNode {
         </Tabs.Panel>
 
         {/* Notes Tab */}
-        <Tabs.Panel key="notes">
+        <Tabs.Panel id="notes">
           <Card>
             <div className="px-5 py-4 border-b border-border">
               <h3 className="text-sm font-semibold flex items-center gap-2"><MessageSquare size={14} /> Notes</h3>
@@ -351,18 +351,18 @@ export default function ShipmentDetailPage(): ReactNode {
           <h3 className="text-sm font-semibold">Actions</h3>
         </div>
         <div className="p-4 flex flex-wrap gap-2">
-          <Button variant="flat" size="sm" onPress={handleTrack} isLoading={trackMutation.isPending}>
+          <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending}>
             <RefreshCw size={14} /> Refresh Tracking
           </Button>
-          <Button variant="flat" size="sm" onPress={() => setEditOpen(true)}>
+          <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)}>
             <Pencil size={14} /> Edit
           </Button>
           {shipment.trackingRegistered && (
-            <Button variant="ghost" size="sm" onPress={handleStopTracking} isLoading={stopMutation.isPending}>
+            <Button variant="ghost" size="sm" onPress={handleStopTracking} isPending={stopMutation.isPending}>
               <Ban size={14} /> Stop Tracking
             </Button>
           )}
-          <Button variant="ghost" size="sm" color="danger" onPress={() => setDeleteOpen(true)}>
+          <Button variant="danger" size="sm" onPress={() => setDeleteOpen(true)}>
             <Trash2 size={14} /> Delete
           </Button>
         </div>
@@ -376,8 +376,8 @@ export default function ShipmentDetailPage(): ReactNode {
             <div className="p-6 space-y-4">
               <p className="text-sm">Delete <strong>{shipment.trackingNo}</strong>? This cannot be undone.</p>
               <div className="flex justify-end gap-2">
-                <Button variant="flat" size="sm" onPress={() => setDeleteOpen(false)}>Cancel</Button>
-                <Button color="danger" size="sm" onPress={handleDelete} isLoading={deleteMutation.isPending}>Delete</Button>
+                <Button variant="secondary" size="sm" onPress={() => setDeleteOpen(false)}>Cancel</Button>
+                <Button variant="danger" size="sm" onPress={handleDelete} isPending={deleteMutation.isPending}>Delete</Button>
               </div>
             </div>
           </Card>

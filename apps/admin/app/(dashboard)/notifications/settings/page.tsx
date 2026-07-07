@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
-import { Card, CardBody, CardHeader, Switch, Button, Spinner } from '@heroui/react';
+import { Card, Switch, Button, Spinner } from '@heroui/react';
 import { Mail, MessageSquare } from 'lucide-react';
 
 interface Prefs {
@@ -56,21 +56,21 @@ export default function NotificationSettingsPage(): ReactNode {
       <h1 className="text-xl font-semibold">Notification Preferences</h1>
       {categories.map((cat) => (
         <Card key={cat.key}>
-          <CardHeader><p className="text-sm font-medium">{cat.label}</p></CardHeader>
-          <CardBody className="space-y-4">
+          <Card.Header><p className="text-sm font-medium">{cat.label}</p></Card.Header>
+          <Card.Content className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><Mail size={16} /><span className="text-sm">Email</span></div>
-              <Switch isSelected={prefs?.[`${cat.key}Email` as keyof Prefs]} onValueChange={() => toggle(`${cat.key}Email` as keyof Prefs)} />
+              <Switch isSelected={!!prefs?.[`${cat.key}Email` as keyof Prefs]} onChange={() => toggle(`${cat.key}Email` as keyof Prefs)} />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><MessageSquare size={16} /><span className="text-sm">WhatsApp</span></div>
-              <Switch isSelected={prefs?.[`${cat.key}Whatsapp` as keyof Prefs]} onValueChange={() => toggle(`${cat.key}Whatsapp` as keyof Prefs)} />
+              <Switch isSelected={!!prefs?.[`${cat.key}Whatsapp` as keyof Prefs]} onChange={() => toggle(`${cat.key}Whatsapp` as keyof Prefs)} />
             </div>
             <p className="text-xs text-muted">{cat.desc}</p>
-          </CardBody>
+          </Card.Content>
         </Card>
       ))}
-      <Button color="primary" onPress={save} isLoading={saving}>Save Preferences</Button>
+      <Button variant="primary" onPress={save} isPending={saving}>Save Preferences</Button>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="text-sm font-medium">{meta?.label ?? event.status.replace(/_/g, ' ')}</span>
                 {isLatest && (
-                  <Chip size="sm" variant="flat" color="primary" className="text-[10px] h-5">Latest</Chip>
+                  <Chip size="sm" variant="soft" color="accent" className="text-[10px] h-5">Latest</Chip>
                 )}
                 {event.subStatus && (
                   <span className="text-xs text-muted">· {event.subStatus.replace(/_/g, ' ')}</span>
