@@ -1,9 +1,7 @@
-export const INTERNAL_STATUSES = [
-  'pending', 'info_received', 'in_transit', 'out_for_delivery',
-  'failed_attempt', 'delivered', 'exception', 'expired',
-] as const;
+import { type InternalStatus, INTERNAL_STATUSES } from '@repo/types/status';
 
-export type InternalStatus = (typeof INTERNAL_STATUSES)[number];
+export type { InternalStatus };
+export { INTERNAL_STATUSES };
 
 export type NormalizedEvent = {
   status: InternalStatus;

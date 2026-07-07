@@ -1,4 +1,4 @@
-import type { InternalStatus } from '../shipment-providers/types';
+import type { InternalStatus } from '@repo/types/status';
 import type { EventType } from '../email/templates';
 
 const MAJOR_EVENTS: InternalStatus[] = [

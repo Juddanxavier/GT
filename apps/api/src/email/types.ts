@@ -1,3 +1,5 @@
+import type { InternalStatus } from '@repo/types/status';
+
 export type ShipmentData = {
   trackingNo: string;
   labelCode?: string;

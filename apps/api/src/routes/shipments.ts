@@ -13,7 +13,7 @@ import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
 import { statusToEventType } from '../notifications/event-map';
 import { notificationQueue } from '../queues';
-import type { InternalStatus } from '../shipment-providers/types';
+import type { InternalStatus } from '@repo/types/status';
 import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 
@@ -208,7 +208,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   const { shipment } = await createShipment({
     trackingNo: parsed.data.trackingNo,
     tenantId,
-    customerId: parsed.data.customerId,
+    customerId: parsed.data.customerId ?? undefined,
     branchId: parsed.data.branchId,
     courierCode: parsed.data.courierCode,
     carrier: parsed.data.carrier,
@@ -453,6 +453,28 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   // Soft-delete: set archivedAt on shipment and related invoices instead of hard-deleting
   const now = new Date();
 
+  // First check the shipment exists (ignore archivedAt so we can distinguish "not found" from "already deleted")
+  const [existing] = await db
+    .select({ id: shipments.id, trackingNo: shipments.trackingNo, archivedAt: shipments.archivedAt })
+    .from(shipments)
+    .where(and(...shipmentScope) as SQL | undefined)
+    .limit(1);
+
+  if (!existing) return c.json({ error: 'Shipment not found' }, 404);
+
+  const cacheTenant = scope.tenantId ?? '__all__';
+
+  // Idempotent: already archived → nothing to do
+  if (existing.archivedAt) {
+    await cacheDel(cacheTenant, `shipments:${existing.id}`);
+    await cacheDel(cacheTenant, `shipments:${existing.id}:tracking`);
+    await cacheDel(cacheTenant, `invoices:shipment:${existing.id}`);
+    await cacheDelPattern(cacheTenant, 'shipments:list:*');
+    await cacheDelPattern(cacheTenant, 'dashboard:*');
+    await cacheDelPattern(cacheTenant, 'invoices:list*');
+    return c.json({ data: existing });
+  }
+
   const invoiceConditions: (ReturnType<typeof eq>)[] = [eq(invoices.shipmentId, id!)];
   if (scope.tenantId) invoiceConditions.push(eq(invoices.tenantId, scope.tenantId));
   await db
@@ -466,7 +488,6 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
     .where(and(...shipmentScope) as SQL | undefined)
     .returning();
 
-  const cacheTenant = scope.tenantId ?? '__all__';
   if (!row) return c.json({ error: 'Shipment not found' }, 404);
   await cacheDel(cacheTenant, `shipments:${row.id}`);
   await cacheDel(cacheTenant, `shipments:${row.id}:tracking`);
@@ -553,7 +574,7 @@ app.post(
     const { id } = c.req.param();
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    // Rate limit: 1 track per 60 seconds per shipment
+    // Rate limit: 1 track per 60 seconds per shipment (D-15 — confirmed adequate per user decision)
     if (cacheClient) {
       try {
         const cooldownKey = `track:cooldown:${id}`;

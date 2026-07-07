@@ -4,7 +4,40 @@ import { shipments, customers } from '../db/schema';
 import { notificationQueue } from '../queues';
 import { cacheClient } from '../redis';
 import { isMajorEvent, statusToEventType } from './event-map';
-import type { InternalStatus, NormalizedEvent } from '../shipment-providers/types';
+import type { InternalStatus } from '@repo/types/status';
+import type { NormalizedEvent } from '../shipment-providers/types';
+
+// In-memory LRU cooldown fallback when Redis is unavailable (D-13)
+class SimpleLRU<K, V> {
+  private max: number;
+  map = new Map<K, V>();
+  constructor(max: number) { this.max = max; }
+
+  get(key: K): V | undefined {
+    const val = this.map.get(key);
+    if (val !== undefined) {
+      this.map.delete(key);
+      this.map.set(key, val);
+    }
+    return val;
+  }
+
+  set(key: K, value: V): void {
+    if (this.map.has(key)) this.map.delete(key);
+    else if (this.map.size >= this.max) {
+      const firstKey = this.map.keys().next().value as K;
+      this.map.delete(firstKey);
+    }
+    this.map.set(key, value);
+  }
+
+  has(key: K): boolean { return this.map.get(key) !== undefined; }
+
+  delete(key: K): void { this.map.delete(key); }
+}
+
+// ponytail: LRU uses implicit eviction + setTimeout cleanup, no Map<key,expiry>. Add precise TTL if cooldown precision needed.
+const cooldownCache = new SimpleLRU<string, boolean>(10000);
 
 type ShipmentBrief = {
   id: string;
@@ -111,20 +144,35 @@ export async function handleTrackingEvent(
 
   if (!shipment.customerEmail && !shipment.customerPhone) return;
 
-  // Per-status cooldown: prevents same-status spam while allowing different status transitions
-  if (cacheClient) {
-    try {
-      const cooldownKey = `cooldown:notify:${shipment.id}:${status}`;
-      const acquired = await cacheClient.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
+  // Per-status cooldown: Redis with in-memory LRU fallback (D-13)
+  const cooldownKey = `${shipment.id}:${status}`;
+  try {
+    if (cacheClient) {
+      const redisKey = `cooldown:notify:${cooldownKey}`;
+      const acquired = await cacheClient.set(redisKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
       if (acquired !== 'OK') {
         console.log(`[notifications] cooldown active for ${shipment.id} status ${status}`);
         return;
       }
-    } catch (err) {
-      console.error('[notifications] Redis error — notification cooldown disabled:', err instanceof Error ? err.message : err);
+      cooldownCache.set(cooldownKey, true);
+      setTimeout(() => { cooldownCache.delete(cooldownKey); }, COOLDOWN_SECONDS * 1000);
+    } else {
+      // Redis unavailable — in-memory LRU fallback
+      if (cooldownCache.has(cooldownKey)) {
+        console.log(`[notifications] LRU cooldown active for ${shipment.id} status ${status}`);
+        return;
+      }
+      cooldownCache.set(cooldownKey, true);
+      setTimeout(() => { cooldownCache.delete(cooldownKey); }, COOLDOWN_SECONDS * 1000);
     }
-  } else {
-    console.warn('[notifications] Redis unavailable — notification cooldown DISABLED. Duplicate notifications may be sent.');
+  } catch (err) {
+    console.error('[notifications] Redis error — falling back to in-memory LRU:', err instanceof Error ? err.message : err);
+    if (cooldownCache.has(cooldownKey)) {
+      console.log(`[notifications] LRU cooldown active for ${shipment.id} status ${status}`);
+      return;
+    }
+    cooldownCache.set(cooldownKey, true);
+    setTimeout(() => { cooldownCache.delete(cooldownKey); }, COOLDOWN_SECONDS * 1000);
   }
 
   if (!notificationQueue) {
