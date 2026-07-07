@@ -390,6 +390,27 @@ export const auditLogs = pgTable(
   }),
 );
 
+// ── Notification Preferences ──
+
+export const notificationPreferences = pgTable('notification_preferences', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  // Categories: delivery, exception, general — each with email and WhatsApp toggle
+  deliveryEmail: boolean('delivery_email').notNull().default(true),
+  deliveryWhatsapp: boolean('delivery_whatsapp').notNull().default(true),
+  exceptionEmail: boolean('exception_email').notNull().default(true),
+  exceptionWhatsapp: boolean('exception_whatsapp').notNull().default(true),
+  generalEmail: boolean('general_email').notNull().default(true),
+  generalWhatsapp: boolean('general_whatsapp').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+},
+  (table) => ({
+    notifPrefUserTenantUnique: unique('notif_pref_user_tenant_unique').on(table.userId, table.tenantId),
+  }),
+);
+
 // ── Notifications ──
 
 export const notifications = pgTable(

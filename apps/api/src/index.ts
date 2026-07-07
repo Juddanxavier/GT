@@ -385,6 +385,7 @@ import notificationsRoute from './routes/notifications';
 import publicTrack from './routes/public-track';
 import claimShipment from './routes/claim-shipment';
 import auditLogsRoute from './routes/audit-logs';
+import notificationPrefsRoute from './routes/notification-preferences';
 import { runArchive } from './services/archive';
 import { logAudit } from './services/audit';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
@@ -444,6 +445,9 @@ app.route('/api/notifications', notificationsRoute);
 
 // Audit log viewer
 app.route('/api/audit-logs', auditLogsRoute);
+
+// Notification preferences
+app.route('/api/notification-preferences', notificationPrefsRoute);
 
 // Manual archive trigger (protected)
 app.post('/api/cron/archive', requireRole('superadmin'), async (c) => {

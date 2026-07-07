@@ -227,10 +227,18 @@ function DashboardLayoutInner({
     const tenantId = (session?.user as Record<string, unknown>)?.tenantId as string | undefined;
     if (!tenantId) return;
     const socket = connectSocket(tenantId);
-    const handler = (data: { count: number }) => setUnreadCount((c) => c + data.count);
-    socket.on('notification:new', handler);
-    return () => { socket.off('notification:new', handler); };
-  }, [session]);
+    const notifHandler = (data: { count: number }) => setUnreadCount((c) => c + data.count);
+    socket.on('notification:new', notifHandler);
+    // Real-time toast on tracking update
+    const trackHandler = (data: { shipmentId: string; trackingNo: string; status: string }) => {
+      toast('info', `Shipment ${data.trackingNo}: ${data.status}`, 'Tracking status updated');
+    };
+    socket.on('tracking:updated', trackHandler);
+    return () => {
+      socket.off('notification:new', notifHandler);
+      socket.off('tracking:updated', trackHandler);
+    };
+  }, [session, toast]);
 
   function toggleTheme() {
     const next = theme === 'light' ? 'dark' : 'light';
