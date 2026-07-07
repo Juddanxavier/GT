@@ -226,6 +226,29 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     customerName: parsed.data.customerName,
   });
 
+  // Auto-match: if no customerId was explicitly set, look for matching customer by contact
+  // ponytail: first-match only; add fuzzy matching if customers share partial phone/email
+  if (!parsed.data.customerId && (parsed.data.contactEmail || parsed.data.contactPhone)) {
+    const matchConditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, tenantId!)];
+    if (parsed.data.contactEmail) matchConditions.push(eq(customers.email, parsed.data.contactEmail));
+    if (parsed.data.contactPhone) matchConditions.push(eq(customers.phone, parsed.data.contactPhone));
+
+    const [matchingCustomer] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(or(...matchConditions))
+      .limit(1);
+
+    if (matchingCustomer) {
+      await db
+        .update(shipments)
+        .set({ customerId: matchingCustomer.id, updatedAt: new Date() })
+        .where(eq(shipments.id, shipment.id));
+      shipment.customerId = matchingCustomer.id;
+      await cacheDel(tenantId!, `shipments:${shipment.id}`);
+    }
+  }
+
   return c.json({ data: shipment }, 201);
 });
 
