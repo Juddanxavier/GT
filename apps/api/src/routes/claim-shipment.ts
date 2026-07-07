@@ -7,6 +7,14 @@
  * POST /api/track/claim
  *   Body: { trackingNo, email?, phone?, name?, tenant? }
  *
+ * POST /api/track/claim/init
+ *   Body: { trackingNo }
+ *   Initiates OTP-based claim: sends 6-digit OTP to shipment's contact email.
+ *
+ * POST /api/track/claim/verify-otp
+ *   Body: { trackingNo, otpCode }
+ *   Verifies OTP and links shipment to matching customer.
+ *
  * Flow:
  *   1. Look up shipment by trackingNo (optionally scoped to a tenant slug)
  *   2. Verify the provided email/phone matches the shipment's contactEmail/contactPhone
@@ -23,7 +31,9 @@ import { customers, shipments, tenants } from '../db/schema';
 import { cacheDel, cacheDelPattern } from '../cache';
 import { notificationQueue } from '../queues';
 import { statusToEventType } from '../notifications/event-map';
+import { sendEmail } from '../email/provider';
 import { logAudit } from '../services/audit';
+import { generateOtp, verifyOtp, maskEmail } from '../services/otp';
 import type { InternalStatus } from '../shipment-providers/types';
 
 const app = new Hono();
@@ -210,6 +220,139 @@ app.post('/claim', async (c) => {
       origin: ship.origin,
       destination: ship.destination,
       message: 'Shipment successfully linked to your account. You will now receive tracking updates.',
+    },
+  });
+});
+
+// ── OTP-based claim flow ──
+
+app.post('/claim/init', async (c) => {
+  const { trackingNo } = await c.req.json().catch(() => ({}));
+  if (!trackingNo || typeof trackingNo !== 'string' || trackingNo.length > 255) {
+    return c.json({ error: 'Valid trackingNo is required' }, 400);
+  }
+
+  // Find shipment
+  const [ship] = await db
+    .select({
+      id: shipments.id,
+      trackingNo: shipments.trackingNo,
+      contactEmail: shipments.contactEmail,
+      customerId: shipments.customerId,
+      tenantId: shipments.tenantId,
+    })
+    .from(shipments)
+    .where(eq(shipments.trackingNo, trackingNo))
+    .limit(1);
+
+  if (!ship) return c.json({ error: 'Shipment not found' }, 404);
+  if (ship.customerId) return c.json({ error: 'Shipment already claimed' }, 409);
+
+  const email = ship.contactEmail;
+  if (!email) return c.json({ error: 'No contact email on record for this shipment' }, 400);
+
+  const otp = generateOtp(trackingNo, email);
+  try {
+    await sendEmail({
+      to: email,
+      subject: `Your OTP for tracking ${trackingNo}`,
+      html: `<div style="font-family:sans-serif;padding:24px;max-width:480px;margin:0 auto">
+        <h2>Claim Your Shipment</h2>
+        <p>Use the following OTP to claim tracking number <strong>${trackingNo}</strong>:</p>
+        <div style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;padding:16px;background:#f4f4f5;border-radius:8px;margin:16px 0">${otp}</div>
+        <p style="color:#71717a">This code expires in 10 minutes.</p>
+        <p style="color:#71717a;font-size:12px">If you did not request this, please ignore this email.</p>
+      </div>`,
+    });
+  } catch (err) {
+    console.error('[claim] failed to send OTP email:', err);
+    return c.json({ error: 'Failed to send verification code' }, 500);
+  }
+
+  return c.json({ message: 'OTP sent to your email', email: maskEmail(email) });
+});
+
+app.post('/claim/verify-otp', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = z.object({ trackingNo: z.string().min(1).max(255), otpCode: z.string().length(6) }).safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Valid trackingNo and otpCode (6 digits) are required' }, 400);
+  }
+
+  const { trackingNo, otpCode } = parsed.data;
+
+  if (!verifyOtp(trackingNo, otpCode)) {
+    return c.json({ error: 'Invalid or expired OTP' }, 400);
+  }
+
+  const [ship] = await db
+    .select({
+      id: shipments.id,
+      trackingNo: shipments.trackingNo,
+      status: shipments.status,
+      carrier: shipments.carrier,
+      origin: shipments.origin,
+      destination: shipments.destination,
+      contactEmail: shipments.contactEmail,
+      contactPhone: shipments.contactPhone,
+      customerId: shipments.customerId,
+      tenantId: shipments.tenantId,
+    })
+    .from(shipments)
+    .where(eq(shipments.trackingNo, trackingNo))
+    .limit(1);
+
+  if (!ship) return c.json({ error: 'Shipment not found' }, 404);
+  if (ship.customerId) return c.json({ error: 'Shipment already claimed' }, 409);
+
+  // Find or create customer by contact email
+  const effectiveTenantId = ship.tenantId;
+  const matchedEmail = ship.contactEmail;
+
+  let [customer] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(and(eq(customers.tenantId, effectiveTenantId), eq(customers.email, matchedEmail!)))
+    .limit(1);
+
+  if (!customer) {
+    [customer] = await db
+      .insert(customers)
+      .values({
+        name: matchedEmail ?? 'Claimed Customer',
+        email: matchedEmail ?? null,
+        phone: ship.contactPhone ?? null,
+        tenantId: effectiveTenantId,
+      })
+      .returning({ id: customers.id });
+  }
+
+  if (!customer) return c.json({ error: 'Failed to create or find customer' }, 500);
+
+  await db
+    .update(shipments)
+    .set({ customerId: customer.id, updatedAt: new Date() })
+    .where(eq(shipments.id, ship.id));
+
+  await cacheDel(effectiveTenantId, `shipments:${ship.id}`);
+  await cacheDel(effectiveTenantId, `shipments:${ship.id}:tracking`);
+  await cacheDelPattern(effectiveTenantId, 'shipments:list:*');
+
+  logAudit('NOTIFICATION_SENT', null, {
+    channel: 'claim',
+    type: 'customer_claimed_otp',
+    shipmentId: ship.id,
+    trackingNo: ship.trackingNo,
+    customerId: customer.id,
+    tenantId: effectiveTenantId,
+  });
+
+  return c.json({
+    data: {
+      trackingNo: ship.trackingNo,
+      status: ship.status,
+      carrier: ship.carrier,
+      message: 'Shipment successfully claimed via OTP verification',
     },
   });
 });
