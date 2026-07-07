@@ -3,23 +3,29 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    "./*": "./src/*.tsx"
+    "./*": "./src/*"
   },
   "scripts": {
     "lint": "biome check src/",
     "generate:component": "turbo gen react-component",
     "check-types": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "next": "^16.2.6"
+  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "next": "^16.2.6",
     "typescript": "5.9.2"
   },
   "dependencies": {
+    "@repo/types": "workspace:*",
     "@heroui/react": "^3.1.0",
     "@heroui/styles": "^3.1.0",
+    "lucide-react": "^1.18.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }

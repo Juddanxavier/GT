@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, like, or, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -41,7 +41,12 @@ app.get(
     ];
     if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
     if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
-    if (status) conditions.push(eq(shipments.status, status!));
+    if (status) {
+      const statuses = status.split(',').filter(Boolean);
+      if (statuses.length > 0) {
+        conditions.push(inArray(shipments.status, statuses));
+      }
+    }
     if (customerId) conditions.push(eq(shipments.customerId, customerId!));
     if (search) conditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)})`);
 

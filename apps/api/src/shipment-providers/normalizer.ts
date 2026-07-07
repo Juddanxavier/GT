@@ -2,12 +2,13 @@ import { INTERNAL_STATUSES, type InternalStatus, type NormalizedEvent } from './
 
 const INTERNAL_SET = new Set<string>(INTERNAL_STATUSES);
 
+// ponytail: if 17TRACK adds new statuses, this map needs extension
 const STATUS_MAP: Record<string, InternalStatus> = {
   NotFound: 'pending',
   InfoReceived: 'info_received',
   InTransit: 'in_transit',
   Expired: 'expired',
-  AvailableForPickup: 'in_transit',
+  AvailableForPickup: 'available_for_pickup',
   OutForDelivery: 'out_for_delivery',
   DeliveryFailure: 'failed_attempt',
   Delivered: 'delivered',
@@ -19,7 +20,7 @@ const STATUS_MAP: Record<string, InternalStatus> = {
   DELIVERED: 'delivered',
   DELIVERY_ATTEMPT_FAILED: 'failed_attempt',
   EXCEPTION: 'exception',
-  AVAILABLE_FOR_PICKUP: 'in_transit',
+  AVAILABLE_FOR_PICKUP: 'available_for_pickup',
   EXPIRED: 'expired',
 };
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META } from '@repo/ui/status-config';
 import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,17 +21,6 @@ interface Customer {
   email?: string;
   phone?: string;
 }
-
-const STATUS_COLORS: Record<string, 'warning' | 'accent' | 'success' | 'danger'> = {
-  pending: 'warning',
-  info_received: 'warning',
-  in_transit: 'accent',
-  out_for_delivery: 'accent',
-  delivered: 'success',
-  delivery_failure: 'danger',
-  cancelled: 'danger',
-  exception: 'danger',
-};
 
 const ROWS_PER_PAGE = 10;
 
@@ -69,8 +59,24 @@ export default function ShipmentsPage() {
   const phoneDialCode = getCountryCode(tenantCountry).dialCode;
   const phoneFlag = getCountryCode(tenantCountry).flag;
 
+  // Compute comma-separated statuses from selected group filter
+  const computedStatus = useMemo(() => {
+    if (statusFilter === 'all') return 'all';
+    return STATUS_GROUPS[statusFilter]?.join(',') ?? 'all';
+  }, [statusFilter]);
+
+  // Compute count badges per group from per-status counts
+  const groupCounts = useMemo(() => {
+    const result: Record<string, number> = { all: totalCount };
+    if (!counts) return result;
+    for (const [group, statuses] of Object.entries(STATUS_GROUPS)) {
+      result[group] = statuses.reduce((sum, s) => sum + (counts[s] ?? 0), 0);
+    }
+    return result;
+  }, [counts, totalCount]);
+
   // Server-side pagination: pass page, ROWS_PER_PAGE, status, and search to the API
-  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, statusFilter, search);
+  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, search);
   const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
   const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
   const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
@@ -252,12 +258,12 @@ export default function ShipmentsPage() {
             <div className="sm:flex-1"><Input variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
-                <Tabs.Tab id="all">All</Tabs.Tab>
-                <Tabs.Tab id="in_transit">In Transit</Tabs.Tab>
-                <Tabs.Tab id="delivered">Delivered</Tabs.Tab>
-                <Tabs.Tab id="pending">Pending</Tabs.Tab>
-                <Tabs.Tab id="exception">Exception</Tabs.Tab>
-                <Tabs.Tab id="cancelled">Cancelled</Tabs.Tab>
+                <Tabs.Tab id="all">All{groupCounts.all > 0 ? ` (${groupCounts.all})` : ''}</Tabs.Tab>
+                {FILTER_GROUPS.map((group) => (
+                  <Tabs.Tab key={group} id={group}>
+                    {group}{groupCounts[group] > 0 ? ` (${groupCounts[group]})` : ''}
+                  </Tabs.Tab>
+                ))}
               </Tabs.List>
             </Tabs>
           </div>
@@ -300,7 +306,7 @@ export default function ShipmentsPage() {
                     <Table.Cell>{shipment.carrier}</Table.Cell>
                     <Table.Cell>{shipment.billAmount ? `₹${shipment.billAmount}` : '—'}</Table.Cell>
                     <Table.Cell>
-                      <Chip size="sm" variant="soft" color={STATUS_COLORS[shipment.status] ?? 'default'}>{shipment.status.replace(/_/g, ' ')}</Chip>
+                      <Chip size="sm" variant="soft" color={STATUS_META[shipment.status]?.color ?? 'default'}>{STATUS_META[shipment.status]?.label ?? shipment.status.replace(/_/g, ' ')}</Chip>
                     </Table.Cell>
                     <Table.Cell>
                       <Dropdown.Root>
