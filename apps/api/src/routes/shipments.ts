@@ -565,6 +565,61 @@ app.post(
   },
 );
 
+// PUT /:id/assign — set or remove customerId (unassign when null, reassign when valid UUID)
+app.put(
+  '/:id/assign',
+  requireRole('superadmin', 'tenant-admin'),
+  requireBranchScope(),
+  async (c) => {
+    const { id } = c.req.param();
+    const scope = getQueryScope(c);
+    const body = await c.req.json().catch(() => ({}));
+    const { customerId } = body as { customerId?: string | null };
+
+    if (customerId !== undefined && customerId !== null && typeof customerId !== 'string') {
+      return c.json({ error: 'customerId must be a valid UUID or null' }, 400);
+    }
+
+    const [shipment] = await db
+      .select({ id: shipments.id, trackingNo: shipments.trackingNo, customerId: shipments.customerId })
+      .from(shipments)
+      .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
+      .limit(1);
+
+    if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
+
+    // If reassigning to a specific customer, verify they exist in the same tenant
+    if (customerId) {
+      const [cust] = await db
+        .select({ id: customers.id })
+        .from(customers)
+        .where(and(eq(customers.id, customerId), eq(customers.tenantId, scope.tenantId!)))
+        .limit(1);
+      if (!cust) return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
+    }
+
+    await db
+      .update(shipments)
+      .set({ customerId: customerId ?? null, updatedAt: new Date() })
+      .where(eq(shipments.id, id));
+
+    await cacheDel(scope.tenantId!, `shipments:${id}`);
+    await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
+    await cacheDelPattern(scope.tenantId!, 'dashboard:*');
+
+    logAudit('SHIPMENT_UPDATED', c.get('user')?.id ?? null, {
+      shipmentId: shipment.id,
+      trackingNo: shipment.trackingNo,
+      tenantId: scope.tenantId,
+      changes: {
+        customerId: { from: shipment.customerId, to: customerId ?? null },
+      },
+    }, c);
+
+    return c.json({ success: true });
+  },
+);
+
 app.get(
   '/:id/tracking',
   requireRole('superadmin', 'tenant-admin', 'staff'),
