@@ -106,20 +106,10 @@ export function useCreateBranch() {
 
 export function useDeleteBranch() {
   const qc = useQueryClient();
-  const { filterVersion } = useTenantFilter();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/branches/${id}`),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: ['branches'] });
-      const prev = qc.getQueryData<ApiBranch[]>(['branches', filterVersion]);
-      qc.setQueryData<ApiBranch[]>(['branches', filterVersion], (old) => old?.filter((b) => b.id !== id) ?? []);
-      return { prev };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.prev) qc.setQueryData(['branches', filterVersion], context.prev);
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['branches'] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['branches'], refetchType: 'all' });
     },
   });
 }
@@ -630,20 +620,10 @@ export function useShipmentNotes(shipmentId: string) {
 
 export function useDeleteShipment() {
   const qc = useQueryClient();
-  const { filterVersion } = useTenantFilter();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/shipments/${id}`),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: ['shipments'] });
-      const prev = qc.getQueryData<Shipment[]>(['shipments', filterVersion]);
-      qc.setQueryData<Shipment[]>(['shipments', filterVersion], (old) => old?.filter((s) => s.id !== id) ?? []);
-      return { prev };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.prev) qc.setQueryData(['shipments', filterVersion], context.prev);
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['shipments'] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['shipments'], refetchType: 'all' });
     },
   });
 }
