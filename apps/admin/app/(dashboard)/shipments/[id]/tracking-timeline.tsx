@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { MapPin, Clock, Info } from 'lucide-react';
 import { Chip } from '@heroui/react';
-import { STATUS_META } from '@repo/ui/status-config';
+import { STATUS_META } from '@/lib/status-config';
 
 interface TrackingEvent {
   id?: string;

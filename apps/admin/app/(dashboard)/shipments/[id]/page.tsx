@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button, Card, Chip, Skeleton, Tabs, cn, Spinner } from '@heroui/react';
 import { api } from '@/lib/api';
 import { useShipment, useShipmentTracking, useShipmentInvoice, useGenerateInvoice, useTrackShipment, useStopTracking, useDeleteShipment, useUpdateShipment } from '@/lib/queries';
-import { STATUS_META } from '@repo/ui/status-config';
+import { STATUS_META } from '@/lib/status-config';
 import { TrackingTimeline } from './tracking-timeline';
 import { AssignShipment } from './assign-shipment';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META } from '@repo/ui/status-config';
+import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META } from '@/lib/status-config';
 import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -257,10 +257,10 @@ export default function ShipmentsPage() {
             <div className="sm:flex-1"><Input id="shipment-search" variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
-                <Tabs.Tab id="all">All{groupCounts.all > 0 ? ` (${groupCounts.all})` : ''}</Tabs.Tab>
+                <Tabs.Tab id="all">All{groupCounts.all! > 0 ? ` (${groupCounts.all!})` : ''}</Tabs.Tab>
                 {FILTER_GROUPS.map((group) => (
                   <Tabs.Tab key={group} id={group}>
-                    {group}{groupCounts[group] > 0 ? ` (${groupCounts[group]})` : ''}
+                    {group}{groupCounts[group]! > 0 ? ` (${groupCounts[group]!})` : ''}
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
@@ -305,7 +305,7 @@ export default function ShipmentsPage() {
                     <Table.Cell>{shipment.carrier}</Table.Cell>
                     <Table.Cell>{shipment.billAmount ? `₹${shipment.billAmount}` : '—'}</Table.Cell>
                     <Table.Cell>
-                      <Chip size="sm" variant="soft" color={STATUS_META[shipment.status]?.color ?? 'default'}>{STATUS_META[shipment.status]?.label ?? shipment.status.replace(/_/g, ' ')}</Chip>
+                      <Chip size="sm" variant="soft" color={(STATUS_META[shipment.status as keyof typeof STATUS_META]?.color ?? 'default') as Parameters<typeof Chip>[0]['color']}>{STATUS_META[shipment.status as keyof typeof STATUS_META]?.label ?? (shipment.status as string).replace(/_/g, ' ')}</Chip>
                     </Table.Cell>
                     <Table.Cell>
                       <Dropdown.Root>
