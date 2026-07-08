@@ -190,6 +190,7 @@ export interface TrackResult {
   estimatedDelivery: string | null;
   actualDelivery: string | null;
   lastTrackedAt: string | null;
+  claimed: boolean;
   events: TrackEvent[];
 }
 

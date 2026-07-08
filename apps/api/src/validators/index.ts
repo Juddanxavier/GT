@@ -58,7 +58,7 @@ export const createShipmentSchema = z.object({
   trackingNo: z.string().min(1).max(255).transform(stripHtml),
   customerName: z.string().min(1).max(255).transform(stripHtml).optional(),
   courierCode: z.string().max(50).transform(stripHtml).optional(),
-  customerId: uuidSchema.optional().nullable(),
+  customerId: z.union([uuidSchema, z.null()]).optional(),
   contactEmail: z.string().email().max(255).transform(stripHtml).optional(),
   contactPhone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).transform(stripHtml).optional().or(z.literal('')),
   carrier: z.string().max(100).transform(stripHtml).optional(),

@@ -226,29 +226,6 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     customerName: parsed.data.customerName,
   });
 
-  // Auto-match: if no customerId was explicitly set, look for matching user by contact
-  if (!parsed.data.customerId && (parsed.data.contactEmail || parsed.data.contactPhone)) {
-    const matchConditions: ReturnType<typeof eq>[] = [eq(userTable.tenantId, tenantId!), eq(userTable.role, 'customer')];
-    if (parsed.data.contactEmail) matchConditions.push(eq(userTable.email, parsed.data.contactEmail));
-    if (parsed.data.contactPhone) matchConditions.push(eq(userTable.phone, parsed.data.contactPhone));
-
-    const [matchingUser] = await db
-      .select({ id: userTable.id, name: userTable.name })
-      .from(userTable)
-      .where(or(...matchConditions))
-      .limit(1);
-
-    if (matchingUser) {
-      await db
-        .update(shipments)
-        .set({ userId: matchingUser.id, customerName: matchingUser.name, updatedAt: new Date() })
-        .where(eq(shipments.id, shipment.id));
-      shipment.userId = matchingUser.id;
-      shipment.customerName = matchingUser.name;
-      await cacheDel(tenantId!, `shipments:${shipment.id}`);
-    }
-  }
-
   return c.json({ data: shipment }, 201);
 });
 
@@ -599,7 +576,6 @@ app.post(
   },
 );
 
-// PUT /:id/assign — set or remove customerId (unassign when null, reassign when valid UUID)
 app.put(
   '/:id/assign',
   requireRole('superadmin', 'tenant-admin'),
@@ -616,27 +592,40 @@ app.put(
     }
 
     const [shipment] = await db
-      .select({ id: shipments.id, trackingNo: shipments.trackingNo, userId: shipments.userId })
+      .select({ id: shipments.id, trackingNo: shipments.trackingNo, userId: shipments.userId, status: shipments.status, contactEmail: shipments.contactEmail, contactPhone: shipments.contactPhone })
       .from(shipments)
       .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
       .limit(1);
 
     if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
+    if (shipment.userId === customerId) return c.json({ data: { id } });
 
     let customerName: string | null = null;
+    let newContactEmail: string | null = shipment.contactEmail;
+    let newContactPhone: string | null = shipment.contactPhone;
+
     if (customerId) {
       const [cust] = await db
-      .select({ id: userTable.id, name: userTable.name })
-      .from(userTable)
-      .where(and(eq(userTable.id, customerId), eq(userTable.tenantId, scope.tenantId!), eq(userTable.role, 'customer')))
+        .select({ id: userTable.id, name: userTable.name, email: userTable.email, phone: userTable.phone })
+        .from(userTable)
+        .where(and(eq(userTable.id, customerId), eq(userTable.tenantId, scope.tenantId!), eq(userTable.role, 'customer')))
         .limit(1);
       if (!cust) return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
       customerName = cust.name;
+      // Use customer profile contact — clear shipment-level overrides
+      newContactEmail = null;
+      newContactPhone = null;
     }
 
     await db
       .update(shipments)
-      .set({ userId: customerId ?? null, customerName, updatedAt: new Date() })
+      .set({
+        userId: customerId ?? null,
+        customerName,
+        contactEmail: customerId ? null : newContactEmail,
+        contactPhone: customerId ? null : newContactPhone,
+        updatedAt: new Date(),
+      })
       .where(eq(shipments.id, id));
 
     await cacheDel(scope.tenantId!, `shipments:${id}`);
@@ -652,7 +641,29 @@ app.put(
       },
     }, c);
 
-    return c.json({ success: true });
+    // Notify the new customer
+    if (customerId && customerId !== shipment.userId) {
+      const eventType = statusToEventType(shipment.status as InternalStatus);
+      if (eventType && notificationQueue) {
+        await notificationQueue.add('notify', {
+          shipmentId: shipment.id,
+          eventId: `assigned:${customerId}:${Date.now()}`,
+          eventType,
+          tenantId: scope.tenantId,
+          trackingNo: shipment.trackingNo,
+          labelCode: undefined,
+          carrier: undefined,
+          origin: undefined,
+          destination: undefined,
+          customerName: customerName ?? undefined,
+          customerEmail: undefined,
+          customerPhone: undefined,
+        });
+      }
+    }
+
+    emitToTenant(scope.tenantId!, 'dashboard:update', {});
+    return c.json({ data: { id } });
   },
 );
 

@@ -141,29 +141,42 @@ function TrackDetailInner(): ReactNode {
             )}
           </div>
 
-          {/* Claim section for logged-in users */}
-          {session && (
+          {/* Claim section */}
+          {!result.claimed && (
             <div className="rounded-xl border border-border bg-surface p-6">
-              {claimSuccess ? (
-                <div className={`flex items-center gap-2 text-sm ${isEmerald ? 'text-emerald-700' : 'text-violet-700'}`}>
-                  <CheckCircle2 size={16} /> {claimSuccess}
-                </div>
+              {session ? (
+                claimSuccess ? (
+                  <div className={`flex items-center gap-2 text-sm ${isEmerald ? 'text-emerald-700' : 'text-violet-700'}`}>
+                    <CheckCircle2 size={16} /> {claimSuccess}
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-sm font-semibold text-foreground mb-2">Is this your shipment?</h2>
+                    <p className="text-xs text-muted mb-4">
+                      Link this shipment to your account to receive updates on status changes.
+                    </p>
+                    <Button
+                      isDisabled={claimMutation.isPending}
+                      isPending={claimMutation.isPending}
+                      onPress={handleClaim}
+                      className={btnClass}
+                    >
+                      <Link2 size={16} />
+                      {claimMutation.isPending ? 'Linking...' : 'Link to my account'}
+                    </Button>
+                    {claimError && <p className="mt-3 text-xs text-danger">{claimError}</p>}
+                  </>
+                )
               ) : (
                 <>
-                  <h2 className="text-sm font-semibold text-foreground mb-2">Link this shipment</h2>
+                  <h2 className="text-sm font-semibold text-foreground mb-2">Is this your shipment?</h2>
                   <p className="text-xs text-muted mb-4">
-                    Link this shipment to your account to receive updates on status changes.
+                    Claim this shipment to get notified on status changes.
                   </p>
-                  <Button
-                    isDisabled={claimMutation.isPending}
-                    isPending={claimMutation.isPending}
-                    onPress={handleClaim}
-                    className={btnClass}
-                  >
+                  <a href={`/claim?trackingNo=${trackingNo}`} className={btnClass + ' inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors'}>
                     <Link2 size={16} />
-                    {claimMutation.isPending ? 'Linking...' : 'Link to my account'}
-                  </Button>
-                  {claimError && <p className="mt-3 text-xs text-danger">{claimError}</p>}
+                    Claim this shipment
+                  </a>
                 </>
               )}
             </div>

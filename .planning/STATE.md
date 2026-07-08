@@ -4,15 +4,15 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 6 execution complete
-last_updated: "2026-07-08T12:00:00.000Z"
-last_activity: 2026-07-08 -- Phase 06 execution complete
+last_updated: "2026-07-08T13:00:00.000Z"
+last_activity: 2026-07-08 -- Phase 7 planned
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 6
-total_plans: 8
-completed_plans: 8
-planned_plans: 8
-percent: 100
+  total_plans: 4
+  completed_plans: 0
+  planned_plans: 4
+  percent: 0
 ---
 
 # Project State
@@ -22,49 +22,42 @@ percent: 100
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** A shipment gets added → tracked via 17TRACK → status changes trigger email + WhatsApp to the right customer — without leaking data between tenants.
-**Current focus:** Phase 6 complete — all phases in v1.0 milestone executed.
+**Current focus:** Phase 7 — Re-imagine shipment assignment (discussing).
 
 ## Current Position
 
-Phase: 6 of 6 (Consolidate customer table into user table)
-Plan: 8 of 8 in current phase
-Status: Complete
+Phase: 7 of 7 (Re-imagine Shipment Assignment)
+Plan: 0 of 4 in current phase
+Status: Planned
 Last activity: 2026-07-08
 
-Progress: [██████████] 100% (8 plans complete)
-
-## Performance Metrics
-
-**Velocity:**
-
-- Total plans completed: 12
-- Total execution time: ~6h
-
-**By Phase:**
-
-| Phase | Plans | Total |
-|-------|-------|-------|
-| 5 | 4 | ~3h |
-| 6 | 8 | ~3h |
+Progress: [----------] 0%
 
 ## Accumulated Context
 
-### Decisions
+### Key decisions for Phase 7
 
-- Phase 6: Customer profile fields (phone, isActive) live directly on `user` table — no `user_profile` table.
-- Phase 6: API wire format preserves `customerId` field name for backward compatibility even though DB column is `userId`.
-- Phase 6: `address` column from old `customer` table was NOT migrated — dropped with the table.
-- Phase 6: Data migration must run BEFORE SQL migration. Migration script creates BA user accounts from old customer records, then SQL migration drops old columns/table.
+- Creation can leave shipment unassigned — contact info stored for later tracking link
+- Customer search: email/phone fields + real-time autocomplete (replace Lookup button)
+- Smart contact override: use profile email/phone but allow per-shipment override
+- Admin reassign via inline selector on shipment detail page — notifies new customer
+- Portal claim flow fully redesigned — verify email/phone match + OTP, post-claim shows dashboard + tracking
+- Fix Zod `customerId: null` validation bug
+
+### Phase 7 plans
+
+| Plan | Wave | Title |
+|------|------|-------|
+| 07-01 | 1 | Fix Zod validation + add reassign API endpoint |
+| 07-02 | 1 | Rework CustomerAssigner — autocomplete + contact fields |
+| 07-03 | 2 | Admin reassign UI on shipment detail page |
+| 07-04 | 2 | Redesign customer portal claim flow |
 
 ### Pending Todos
 
-- None — v1.0 milestone fully delivered.
-
-### Blockers/Concerns
-
-None.
+- Wave 2 depends on Wave 1 (API changes before UI)
 
 ## Session Continuity
 
-Last session: 2026-07-08T12:00:00.000Z
-Stopped at: Phase 6 execution complete
+Last session: 2026-07-08T13:00:00.000Z
+Stopped at: Phase 7 planned

@@ -6,10 +6,12 @@ const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const store = new Map<string, { otp: string; expiresAt: number; trackingNo: string; email: string }>();
 
 export function generateOtp(trackingNo: string, email: string): string {
-  const otp = String(randomInt(100000, 999999));
   const key = `claim:${trackingNo}`;
+  // Reuse existing OTP if still valid
+  const existing = store.get(key);
+  if (existing && Date.now() < existing.expiresAt) return existing.otp;
+  const otp = String(randomInt(100000, 999999));
   store.set(key, { otp, expiresAt: Date.now() + OTP_EXPIRY_MS, trackingNo, email });
-  // Auto-cleanup after expiry
   setTimeout(() => store.delete(key), OTP_EXPIRY_MS);
   return otp;
 }

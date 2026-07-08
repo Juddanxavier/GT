@@ -473,6 +473,38 @@ export default function ShipmentsPage() {
                   clearError={() => clearError('customerId')}
                   errors={errors}
                 />
+
+                {!assignerData.customerId && (
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="text-xs text-muted font-medium">No customer assigned — add contact for notifications:</p>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="manual-email">Email</Label>
+                      <Input id="manual-email" variant="secondary" type="email" placeholder="customer@example.com"
+                        value={assignerData.contactEmail}
+                        onChange={(e) => handleAssignerChange({ ...assignerData, contactEmail: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="manual-phone">Phone</Label>
+                      <div className="flex">
+                        <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
+                          {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+                        </div>
+                        <Input id="manual-phone" variant="secondary" type="tel" placeholder="Phone number"
+                          value={assignerData.contactPhone.replace(phoneDialCode, '').trim()}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '');
+                            handleAssignerChange({
+                              ...assignerData,
+                              contactPhone: raw ? `${phoneDialCode} ${raw}` : '',
+                            });
+                          }}
+                          className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </form>
             </Modal.Body>
             <Modal.Footer className="flex gap-2">

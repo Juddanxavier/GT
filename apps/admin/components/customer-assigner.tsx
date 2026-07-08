@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Chip, Input, Label } from '@heroui/react';
-import { Check, Mail, Phone, Search, User, UserX } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Chip, Input, Label, ListBox, ListBoxItem, Popover } from '@heroui/react';
+import { Check, ChevronDown, Mail, Phone, Search, User, UserX, X } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -51,55 +51,84 @@ export function CustomerAssigner({
     [customers, customerId],
   );
 
-  const [lookupEmail, setLookupEmail] = useState(
-    !selectedCustomer ? initialContactEmail : '',
-  );
-  const [lookupPhone, setLookupPhone] = useState(
-    !selectedCustomer ? stripDialCode(initialContactPhone, phoneDialCode) : '',
-  );
-  const [lookupResult, setLookupResult] = useState<Customer | null>(null);
-  const [lookupDone, setLookupDone] = useState(!!selectedCustomer);
-  const [lookupError, setLookupError] = useState('');
+  const [query, setQuery] = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const [overrideEmail, setOverrideEmail] = useState('');
+  const [overridePhone, setOverridePhone] = useState('');
+  const [overrideActive, setOverrideActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // reset on prop change for different shipment
+  const results = useMemo(() => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.toLowerCase().includes(q),
+    ).slice(0, 20);
+  }, [customers, query]);
+
+  // Reset when shipment changes
   useEffect(() => {
     if (!selectedCustomer) {
-      setLookupEmail(initialContactEmail);
-      setLookupPhone(stripDialCode(initialContactPhone, phoneDialCode));
-      setLookupDone(false);
-      setLookupResult(null);
-      setLookupError('');
+      setOverrideEmail(initialContactEmail);
+      setOverridePhone(stripDialCode(initialContactPhone, phoneDialCode));
+      setOverrideActive(false);
+      setQuery('');
     }
-  }, [initialContactEmail, initialContactPhone, selectedCustomer]);
+  }, [initialContactEmail, initialContactPhone, selectedCustomer, phoneDialCode]);
 
-  function handleLookup() {
-    const email = lookupEmail.trim().toLowerCase();
-    const phone = lookupPhone.trim();
-    if (!email && !phone) return;
-    const matched = customers.find((c) => {
-      let match = false;
-      if (email && c.email) match = c.email.toLowerCase().includes(email);
-      if (phone && c.phone) match = match || c.phone.toLowerCase().includes(phone);
-      return match;
-    });
-    if (matched) {
-      setLookupResult(matched);
-      setLookupDone(true);
-      setLookupError('');
-      onChange({ customerId: matched.id, contactEmail: '', contactPhone: '' });
+  function selectCustomer(c: Customer) {
+    setQuery(c.name);
+    setShowResults(false);
+    setOverrideActive(false);
+    onChange({ customerId: c.id, contactEmail: '', contactPhone: '' });
+  }
+
+  function handleOverrideToggle() {
+    if (overrideActive) {
+      setOverrideActive(false);
+      onChange({ customerId, contactEmail: '', contactPhone: '' });
     } else {
-      setLookupResult(null);
-      setLookupDone(true);
-      setLookupError('');
-      onChange({ customerId: null, contactEmail: email, contactPhone: phone ? `${phoneDialCode} ${phone}` : '' });
+      setOverrideActive(true);
+      if (initialContactEmail) setOverrideEmail(initialContactEmail);
+      if (initialContactPhone) setOverridePhone(stripDialCode(initialContactPhone, phoneDialCode));
     }
+  }
+
+  function handleOverrideChange() {
+    onChange({
+      customerId: customerId,
+      contactEmail: overrideEmail.trim() || '',
+      contactPhone: overridePhone.trim() ? `${phoneDialCode} ${overridePhone.trim()}` : '',
+    });
+  }
+
+  function handleManualContact() {
+    const email = query.trim();
+    const phoneMatch = query.match(/^(\+\d{1,3})?\s?(\d{4,14})$/);
+    if (email.includes('@')) {
+      onChange({ customerId: null, contactEmail: email, contactPhone: '' });
+    } else if (phoneMatch) {
+      onChange({ customerId: null, contactEmail: '', contactPhone: query });
+    }
+    setQuery('');
   }
 
   function selectSelf() {
+    setQuery('');
+    setShowResults(false);
     onChange({ customerId: 'self', contactEmail: '', contactPhone: '' });
   }
 
-  // ── Selected ──
+  function clearSelection() {
+    setQuery('');
+    setOverrideActive(false);
+    onChange({ customerId: null, contactEmail: '', contactPhone: '' });
+  }
+
+  // Selected customer card
   if (selectedCustomer) {
     return (
       <div className="space-y-2">
@@ -118,24 +147,42 @@ export function CustomerAssigner({
                     Linked
                   </Chip>
                 </div>
-                {selectedCustomer.email && (
-                  <p className="text-xs text-muted flex items-center gap-1 mt-1"><Mail size={11} />{selectedCustomer.email}</p>
-                )}
-                {selectedCustomer.phone && (
-                  <p className="text-xs text-muted flex items-center gap-1 mt-0.5"><Phone size={11} />{selectedCustomer.phone}</p>
-                )}
+                <p className="text-xs text-muted flex items-center gap-1 mt-1"><Mail size={11} />{selectedCustomer.email ?? '—'}</p>
+                <p className="text-xs text-muted flex items-center gap-1 mt-0.5"><Phone size={11} />{selectedCustomer.phone ?? '—'}</p>
                 <p className="text-[11px] text-success flex items-center gap-1 mt-1.5"><Check size={10} />Will receive tracking notifications</p>
               </div>
             </div>
-            <button type="button" onClick={() => { setLookupDone(false); setLookupResult(null); setLookupEmail(''); setLookupPhone(''); onChange({ customerId: null, contactEmail: '', contactPhone: '' }); }}
+            <button type="button" onClick={clearSelection}
               className="text-xs text-muted hover:text-foreground underline shrink-0 mt-1 transition-colors">Change</button>
           </div>
         </div>
+        <button type="button" onClick={handleOverrideToggle}
+          className="text-xs text-muted hover:text-foreground underline transition-colors">
+          {overrideActive ? 'Use customer profile contact' : 'Override contact info for this shipment'}
+        </button>
+        {overrideActive && (
+          <div className="grid grid-cols-2 gap-2">
+            <Input variant="secondary" placeholder="Email" aria-label="Override email"
+              value={overrideEmail}
+              onChange={(e) => { setOverrideEmail(e.target.value); }}
+              onBlur={handleOverrideChange} />
+            <div className="flex">
+              <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
+                {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+              </div>
+              <Input variant="secondary" placeholder="Phone" aria-label="Override phone"
+                value={overridePhone}
+                onChange={(e) => { setOverridePhone(e.target.value.replace(/\D/g, '')); }}
+                onBlur={handleOverrideChange}
+                className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none" />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  // ── Self ──
+  // Self card
   if (customerId === 'self') {
     return (
       <div className="space-y-2">
@@ -149,7 +196,7 @@ export function CustomerAssigner({
                 <p className="text-xs text-muted mt-1">The shipment will not send email or WhatsApp updates</p>
               </div>
             </div>
-            <button type="button" onClick={() => { onChange({ customerId: null, contactEmail: '', contactPhone: '' }); }}
+            <button type="button" onClick={clearSelection}
               className="text-xs text-muted hover:text-foreground underline shrink-0 mt-1 transition-colors">Change</button>
           </div>
         </div>
@@ -157,31 +204,62 @@ export function CustomerAssigner({
     );
   }
 
+  // Search / manual entry
   return (
     <div className="space-y-2">
       <Label>Customer</Label>
-      <div className="grid grid-cols-2 gap-2">
-        <Input variant="secondary" placeholder="Email" aria-label="Customer email" value={lookupEmail} onChange={(e) => { setLookupEmail(e.target.value); setLookupDone(false); }} fullWidth />
-        <div className="flex">
-          <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
-            {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
-          </div>
-          <Input variant="secondary" placeholder="Phone" aria-label="Customer phone" value={lookupPhone} onChange={(e) => { setLookupPhone(e.target.value.replace(/\D/g, '')); setLookupDone(false); }}
-            className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none" />
+      <div className="relative">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+          {query && (
+            <button type="button" onClick={() => { setQuery(''); setShowResults(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground">
+              <X size={14} />
+            </button>
+          )}
+              <input
+                ref={inputRef}
+                className="w-full h-10 px-9 rounded-xl border border-border bg-background text-sm placeholder:text-muted outline-none focus:border-foreground/30 transition-colors"
+                placeholder="Search customer by name, email, or phone..."
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setShowResults(true); clearError?.('customerId'); }}
+            onFocus={() => query.trim() && setShowResults(true)}
+          />
         </div>
+        {showResults && query.trim() && (
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-xl shadow-lg max-h-64 overflow-y-auto">
+            {results.length > 0 ? (
+              results.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCustomer(c)}
+                  className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/10 text-left transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-muted/20 text-muted flex items-center justify-center shrink-0">
+                    <User size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.name}</p>
+                    <p className="text-xs text-muted truncate">
+                      {[c.email, c.phone].filter(Boolean).join(' · ') || 'No contact'}
+                    </p>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-3 text-xs text-muted">
+                <p>No matching customer found.</p>
+                <p className="mt-1">Enter email/phone below to save contact info.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="primary" isDisabled={!lookupEmail.trim() && !lookupPhone.trim()} isPending={loading} onPress={handleLookup}>
-          <Search size={14} /> Lookup
-        </Button>
         {showSelf && (
           <Button size="sm" variant="outline" onPress={selectSelf}>Self (No Notifications)</Button>
         )}
       </div>
-      {lookupDone && !lookupResult && (
-        <p className="text-xs text-muted">No matching customer — shipment can be claimed later via the tracking portal</p>
-      )}
-      {lookupError && <p className="text-xs text-danger">{lookupError}</p>}
       {errors.customerId && <p className="text-xs text-danger">{errors.customerId}</p>}
     </div>
   );

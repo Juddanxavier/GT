@@ -59,6 +59,7 @@ app.get('/:trackingNo', async (c) => {
           estimatedDelivery: shipments.estimatedDelivery,
           actualDelivery: shipments.actualDelivery,
           lastTrackedAt: shipments.lastTrackedAt,
+          userId: shipments.userId,
           tenantId: shipments.tenantId,
         })
         .from(shipments)
@@ -96,6 +97,7 @@ app.get('/:trackingNo', async (c) => {
         estimatedDelivery: row.estimatedDelivery,
         actualDelivery: row.actualDelivery,
         lastTrackedAt: row.lastTrackedAt,
+        claimed: !!row.userId,
         events,
       };
     },

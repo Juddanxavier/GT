@@ -2,7 +2,7 @@
 
 ## Overview
 
-The project has a fully functional backend API, a comprehensive admin panel, and a basic customer portal. The next milestone focuses on UI restructuring and customer portal enhancements: extract shared component patterns into `@repo/ui`, refactor admin pages for consistency and maintainability, then build out the customer portal with dashboard, profile, quotes, invoices, and notification preferences.
+The project has a fully functional backend API, a comprehensive admin panel, and a basic customer portal. Current focus: re-imagining the shipment assignment lifecycle — how shipments are linked to customers at creation, how they can be reassigned, and how customers claim shipments through the portal.
 
 ## Phases
 
@@ -10,6 +10,7 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 - [ ] **Phase 2: Admin UI Restructuring** — Refactor all admin pages to use shared components, improve mobile layout, add consistent states
 - [ ] **Phase 3: Customer Portal Enhancement** — Build customer dashboard, profile, quotes, invoices, notification prefs, improved tracking UX
 - [ ] **Phase 4: Tenant Landing Pages** — Domain-aware home/landing pages for Gajan Traders and Lanka Mahal with shared Navbar, HeroSection, and Footer components in `@repo/ui`
+- [ ] **Phase 7: Re-imagine Shipment Assignment** — Rework creation, reassignment, and customer claiming across all three surfaces
 
 ## Phase Details
 
@@ -97,7 +98,8 @@ Plans:
 | 3h. Auth & Theme | 0/0 | Not started | - |
 | 4. Tenant Landing Pages | 0/2 | **Planned** | - |
 | 5. Shipment Module Improvements | 4/4 | **Complete** | 2026-07-07 |
-| 6. Customer Table Consolidation | 0/5 | **Planned** | - |
+| 6. Customer Table Consolidation | 8/8 | **Complete** | 2026-07-08 |
+| 7. Re-imagine Shipment Assignment | 0/4 | **Planned** | - |
 
 ### Phase 5: lets improve and debug existing shipment module
 
@@ -118,12 +120,29 @@ Plans:
 **Goal:** Drop the `customer` table entirely, create `user_profile` table for customer-specific fields, rename all `customerId` FK columns to `userId`, update all API routes and services to query `user` table instead of `customer` table
 **Requirements**: CUST-01, CUST-02, CUST-03, CUST-04, CUST-05, CUST-06, CUST-07, CUST-08, CUST-09, CUST-10
 **Depends on:** Phase 5
-**Plans:** 5 plans, 2 waves
+**Status:** Complete
 
-Plans:
+### Phase 7: Re-imagine Shipment Assignment
 
-- [ ] 06-01-PLAN.md — Schema + Migration (user_profile table, rename FKs, drop customers, data migration script)
-- [ ] 06-02-PLAN.md — Customer routes rewrite (admin CRUD + portal endpoints use user table)
-- [ ] 06-03-PLAN.md — Shipment, Invoice, Quotation routes (customerId → userId)
-- [ ] 06-04-PLAN.md — Supporting services (notifications, workers, dashboard-stats, invoice service, reports)
-- [ ] 06-05-PLAN.md — Claim wizard, Seed, Validators, Admin app
+**Goal:** Rework how shipments are assigned to customers — improve the creation experience, add reassignment capability in admin, and redesign the customer claim flow in the portal
+**Depends on:** Phase 6
+**Requirements:** TBD
+**Status:** Discussing
+
+**Key decisions:**
+
+1. Creation can leave shipment unassigned (no userId) — contact info stored for later tracking link
+2. Customer search uses email/phone fields + real-time autocomplete (replace current Lookup button)
+3. Smart contact override: use profile email/phone but allow per-shipment override
+4. Admin reassign via inline selector on shipment detail page — notifies new customer
+5. Claim portal fully redesigned — verify via email/phone match + OTP, post-claim shows dashboard + tracking
+6. Fix Zod `customerId: null` validation bug
+
+**Plans: 4 plans, 2 waves:**
+
+| Plan | Wave | Description |
+|------|------|-------------|
+| 07-01 | 1 | Fix Zod validation + add reassign API endpoint |
+| 07-02 | 1 | Rework CustomerAssigner — autocomplete + contact fields |
+| 07-03 | 2 | Admin reassign UI on shipment detail page |
+| 07-04 | 2 | Redesign customer portal claim flow |

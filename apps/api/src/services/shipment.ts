@@ -18,6 +18,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { invoices, shipments, tenants } from '../db/schema';
+import { cacheDel, cacheDelPattern } from '../cache';
 import { notifyTrackingEvents } from '../notifications/service';
 import { pdfQueue, shipmentQueue } from '../queues';
 import { emitToTenant } from '../realtime';
@@ -249,6 +250,12 @@ export async function performTracking(
     }
 
     await db.update(shipments).set(updateData).where(eq(shipments.id, shipment.id));
+
+    // Invalidate caches so list and detail pages reflect the updated status/tracking
+    await cacheDel(tenantId, `shipments:${shipment.id}`);
+    await cacheDel(tenantId, `shipments:${shipment.id}:tracking`);
+    await cacheDelPattern(tenantId, 'shipments:list:*');
+    await cacheDelPattern(tenantId, 'dashboard:*');
   } catch (err) {
     // Log and rethrow — BullMQ will retry with backoff
     console.error(`[shipment/track] failed for ${shipment.trackingNo} (${shipment.id}):`, err);

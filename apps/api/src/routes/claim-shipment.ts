@@ -35,6 +35,7 @@ import { statusToEventType } from '../notifications/event-map';
 import { sendEmail } from '../email/provider';
 import { logAudit } from '../services/audit';
 import { generateOtp, verifyOtp, maskEmail } from '../services/otp';
+import { globalRateLimit } from '../middleware/rate-limit';
 import type { InternalStatus } from '../shipment-providers/types';
 
 const app = new Hono();
@@ -230,7 +231,7 @@ app.post('/claim', async (c) => {
 
 // ── OTP-based claim flow ──
 
-app.post('/claim/init', async (c) => {
+app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, keyPrefix: 'claim-otp' }), async (c) => {
   const { trackingNo } = await c.req.json().catch(() => ({}));
   if (!trackingNo || typeof trackingNo !== 'string' || trackingNo.length > 255) {
     return c.json({ error: 'Valid trackingNo is required' }, 400);
@@ -257,15 +258,19 @@ app.post('/claim/init', async (c) => {
 
   const otp = generateOtp(trackingNo, email);
   try {
+    const brandColor = '#059669';
     await sendEmail({
       to: email,
       subject: `Your OTP for tracking ${trackingNo}`,
-      html: `<div style="font-family:sans-serif;padding:24px;max-width:480px;margin:0 auto">
-        <h2>Claim Your Shipment</h2>
-        <p>Use the following OTP to claim tracking number <strong>${trackingNo}</strong>:</p>
-        <div style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;padding:16px;background:#f4f4f5;border-radius:8px;margin:16px 0">${otp}</div>
-        <p style="color:#71717a">This code expires in 10 minutes.</p>
-        <p style="color:#71717a;font-size:12px">If you did not request this, please ignore this email.</p>
+      html: `<div style="font-family:Inter,system-ui,sans-serif;padding:32px;max-width:480px;margin:0 auto">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="width:48px;height:48px;background:${brandColor};border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:700">GT</div>
+        </div>
+        <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Verify your shipment claim</h2>
+        <p style="color:#52525b;font-size:14px;line-height:1.5;margin:0 0 20px">Use the code below to claim tracking number <strong>${trackingNo}</strong>:</p>
+        <div style="font-size:36px;font-weight:700;letter-spacing:10px;text-align:center;padding:20px;background:#f4f4f5;border-radius:12px;margin:0 0 20px;color:#18181b">${otp}</div>
+        <p style="color:#71717a;font-size:13px;margin:0 0 4px">This code expires in 10 minutes.</p>
+        <p style="color:#a1a1aa;font-size:12px;margin:0">If you did not request this, please ignore this email.</p>
       </div>`,
     });
   } catch (err) {
@@ -361,6 +366,50 @@ app.post('/claim/verify-otp', async (c) => {
       message: 'Shipment successfully claimed via OTP verification',
     },
   });
+});
+
+// ── Resend OTP ──
+app.post('/claim/resend-otp', globalRateLimit({ windowSeconds: 600, maxRequests: 3, keyPrefix: 'claim-otp' }), async (c) => {
+  const { trackingNo } = await c.req.json().catch(() => ({}));
+  if (!trackingNo || typeof trackingNo !== 'string' || trackingNo.length > 255) {
+    return c.json({ error: 'Valid trackingNo is required' }, 400);
+  }
+
+  const [ship] = await db
+    .select({ contactEmail: shipments.contactEmail, userId: shipments.userId })
+    .from(shipments)
+    .where(eq(shipments.trackingNo, trackingNo))
+    .limit(1);
+
+  if (!ship) return c.json({ error: 'Shipment not found' }, 404);
+  if (ship.userId) return c.json({ error: 'Shipment already claimed' }, 409);
+
+  const email = ship.contactEmail;
+  if (!email) return c.json({ error: 'No contact email on record for this shipment' }, 400);
+
+  const otp = generateOtp(trackingNo, email);
+  const brandColor = '#059669';
+  try {
+    await sendEmail({
+      to: email,
+      subject: `Your OTP for tracking ${trackingNo}`,
+      html: `<div style="font-family:Inter,system-ui,sans-serif;padding:32px;max-width:480px;margin:0 auto">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="width:48px;height:48px;background:${brandColor};border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:700">GT</div>
+        </div>
+        <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Your OTP code (resend)</h2>
+        <p style="color:#52525b;font-size:14px;line-height:1.5;margin:0 0 20px">Use the code below to claim tracking number <strong>${trackingNo}</strong>:</p>
+        <div style="font-size:36px;font-weight:700;letter-spacing:10px;text-align:center;padding:20px;background:#f4f4f5;border-radius:12px;margin:0 0 20px;color:#18181b">${otp}</div>
+        <p style="color:#71717a;font-size:13px;margin:0 0 4px">This code expires in 10 minutes.</p>
+        <p style="color:#a1a1aa;font-size:12px;margin:0">If you did not request this, please ignore this email.</p>
+      </div>`,
+    });
+  } catch (err) {
+    console.error('[claim] failed to resend OTP email:', err);
+    return c.json({ error: 'Failed to send verification code' }, 500);
+  }
+
+  return c.json({ message: 'OTP resent to your email', email: maskEmail(email) });
 });
 
 export default app;

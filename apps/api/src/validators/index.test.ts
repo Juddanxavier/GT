@@ -140,6 +140,18 @@ describe('createShipmentSchema', () => {
     const r = createShipmentSchema.safeParse({ trackingNo: '' });
     expect(r.success).toBe(false);
   });
+
+  it('accepts null customerId', () => {
+    const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001', customerId: null });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.customerId).toBeNull();
+  });
+
+  it('accepts missing customerId', () => {
+    const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.customerId).toBeUndefined();
+  });
 });
 
 describe('updateQuotationStatusSchema', () => {

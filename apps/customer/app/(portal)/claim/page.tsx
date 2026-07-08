@@ -1,9 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { Card, CardBody, CardHeader, Input, Button, Chip, Divider } from '@heroui/react';
-import { Package, Mail, CheckCircle, ArrowLeft, Truck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Card, Input, Button, Chip } from '@heroui/react';
+import { Package, Mail, CheckCircle, ArrowLeft, Truck, RefreshCw } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -19,11 +19,33 @@ interface ShipmentData {
 
 export default function ClaimShipmentPage(): ReactNode {
   const [step, setStep] = useState<Step>('enter-tracking');
-  const [trackingNo, setTrackingNo] = useState('');
+  const [trackingNo, setTrackingNo] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('trackingNo') ?? '';
+    }
+    return '';
+  });
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [claimed, setClaimed] = useState<ShipmentData | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Auto-advance if trackingNo pre-filled from URL
+  useEffect(() => {
+    if (trackingNo && step === 'enter-tracking') {
+      initiateClaim.mutate(trackingNo);
+    }
+    // ponytail: run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resend countdown
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
 
   // Step 1: Initiate claim — sends OTP
   const initiateClaim = useMutation({
@@ -67,6 +89,26 @@ export default function ClaimShipmentPage(): ReactNode {
     onError: (e: Error) => setError(e.message),
   });
 
+  // Resend OTP
+  const resendClaim = useMutation({
+    mutationFn: async (tracking: string) => {
+      const res = await fetch(`${API_BASE}/api/track/claim/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ trackingNo: tracking }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to resend OTP');
+      return data as { message: string; email: string };
+    },
+    onSuccess: () => {
+      setError('');
+      setResendTimer(30);
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -76,26 +118,24 @@ export default function ClaimShipmentPage(): ReactNode {
 
   if (step === 'success') {
     return (
-      <Card className="max-w-lg mx-auto mt-8">
-        <CardBody className="text-center py-12">
-          <CheckCircle size={48} className="mx-auto text-success" />
-          <h2 className="text-xl font-semibold mt-4">Shipment Claimed!</h2>
-          <p className="text-sm text-muted mt-2">
-            Tracking {trackingNo} has been added to your shipments.
-          </p>
-          {claimed && (
-            <div className="mt-4 text-left bg-muted/5 rounded-lg p-4 space-y-2">
-              <p className="text-sm"><span className="text-muted">Status:</span> {claimed.status}</p>
-              {claimed.carrier && <p className="text-sm"><span className="text-muted">Carrier:</span> {claimed.carrier}</p>}
-            </div>
-          )}
-          <div className="flex gap-3 justify-center mt-6">
-            <Button as="a" href="/my-shipments" color="primary">
-              <Truck size={16} /> View My Shipments
-            </Button>
-            <Button as="a" href="/claim" variant="flat">Claim Another</Button>
+      <Card className="max-w-lg mx-auto mt-8 text-center py-12 px-6">
+        <CheckCircle size={48} className="mx-auto text-success" />
+        <h2 className="text-xl font-semibold mt-4">Shipment Claimed!</h2>
+        <p className="text-sm text-muted mt-2">
+          Tracking {trackingNo} has been added to your shipments.
+        </p>
+        {claimed && (
+          <div className="mt-4 text-left bg-muted/5 rounded-lg p-4 space-y-2">
+            <p className="text-sm"><span className="text-muted">Status:</span> {claimed.status}</p>
+            {claimed.carrier && <p className="text-sm"><span className="text-muted">Carrier:</span> {claimed.carrier}</p>}
           </div>
-        </CardBody>
+        )}
+        <div className="flex gap-3 justify-center mt-6">
+          <Button as="a" href="/my-shipments" color="primary">
+            <Truck size={16} /> View My Shipments
+          </Button>
+          <Button as="a" href="/claim" variant="flat">Claim Another</Button>
+        </div>
       </Card>
     );
   }
@@ -106,18 +146,18 @@ export default function ClaimShipmentPage(): ReactNode {
       <div className="flex items-center gap-2 text-sm">
         <Chip color={step === 'enter-tracking' ? 'primary' : 'success'} variant="flat" size="sm">1</Chip>
         <span className={step === 'enter-tracking' ? 'font-medium' : 'text-muted'}>Enter Tracking</span>
-        <Divider className="w-8" />
+        <div className="w-8 h-px bg-border" />
         <Chip color={step === 'verify-otp' ? 'primary' : 'default'} variant="flat" size="sm">2</Chip>
         <span className={step === 'verify-otp' ? 'font-medium' : 'text-muted'}>Verify OTP</span>
       </div>
 
       <Card>
-        <CardHeader>
+        <div className="p-5 border-b border-border">
           <h1 className="text-lg font-semibold">
             {step === 'enter-tracking' ? 'Claim a Shipment' : 'Verify your email'}
           </h1>
-        </CardHeader>
-        <CardBody>
+        </div>
+        <div className="p-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             {step === 'enter-tracking' && (
               <>
@@ -149,13 +189,24 @@ export default function ClaimShipmentPage(): ReactNode {
                   maxLength={6}
                   startContent={<Mail size={16} />}
                 />
-                <Button
-                  size="sm"
-                  variant="light"
-                  onPress={() => { setStep('enter-tracking'); setOtp(''); setError(''); }}
-                >
-                  <ArrowLeft size={14} /> Change tracking number
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onPress={() => { setStep('enter-tracking'); setOtp(''); setError(''); }}
+                  >
+                    <ArrowLeft size={14} /> Change tracking number
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    isDisabled={resendTimer > 0 || resendClaim.isPending}
+                    isLoading={resendClaim.isPending}
+                    onPress={() => resendClaim.mutate(trackingNo)}
+                  >
+                    <RefreshCw size={14} /> {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}
+                  </Button>
+                </div>
               </>
             )}
 
@@ -171,7 +222,7 @@ export default function ClaimShipmentPage(): ReactNode {
               {step === 'enter-tracking' ? 'Send OTP' : 'Verify & Claim'}
             </Button>
           </form>
-        </CardBody>
+        </div>
       </Card>
     </div>
   );
