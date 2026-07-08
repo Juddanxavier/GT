@@ -43,9 +43,7 @@ export default function ShipmentsPage() {
   });
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [billAmount, setBillAmount] = useState(0);
-  const [newCarrier, setNewCarrier] = useState('');
-  const [newOrigin, setNewOrigin] = useState('');
-  const [newDestination, setNewDestination] = useState('');
+
 
   const { data: session } = authClient.useSession();
   const userData = session?.user as Record<string, unknown> | undefined;
@@ -197,7 +195,7 @@ export default function ShipmentsPage() {
           <p className="text-sm text-muted">Track and manage shipments</p>
         </div>
         <Button onPress={() => {
-          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setNewCarrier(''); setNewOrigin(''); setNewDestination(''); setCreateOpen(true);
+          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true);
           setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
         }}>New Shipment</Button>
       </div>
@@ -391,9 +389,6 @@ export default function ShipmentsPage() {
                   trackingNo,
                   billAmount: billAmount || undefined,
                   branchId: selectedBranchId || undefined,
-                  carrier: newCarrier.trim() || undefined,
-                  origin: newOrigin.trim() || undefined,
-                  destination: newDestination.trim() || undefined,
                 };
                 const customerId = assignerData.customerId === 'self' ? undefined : assignerData.customerId;
                 const email = assignerData.contactEmail || undefined;
@@ -410,9 +405,7 @@ export default function ShipmentsPage() {
                     setCreateOpen(false);
                     setNewTrackingNumber('');
                     setBillAmount(0);
-                    setNewCarrier('');
-                    setNewOrigin('');
-                    setNewDestination('');
+
                     setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
                     setSelectedBranchId(branchFilter);
                     setErrors({});
@@ -443,21 +436,7 @@ export default function ShipmentsPage() {
                   </NumberField.Root>
                   {errors.billAmount && <p className="text-xs text-danger">{errors.billAmount}</p>}
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="new-carrier">Carrier</Label>
-                  <Input id="new-carrier" variant="secondary" placeholder="e.g. FedEx, DHL, Blue Dart" value={newCarrier} onChange={(e) => { setNewCarrier(e.target.value); clearError('carrier'); }} />
-                  {errors.carrier && <p className="text-xs text-danger">{errors.carrier}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor="new-origin">Origin</Label>
-                    <Input id="new-origin" variant="secondary" placeholder="Mumbai, India" value={newOrigin} onChange={(e) => { setNewOrigin(e.target.value); }} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor="new-destination">Destination</Label>
-                    <Input id="new-destination" variant="secondary" placeholder="New York, USA" value={newDestination} onChange={(e) => { setNewDestination(e.target.value); }} />
-                  </div>
-                </div>
+
                 {(isSuperAdmin || isTenantAdmin) && (
                   <div className="flex flex-col gap-1">
                     <Label>Branch *</Label>

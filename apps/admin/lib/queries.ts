@@ -29,9 +29,9 @@ export interface Shipment {
   customerName: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
-  carrier: string;
-  origin: string;
-  destination: string;
+  carrier: string | null;
+  origin: string | null;
+  destination: string | null;
   billAmount: string | null;
   labelCode: string | null;
   trackingRegistered: boolean;
