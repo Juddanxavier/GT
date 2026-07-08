@@ -70,7 +70,6 @@ export function useBranches(page?: number, limit?: number, search?: string) {
 
 export function useCreateBranch() {
   const qc = useQueryClient();
-  const { filterVersion } = useTenantFilter();
   return useMutation({
     mutationFn: (data: {
       name: string;
@@ -79,25 +78,6 @@ export function useCreateBranch() {
       address?: string;
       tenantId?: string;
     }) => api.post<ApiBranch>('/api/branches', data),
-    onMutate: async (data) => {
-      await qc.cancelQueries({ queryKey: ['branches'] });
-      const prev = qc.getQueryData<ApiBranch[]>(['branches', filterVersion]);
-      const optimistic: ApiBranch = {
-        id: `temp-${Date.now()}`,
-        name: data.name,
-        phone: data.phone ?? null,
-        email: data.email ?? null,
-        address: data.address ?? null,
-        tenantId: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      qc.setQueryData<ApiBranch[]>(['branches', filterVersion], (old) => [...(old ?? []), optimistic]);
-      return { prev, optimistic };
-    },
-    onError: (_err, _data, context) => {
-      if (context?.prev) qc.setQueryData(['branches', filterVersion], context.prev);
-    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['branches'] });
     },
