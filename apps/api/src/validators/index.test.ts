@@ -152,6 +152,25 @@ describe('createShipmentSchema', () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.customerId).toBeUndefined();
   });
+
+  it('accepts empty contactEmail', () => {
+    const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001', contactEmail: '' });
+    expect(r.success).toBe(true);
+  });
+
+  it('accepts empty contactPhone', () => {
+    const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001', contactPhone: '' });
+    expect(r.success).toBe(true);
+  });
+
+  it('passes the exact production payload', () => {
+    const r = createShipmentSchema.safeParse({
+      trackingNo: 'TRACK001',
+      customerId: null,
+      billAmount: 100,
+    });
+    expect(r.success).toBe(true);
+  });
 });
 
 describe('updateQuotationStatusSchema', () => {
