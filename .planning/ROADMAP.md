@@ -113,7 +113,7 @@ Plans:
 - [x] 05-03-PLAN.md — Notification & webhook reliability (BullMQ queue, LRU fallback)
 - [x] 05-04-PLAN.md — UI — shipment detail redesign, tracking timeline, notification pages
 
-### Phase 6: Consolidate customer table into user_profile
+### Phase 6: Consolidate customer table into user table
 
 **Goal:** Drop the `customer` table entirely, create `user_profile` table for customer-specific fields, rename all `customerId` FK columns to `userId`, update all API routes and services to query `user` table instead of `customer` table
 **Requirements**: CUST-01, CUST-02, CUST-03, CUST-04, CUST-05, CUST-06, CUST-07, CUST-08, CUST-09, CUST-10

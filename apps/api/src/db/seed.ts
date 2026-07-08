@@ -5,7 +5,6 @@ import {
   tenants,
   branches,
   user,
-  customers,
   shipments,
   trackingEvents,
   quotations,
@@ -126,16 +125,9 @@ async function seed() {
 
   // ── Seed Customers, Shipments, Quotations ──
 
-  // Clear existing seed data (FK-safe order)
-  await db.delete(quoteItems);
-  await db.delete(invoices);
-  await db.delete(quotations);
-  await db.delete(shipments);
-  await db.delete(customers);
-
   const allBranches = [mumbaiHq, delhi, chennai, colomboHq, kandy, jaffna];
 
-  // ── Customers ──
+  // ── Customer Users (via BA API) ──
   const customerDefs: { name: string; email: string; phone: string; branchId: string; tenantId: string }[] = [
     // Gajan Traders
     { name: 'Rajesh Patel', email: 'rajesh@gajantraders.com', phone: '+91-9876543210', branchId: mumbaiHq.id, tenantId: gajan!.id },
@@ -153,9 +145,43 @@ async function seed() {
     { name: 'Tharshi Niranjan', email: 'tharshi@lankamahal.lk', phone: '+94-771234562', branchId: jaffna.id, tenantId: lanka!.id },
   ];
 
-  const insertedCustomers = await db.insert(customers).values(customerDefs as any).returning();
-  const customerMap = new Map(insertedCustomers.map((c) => [c.email, c]));
-  console.log(`  Created ${insertedCustomers.length} customers`);
+  const insertedCustomerUsers: Array<{ id: string; email: string; name: string; phone: string; branchId: string | null; tenantId: string | null }> = [];
+  for (const c of customerDefs) {
+    const existing = await db.select({ id: user.id, name: user.name, email: user.email, phone: user.phone, branchId: user.branchId, tenantId: user.tenantId })
+      .from(user)
+      .where(eq(user.email, c.email))
+      .limit(1);
+    if (existing.length > 0) {
+      insertedCustomerUsers.push({ ...existing[0]!, phone: existing[0]!.phone ?? '' });
+      continue;
+    }
+    const created = await (auth.api as any).createUser({
+      body: {
+        email: c.email,
+        password: 'Customer@123',
+        name: c.name,
+        role: 'customer',
+        data: { tenantId: c.tenantId, branchId: c.branchId, phone: c.phone },
+      },
+    });
+    insertedCustomerUsers.push({
+      id: created.user.id,
+      email: created.user.email,
+      name: created.user.name,
+      phone: c.phone,
+      branchId: created.user.branchId ?? null,
+      tenantId: created.user.tenantId ?? null,
+    });
+  }
+  const customerMap = new Map(insertedCustomerUsers.map((c) => [c.email, c]));
+  console.log(`  Created ${insertedCustomerUsers.length} customer users`);
+
+  // Clear existing seed data for FK-dependent tables
+  await db.delete(quoteItems);
+  await db.delete(invoices);
+  await db.delete(quotations);
+  await db.delete(shipments);
+  await db.delete(trackingEvents);
 
   // ── Shipments ──
   const statuses = ['pending', 'info_received', 'in_transit', 'out_for_delivery', 'delivered', 'exception'];
@@ -163,8 +189,8 @@ async function seed() {
   const origins = ['Mumbai, India', 'Delhi, India', 'Chennai, India', 'Colombo, Sri Lanka', 'Kandy, Sri Lanka', 'Jaffna, Sri Lanka', 'Shanghai, China', 'Hong Kong', 'Dubai, UAE', 'Singapore'];
   const destinations = ['New York, USA', 'London, UK', 'Sydney, Australia', 'Toronto, Canada', 'Berlin, Germany', 'Tokyo, Japan', 'Paris, France', 'Melbourne, Australia', 'Chicago, USA', 'Dubai, UAE'];
 
-  const branchCustomerMap = new Map<string, typeof insertedCustomers>();
-  for (const c of insertedCustomers) {
+  const branchCustomerMap = new Map<string, typeof insertedCustomerUsers>();
+  for (const c of insertedCustomerUsers) {
     const bId = c.branchId ?? '';
     if (!branchCustomerMap.has(bId)) {
       branchCustomerMap.set(bId, []);
@@ -196,7 +222,7 @@ async function seed() {
         .values({
           trackingNo: trackNum,
           status,
-          customerId: customer.id,
+          userId: customer.id,
           carrier,
           origin,
           destination: dest,
@@ -309,7 +335,7 @@ async function seed() {
         .values({
           quoteNo,
           status: qStatus,
-          customerId: customer.id,
+          userId: customer.id,
           total: total.toFixed(2),
           validUntil: new Date(Date.now() + 30 * 86400000),
           branchId: branch.id,

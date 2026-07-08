@@ -10,7 +10,7 @@
 
 import { and, eq, type SQL, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { branches, customers, quotations, shipments } from '../db/schema';
+import { branches, user, quotations, shipments } from '../db/schema';
 
 type Row = Record<string, unknown>;
 
@@ -94,7 +94,7 @@ export function makeRawShipmentWhere(tenantId?: string): SQL {
  * that support optional branchId filtering via Drizzle conditions.
  */
 export function makeJoinCondition(
-  table: typeof customers | typeof quotations,
+  table: typeof quotations,
   filter: StatsFilter,
 ): SQL | undefined {
   const conditions: SQL[] = [];
@@ -148,12 +148,16 @@ export async function queryShipmentSummary(where: SQL | undefined): Promise<Row>
 // ── Entity Count Queries ──
 
 export async function queryCustomerCount(filter: StatsFilter): Promise<Row> {
-  const w = makeJoinCondition(customers, filter);
+  const conditions: SQL[] = [];
+  if (filter.tenantId) conditions.push(eq(user.tenantId, filter.tenantId));
+  if (filter.branchId) conditions.push(eq(user.branchId, filter.branchId));
+  conditions.push(eq(user.role, 'customer'));
+  const w = conditions.length > 0 ? and(...conditions) : undefined;
   const [row] = await db.execute<Row>(
     sql`
       SELECT COUNT(*)::int AS total,
         COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS active
-      FROM customer${w ? sql` WHERE ${w}` : sql``}
+      FROM "user"${w ? sql` WHERE ${w}` : sql``}
     `,
   );
   return row ?? {};
@@ -164,7 +168,7 @@ export async function queryCustomerCountRaw(where: SQL | undefined): Promise<Row
     sql`
       SELECT COUNT(*)::int AS total,
         COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS active
-      FROM customer ${where ?? sql``}
+      FROM "user" WHERE role='customer' ${where ?? sql``}
     `,
   );
   return row ?? {};
@@ -407,7 +411,7 @@ export async function queryPerBranchBreakdown(tenantId: string): Promise<unknown
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS ct,
                COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS ca
-        FROM customer WHERE tenant_id=b.tenant_id AND branch_id=b.id
+        FROM "user" WHERE role='customer' AND tenant_id=b.tenant_id AND branch_id=b.id
       ) cu ON true
       WHERE b.tenant_id=${tenantId}
     `,

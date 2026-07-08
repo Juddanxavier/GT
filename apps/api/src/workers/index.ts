@@ -2,7 +2,7 @@ import { buildEmailHtml } from '@repo/auth-config';
 import { Worker } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { customers, invoices as invoiceSchema, shipments, tenants } from '../db/schema';
+import { invoices as invoiceSchema, shipments, tenants, user } from '../db/schema';
 import { sendEmail } from '../email/provider';
 import { renderEmail } from '../email/render';
 import type { EventType } from '../email/templates';
@@ -221,7 +221,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
       .select({
         invoiceNo: invoiceSchema.invoiceNo,
         tenantId: invoiceSchema.tenantId,
-        customerId: invoiceSchema.customerId,
+        userId: invoiceSchema.userId,
       })
       .from(invoiceSchema)
       .where(eq(invoiceSchema.id, invoiceId))
@@ -233,13 +233,13 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
     }
 
     const [cust] = await db
-      .select({ email: customers.email, name: customers.name })
-      .from(customers)
-      .where(eq(customers.id, inv.customerId!))
+      .select({ email: user.email, name: user.name })
+      .from(user)
+      .where(eq(user.id, inv.userId!))
       .limit(1);
 
     if (!cust?.email) {
-      console.warn(`[email] No email for customer ${inv.customerId}`);
+      console.warn(`[email] No email for user ${inv.userId}`);
       return;
     }
 
@@ -429,7 +429,7 @@ type ShipmentTrackJobData = {
 type ShipmentInvoiceJobData = {
   shipmentId: string;
   tenantId: string;
-  customerId?: string;
+  userId?: string;
   billAmount: number;
 };
 
@@ -476,7 +476,7 @@ export const shipmentWorker = createWorker(
         { id: invoiceData.shipmentId, trackingNo: '' },
         invoiceData.billAmount,
         invoiceData.tenantId,
-        invoiceData.customerId,
+        invoiceData.userId,
       );
       return;
     }

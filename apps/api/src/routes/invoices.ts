@@ -2,7 +2,7 @@ import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
-import { customers, invoices, shipments, tenants } from '../db/schema';
+import { user, invoices, shipments, tenants } from '../db/schema';
 import {
   canSendToday,
   generateInvoicePdf,
@@ -95,7 +95,7 @@ app.post(
       const invoiceValues = {
         tenantId: scope.tenantId,
         shipmentId: ship.id,
-        customerId: ship.customerId ?? null,
+        userId: ship.userId ?? null,
         branchId: ship.branchId ?? null,
         invoiceNo,
         amount: String(amount),
@@ -175,12 +175,12 @@ app.get(
             paidAt: invoices.paidAt,
             createdAt: invoices.createdAt,
             trackingNo: shipments.trackingNo,
-            customerId: invoices.customerId,
-            customerName: customers.name,
+            customerId: invoices.userId,
+            customerName: user.name,
           })
           .from(invoices)
           .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
-          .leftJoin(customers, eq(customers.id, invoices.customerId))
+          .leftJoin(user, eq(user.id, invoices.userId))
           .where(and(...conditions) as SQL | undefined)
           .orderBy(desc(invoices.createdAt))
           .limit(limit)
@@ -295,7 +295,7 @@ app.post(
         emailCount: invoices.emailCount,
         lastEmailSentAt: invoices.lastEmailSentAt,
         shipmentId: invoices.shipmentId,
-        customerId: invoices.customerId,
+        userId: invoices.userId,
       })
       .from(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)) as SQL | undefined)
@@ -307,19 +307,19 @@ app.post(
       return c.json({ error: 'Max 2 invoice emails per day. Try again tomorrow.' }, 429);
     }
 
-    if (!inv.customerId)
+    if (!inv.userId)
       return c.json(
         {
           error:
-            'Cannot send — no customer assigned to this invoice. Assign a customer to the shipment first.',
+            'Cannot send — no user assigned to this invoice. Assign a user to the shipment first.',
         },
         400,
       );
 
     const [cust] = await db
-      .select({ email: customers.email })
-      .from(customers)
-      .where(eq(customers.id, inv.customerId))
+      .select({ email: user.email })
+      .from(user)
+      .where(eq(user.id, inv.userId))
       .limit(1);
 
     if (!cust?.email) return c.json({ error: 'Customer has no email address' }, 400);
@@ -357,7 +357,7 @@ app.post(
       c.get('user')?.id ?? null,
       {
         invoiceId: id,
-        customerId: inv.customerId,
+        userId: inv.userId,
         email: cust.email,
         tenantId: scope.tenantId,
       },

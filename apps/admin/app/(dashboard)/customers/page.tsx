@@ -205,7 +205,7 @@ export default function UsersPage() {
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="sm:flex-1"><Input variant="secondary" placeholder="Search users..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
+            <div className="sm:flex-1"><Input id="users-search" variant="secondary" placeholder="Search users..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as 'all' | 'active' | 'banned'); setPage(1); }} className="sm:flex-1">
               <Tabs.List>
                 <Tabs.Tab id="all">All</Tabs.Tab>

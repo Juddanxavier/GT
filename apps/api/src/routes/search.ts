@@ -1,7 +1,7 @@
 import { and, eq, like, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
-import { customers, invoices, shipments } from '../db/schema';
+import { user, invoices, shipments } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import type { AppVariables } from './types';
 
@@ -31,10 +31,11 @@ app.get(
     if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
 
     const customerConditions: ReturnType<typeof eq>[] = [
-      sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
-      eq(customers.tenantId, scope.tenantId),
+      eq(user.role, 'customer'),
+      sql`(${like(user.name, `%${search}%`)} OR ${like(user.email, `%${search}%`)} OR ${like(user.phone, `%${search}%`)})`,
+      eq(user.tenantId, scope.tenantId),
     ];
-    if (scope.branchId) customerConditions.push(eq(customers.branchId, scope.branchId));
+    if (scope.branchId) customerConditions.push(eq(user.branchId, scope.branchId));
 
     const invoiceConditions: ReturnType<typeof eq>[] = [
       sql`${like(invoices.invoiceNo, `%${search}%`)}`,
@@ -54,8 +55,8 @@ app.get(
         .where(and(...shipConditions))
         .limit(limit),
       db
-        .select({ id: customers.id, name: customers.name, email: customers.email })
-        .from(customers)
+        .select({ id: user.id, name: user.name, email: user.email })
+        .from(user)
         .where(and(...customerConditions))
         .limit(limit),
       db

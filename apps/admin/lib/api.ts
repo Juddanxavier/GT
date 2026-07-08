@@ -136,6 +136,8 @@ export const api = {
     const { schema, ...fetchOpts } = options ?? {};
     return requestFull<T>(path, fetchOpts).then((data) => schema ? validateResponse(schema, data, path) : data);
   },
+  put: <T>(path: string, data?: unknown) =>
+    request<T>(path, { method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
   patch: <T>(path: string, data: unknown) =>

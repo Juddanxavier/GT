@@ -43,7 +43,7 @@ export async function generateReportPdf(params: ReportParams) {
     const s = summary ?? { total: 0, accepted: 0, converted: 0, rejected: 0 };
 
     const records = await db.execute<Record<string, unknown>>(
-      sql`SELECT q.id, q.quote_no, q.status, q.total, TO_CHAR(q.valid_until, 'YYYY-MM-DD') AS valid_until, TO_CHAR(q.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(c.name, '') AS customer_name FROM quotation q LEFT JOIN customer c ON c.id = q.customer_id WHERE ${qFilter} AND ${qbFilter} AND ${qdDate} ORDER BY q.created_at DESC LIMIT 1000`,
+      sql`SELECT q.id, q.quote_no, q.status, q.total, TO_CHAR(q.valid_until, 'YYYY-MM-DD') AS valid_until, TO_CHAR(q.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(u.name, '') AS customer_name FROM quotation q LEFT JOIN "user" u ON u.id = q.user_id WHERE ${qFilter} AND ${qbFilter} AND ${qdDate} ORDER BY q.created_at DESC LIMIT 1000`,
     );
 
     return await renderToBuffer(ReportDocument({
@@ -74,7 +74,7 @@ export async function generateReportPdf(params: ReportParams) {
   );
 
   const records = await db.execute<Record<string, unknown>>(
-    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(c.name, '') AS customer_name, COALESCE(c.phone, '') AS customer_phone, COALESCE(c.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.bill_amount, inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} ORDER BY s.created_at DESC LIMIT 1000`,
+    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.bill_amount, inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} ORDER BY s.created_at DESC LIMIT 1000`,
   );
 
   return await renderToBuffer(ReportDocument({

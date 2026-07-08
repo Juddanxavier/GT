@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
-import { shipments, customers } from '../db/schema';
+import { shipments, user } from '../db/schema';
 import { notificationQueue } from '../queues';
 import { cacheClient } from '../redis';
 import { isMajorEvent, statusToEventType } from './event-map';
@@ -70,7 +70,7 @@ export async function notifyTrackingEvents(
         origin: shipments.origin,
         destination: shipments.destination,
         estimatedDelivery: shipments.estimatedDelivery,
-        customerId: shipments.customerId,
+        userId: shipments.userId,
         contactEmail: shipments.contactEmail,
         contactPhone: shipments.contactPhone,
       })
@@ -84,16 +84,16 @@ export async function notifyTrackingEvents(
     let customerPhone: string | null = null;
     let customerName: string | null = null;
 
-    if (ship.customerId) {
+    if (ship.userId) {
       const [cust] = await db
-        .select({ name: customers.name, email: customers.email, phone: customers.phone })
-        .from(customers)
-        .where(eq(customers.id, ship.customerId))
+        .select({ name: user.name, email: user.email, phone: user.phone })
+        .from(user)
+        .where(eq(user.id, ship.userId))
         .limit(1);
 
       if (cust) {
         customerEmail = cust.email;
-        customerPhone = cust.phone;
+        customerPhone = cust.phone ?? null;
         customerName = cust.name;
       }
     }

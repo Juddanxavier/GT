@@ -66,7 +66,7 @@ app.get(
     const conditions: (ReturnType<typeof eq> | ReturnType<typeof like> | SQL)[] = [eq(quotations.tenantId, scope.tenantId!)];
     if (scope.branchId) conditions.push(eq(quotations.branchId, scope.branchId!));
     if (status) conditions.push(eq(quotations.status, status!));
-    if (customerId) conditions.push(eq(quotations.customerId, customerId!));
+    if (customerId) conditions.push(eq(quotations.userId, customerId!));
     if (search) conditions.push(like(quotations.quoteNo, `%${search}%`));
 
     const cacheKey = hasPagination
@@ -211,7 +211,7 @@ app.post(
       return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
     }
 
-    const { items, ...quoteData } = parsed.data;
+    const { items, customerId, ...quoteData } = parsed.data;
     const bodyBranchId = quoteData.branchId;
     const overrideBranchId = c.get('branchId');
 
@@ -242,6 +242,7 @@ app.post(
       .insert(quotations)
       .values({
         ...quoteData,
+        userId: customerId,
         total: String(total),
         tenantId,
         validUntil: quoteData.validUntil ? new Date(quoteData.validUntil) : undefined,
@@ -453,7 +454,7 @@ app.post(
       .insert(shipments)
       .values({
         trackingNo,
-        customerId: quote.customerId,
+        userId: quote.userId,
         status: 'pending',
         origin: quote.notes || undefined,
         branchId: quote.branchId,

@@ -113,7 +113,7 @@ app.get('/quotations', requireRole('superadmin', 'tenant-admin'), async (c) => {
       );
 
       const [custRaw] = await db.execute<Record<string, unknown>>(
-        sql`SELECT COALESCE(json_agg(json_build_object('name', n, 'count', c) ORDER BY c DESC),'[]'::json) AS val FROM (SELECT COALESCE(c.name, 'Unknown') AS n, COUNT(*)::int AS c FROM quotation q LEFT JOIN customer c ON c.id = q.customer_id WHERE ${qFilter} AND ${qbFilter} AND ${qdFilter} GROUP BY n ORDER BY c DESC LIMIT 10) sub`,
+        sql`SELECT COALESCE(json_agg(json_build_object('name', n, 'count', c) ORDER BY c DESC),'[]'::json) AS val FROM (SELECT COALESCE(u.name, 'Unknown') AS n, COUNT(*)::int AS c FROM quotation q LEFT JOIN "user" u ON u.id = q.user_id WHERE ${qFilter} AND ${qbFilter} AND ${qdFilter} GROUP BY n ORDER BY c DESC LIMIT 10) sub`,
       );
 
       const [monthlyRaw] = await db.execute<Record<string, unknown>>(
@@ -156,7 +156,7 @@ app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) 
       const total = (countResult?.total as number) ?? 0;
 
       const rows = await db.execute<Record<string, unknown>>(
-        sql`SELECT s.id, s.tracking_no, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(c.name, '') AS customer_name, COALESCE(c.phone, '') AS customer_phone, COALESCE(c.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name FROM shipment s LEFT JOIN customer c ON c.id = s.customer_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT s.id, s.tracking_no, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       );
 
       return { rows, total };
@@ -190,7 +190,7 @@ app.get('/quotations/data', requireRole('superadmin', 'tenant-admin'), async (c)
       const total = (countResult?.total as number) ?? 0;
 
       const rows = await db.execute<Record<string, unknown>>(
-        sql`SELECT q.id, q.quote_no, q.status, q.total, q.valid_until, q.created_at, COALESCE(c.name, '') AS customer_name FROM quotation q LEFT JOIN customer c ON c.id = q.customer_id WHERE ${qFilter} AND ${qbFilter} AND ${qdFilter} ORDER BY q.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT q.id, q.quote_no, q.status, q.total, q.valid_until, q.created_at, COALESCE(u.name, '') AS customer_name FROM quotation q LEFT JOIN "user" u ON u.id = q.user_id WHERE ${qFilter} AND ${qbFilter} AND ${qdFilter} ORDER BY q.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       );
 
       return { rows, total };

@@ -73,13 +73,15 @@ export function CustomerAssigner({
   }, [initialContactEmail, initialContactPhone, selectedCustomer]);
 
   function handleLookup() {
-    const q = (lookupEmail.trim() + ' ' + lookupPhone.trim()).toLowerCase();
-    if (!q) return;
-    const matched = customers.find(
-      (c) =>
-        (c.email && c.email.toLowerCase().includes(lookupEmail.trim().toLowerCase())) ||
-        (c.phone && c.phone.toLowerCase().includes(lookupPhone.trim())),
-    );
+    const email = lookupEmail.trim().toLowerCase();
+    const phone = lookupPhone.trim();
+    if (!email && !phone) return;
+    const matched = customers.find((c) => {
+      let match = false;
+      if (email && c.email) match = c.email.toLowerCase().includes(email);
+      if (phone && c.phone) match = match || c.phone.toLowerCase().includes(phone);
+      return match;
+    });
     if (matched) {
       setLookupResult(matched);
       setLookupDone(true);
@@ -89,7 +91,7 @@ export function CustomerAssigner({
       setLookupResult(null);
       setLookupDone(true);
       setLookupError('');
-      onChange({ customerId: null, contactEmail: lookupEmail.trim(), contactPhone: lookupPhone.trim() ? `${phoneDialCode} ${lookupPhone.trim()}` : '' });
+      onChange({ customerId: null, contactEmail: email, contactPhone: phone ? `${phoneDialCode} ${phone}` : '' });
     }
   }
 
@@ -159,12 +161,12 @@ export function CustomerAssigner({
     <div className="space-y-2">
       <Label>Customer</Label>
       <div className="grid grid-cols-2 gap-2">
-        <Input variant="secondary" placeholder="Email" value={lookupEmail} onChange={(e) => { setLookupEmail(e.target.value); setLookupDone(false); }} fullWidth />
+        <Input variant="secondary" placeholder="Email" aria-label="Customer email" value={lookupEmail} onChange={(e) => { setLookupEmail(e.target.value); setLookupDone(false); }} fullWidth />
         <div className="flex">
           <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
             {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
           </div>
-          <Input variant="secondary" placeholder="Phone" value={lookupPhone} onChange={(e) => { setLookupPhone(e.target.value.replace(/\D/g, '')); setLookupDone(false); }}
+          <Input variant="secondary" placeholder="Phone" aria-label="Customer phone" value={lookupPhone} onChange={(e) => { setLookupPhone(e.target.value.replace(/\D/g, '')); setLookupDone(false); }}
             className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none" />
         </div>
       </div>

@@ -2,14 +2,14 @@ import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
-import { invoices, shipments, tenants, customers } from '../db/schema';
+import { invoices, shipments, tenants, user } from '../db/schema';
 import { InvoiceDocument } from './pdf';
 
 export type InvoiceData = {
   id: string;
   invoiceNo: string;
   shipmentId: string;
-  customerId: string | null;
+  userId: string | null;
   amount: string;
   status: string;
   notes: string | null;
@@ -32,7 +32,7 @@ export async function getInvoiceByShipmentId(shipmentId: string, tenantId: strin
       id: invoices.id,
       invoiceNo: invoices.invoiceNo,
       shipmentId: invoices.shipmentId,
-      customerId: invoices.customerId,
+      userId: invoices.userId,
       amount: invoices.amount,
       status: invoices.status,
       notes: invoices.notes,
@@ -44,14 +44,14 @@ export async function getInvoiceByShipmentId(shipmentId: string, tenantId: strin
       carrier: shipments.carrier,
       origin: shipments.origin,
       destination: shipments.destination,
-      customerName: customers.name,
+      customerName: user.name,
       companyName: tenants.name,
       shipmentBranchId: shipments.branchId,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
     .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
-    .leftJoin(customers, eq(customers.id, invoices.customerId))
+    .leftJoin(user, eq(user.id, invoices.userId))
     .where(and(eq(invoices.shipmentId, shipmentId), eq(invoices.tenantId, tenantId)))
     .limit(1);
 
@@ -64,7 +64,7 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
       id: invoices.id,
       invoiceNo: invoices.invoiceNo,
       shipmentId: invoices.shipmentId,
-      customerId: invoices.customerId,
+      userId: invoices.userId,
       amount: invoices.amount,
       status: invoices.status,
       notes: invoices.notes,
@@ -76,14 +76,14 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
       carrier: shipments.carrier,
       origin: shipments.origin,
       destination: shipments.destination,
-      customerName: customers.name,
+      customerName: user.name,
       companyName: tenants.name,
       shipmentBranchId: shipments.branchId,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
     .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
-    .leftJoin(customers, eq(customers.id, invoices.customerId))
+    .leftJoin(user, eq(user.id, invoices.userId))
     .where(and(eq(invoices.id, invoiceId), eq(invoices.tenantId, tenantId)))
     .limit(1);
 

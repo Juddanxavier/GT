@@ -1,7 +1,7 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
-import { tenants, branches, user, customers, shipments, quotations, invoices } from '../db/schema';
+import { tenants, branches, user, shipments, quotations, invoices } from '../db/schema';
 import { errorResponse } from '../error-response';
 import { requireRole } from '../middleware/authorization';
 import { fireNotificationSchema } from '../validators';
@@ -55,13 +55,13 @@ app.get('/seed-status', async (c) => {
     sample: allUsers.slice(0, 5).map((u) => ({ name: u.name, email: u.email, role: u.role })),
   };
 
-  // 4. Customers per tenant
+  // 4. Customer users per tenant
   if (gajan) {
-    const [gCount] = await db.select({ count: sql<number>`COUNT(*)::int` }).from(customers).where(eq(customers.tenantId, gajan.id));
+    const [gCount] = await db.select({ count: sql<number>`COUNT(*)::int` }).from(user).where(and(eq(user.tenantId, gajan.id), eq(user.role, 'customer')));
     report.gajan_customers = gCount?.count ?? 0;
   }
   if (lanka) {
-    const [lCount] = await db.select({ count: sql<number>`COUNT(*)::int` }).from(customers).where(eq(customers.tenantId, lanka.id));
+    const [lCount] = await db.select({ count: sql<number>`COUNT(*)::int` }).from(user).where(and(eq(user.tenantId, lanka.id), eq(user.role, 'customer')));
     report.lanka_customers = lCount?.count ?? 0;
   }
 

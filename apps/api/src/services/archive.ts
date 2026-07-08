@@ -12,7 +12,7 @@ export interface ArchiveResult {
 
 const archiveAfterDays = Number(process.env.ARCHIVE_AFTER_DAYS) || 90;
 const skeletonizeAfterDays = Number(process.env.SKELETONIZE_AFTER_DAYS) || 365;
-const purgeAfterDays = Number(process.env.PURGE_AFTER_DAYS) || 1460;
+const purgeAfterDays = Number(process.env.PURGE_AFTER_DAYS) || 1095;
 
 export async function runArchive(): Promise<ArchiveResult> {
   // Step 1: Archive terminal shipments > archiveAfterDays old

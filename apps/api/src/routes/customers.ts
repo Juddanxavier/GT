@@ -1,41 +1,35 @@
 import { and, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { cacheDel, withCache } from '../cache';
 import { db } from '../db';
 import { auth } from '../auth';
-import { customers, invoices as invoicesTable, quotations, quoteItems, shipments, tenants, user } from '../db/schema';
+import { user, invoices as invoicesTable, quotations, quoteItems, shipments, tenants } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { errorResponse } from '../error-response';
-import { createCustomerSchema, updateCustomerSchema, registerCustomerSchema, updateProfileSchema } from '../validators';
+import { registerCustomerSchema, updateProfileSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
 // ── Customer-facing: list authenticated user's shipments ──
 app.get('/my-shipments', async (c) => {
-  const user = c.get('user');
-  if (!user) return c.json({ error: 'Authentication required' }, 401);
+  const authUser = c.get('user');
+  if (!authUser) return c.json({ error: 'Authentication required' }, 401);
 
-  const tenantId = c.get('tenantId') ?? (user as Record<string, unknown>).tenantId as string | undefined;
+  const tenantId = c.get('tenantId') ?? (authUser as Record<string, unknown>).tenantId as string | undefined;
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
 
-  const userEmail = user.email;
+  const userEmail = authUser.email;
+  const userId = authUser.id;
 
-  // Try to find a customer record with this email
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, userEmail!)))
-    .limit(1);
-
-  // Find shipments where contactEmail matches OR customerId matches
+  // Find shipments where contactEmail matches OR userId matches
   const contactMatch = eq(shipments.contactEmail, userEmail!);
+  const userIdMatch = eq(shipments.userId, userId);
   const conditions: (ReturnType<typeof eq | typeof isNull | typeof or>)[] = [
     isNull(shipments.archivedAt),
     eq(shipments.tenantId, tenantId!),
-    customerRecord
-      ? or(contactMatch, eq(shipments.customerId, customerRecord.id))!
-      : contactMatch,
+    or(contactMatch, userIdMatch)!,
   ];
 
   const statusFilter = c.req.query('status');
@@ -86,28 +80,22 @@ app.get('/my-shipments', async (c) => {
 
 // ── Customer-facing: dashboard KPIs, recent shipments, alerts ──
 app.get('/my-dashboard', async (c) => {
-  const user = c.get('user');
-  if (!user) return c.json({ error: 'Authentication required' }, 401);
+  const authUser = c.get('user');
+  if (!authUser) return c.json({ error: 'Authentication required' }, 401);
 
-  const tenantId = c.get('tenantId') ?? (user as Record<string, unknown>).tenantId as string | undefined;
+  const tenantId = c.get('tenantId') ?? (authUser as Record<string, unknown>).tenantId as string | undefined;
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
 
-  const userEmail = user.email;
+  const userEmail = authUser.email;
+  const userId = authUser.id;
 
-  // Find customer record by email match
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, userEmail!)))
-    .limit(1);
-
-  // Build shipment filter (same dual lookup as /my-shipments)
+  // Build shipment filter using userId directly
   const contactMatch = eq(shipments.contactEmail, userEmail!);
-  const customerIdMatch = customerRecord ? eq(shipments.customerId, customerRecord.id) : null;
+  const userIdMatch = eq(shipments.userId, userId);
   const baseConditions = [
     isNull(shipments.archivedAt),
     eq(shipments.tenantId, tenantId),
-    customerIdMatch ? or(contactMatch, customerIdMatch) : contactMatch,
+    or(contactMatch, userIdMatch),
   ] as SQL[];
 
   // KPI counts — 5 parallel queries
@@ -282,20 +270,18 @@ app.patch('/profile', async (c) => {
 
 // ── Customer-facing: my quotations ──
 app.get('/my-quotations', async (c) => {
-  const user = c.get('user') as { id: string; email: string } | null;
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const authUser = c.get('user') as { id: string; email: string } | null;
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, user.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ data: [], total: 0 });
+
   const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '20', 10) || 20, 1), 50);
   const status = c.req.query('status');
-  const conditions = [eq(quotations.tenantId, tenantId), eq(quotations.customerId, customerRecord.id)];
+  const conditions: (ReturnType<typeof eq>)[] = [
+    eq(quotations.tenantId, tenantId),
+    eq(quotations.userId, authUser.id),
+  ];
   if (status) conditions.push(eq(quotations.status, status));
   const [countRow] = await db
     .select({ count: sql<number>`COUNT(*)::int` })
@@ -325,19 +311,11 @@ app.patch('/my-quotations/:id/status', async (c) => {
     return c.json({ error: 'Invalid status. Only accepted or rejected allowed.' }, 400);
   }
 
-  // Find customer record
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, currentUser.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ error: 'Not found' }, 404);
-
-  // Find quotation
+  // Find quotation by userId directly
   const [quote] = await db
     .select({ id: quotations.id, status: quotations.status })
     .from(quotations)
-    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.customerId, customerRecord.id)))
+    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.userId, currentUser.id)))
     .limit(1);
   if (!quote) return c.json({ error: 'Quotation not found' }, 404);
 
@@ -355,21 +333,16 @@ app.patch('/my-quotations/:id/status', async (c) => {
 });
 
 app.get('/my-quotations/:id', async (c) => {
-  const user = c.get('user') as { id: string; email: string } | null;
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const authUser = c.get('user') as { id: string; email: string } | null;
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
   const { id } = c.req.param();
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, user.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ error: 'Not found' }, 404);
+
   const [quote] = await db
     .select()
     .from(quotations)
-    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.customerId, customerRecord.id)))
+    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.userId, authUser.id)))
     .limit(1);
   if (!quote) return c.json({ error: 'Not found' }, 404);
   const items = await db
@@ -382,19 +355,14 @@ app.get('/my-quotations/:id', async (c) => {
 
 // ── Customer-facing: my invoices ──
 app.get('/my-invoices', async (c) => {
-  const user = c.get('user') as { id: string; email: string } | null;
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const authUser = c.get('user') as { id: string; email: string } | null;
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, user.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ data: [], total: 0 });
+
   const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '20', 10) || 20, 1), 50);
-  const conditions = [eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.customerId, customerRecord.id)];
+  const conditions: ReturnType<typeof eq>[] = [eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.userId, authUser.id)];
   const [countRow] = await db
     .select({ count: sql<number>`COUNT(*)::int` })
     .from(invoicesTable)
@@ -416,51 +384,40 @@ app.get('/my-invoices', async (c) => {
 });
 
 app.get('/my-invoices/:id', async (c) => {
-  const user = c.get('user') as { id: string; email: string } | null;
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const authUser = c.get('user') as { id: string; email: string } | null;
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
   const { id } = c.req.param();
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, user.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ error: 'Not found' }, 404);
+
   const [inv] = await db
     .select({
       id: invoicesTable.id, invoiceNo: invoicesTable.invoiceNo, amount: invoicesTable.amount,
       status: invoicesTable.status, notes: invoicesTable.notes, paidAt: invoicesTable.paidAt,
       createdAt: invoicesTable.createdAt, trackingNo: shipments.trackingNo,
-      customerEmail: customers.email, customerName: customers.name,
+      customerEmail: user.email, customerName: user.name,
     })
     .from(invoicesTable)
     .innerJoin(shipments, eq(shipments.id, invoicesTable.shipmentId))
-    .leftJoin(customers, eq(customers.id, invoicesTable.customerId))
-    .where(and(eq(invoicesTable.id, id!), eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.customerId, customerRecord.id)))
+    .leftJoin(user, eq(user.id, invoicesTable.userId))
+    .where(and(eq(invoicesTable.id, id!), eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.userId, authUser.id)))
     .limit(1);
   if (!inv) return c.json({ error: 'Not found' }, 404);
   return c.json({ data: inv });
 });
 
 app.get('/my-invoices/:id/pdf', async (c) => {
-  const user = c.get('user') as { id: string; email: string } | null;
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  const authUser = c.get('user') as { id: string; email: string } | null;
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
   const { id } = c.req.param();
-  const [customerRecord] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, tenantId), eq(customers.email, user.email!)))
-    .limit(1);
-  if (!customerRecord) return c.json({ error: 'Not found' }, 404);
 
   // Reuse admin invoice data function — it already joins and returns full data
   const { getInvoiceData, generateInvoicePdf } = await import('../invoice/service');
   const data = await getInvoiceData(id, tenantId);
   if (!data) return c.json({ error: 'Not found' }, 404);
-  if (data.customerId !== customerRecord.id) return c.json({ error: 'Not found' }, 404);
+  if (data.userId !== authUser.id) return c.json({ error: 'Not found' }, 404);
 
   const pdf = await generateInvoicePdf(data);
   return new Response(pdf as unknown as BodyInit, {
@@ -468,6 +425,19 @@ app.get('/my-invoices/:id/pdf', async (c) => {
     headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="invoice-${data.invoiceNo}.pdf"` },
   });
 });
+
+// ── Admin: inline validation schemas ──
+
+const adminCreateCustomerSchema = z.object({
+  name: z.string().min(1).max(255).transform((v) => v.replace(/<[^>]*>/g, '')),
+  email: z.string().email().max(255).optional(),
+  phone: z.string().regex(/^\+[\d\s-]{4,20}$/, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
+  branchId: z.string().uuid().optional(),
+});
+
+const adminUpdateCustomerSchema = adminCreateCustomerSchema.partial();
+
+// ── Admin CRUD ──
 
 app.get(
   '/',
@@ -484,15 +454,18 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, scope.tenantId!)];
-    if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
+    const conditions: (ReturnType<typeof eq | typeof like> | SQL)[] = [
+      eq(user.tenantId, scope.tenantId!),
+      eq(user.role, 'customer'),
+    ];
+    if (scope.branchId) conditions.push(eq(user.branchId, scope.branchId!));
     if (search) {
       conditions.push(
-        sql`(${like(customers.name, `%${search}%`)} OR ${like(customers.email, `%${search}%`)} OR ${like(customers.phone, `%${search}%`)})`,
+        sql`(${like(user.name, `%${search}%`)} OR ${like(user.email, `%${search}%`)} OR ${like(user.phone, `%${search}%`)})`,
       );
     }
     if (branchId) {
-      conditions.push(eq(customers.branchId, branchId!));
+      conditions.push(eq(user.branchId, branchId!));
     }
 
     const cacheKey = hasPagination
@@ -506,39 +479,62 @@ app.get(
         if (hasPagination) {
           const [countRow] = await db
             .select({ count: sql<number>`COUNT(*)::int` })
-            .from(customers)
+            .from(user)
             .where(and(...conditions) as SQL | undefined);
           const count = countRow?.count ?? 0;
           const offset = (page - 1) * limit;
           const rows = await db
-            .select()
-            .from(customers)
+            .select({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              branchId: user.branchId,
+              isActive: user.isActive,
+              tenantId: user.tenantId,
+              role: user.role,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+            })
+            .from(user)
             .where(and(...conditions) as SQL | undefined)
-            .orderBy(customers.name)
+            .orderBy(user.name)
             .limit(limit)
             .offset(offset);
           return { rows, total: count, page, limit };
         }
 
         const rows = await db
-          .select()
-          .from(customers)
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            branchId: user.branchId,
+            isActive: user.isActive,
+            tenantId: user.tenantId,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          })
+          .from(user)
           .where(and(...conditions) as SQL | undefined)
-          .orderBy(customers.name);
+          .orderBy(user.name);
         return { rows };
       },
       hasPagination ? 120 : 600,
     );
 
     if (hasPagination) {
+      const r = result as { rows: unknown[]; total: number; page: number; limit: number };
       return c.json({
-        data: (result as { rows: typeof customers.$inferSelect[]; total: number; page: number; limit: number }).rows,
-        total: (result as { total: number }).total,
-        page: (result as { page: number }).page,
-        limit: (result as { limit: number }).limit,
+        data: r.rows,
+        total: r.total,
+        page: r.page,
+        limit: r.limit,
       });
     }
-    return c.json({ data: (result as { rows: typeof customers.$inferSelect[] }).rows });
+    return c.json({ data: (result as { rows: unknown[] }).rows });
   },
 );
 
@@ -547,7 +543,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
-  const parsed = createCustomerSchema.safeParse(body);
+  const parsed = adminCreateCustomerSchema.safeParse(body);
   if (!parsed.success) {
     const flat = parsed.error.flatten();
     const fields = Object.entries(flat.fieldErrors)
@@ -556,13 +552,33 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
-  const [row] = await db
-    .insert(customers)
-    .values({ ...parsed.data, tenantId })
-    .returning();
+  // Create user via BA API with role='customer'
+  const randomPwd = crypto.randomUUID();
+  const created = await (auth.api as any).createUser({
+    body: {
+      email: parsed.data.email,
+      password: randomPwd,
+      name: parsed.data.name,
+      role: 'customer',
+      data: { tenantId, branchId: parsed.data.branchId, phone: parsed.data.phone },
+    },
+  });
 
   await cacheDel(tenantId, 'customers:list');
-  return c.json({ data: row }, 201);
+  return c.json({
+    data: {
+      id: created.user.id,
+      name: created.user.name,
+      email: created.user.email,
+      phone: created.user.phone ?? null,
+      branchId: created.user.branchId ?? null,
+      isActive: created.user.isActive ?? true,
+      tenantId: created.user.tenantId ?? null,
+      role: 'customer',
+      createdAt: created.user.createdAt,
+      updatedAt: created.user.updatedAt,
+    },
+  }, 201);
 });
 
 app.get(
@@ -575,19 +591,31 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [
-      eq(customers.id, id!),
-      eq(customers.tenantId, scope.tenantId!),
+    const conditions: (ReturnType<typeof eq>)[] = [
+      eq(user.id, id!),
+      eq(user.tenantId, scope.tenantId!),
+      eq(user.role, 'customer'),
     ];
-    if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
+    if (scope.branchId) conditions.push(eq(user.branchId, scope.branchId!));
 
     const row = await withCache(
       scope.tenantId!,
       `customers:${id}`,
       () =>
         db
-          .select()
-          .from(customers)
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            branchId: user.branchId,
+            isActive: user.isActive,
+            tenantId: user.tenantId,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          })
+          .from(user)
           .where(and(...conditions) as SQL | undefined)
           .limit(1)
           .then((r) => r[0] ?? null),
@@ -605,7 +633,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   const body = await c.req.json();
-  const parsed = updateCustomerSchema.safeParse(body);
+  const parsed = adminUpdateCustomerSchema.safeParse(body);
   if (!parsed.success) {
     const flat = parsed.error.flatten();
     const fields = Object.entries(flat.fieldErrors)
@@ -614,17 +642,41 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
     return c.json({ error: fields || flat.formErrors.join(', ') || 'Validation failed' }, 400);
   }
 
-  const conditions: ReturnType<typeof eq>[] = [
-    eq(customers.id, id!),
-    eq(customers.tenantId, scope.tenantId!),
+  const conditions: (ReturnType<typeof eq>)[] = [
+    eq(user.id, id!),
+    eq(user.tenantId, scope.tenantId!),
+    eq(user.role, 'customer'),
   ];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
+  if (scope.branchId) conditions.push(eq(user.branchId, scope.branchId!));
+
+  // Update profile fields on user table directly
+  if (parsed.data.name) {
+    await (auth.api as any).updateUser({ body: { userId: id, name: parsed.data.name } });
+  }
+  if (parsed.data.email) {
+    await (auth.api as any).updateUser({ body: { userId: id, email: parsed.data.email } });
+  }
+
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (parsed.data.phone !== undefined) updateData.phone = parsed.data.phone || null;
+  if (parsed.data.branchId !== undefined) updateData.branchId = parsed.data.branchId || null;
 
   const [row] = await db
-    .update(customers)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .update(user)
+    .set(updateData)
     .where(and(...conditions) as SQL | undefined)
-    .returning();
+    .returning({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      branchId: user.branchId,
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
 
@@ -638,17 +690,29 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  const conditions: ReturnType<typeof eq>[] = [
-    eq(customers.id, id!),
-    eq(customers.tenantId, scope.tenantId!),
+  const conditions: (ReturnType<typeof eq>)[] = [
+    eq(user.id, id!),
+    eq(user.tenantId, scope.tenantId!),
+    eq(user.role, 'customer'),
   ];
-  if (scope.branchId) conditions.push(eq(customers.branchId, scope.branchId!));
+  if (scope.branchId) conditions.push(eq(user.branchId, scope.branchId!));
 
   const [row] = await db
-    .update(customers)
+    .update(user)
     .set({ isActive: false, updatedAt: new Date() })
     .where(and(...conditions) as SQL | undefined)
-    .returning();
+    .returning({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      branchId: user.branchId,
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
 
   if (!row) return c.json({ error: 'Customer not found' }, 404);
 

@@ -29,7 +29,7 @@ import { insertEvents } from '../shipment-providers/dedup';
 export interface CreateShipmentInput {
   trackingNo: string;
   tenantId: string;
-  customerId?: string;
+  userId?: string;
   branchId?: string;
   courierCode?: string;
   carrier?: string;
@@ -68,7 +68,7 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
       .values({
         tenantId: input.tenantId,
         trackingNo: input.trackingNo,
-        customerId: input.customerId,
+        userId: input.userId,
         branchId: input.branchId,
         courierCode: input.courierCode,
         carrier: input.carrier,
@@ -121,7 +121,7 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
         type: 'invoice',
         shipmentId: created.id,
         tenantId: input.tenantId,
-        customerId: input.customerId,
+        userId: input.userId,
         billAmount: input.billAmount,
       });
     }
@@ -143,7 +143,7 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
     );
 
     if (input.billAmount != null && input.billAmount > 0) {
-      await autoCreateInvoice(created, input.billAmount, input.tenantId, input.customerId);
+      await autoCreateInvoice(created, input.billAmount, input.tenantId, input.userId);
     }
   }
 
@@ -261,7 +261,7 @@ export async function performTracking(
 export interface InvoiceJobData {
   shipmentId: string;
   tenantId: string;
-  customerId?: string;
+  userId?: string;
   billAmount: number;
 }
 
@@ -275,7 +275,7 @@ export async function autoCreateInvoice(
   shipment: { id: string; trackingNo: string },
   billAmount: number,
   tenantId: string,
-  customerId?: string,
+  userId?: string,
 ): Promise<void> {
   try {
     // Check for existing invoice (idempotency)
@@ -304,7 +304,7 @@ export async function autoCreateInvoice(
       .values({
         tenantId,
         shipmentId: shipment.id,
-        customerId: customerId ?? null,
+        userId: userId ?? null,
         invoiceNo,
         amount: String(billAmount),
         status: 'paid',

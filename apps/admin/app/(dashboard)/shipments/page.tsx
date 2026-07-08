@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
 import { CopyButton, Flag } from '@/components/copy-button';
 import { authClient } from '@/lib/auth-client';
+import { useToast } from '@/components/toast';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend, type PaginatedResult, type Shipment } from '@/lib/queries';
 import { KpiCard } from '@/components/kpi-card';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -42,6 +43,9 @@ export default function ShipmentsPage() {
   });
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [billAmount, setBillAmount] = useState(0);
+  const [newCarrier, setNewCarrier] = useState('');
+  const [newOrigin, setNewOrigin] = useState('');
+  const [newDestination, setNewDestination] = useState('');
 
   const { data: session } = authClient.useSession();
   const userData = session?.user as Record<string, unknown> | undefined;
@@ -65,6 +69,13 @@ export default function ShipmentsPage() {
     return STATUS_GROUPS[statusFilter]?.join(',') ?? 'all';
   }, [statusFilter]);
 
+  // Server-side pagination: pass page, ROWS_PER_PAGE, status, and search to the API
+  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, search);
+  const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
+  const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
+  const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
+  const counts = !Array.isArray(shipmentsResp) ? shipmentsResp?.counts : undefined;
+
   // Compute count badges per group from per-status counts
   const groupCounts = useMemo(() => {
     const result: Record<string, number> = { all: totalCount };
@@ -74,13 +85,6 @@ export default function ShipmentsPage() {
     }
     return result;
   }, [counts, totalCount]);
-
-  // Server-side pagination: pass page, ROWS_PER_PAGE, status, and search to the API
-  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, search);
-  const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
-  const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
-  const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
-  const counts = !Array.isArray(shipmentsResp) ? shipmentsResp?.counts : undefined;
 
   const { data: trendData = [] } = useShipmentTrend();
 
@@ -117,6 +121,7 @@ export default function ShipmentsPage() {
   }, [sparklines]);
 
   const sparklineKeys = ['total', 'inTransit', 'delivered', 'pending'] as const;
+  const { toast } = useToast();
   const { data: allCustomers = [] } = useCustomers();
   const { data: newBranches = [] } = useBranches();
   const queryClient = useQueryClient();
@@ -127,12 +132,8 @@ export default function ShipmentsPage() {
   const createShipment = useCreateShipment();
   const deleteShipment = useDeleteShipment();
 
-  const LAST_CUSTOMER_KEY = 'gt:lastCustomerId';
   function handleAssignerChange(data: { customerId: string | null; contactEmail: string; contactPhone: string }) {
     setAssignerData(data);
-    if (data.customerId && data.customerId !== 'self') {
-      try { localStorage.setItem(LAST_CUSTOMER_KEY, data.customerId); } catch {}
-    }
   }
 
   const customerMap = useMemo(() => {
@@ -196,10 +197,8 @@ export default function ShipmentsPage() {
           <p className="text-sm text-muted">Track and manage shipments</p>
         </div>
         <Button onPress={() => {
-          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true);
-          const lastId = typeof window !== 'undefined' ? localStorage.getItem(LAST_CUSTOMER_KEY) : null;
-          const lastCust = lastId ? allCustomers.find((c) => c.id === lastId) : undefined;
-          setAssignerData({ customerId: lastCust?.id ?? null, contactEmail: '', contactPhone: '' });
+          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setNewCarrier(''); setNewOrigin(''); setNewDestination(''); setCreateOpen(true);
+          setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
         }}>New Shipment</Button>
       </div>
 
@@ -255,7 +254,7 @@ export default function ShipmentsPage() {
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="sm:flex-1"><Input variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
+            <div className="sm:flex-1"><Input id="shipment-search" variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
                 <Tabs.Tab id="all">All{groupCounts.all > 0 ? ` (${groupCounts.all})` : ''}</Tabs.Tab>
@@ -354,21 +353,48 @@ export default function ShipmentsPage() {
 
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
         <Modal.Container>
-          <Modal.Dialog>
+          <Modal.Dialog aria-label="New Shipment">
             <Modal.Header>New Shipment</Modal.Header>
             <Modal.Body>
               <form id="create-form" onSubmit={async (e) => {
                 e.preventDefault();
                 setErrors({});
                 if ((document.getElementById('hp-create') as HTMLInputElement)?.value) return;
+
+                const newErrors: Record<string, string> = {};
+                const trackingNo = newTrackingNumber.trim();
+                const branchVisible = isSuperAdmin || isTenantAdmin;
+
+                // Validate all fields
+                if (!trackingNo) newErrors.trackingNo = 'Tracking number is required';
+                else {
+                  const dup = shipmentRows.find((s) => s.trackingNo.toLowerCase() === trackingNo.toLowerCase());
+                  if (dup) newErrors.trackingNo = `Already exists (${dup.id.slice(0, 8)}...)`;
+                }
+
+                if (!billAmount || billAmount <= 0) newErrors.billAmount = 'Bill amount is required and must be positive';
+
+                if (branchVisible && !selectedBranchId) newErrors.branchId = 'Please select a branch';
+
+                const hasCustomer = assignerData.customerId !== null && assignerData.customerId !== '';
+                const hasContact = assignerData.contactEmail.trim() !== '' || assignerData.contactPhone.trim() !== '';
+                if (!hasCustomer && !hasContact) {
+                  newErrors.customerId = 'Assign a customer or provide contact details';
+                }
+
+                if (Object.keys(newErrors).length > 0) {
+                  setErrors(newErrors);
+                  return;
+                }
+
                 const payload = {
-                  trackingNo: newTrackingNumber.trim(),
+                  trackingNo,
                   billAmount: billAmount || undefined,
                   branchId: selectedBranchId || undefined,
+                  carrier: newCarrier.trim() || undefined,
+                  origin: newOrigin.trim() || undefined,
+                  destination: newDestination.trim() || undefined,
                 };
-                if (!payload.trackingNo?.trim()) { setErrors({ trackingNo: 'Tracking number is required' }); return; }
-                const dup = shipmentRows.find((s) => s.trackingNo.toLowerCase() === newTrackingNumber.trim().toLowerCase());
-                if (dup) { setErrors({ trackingNo: `Already exists (${dup.id.slice(0, 8)}...)` }); return; }
                 const customerId = assignerData.customerId === 'self' ? undefined : assignerData.customerId;
                 const email = assignerData.contactEmail || undefined;
                 const phone = assignerData.contactPhone || undefined;
@@ -378,7 +404,23 @@ export default function ShipmentsPage() {
                   contactPhone: phone,
                   ...payload,
                   tenantId: effectiveTenantId || undefined,
-                }, { onSuccess: () => setCreateOpen(false) });
+                }, {
+                  onSuccess: (data) => {
+                    toast('success', 'Shipment created', `Tracking #${data.trackingNo}`);
+                    setCreateOpen(false);
+                    setNewTrackingNumber('');
+                    setBillAmount(0);
+                    setNewCarrier('');
+                    setNewOrigin('');
+                    setNewDestination('');
+                    setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
+                    setSelectedBranchId(branchFilter);
+                    setErrors({});
+                  },
+                  onError: (err) => {
+                    toast('error', 'Failed to create shipment', err instanceof Error ? err.message : 'Unknown error');
+                  },
+                });
               }} className="flex flex-col gap-4">
                 {/* Honeypot */}
                 <div className="absolute -left-[9999px]" aria-hidden="true">
@@ -387,22 +429,38 @@ export default function ShipmentsPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="new-trackingNo">Tracking Number *</Label>
-                  <Input id="new-trackingNo" variant="secondary" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value); clearError('trackingNo'); }} required />
+                  <Input id="new-trackingNo" variant="secondary" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value.trimStart()); clearError('trackingNo'); }} required />
                   {errors.trackingNo && <p className="text-xs text-danger">{errors.trackingNo}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="new-billAmount">Bill Amount</Label>
-                  <NumberField.Root variant="secondary" fullWidth value={billAmount} onChange={(v) => { setBillAmount(v); clearError('billAmount'); }}>
+                  <Label htmlFor="new-billAmount">Bill Amount *</Label>
+                  <NumberField.Root aria-label="Bill amount" variant="secondary" fullWidth value={billAmount} onChange={(v) => { setBillAmount(v); clearError('billAmount'); }}>
                     <NumberField.Group>
                       <NumberField.DecrementButton />
                       <NumberField.Input id="new-billAmount" placeholder="0.00" />
                       <NumberField.IncrementButton />
                     </NumberField.Group>
                   </NumberField.Root>
+                  {errors.billAmount && <p className="text-xs text-danger">{errors.billAmount}</p>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="new-carrier">Carrier</Label>
+                  <Input id="new-carrier" variant="secondary" placeholder="e.g. FedEx, DHL, Blue Dart" value={newCarrier} onChange={(e) => { setNewCarrier(e.target.value); clearError('carrier'); }} />
+                  {errors.carrier && <p className="text-xs text-danger">{errors.carrier}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="new-origin">Origin</Label>
+                    <Input id="new-origin" variant="secondary" placeholder="Mumbai, India" value={newOrigin} onChange={(e) => { setNewOrigin(e.target.value); }} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="new-destination">Destination</Label>
+                    <Input id="new-destination" variant="secondary" placeholder="New York, USA" value={newDestination} onChange={(e) => { setNewDestination(e.target.value); }} />
+                  </div>
                 </div>
                 {(isSuperAdmin || isTenantAdmin) && (
                   <div className="flex flex-col gap-1">
-                    <Label>Branch</Label>
+                    <Label>Branch *</Label>
                     <Select
                       selectedKey={selectedBranchId}
                       onSelectionChange={(k) => { setSelectedBranchId(k as string); clearError('branchId'); }}
@@ -410,7 +468,7 @@ export default function ShipmentsPage() {
                       variant="secondary"
                       aria-label="Select branch"
                     >
-                      <Select.Trigger className="h-10 text-sm">
+                      <Select.Trigger className={`h-10 text-sm ${errors.branchId ? 'border-danger' : ''}`}>
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
@@ -433,7 +491,8 @@ export default function ShipmentsPage() {
                   onChange={handleAssignerChange}
                   phoneDialCode={phoneDialCode}
                   phoneFlag={phoneFlag}
-                  clearError={() => {}}
+                  clearError={() => clearError('customerId')}
+                  errors={errors}
                 />
               </form>
             </Modal.Body>
@@ -447,7 +506,7 @@ export default function ShipmentsPage() {
 
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
-          <Modal.Dialog>
+          <Modal.Dialog aria-label="Delete Shipment">
             <Modal.Header>Delete Shipment</Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Are you sure you want to delete shipment <strong>{deleteTarget?.trackingNumber}</strong>? This action cannot be undone.</p>

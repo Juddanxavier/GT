@@ -65,23 +65,27 @@ export function AssignShipment({ shipmentId, currentCustomerId }: AssignShipment
             onFocus={() => setOpen(true)}
           />
         </div>
-        {open && search && customers.length > 0 && (
+        {open && search.length >= 2 && (
           <Card className="absolute z-50 w-full mt-1 max-h-48 overflow-auto">
             <div className="py-1">
-              {customers.map((c: { id: string; name: string; email?: string; phone?: string }) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/10 transition-colors ${selected === c.id ? 'bg-primary/10' : ''}`}
-                  onClick={() => {
-                    setSelected(c.id);
-                    setOpen(false);
-                  }}
-                >
-                  <p className="text-sm font-medium">{c.name}</p>
-                  <p className="text-xs text-muted">{c.email ?? c.phone}</p>
-                </button>
-              ))}
+              {customers.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-muted text-center">No customers match "{search}"</p>
+              ) : (
+                customers.map((c: { id: string; name: string; email?: string; phone?: string }) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/10 transition-colors ${selected === c.id ? 'bg-primary/10' : ''}`}
+                    onClick={() => {
+                      setSelected(c.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <p className="text-sm font-medium">{c.name}</p>
+                    <p className="text-xs text-muted">{c.email ?? c.phone}</p>
+                  </button>
+                ))
+              )}
             </div>
           </Card>
         )}

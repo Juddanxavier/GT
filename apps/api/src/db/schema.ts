@@ -52,41 +52,15 @@ export const tenantDomains = pgTable('tenant_domain', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// ── Phase 4: Admin Core CRUD Tables ──
-
-export const customers = pgTable(
-  'customer',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    name: varchar('name', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }).unique(),
-    phone: varchar('phone', { length: 50 }),
-    address: text('address'),
-    isActive: boolean('is_active').notNull().default(true),
-    branchId: uuid('branch_id').references(() => branches.id, {
-      onDelete: 'set null',
-    }),
-    tenantId: uuid('tenant_id')
-      .notNull()
-      .references(() => tenants.id, { onDelete: 'restrict' }),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => ({
-    customerTenantIdx: index('customer_tenant_idx').on(table.tenantId),
-    customerBranchIdx: index('customer_branch_idx').on(table.branchId),
-  }),
-);
-
 export const quotations = pgTable(
   'quotation',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     quoteNo: varchar('quote_no', { length: 50 }).notNull(),
     status: varchar('status', { length: 50 }).notNull().default('draft'),
-    customerId: uuid('customer_id')
+    userId: text('user_id')
       .notNull()
-      .references(() => customers.id, { onDelete: 'restrict' }),
+      .references(() => user.id, { onDelete: 'restrict' }),
     total: numeric('total', { precision: 12, scale: 2 }).notNull(),
     validUntil: timestamp('valid_until'),
     notes: text('notes'),
@@ -101,7 +75,7 @@ export const quotations = pgTable(
   },
   (table) => ({
     quotationTenantIdx: index('quotation_tenant_idx').on(table.tenantId),
-    quotationCustomerIdx: index('quotation_customer_idx').on(table.customerId),
+    quotationUserIdx: index('quotation_user_idx').on(table.userId),
     quotationStatusIdx: index('quotation_status_idx').on(table.status),
   }),
 );
@@ -170,8 +144,8 @@ export const shipments = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     trackingNo: varchar('tracking_no', { length: 255 }).notNull(),
     status: varchar('status', { length: 50 }).notNull().default('pending'),
-    customerId: uuid('customer_id')
-      .references(() => customers.id, { onDelete: 'restrict' }),
+    userId: text('user_id')
+      .references(() => user.id, { onDelete: 'set null' }),
     carrier: varchar('carrier', { length: 100 }),
     estimatedDelivery: timestamp('estimated_delivery'),
     actualDelivery: timestamp('actual_delivery'),
@@ -199,7 +173,7 @@ export const shipments = pgTable(
   },
   (table) => ({
     shipmentTenantIdx: index('shipment_tenant_idx').on(table.tenantId),
-    shipmentCustomerIdx: index('shipment_customer_idx').on(table.customerId),
+    shipmentUserIdx: index('shipment_user_idx').on(table.userId),
     shipmentStatusIdx: index('shipment_status_idx').on(table.status),
     shipmentTrackingIdx: index('shipment_tracking_idx').on(table.trackingNo),
     shipmentTenantTrackingUnique: unique('shipment_tenant_tracking_unique').on(
@@ -222,8 +196,8 @@ export const invoices = pgTable(
     shipmentId: uuid('shipment_id')
       .notNull()
       .references(() => shipments.id, { onDelete: 'restrict' }),
-    customerId: uuid('customer_id')
-      .references(() => customers.id, { onDelete: 'restrict' }),
+    userId: text('user_id')
+      .references(() => user.id, { onDelete: 'set null' }),
     invoiceNo: varchar('invoice_no', { length: 50 }).notNull(),
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
     status: varchar('status', { length: 20 }).notNull().default('unpaid'),
@@ -239,7 +213,7 @@ export const invoices = pgTable(
   (table) => ({
     invoiceTenantIdx: index('invoice_tenant_idx').on(table.tenantId),
     invoiceShipmentIdx: index('invoice_shipment_idx').on(table.shipmentId),
-    invoiceCustomerIdx: index('invoice_customer_idx').on(table.customerId),
+    invoiceUserIdx: index('invoice_user_idx').on(table.userId),
     invoiceBranchIdx: index('invoice_branch_idx').on(table.branchId),
     invoiceCreatedAtIdx: index('invoice_created_at_idx').on(table.createdAt),
   }),
@@ -265,6 +239,9 @@ export const user = pgTable(
     branchId: uuid('branch_id').references(() => branches.id, {
       onDelete: 'set null',
     }),
+    // Customer profile fields (from former customer table)
+    phone: varchar('phone', { length: 50 }),
+    isActive: boolean('is_active').notNull().default(true),
     // Admin plugin fields
     banned: boolean('banned').notNull().default(false),
     banReason: text('ban_reason'),

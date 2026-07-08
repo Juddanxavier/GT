@@ -2,7 +2,7 @@ import { and, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
-import { customers, invoices, shipments, tenants, trackingEvents } from '../db/schema';
+import { user as userTable, invoices, shipments, tenants, trackingEvents } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { emitToTenant } from '../realtime';
 import { cacheClient } from '../redis';
@@ -47,7 +47,7 @@ app.get(
         conditions.push(inArray(shipments.status, statuses));
       }
     }
-    if (customerId) conditions.push(eq(shipments.customerId, customerId!));
+    if (customerId) conditions.push(eq(shipments.userId, customerId!));
     if (search) conditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)} OR ${like(shipments.origin, `%${search}%`)} OR ${like(shipments.destination, `%${search}%`)})`);
 
     const cacheKey = `shipments:list:${scope.branchId ?? 'all'}:${status ?? 'all'}:${customerId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
@@ -83,7 +83,7 @@ app.get(
         ];
         if (scope.tenantId) countConditions.push(eq(shipments.tenantId, scope.tenantId));
         if (scope.branchId) countConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
-        if (customerId) countConditions.push(eq(shipments.customerId, customerId!));
+        if (customerId) countConditions.push(eq(shipments.userId, customerId!));
         if (search) countConditions.push(sql`(${like(shipments.trackingNo, `%${search}%`)} OR ${like(shipments.carrier, `%${search}%`)} OR ${like(shipments.customerName, `%${search}%`)} OR ${like(shipments.origin, `%${search}%`)} OR ${like(shipments.destination, `%${search}%`)})`);
         // NOTE: status filter is intentionally excluded from counts
         // so KPI cards always show the full breakdown regardless of status filter
@@ -200,9 +200,9 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   // Validate customerId belongs to the same tenant
   if (parsed.data.customerId) {
     const [cust] = await db
-      .select({ id: customers.id })
-      .from(customers)
-      .where(and(eq(customers.id, parsed.data.customerId), eq(customers.tenantId, tenantId!)))
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(and(eq(userTable.id, parsed.data.customerId), eq(userTable.tenantId, tenantId!), eq(userTable.role, 'customer')))
       .limit(1);
     if (!cust) {
       return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
@@ -213,7 +213,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   const { shipment } = await createShipment({
     trackingNo: parsed.data.trackingNo,
     tenantId,
-    customerId: parsed.data.customerId ?? undefined,
+    userId: parsed.data.customerId ?? undefined,
     branchId: parsed.data.branchId,
     courierCode: parsed.data.courierCode,
     carrier: parsed.data.carrier,
@@ -226,25 +226,25 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     customerName: parsed.data.customerName,
   });
 
-  // Auto-match: if no customerId was explicitly set, look for matching customer by contact
-  // ponytail: first-match only; add fuzzy matching if customers share partial phone/email
+  // Auto-match: if no customerId was explicitly set, look for matching user by contact
   if (!parsed.data.customerId && (parsed.data.contactEmail || parsed.data.contactPhone)) {
-    const matchConditions: ReturnType<typeof eq>[] = [eq(customers.tenantId, tenantId!)];
-    if (parsed.data.contactEmail) matchConditions.push(eq(customers.email, parsed.data.contactEmail));
-    if (parsed.data.contactPhone) matchConditions.push(eq(customers.phone, parsed.data.contactPhone));
+    const matchConditions: ReturnType<typeof eq>[] = [eq(userTable.tenantId, tenantId!), eq(userTable.role, 'customer')];
+    if (parsed.data.contactEmail) matchConditions.push(eq(userTable.email, parsed.data.contactEmail));
+    if (parsed.data.contactPhone) matchConditions.push(eq(userTable.phone, parsed.data.contactPhone));
 
-    const [matchingCustomer] = await db
-      .select({ id: customers.id })
-      .from(customers)
+    const [matchingUser] = await db
+      .select({ id: userTable.id, name: userTable.name })
+      .from(userTable)
       .where(or(...matchConditions))
       .limit(1);
 
-    if (matchingCustomer) {
+    if (matchingUser) {
       await db
         .update(shipments)
-        .set({ customerId: matchingCustomer.id, updatedAt: new Date() })
+        .set({ userId: matchingUser.id, customerName: matchingUser.name, updatedAt: new Date() })
         .where(eq(shipments.id, shipment.id));
-      shipment.customerId = matchingCustomer.id;
+      shipment.userId = matchingUser.id;
+      shipment.customerName = matchingUser.name;
       await cacheDel(tenantId!, `shipments:${shipment.id}`);
     }
   }
@@ -363,9 +363,9 @@ app.patch(
     // Validate customerId belongs to the same tenant
     if (filteredData.customerId) {
       const [cust] = await db
-        .select({ id: customers.id })
-        .from(customers)
-        .where(and(eq(customers.id, filteredData.customerId as string), eq(customers.tenantId, scope.tenantId!)))
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(and(eq(userTable.id, filteredData.customerId as string), eq(userTable.tenantId, scope.tenantId!), eq(userTable.role, 'customer')))
         .limit(1);
       if (!cust) {
         return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
@@ -393,29 +393,38 @@ app.patch(
     await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
     await cacheDelPattern(scope.tenantId!, 'dashboard:*');
 
-    // Sync invoice customerId when shipment customerId changes
-    if ('customerId' in filteredData && existing.customerId !== filteredData.customerId) {
-      const newCustomerId = filteredData.customerId;
+    // Sync invoice userId when shipment customerId changes
+    if ('customerId' in filteredData && existing.userId !== filteredData.customerId) {
+      const newUserId = filteredData.customerId;
       await db
         .update(invoices)
-        .set({ customerId: (typeof newCustomerId === 'string' ? newCustomerId : null), updatedAt: new Date() })
+        .set({ userId: (typeof newUserId === 'string' ? newUserId : null), updatedAt: new Date() })
         .where(and(eq(invoices.shipmentId, row.id), eq(invoices.tenantId, scope.tenantId!)));
       await cacheDelPattern(scope.tenantId!, 'invoices:*');
 
-      // Trigger notification for newly assigned customer
-      if (typeof newCustomerId === 'string') {
+      // Sync shipment customerName when userId changes
+      if (typeof newUserId === 'string') {
         const [cust] = await db
-          .select({ name: customers.name, email: customers.email, phone: customers.phone })
-          .from(customers)
-          .where(eq(customers.id, newCustomerId))
+          .select({ name: userTable.name, email: userTable.email, phone: userTable.phone })
+          .from(userTable)
+          .where(eq(userTable.id, newUserId))
           .limit(1);
+
+        // Update shipment customerName to match
+        if (cust) {
+          await db
+            .update(shipments)
+            .set({ customerName: cust.name, updatedAt: new Date() })
+            .where(eq(shipments.id, row.id));
+          row.customerName = cust.name;
+        }
 
         if (cust && (cust.email || cust.phone)) {
           const eventType = statusToEventType(row.status as InternalStatus);
           if (eventType && notificationQueue) {
             await notificationQueue.add('notify', {
               shipmentId: row.id,
-              eventId: `assigned:${newCustomerId}:${Date.now()}`,
+              eventId: `assigned:${newUserId}:${Date.now()}`,
               eventType,
               tenantId: scope.tenantId!,
               trackingNo: row.trackingNo,
@@ -434,7 +443,7 @@ app.patch(
               type: 'customer_assigned',
               shipmentId: row.id,
               trackingNo: row.trackingNo,
-              customerId: newCustomerId,
+              customerId: newUserId,
               eventType,
               tenantId: scope.tenantId,
             }, c);
@@ -607,26 +616,27 @@ app.put(
     }
 
     const [shipment] = await db
-      .select({ id: shipments.id, trackingNo: shipments.trackingNo, customerId: shipments.customerId })
+      .select({ id: shipments.id, trackingNo: shipments.trackingNo, userId: shipments.userId })
       .from(shipments)
       .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
       .limit(1);
 
     if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
 
-    // If reassigning to a specific customer, verify they exist in the same tenant
+    let customerName: string | null = null;
     if (customerId) {
       const [cust] = await db
-        .select({ id: customers.id })
-        .from(customers)
-        .where(and(eq(customers.id, customerId), eq(customers.tenantId, scope.tenantId!)))
+      .select({ id: userTable.id, name: userTable.name })
+      .from(userTable)
+      .where(and(eq(userTable.id, customerId), eq(userTable.tenantId, scope.tenantId!), eq(userTable.role, 'customer')))
         .limit(1);
       if (!cust) return c.json({ error: 'Customer not found or does not belong to this tenant' }, 400);
+      customerName = cust.name;
     }
 
     await db
       .update(shipments)
-      .set({ customerId: customerId ?? null, updatedAt: new Date() })
+      .set({ userId: customerId ?? null, customerName, updatedAt: new Date() })
       .where(eq(shipments.id, id));
 
     await cacheDel(scope.tenantId!, `shipments:${id}`);
@@ -638,7 +648,7 @@ app.put(
       trackingNo: shipment.trackingNo,
       tenantId: scope.tenantId,
       changes: {
-        customerId: { from: shipment.customerId, to: customerId ?? null },
+        customerId: { from: shipment.userId, to: customerId ?? null },
       },
     }, c);
 

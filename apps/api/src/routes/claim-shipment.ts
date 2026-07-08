@@ -27,8 +27,9 @@ import { and, eq, type SQL } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db';
-import { customers, shipments, tenants } from '../db/schema';
+import { user, shipments, tenants } from '../db/schema';
 import { cacheDel, cacheDelPattern } from '../cache';
+import { auth } from '../auth';
 import { notificationQueue } from '../queues';
 import { statusToEventType } from '../notifications/event-map';
 import { sendEmail } from '../email/provider';
@@ -92,7 +93,7 @@ app.post('/claim', async (c) => {
       destination: shipments.destination,
       contactEmail: shipments.contactEmail,
       contactPhone: shipments.contactPhone,
-      customerId: shipments.customerId,
+      userId: shipments.userId,
       tenantId: shipments.tenantId,
     })
     .from(shipments)
@@ -118,7 +119,7 @@ app.post('/claim', async (c) => {
   }
 
   // Already linked to a customer — no-op
-  if (ship.customerId) {
+  if (ship.userId) {
     return c.json({
       data: {
         trackingNo: ship.trackingNo,
@@ -136,43 +137,46 @@ app.post('/claim', async (c) => {
   const matchedPhone = phoneMatch ? ship.contactPhone : undefined;
   const effectiveTenantId = tenantId ?? ship.tenantId;
 
-  // Find or create the customer
-  const customerConditions: ReturnType<typeof eq>[] = [
-    eq(customers.tenantId, effectiveTenantId),
-  ];
+  // Find or create the user (customer)
+  const matchConditions: ReturnType<typeof eq>[] = [eq(user.tenantId, effectiveTenantId)];
   if (matchedEmail) {
-    customerConditions.push(eq(customers.email, matchedEmail!));
+    matchConditions.push(eq(user.email, matchedEmail!));
   } else if (matchedPhone) {
-    customerConditions.push(eq(customers.phone, matchedPhone!));
+    matchConditions.push(eq(user.phone, matchedPhone!));
   }
 
-  let [customer] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(...customerConditions) as SQL | undefined)
+  let [matchedUser] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(...matchConditions) as SQL | undefined)
     .limit(1);
 
-  if (!customer) {
-    // Create a new customer record from the shipment contact info
-    [customer] = await db
-      .insert(customers)
-      .values({
+  if (!matchedUser) {
+    // Create a new user account from the shipment contact info
+    const randomPwd = crypto.randomUUID();
+    const created = await (auth.api as any).createUser({
+      body: {
+        email: matchedEmail ?? `${ship.trackingNo?.toLowerCase()}@claim.gajantraders.com`,
+        password: randomPwd,
         name: name ?? ship.contactEmail ?? ship.contactPhone ?? 'Claimed Customer',
-        email: matchedEmail ?? null,
-        phone: matchedPhone ?? null,
-        tenantId: effectiveTenantId,
-      })
-      .returning({ id: customers.id });
+        role: 'customer',
+        data: { tenantId: effectiveTenantId, phone: matchedPhone },
+      },
+    });
+    matchedUser = { id: created.user.id };
+  } else if (matchedPhone) {
+    // Update phone on existing user
+    await db.update(user).set({ phone: matchedPhone }).where(eq(user.id, matchedUser.id));
   }
 
-  if (!customer) {
-    return c.json({ error: 'Failed to create or find customer' }, 500);
+  if (!matchedUser) {
+    return c.json({ error: 'Failed to create or find user account' }, 500);
   }
 
-  // Link the shipment to the customer
+  // Link the shipment to the user
   await db
     .update(shipments)
-    .set({ customerId: customer.id, updatedAt: new Date() })
+    .set({ userId: matchedUser.id, customerName: name, updatedAt: new Date() })
     .where(eq(shipments.id, ship.id));
 
   // Invalidate caches
@@ -187,7 +191,7 @@ app.post('/claim', async (c) => {
       const customerName = name ?? ship.contactEmail ?? ship.contactPhone ?? undefined;
       await notificationQueue.add('notify', {
         shipmentId: ship.id,
-        eventId: `claimed:${customer.id}:${Date.now()}`,
+        eventId: `claimed:${matchedUser.id}:${Date.now()}`,
         eventType,
         tenantId: effectiveTenantId,
         trackingNo: ship.trackingNo,
@@ -205,7 +209,7 @@ app.post('/claim', async (c) => {
         type: 'customer_claimed',
         shipmentId: ship.id,
         trackingNo: ship.trackingNo,
-        customerId: customer.id,
+        userId: matchedUser.id,
         eventType,
         tenantId: effectiveTenantId,
       });
@@ -238,7 +242,7 @@ app.post('/claim/init', async (c) => {
       id: shipments.id,
       trackingNo: shipments.trackingNo,
       contactEmail: shipments.contactEmail,
-      customerId: shipments.customerId,
+      userId: shipments.userId,
       tenantId: shipments.tenantId,
     })
     .from(shipments)
@@ -246,7 +250,7 @@ app.post('/claim/init', async (c) => {
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
-  if (ship.customerId) return c.json({ error: 'Shipment already claimed' }, 409);
+  if (ship.userId) return c.json({ error: 'Shipment already claimed' }, 409);
 
   const email = ship.contactEmail;
   if (!email) return c.json({ error: 'No contact email on record for this shipment' }, 400);
@@ -295,7 +299,7 @@ app.post('/claim/verify-otp', async (c) => {
       destination: shipments.destination,
       contactEmail: shipments.contactEmail,
       contactPhone: shipments.contactPhone,
-      customerId: shipments.customerId,
+      userId: shipments.userId,
       tenantId: shipments.tenantId,
     })
     .from(shipments)
@@ -303,35 +307,37 @@ app.post('/claim/verify-otp', async (c) => {
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
-  if (ship.customerId) return c.json({ error: 'Shipment already claimed' }, 409);
+  if (ship.userId) return c.json({ error: 'Shipment already claimed' }, 409);
 
-  // Find or create customer by contact email
+  // Find or create user by contact email
   const effectiveTenantId = ship.tenantId;
   const matchedEmail = ship.contactEmail;
 
-  let [customer] = await db
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.tenantId, effectiveTenantId), eq(customers.email, matchedEmail!)))
+  let [matchedUser] = await db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(and(eq(user.tenantId, effectiveTenantId), eq(user.email, matchedEmail!)))
     .limit(1);
 
-  if (!customer) {
-    [customer] = await db
-      .insert(customers)
-      .values({
+  if (!matchedUser) {
+    const randomPwd = crypto.randomUUID();
+    const created = await (auth.api as any).createUser({
+      body: {
+        email: matchedEmail ?? 'claimed@claim.gajantraders.com',
+        password: randomPwd,
         name: matchedEmail ?? 'Claimed Customer',
-        email: matchedEmail ?? null,
-        phone: ship.contactPhone ?? null,
-        tenantId: effectiveTenantId,
-      })
-      .returning({ id: customers.id });
+        role: 'customer',
+        data: { tenantId: effectiveTenantId, phone: ship.contactPhone },
+      },
+    });
+    matchedUser = { id: created.user.id, name: created.user.name };
   }
 
-  if (!customer) return c.json({ error: 'Failed to create or find customer' }, 500);
+  if (!matchedUser) return c.json({ error: 'Failed to create or find user account' }, 500);
 
   await db
     .update(shipments)
-    .set({ customerId: customer.id, updatedAt: new Date() })
+    .set({ userId: matchedUser.id, customerName: matchedUser.name, updatedAt: new Date() })
     .where(eq(shipments.id, ship.id));
 
   await cacheDel(effectiveTenantId, `shipments:${ship.id}`);
@@ -343,7 +349,7 @@ app.post('/claim/verify-otp', async (c) => {
     type: 'customer_claimed_otp',
     shipmentId: ship.id,
     trackingNo: ship.trackingNo,
-    customerId: customer.id,
+    userId: matchedUser.id,
     tenantId: effectiveTenantId,
   });
 
