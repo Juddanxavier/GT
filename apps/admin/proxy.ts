@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// ponytail: proxy disabled — client-side auth in dashboard layout handles protection
-export function proxy() {
+const PUBLIC_ROUTES = ['/login', '/unauthorized'];
+
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return NextResponse.next();
+  }
+
+  const token = request.cookies.get('better-auth.session_token');
+  if (!token?.value) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)'],
 };

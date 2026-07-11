@@ -9,6 +9,7 @@ import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Se
 import { authClient } from '@/lib/auth-client';
 import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
 import { AddressForm, type AddressData } from '@/components/address-form';
+import { useToast } from '@/components/toast';
 
 type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
@@ -33,6 +34,7 @@ export default function UsersPage() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useBranches();
   const { mutateAsync: updateUser } = useUpdateUser();
@@ -127,7 +129,7 @@ export default function UsersPage() {
       }
       setEditTarget(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to update user');
+      toast('error', 'Failed to update user', e instanceof Error ? e.message : undefined);
     }
     setEditSaving(false);
   }
@@ -148,7 +150,7 @@ export default function UsersPage() {
       setBanTarget(null);
       queryClient.invalidateQueries({ queryKey: ['users'] });
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed');
+      toast('error', 'Failed to ban user', e instanceof Error ? e.message : undefined);
     }
     setBanSaving(false);
   }
@@ -174,7 +176,7 @@ export default function UsersPage() {
       await deleteUser(deleteTarget.id);
       setDeleteTarget(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to delete user');
+      toast('error', 'Failed to delete user', e instanceof Error ? e.message : undefined);
     }
     setDeleteSaving(false);
   }

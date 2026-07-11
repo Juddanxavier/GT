@@ -9,10 +9,6 @@ import {
   TrendingDown, Sunrise, Sun, Moon, LogIn, Bell, Mail,
 } from 'lucide-react';
 import { Button, Card, Badge, Chip, Heading, Paragraph, Select, ListBox } from '@heroui/react';
-import {
-  PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts';
 import { authClient } from '@/lib/auth-client';
 import { api, ApiError } from '@/lib/api';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
@@ -149,6 +145,60 @@ function KpiCard({
   return <div className={cls}>{inner}</div>;
 }
 
+function MiniBarChart({ data, height = 120 }: { data: { date: string; shipments: number }[]; height?: number }) {
+  const max = Math.max(...data.map(d => d.shipments), 1);
+  return (
+    <div className="flex items-end gap-1.5" style={{ height }}>
+      {data.map((d) => {
+        const barH = (d.shipments / max) * 100;
+        const date = new Date(d.date + 'T00:00:00');
+        const label = `${date.getDate()}/${date.getMonth() + 1}`;
+        return (
+          <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5 h-full justify-end">
+            <span className="text-[9px] font-medium text-foreground leading-tight">{d.shipments}</span>
+            <div className="w-full rounded-t-[3px] bg-accent transition-all min-h-[2px]" style={{ height: `${barH}%` }} />
+            <span className="text-[8px] text-muted leading-tight">{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatusLegend({ data }: { data: { name: string; value: number }[] }) {
+  const colors = ['var(--accent)', 'var(--color-blue-500)', 'var(--color-amber-500)', 'var(--color-gray-400)', 'var(--color-red-500)', 'var(--color-green-500)'];
+  return (
+    <div className="space-y-2">
+      {data.map((item, i) => (
+        <div key={item.name} className="flex items-center justify-between py-0.5">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colors[i % colors.length] }} />
+            <span className="text-xs text-muted">{item.name}</span>
+          </div>
+          <span className="text-xs font-semibold text-foreground">{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TrendStat({ label, value, trend: t, sub }: { label: string; value: string; trend?: 'up' | 'down'; sub?: string }) {
+  return (
+    <div className="rounded-xl bg-surface border border-border p-4">
+      <p className="text-[11px] text-muted mb-1">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xl font-bold text-foreground">{value}</span>
+        {t && (
+          <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${t === 'up' ? 'text-success' : 'text-danger'}`}>
+            {t === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            {sub}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   usePageTitle('Dashboard');
   const router = useRouter();
@@ -277,9 +327,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
   const [revRange, setRevRange] = useState<'3m' | '6m' | '12m' | 'all'>('12m');
   const t = stats.total!;
   const superRevenueData = stats.revenuePerMonth ?? [];
-  const superTotalActive = t.shipments.inTransit + t.shipments.deliveredToday + t.shipments.exceptions;
   const supDays = { '1w': 7, '2w': 14, '1m': 30 }[chartRange] ?? 14;
-  const xTickFontSize = chartRange === '1m' ? 8 : 10;
   const filteredPerDay = fillDays(stats.perDay ?? [], supDays);
   const revMonths = { '3m': 3, '6m': 6, '12m': 12, 'all': Infinity }[revRange] ?? 12;
   const filteredRevenue = superRevenueData.slice(-revMonths);
@@ -318,43 +366,53 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
     { icon: <TrendingUp size={18} />, label: 'Avg. Conversion', value: `${t.quotations.conversionRate}%`, sublabel: 'quote-to-ship', accent: 'amber' as const, trend: 'neutral' as const, trendValue: '—' },
   ];
 
+  const supTotalActive = t.shipments.inTransit + t.shipments.deliveredToday + t.shipments.exceptions;
+  const revMax = Math.max(...filteredRevenue.map(r => r.revenue), 1);
+
   return (
-    <div className="w-full space-y-6">
-      {/* Hero Greeting */}
-      <div className="relative overflow-hidden rounded-xl bg-surface border border-border p-6 sm:p-8">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center bg-no-repeat opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/40" />
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-accent/10 text-accent">
-                <GreetingIcon />
-              </div>
-              <div>
-                <Heading level={1} weight="bold" className="text-foreground text-xl sm:text-2xl">{timeGreeting()}, {isTenantAdmin ? 'Admin' : 'Super Admin'}</Heading>
-                <Paragraph color="muted" className="text-sm flex items-center gap-2">
-                  <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-                  <Chip color="accent" variant="soft" size="sm" className="capitalize">{isTenantAdmin ? 'admin' : 'super admin'}</Chip>
-                </Paragraph>
+    <div className="w-full space-y-5">
+      <div className="relative overflow-hidden rounded-2xl border border-border">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-surface/80 via-surface/50 to-surface/20" />
+        <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0 backdrop-blur-sm">
+              <GreetingIcon />
+            </div>
+            <div>
+              <Heading level={1} weight="bold" className="text-foreground text-lg">{timeGreeting()}, <span className="text-accent">{isTenantAdmin ? 'Admin' : 'Super Admin'}</span></Heading>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted flex-wrap">
+                <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                <span className="opacity-30">·</span>
+                <Chip color="accent" variant="soft" size="sm" className="capitalize">{isTenantAdmin ? 'admin' : 'super admin'}</Chip>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button isIconOnly variant="ghost" onPress={() => onRetry()}><RefreshCw size={16} /></Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-lg font-bold text-foreground">{t.shipments.inTransit}</p>
+                <p className="text-[10px] text-muted">in transit</p>
+              </div>
+              <div className="w-px h-8 bg-border/60" />
+              <div className="text-right">
+                <p className="text-lg font-bold text-foreground">{fmtCurrency(t.invoices.revenueThisMonth)}</p>
+                <p className="text-[10px] text-muted">this month</p>
+              </div>
+            </div>
+            <Button isIconOnly variant="ghost" size="sm" onPress={() => onRetry()}><RefreshCw size={14} /></Button>
           </div>
         </div>
       </div>
 
-      {/* Overview Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {supCards.map((c) => (
           <KpiCard key={c.label} icon={c.icon} label={c.label} value={c.value} sublabel={c.sublabel} accent={c.accent} trend={c.trend} trendValue={c.trendValue} />
         ))}
       </div>
 
-      {/* Bento Grid — Row 1: Shipments Chart + Global Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <Card className="lg:col-span-7">
           <div className="flex items-center justify-between px-6 pt-5 pb-2">
             <Card.Title className="text-base font-semibold">Shipments — {isTenantAdmin ? 'All Branches' : 'All Tenants'}</Card.Title>
             <Select.Root
@@ -379,27 +437,14 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
           </div>
           <Card.Content>
             {filteredPerDay.length > 0 ? (
-              <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={filteredPerDay} barCategoryGap="25%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeWidth={1} vertical={false} />
-                  <XAxis dataKey="date" interval={0} tick={{ fontSize: xTickFontSize, fill: 'var(--muted)' }} axisLine={false} tickLine={false} tickFormatter={(v) => { const d = new Date(v + 'T00:00:00'); return `${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`; }} />
-                  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    cursor={{ fill: 'var(--accent)', fillOpacity: 0.08 }}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
-                    labelStyle={{ color: 'var(--muted)', fontSize: '11px' }}
-                    // @ts-expect-error Recharts v3 Tooltip formatter type incompatibility
-                    formatter={(n: number) => [n.toString(), 'Shipments']}
-                  />
-                  <Bar dataKey="shipments" fill="var(--accent)" radius={[999, 999, 0, 0]} maxBarSize={32} animationDuration={600} animationEasing="ease-out" />
-                </BarChart>
-              </ResponsiveContainer>
+              <MiniBarChart data={filteredPerDay} height={140} />
             ) : (
-              <div className="flex items-center justify-center h-[210px] text-muted text-sm">No shipment data yet</div>
+              <div className="flex items-center justify-center h-[140px] text-muted text-sm">No shipment data yet</div>
             )}
           </Card.Content>
         </Card>
-        <div className="space-y-4">
+
+        <div className="lg:col-span-5 space-y-4">
           <Card>
             <Card.Header className="pb-0">
               <Card.Title className="text-sm font-semibold">Global Summary</Card.Title>
@@ -438,158 +483,117 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
         </div>
       </div>
 
-      {/* Bento Grid — Row 2: Per-Tenant + Revenue stacked | Health + Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-          <Card.Header className="pb-0">
-            <Card.Title className="text-base font-semibold">{isTenantAdmin ? 'Per-Branch' : 'Per-Tenant'}</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-muted border-b border-border">
-                    <th className="pb-3 font-medium">{isTenantAdmin ? 'Branch' : 'Tenant'}</th>
-                    <th className="pb-3 font-medium text-right">Shipments</th>
-                    <th className="pb-3 font-medium text-right">In Transit</th>
-                    <th className="pb-3 font-medium text-right">Delivered Today</th>
-                    <th className="pb-3 font-medium text-right">Bill Amount</th>
-                    {!isTenantAdmin && <th className="pb-3 font-medium text-right">Branches</th>}
-                    {isTenantAdmin && <th className="pb-3 font-medium text-right">Customers</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(isTenantAdmin ? (stats.perBranch ?? []) : (stats.perTenant ?? [])).map((row) => {
-                    if (isTenantAdmin) {
-                      const pb = row as PerBranch;
-                      return (
-                        <tr key={pb.branchId} className="border-b border-border hover:bg-muted/30 transition-colors">
-                          <td className="py-3 font-medium">{pb.branchName}</td>
-                          <td className="py-3 text-right">{pb.shipments.total}</td>
-                          <td className="py-3 text-right text-warning font-medium">{pb.shipments.inTransit}</td>
-                          <td className="py-3 text-right text-success font-medium">{pb.shipments.deliveredToday}</td>
-                          <td className="py-3 text-right">{fmtCurrency(pb.invoices.revenueTotal)}</td>
-                          <td className="py-3 text-right">{pb.customers.active}/{pb.customers.total}</td>
-                        </tr>
-                      );
-                    }
-                    const pt = row as PerTenant;
+      <Card>
+        <Card.Header className="pb-0">
+          <Card.Title className="text-base font-semibold">{isTenantAdmin ? 'Per-Branch' : 'Per-Tenant'}</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted border-b border-border">
+                  <th className="pb-3 font-medium">{isTenantAdmin ? 'Branch' : 'Tenant'}</th>
+                  <th className="pb-3 font-medium text-right">Shipments</th>
+                  <th className="pb-3 font-medium text-right">In Transit</th>
+                  <th className="pb-3 font-medium text-right">Delivered Today</th>
+                  <th className="pb-3 font-medium text-right">Bill Amount</th>
+                  {!isTenantAdmin && <th className="pb-3 font-medium text-right">Branches</th>}
+                  {isTenantAdmin && <th className="pb-3 font-medium text-right">Customers</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {(isTenantAdmin ? (stats.perBranch ?? []) : (stats.perTenant ?? [])).map((row) => {
+                  if (isTenantAdmin) {
+                    const pb = row as PerBranch;
                     return (
-                      <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
-                        <td className="py-3 font-medium">{pt.tenantName}</td>
-                        <td className="py-3 text-right">{pt.shipments.total}</td>
-                        <td className="py-3 text-right text-warning font-medium">{pt.shipments.inTransit}</td>
-                        <td className="py-3 text-right text-success font-medium">{pt.shipments.deliveredToday}</td>
-                        <td className="py-3 text-right">{fmtCurrency(pt.invoices.revenueTotal)}</td>
-                        <td className="py-3 text-right">{pt.branches.total}</td>
+                      <tr key={pb.branchId} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="py-3 font-medium">{pb.branchName}</td>
+                        <td className="py-3 text-right">{pb.shipments.total}</td>
+                        <td className="py-3 text-right text-warning font-medium">{pb.shipments.inTransit}</td>
+                        <td className="py-3 text-right text-success font-medium">{pb.shipments.deliveredToday}</td>
+                        <td className="py-3 text-right">{fmtCurrency(pb.invoices.revenueTotal)}</td>
+                        <td className="py-3 text-right">{pb.customers.active}/{pb.customers.total}</td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card.Content>
-        </Card>
-        <Card>
-          <div className="flex items-center justify-between px-6 pt-5 pb-2">
-            <div>
-              <Card.Title className="text-base font-semibold">Bill Amount — {isTenantAdmin ? 'All Branches' : 'All Tenants'}</Card.Title>
-              <p className="text-2xl font-bold text-foreground mt-1">{fmtCurrency(t.invoices.revenueTotal)}</p>
-            </div>
-            <Select.Root
-                selectedKey={revRange}
-                onSelectionChange={(k) => setRevRange(k as '3m' | '6m' | '12m' | 'all')}
-                className="w-38"
-              >
-                <Select.Trigger className="h-10 rounded-xl border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
-                  <Select.Value />
-                  <Select.Indicator>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </Select.Indicator>
-                </Select.Trigger>
-                <Select.Popover className="min-w-[160px] rounded-xl border border-border bg-surface p-1 shadow-lg">
-                  <ListBox>
-                    <ListBox.Item id="3m" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 3 Months</ListBox.Item>
-                    <ListBox.Item id="6m" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 6 Months</ListBox.Item>
-                    <ListBox.Item id="12m" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 12 Months</ListBox.Item>
-                    <ListBox.Item id="all" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">All Time</ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select.Root>
+                  }
+                  const pt = row as PerTenant;
+                  return (
+                    <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
+                      <td className="py-3 font-medium">{pt.tenantName}</td>
+                      <td className="py-3 text-right">{pt.shipments.total}</td>
+                      <td className="py-3 text-right text-warning font-medium">{pt.shipments.inTransit}</td>
+                      <td className="py-3 text-right text-success font-medium">{pt.shipments.deliveredToday}</td>
+                      <td className="py-3 text-right">{fmtCurrency(pt.invoices.revenueTotal)}</td>
+                      <td className="py-3 text-right">{pt.branches.total}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <Card.Content className="pt-1">
-            {superRevenueData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={filteredRevenue} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="revSpark" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeWidth={1} vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} tickFormatter={(n: number) => `₹${(n / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    cursor={{ stroke: 'var(--accent)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}
-                    labelStyle={{ color: 'var(--muted)', fontSize: '11px' }}
-                    // @ts-expect-error Recharts v3 Tooltip formatter type incompatibility
-                    formatter={(n: number) => [`₹${n.toLocaleString('en-IN')}`, 'Bill Amount']}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={1.5} fill="url(#revSpark)" dot={false} activeDot={{ r: 4, fill: 'var(--accent)' }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[280px] text-muted text-sm">No revenue data yet</div>
-            )}
+        </Card.Content>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card>
+          <Card.Header className="pb-0">
+            <Card.Title className="text-sm font-semibold">Revenue</Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted">This Month</span>
+              <span className="text-sm font-bold text-foreground">{fmtCurrency(t.invoices.revenueThisMonth)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted">All Time</span>
+              <span className="text-sm font-bold text-foreground">{fmtCurrency(t.invoices.revenueTotal)}</span>
+            </div>
+            <div className="pt-2 border-t border-border space-y-1.5">
+              {filteredRevenue.slice(-6).map((r) => (
+                <div key={r.month} className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted w-10 shrink-0">{r.month}</span>
+                  <div className="flex-1 h-4 rounded bg-muted overflow-hidden">
+                    <div className="h-full rounded bg-accent/70" style={{ width: `${(r.revenue / revMax) * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] font-medium text-foreground w-16 text-right">{fmtCurrency(r.revenue.toString())}</span>
+                </div>
+              ))}
+            </div>
           </Card.Content>
         </Card>
-        </div>
-        <div className="space-y-4">
-          <Card>
-            <Card.Header className="pb-0">
-              <Card.Title className="text-sm font-semibold">Health Summary</Card.Title>
-            </Card.Header>
-            <Card.Content className="space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">In Transit</span>
-                <span className="font-semibold text-warning">{t.shipments.inTransit}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Delivered Today</span>
-                <span className="font-semibold text-success">{t.shipments.deliveredToday}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Exceptions</span>
-                <span className="font-semibold text-danger">{t.shipments.exceptions}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
-                <span className="text-muted">Active Shipments</span>
-                <span className="font-semibold text-foreground">{superTotalActive}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted">Bill Amount This Month</span>
-                <span className="font-semibold text-foreground">{fmtCurrency(t.invoices.revenueThisMonth)}</span>
-              </div>
-            </Card.Content>
-          </Card>
-          <ActionCard router={router} onRetry={onRetry} />
-        </div>
+
+        <Card>
+          <Card.Header className="pb-0">
+            <Card.Title className="text-sm font-semibold">Health Summary</Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">In Transit</span>
+              <span className="font-semibold text-warning">{t.shipments.inTransit}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">Delivered Today</span>
+              <span className="font-semibold text-success">{t.shipments.deliveredToday}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">Exceptions</span>
+              <span className="font-semibold text-danger">{t.shipments.exceptions}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
+              <span className="text-muted">Active Shipments</span>
+              <span className="font-semibold text-foreground">{supTotalActive}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">Bill Amount This Month</span>
+              <span className="font-semibold text-foreground">{fmtCurrency(t.invoices.revenueThisMonth)}</span>
+            </div>
+          </Card.Content>
+        </Card>
+
+        <ActionCard router={router} onRetry={onRetry} />
       </div>
 
       <ActivityLog />
-    </div>
-  );
-}
-
-function SuperStatCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
-  return (
-    <div className="rounded-xl bg-gradient-to-br from-accent/10 to-accent/5 border-t-2 border-t-accent p-4">
-      <p className="text-xs font-medium text-muted uppercase tracking-wider">{label}</p>
-      <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-      <p className="text-xs text-muted/60 mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -612,7 +616,6 @@ function OperationalDashboard({
   }, [currencySymbol]);
   const curSym = currencySymbol || '₹';
   const [chartRange, setChartRange] = useState<'1w' | '2w' | '1m'>('2w');
-  const xTickFontSize = chartRange === '1m' ? 8 : 10;
 
   const s = stats?.shipments ?? null;
   const areaData = useMemo(() => {
@@ -683,16 +686,6 @@ function OperationalDashboard({
 
   const shipmentsData = s!;
   const totalActive = shipmentsData.inTransit + shipmentsData.outForDelivery + shipmentsData.deliveredToday;
-  const statusValues = [
-    shipmentsData.deliveredToday,
-    shipmentsData.outForDelivery,
-    shipmentsData.inTransit,
-    shipmentsData.pending,
-    shipmentsData.exceptions,
-  ];
-  const statusColors: Array<'green' | 'blue' | 'amber' | 'gray' | 'red'> = [
-    'green', 'blue', 'amber', 'gray', 'red',
-  ];
 
   const donutData = Object.entries(shipmentsData.byStatus)
     .filter(([, v]) => v > 0)
@@ -704,16 +697,6 @@ function OperationalDashboard({
   }));
 
   const branchData = (shipmentsData.byBranch ?? []);
-
-  const customerData = (() => {
-    const active = stats.customers.active;
-    const total = stats.customers.total;
-    const inactive = total - active;
-    return [
-      { name: 'Active', value: active, color: 'bg-green-500' },
-      { name: 'Inactive', value: Math.max(inactive, 0), color: 'bg-gray-500' },
-    ];
-  })();
 
   const trend = (pct: number | null): 'up' | 'down' | 'neutral' => {
     if (pct === null) return 'neutral';
@@ -754,160 +737,145 @@ function OperationalDashboard({
     ];
   })();
 
+  const revMax = Math.max(...revenueData.map(r => r.revenue), 1);
+
   return (
-    <div className="w-full space-y-6">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-surface to-primary/[0.02] border border-border p-6 sm:p-8">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
+    <div className="w-full space-y-5">
+      <div className="relative overflow-hidden rounded-2xl border border-border">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-surface/80 via-surface/50 to-surface/20" />
+        <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0 backdrop-blur-sm">
               <GreetingIcon />
-              <Heading level={1} weight="bold" className="text-foreground">{timeGreeting()}, {userName}</Heading>
-              <Chip color="accent" variant="soft" size="sm" className="capitalize hidden sm:inline-flex">
-                {role.replace('-', ' ')}
-              </Chip>
             </div>
-            <Paragraph className="text-sm text-muted flex items-center gap-3">
-              <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-              {isStaff && branchName && (
-                <>
-                  <span className="opacity-40">·</span>
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-xs">{branchName}</span>
-                </>
-              )}
-              {isTenantAdmin && branchFilter && (
-                <>
-                  <span className="opacity-40">·</span>
-                  <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs">{branches.find(b => b.id === branchFilter)?.name ?? 'Filtered'}</span>
-                </>
-              )}
-            </Paragraph>
+            <div>
+              <Heading level={1} weight="bold" className="text-foreground text-lg">{timeGreeting()}, <span className="text-accent">{userName}</span></Heading>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted flex-wrap">
+                <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                <span className="opacity-30">·</span>
+                <Chip color="accent" variant="soft" size="sm" className="capitalize">{role.replace('-', ' ')}</Chip>
+                {isStaff && branchName && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-muted/50 text-[10px]">{branchName}</span>
+                )}
+                {isTenantAdmin && branchFilter && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-[10px]">{branches.find(b => b.id === branchFilter)?.name ?? 'Filtered'}</span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {isTenantAdmin && branches.length > 0 && (
-              <select
-                value={branchFilter}
-                onChange={(e) => onBranchChange(e.target.value)}
-                className="h-9 w-40 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary text-foreground"
-              >
-                <option value="">All Branches</option>
-                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            )}
-            <Button isIconOnly variant="ghost" onPress={() => onRetry()}><RefreshCw size={16} /></Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-lg font-bold text-foreground">{shipmentsData.inTransit}</p>
+                <p className="text-[10px] text-muted">in transit</p>
+              </div>
+              <div className="w-px h-8 bg-border/60" />
+              <div className="text-right">
+                <p className="text-lg font-bold text-foreground">{fmtCurrency(stats.invoices.revenueThisMonth)}</p>
+                <p className="text-[10px] text-muted">this month</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isTenantAdmin && branches.length > 0 && (
+                <select
+                  value={branchFilter}
+                  onChange={(e) => onBranchChange(e.target.value)}
+                  className="h-8 text-xs rounded-lg border border-border bg-background/80 backdrop-blur-sm px-2 outline-none transition-colors focus:border-primary text-foreground"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+              <Button isIconOnly variant="ghost" size="sm" onPress={() => onRetry()}><RefreshCw size={14} /></Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map((c) => (
           <KpiCard key={c.label} icon={c.icon} label={c.label} value={c.value} accent={c.accent} href={c.href} trend={c.trend} trendValue={c.trendValue} />
         ))}
       </div>
 
-            {/* Row 1 — Distribution, Carriers, Bill Amount */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm font-semibold">Status</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            {donutData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={210}>
-                <PieChart>
-                  <Pie data={donutData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                    {donutData.map((_, i) => (
-                      <Cell key={i} fill={`var(--accent)`} opacity={1 - i * 0.12} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
-                    labelStyle={{ color: 'var(--foreground)' }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: '10px', color: 'var(--foreground)' }}
-                    formatter={(value: string) => <span style={{ color: 'var(--foreground)' }}>{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[210px] text-muted text-sm">No status data yet</div>
-            )}
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm font-semibold">By Carrier</Card.Title>
-            <Card.Description className="text-xs text-muted">Shipments per carrier</Card.Description>
-          </Card.Header>
-          <Card.Content>
-            {carrierData.length > 0 ? (
-              <div className="space-y-2.5 h-52">
-                {carrierData.map((c: { name: string; value: number }, i: number) => {
-                  const maxVal = Math.max(...carrierData.map((x: { value: number }) => x.value), 1);
-                  const pct = (c.value / maxVal) * 100;
-                  return (
-                    <div key={c.name}>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-medium text-foreground truncate">{c.name}</span>
-                        <span className="text-muted">{c.value}</span>
+        <div className="space-y-4">
+          <Card>
+            <Card.Header>
+              <Card.Title className="text-sm font-semibold">Status</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              {donutData.length > 0 ? (
+                <StatusLegend data={donutData} />
+              ) : (
+                <div className="flex items-center justify-center h-[120px] text-muted text-sm">No status data yet</div>
+              )}
+            </Card.Content>
+          </Card>
+          <Card>
+            <Card.Header className="pb-0">
+              <Card.Title className="text-sm font-semibold">By Carrier</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              {carrierData.length > 0 ? (
+                <div className="space-y-2">
+                  {carrierData.map((c: { name: string; value: number }) => {
+                    const maxVal = Math.max(...carrierData.map((x: { value: number }) => x.value), 1);
+                    const pct = (c.value / maxVal) * 100;
+                    return (
+                      <div key={c.name}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-medium text-foreground truncate">{c.name}</span>
+                          <span className="text-muted">{c.value}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'var(--accent)' }} />
+                        </div>
                       </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `var(--accent)` }} />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted text-xs">No carrier data yet</div>
+              )}
+            </Card.Content>
+          </Card>
+          {branchData.length > 0 && (
+            <Card>
+              <Card.Header className="pb-0">
+                <Card.Title className="text-sm font-semibold">By Branch</Card.Title>
+              </Card.Header>
+              <Card.Content>
+                <div className="space-y-2">
+                  {branchData.slice(0, 6).map((b: { branch: string; count: number }) => {
+                    const maxVal = Math.max(...branchData.map((x: { count: number }) => x.count), 1);
+                    const pct = (b.count / maxVal) * 100;
+                    return (
+                      <div key={b.branch}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-medium text-foreground truncate">{b.branch}</span>
+                          <span className="text-muted">{b.count}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'var(--accent)' }} />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[210px] text-muted text-sm">No carrier data yet</div>
-            )}
-          </Card.Content>
-        </Card>
+                    );
+                  })}
+                </div>
+              </Card.Content>
+            </Card>
+          )}
+        </div>
 
-        <Card>
-          <Card.Header className="pb-0">
-            <Card.Title className="text-sm font-semibold">Bill Amount</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            {revenueData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={80}>
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Tooltip
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
-                    labelStyle={{ color: 'var(--foreground)' }}
-                    // @ts-expect-error Recharts v3 Tooltip formatter type incompatibility
-                    formatter={(n: number) => `${curSym}${n.toLocaleString()}`}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={1.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 3, fill: 'var(--accent)' }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[80px] text-muted text-sm">No revenue data yet</div>
-            )}
-          </Card.Content>
-        </Card>
-      </div>
-
-      {/* Row 2 — Shipments Trend, Weekly Comparison, Branch/Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Shipments Trend */}
-        <Card>
+        <Card className="lg:col-span-1">
           <div className="flex items-center justify-between px-6 pt-5 pb-2">
             <Card.Title className="text-sm font-semibold">Shipments</Card.Title>
             <Select.Root
               selectedKey={chartRange}
               onSelectionChange={(k) => setChartRange(k as '1w' | '2w' | '1m')}
-              className="w-38"
+              className="w-32"
             >
               <Select.Trigger className="h-10 rounded-xl border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
                 <Select.Value />
@@ -916,113 +884,72 @@ function OperationalDashboard({
                 </Select.Indicator>
               </Select.Trigger>
               <Select.Popover className="min-w-[160px] rounded-xl border border-border bg-surface p-1 shadow-lg">
-                  <ListBox>
-                    <ListBox.Item id="1w" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 7 Days</ListBox.Item>
-                    <ListBox.Item id="2w" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 14 Days</ListBox.Item>
-                    <ListBox.Item id="1m" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 30 Days</ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="1w" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 7 Days</ListBox.Item>
+                  <ListBox.Item id="2w" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 14 Days</ListBox.Item>
+                  <ListBox.Item id="1m" className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">Last 30 Days</ListBox.Item>
+                </ListBox>
+              </Select.Popover>
             </Select.Root>
           </div>
           <Card.Content>
             {areaData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={210}>
-                <AreaChart data={areaData}>
-                  <defs>
-                    <linearGradient id="shipGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" interval={0} tick={{ fontSize: xTickFontSize, fill: 'var(--muted)' }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} tickFormatter={(v) => { const d = new Date(v + 'T00:00:00'); return `${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`; }} />
-                  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
-                    labelStyle={{ color: 'var(--foreground)' }}
-                    // @ts-expect-error Recharts v3 Tooltip formatter type incompatibility
-                    formatter={(n: number) => n.toString()}
-                  />
-                  <Area type="monotone" dataKey="shipments" stroke="var(--accent)" strokeWidth={2} fill="url(#shipGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <MiniBarChart data={areaData} height={150} />
             ) : (
-              <div className="flex items-center justify-center h-[210px] text-muted text-sm">No shipment data yet</div>
+              <div className="flex items-center justify-center h-[150px] text-muted text-sm">No shipment data yet</div>
             )}
           </Card.Content>
         </Card>
 
-        {/* Branch Distribution (tenant-admin) / Customer Overview (staff) */}
-        {isTenantAdmin && !branchFilter ? (
+        <div className="space-y-4">
           <Card>
             <Card.Header className="pb-0">
-              <Card.Title className="text-sm font-semibold">Branches</Card.Title>
+              <Card.Title className="text-sm font-semibold">Bill Amount</Card.Title>
             </Card.Header>
-            <Card.Content>
-              {branchData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={210}>
-                  <PieChart>
-                    <Pie data={branchData.map((b: { branch: string; count: number }) => ({ name: b.branch, value: b.count }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                      {branchData.map((_, i: number) => (
-                        <Cell key={i} fill={`var(--accent)`} opacity={1 - i * 0.12} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
-                      labelStyle={{ color: 'var(--foreground)' }}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: '10px', color: 'var(--foreground)' }}
-                      formatter={(value: string) => <span style={{ color: 'var(--foreground)' }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[210px] text-muted text-sm">No branch distribution data yet</div>
-              )}
+            <Card.Content className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 rounded-xl bg-success/10 border border-success/20">
+                  <p className="text-lg font-bold text-success">{fmtCurrency(stats.invoices.revenueThisMonth)}</p>
+                  <p className="text-xs text-muted mt-1">This Month</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-accent/10 border border-accent/20">
+                  <p className="text-lg font-bold text-accent">{fmtCurrency(stats.invoices.revenueTotal)}</p>
+                  <p className="text-xs text-muted mt-1">Bill Amount</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 rounded-xl bg-warning/10 border border-warning/20">
+                  <p className="text-lg font-bold text-warning">{stats.quotations.conversionRate}%</p>
+                  <p className="text-xs text-muted mt-1">Quote Conversion</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-default/10 border border-default/20">
+                  <p className="text-lg font-bold text-foreground">{stats.invoices.total}</p>
+                  <p className="text-xs text-muted mt-1">Billable Shipments</p>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-border space-y-1.5">
+                {revenueData.slice(-4).map((r) => (
+                  <div key={r.month} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted w-8 shrink-0">{r.month}</span>
+                    <div className="flex-1 h-4 rounded bg-muted overflow-hidden">
+                      <div className="h-full rounded bg-accent/70" style={{ width: `${(r.revenue / revMax) * 100}%` }} />
+                    </div>
+                    <span className="text-[10px] font-medium text-foreground w-16 text-right">{curSym}{(r.revenue / 1000).toFixed(0)}k</span>
+                  </div>
+                ))}
+              </div>
             </Card.Content>
           </Card>
-        ) : (
-          <Card>
-            <Card.Header className="pb-0">
-              <Card.Title className="text-sm font-semibold">Customers</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              {customerData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={210}>
-                  <PieChart>
-                    <Pie data={customerData.map((c: { name: string; value: number }) => ({ name: c.name, value: c.value }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                      {customerData.map((_, i: number) => (
-                        <Cell key={i} fill={i === 0 ? 'var(--accent)' : 'var(--color-gray-400)'} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
-                      labelStyle={{ color: 'var(--foreground)' }}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: '10px', color: 'var(--foreground)' }}
-                      formatter={(value: string) => <span style={{ color: 'var(--foreground)' }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[210px] text-muted text-sm">No customer data yet</div>
-              )}
-            </Card.Content>
-          </Card>
-        )}
+        </div>
       </div>
 
-      {/* Row 3 — Performance, Shipment Health, Bill Amount KPIs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Performance Metrics */}
         <Card>
           <Card.Header className="pb-0">
             <Card.Title className="text-sm font-semibold">Performance</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-4">
-            {performanceMetrics.map((metric, idx) => (
+            {performanceMetrics.map((metric) => (
               <div key={metric.label}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-medium text-muted">{metric.label}</span>
@@ -1041,7 +968,6 @@ function OperationalDashboard({
           </Card.Content>
         </Card>
 
-        {/* Shipment Health */}
         <Card>
           <Card.Header className="pb-0">
             <Card.Title className="text-sm font-semibold">Health</Card.Title>
@@ -1083,31 +1009,12 @@ function OperationalDashboard({
           </Card.Content>
         </Card>
 
-        {/* Bill Amount & Conversion KPIs */}
-        <Card>
-          <Card.Header className="pb-0">
-            <Card.Title className="text-sm font-semibold">Bill Amount</Card.Title>
-          </Card.Header>
-          <Card.Content className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 rounded-xl bg-success/10 border border-success/20">
-                <p className="text-lg font-bold text-success">{fmtCurrency(stats.invoices.revenueThisMonth)}</p>
-                <p className="text-xs text-muted mt-1">This Month</p>
-              </div>
-              <div className="text-center p-3 rounded-xl bg-accent/10 border border-accent/20">
-                <p className="text-lg font-bold text-accent">{fmtCurrency(stats.invoices.revenueTotal)}</p>
-                <p className="text-xs text-muted mt-1">Bill Amount</p>
-              </div>
-              <div className="text-center p-3 rounded-xl bg-warning/10 border border-warning/20">
-                <p className="text-lg font-bold text-warning">{stats.quotations.conversionRate}%</p>
-                <p className="text-xs text-muted mt-1">Quote Conversion</p>
-              </div>
-              <div className="text-center p-3 rounded-xl bg-default/10 border border-default/20">
-                <p className="text-lg font-bold text-foreground">{stats.invoices.total}</p>
-                <p className="text-xs text-muted mt-1">Billable Shipments</p>
-              </div>
-            </div>
-            <div className="pt-3 border-t border-border space-y-2">
+        <div className="space-y-4">
+          <Card>
+            <Card.Header className="pb-0">
+              <Card.Title className="text-sm font-semibold">Quick Stats</Card.Title>
+            </Card.Header>
+            <Card.Content className="space-y-2.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Total Customers</span>
                 <span className="font-semibold text-foreground">{stats.customers.total}</span>
@@ -1120,18 +1027,41 @@ function OperationalDashboard({
                 <span className="text-muted">Quotations</span>
                 <span className="font-semibold text-foreground">{stats.quotations.total}</span>
               </div>
-            </div>
-          </Card.Content>
-        </Card>
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
+                <span className="text-muted">Total Shipments</span>
+                <span className="font-semibold text-foreground">{shipmentsData.total}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Pending</span>
+                <span className="font-semibold text-foreground">{shipmentsData.pending}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Not Tracked</span>
+                <span className="font-semibold text-foreground">{shipmentsData.notTracked}</span>
+              </div>
+            </Card.Content>
+          </Card>
+          {stats.alerts.length > 0 ? (
+            renderAlerts(stats.alerts)
+          ) : (
+            <Card>
+              <Card.Header>
+                <Card.Title className="text-sm font-semibold">Alerts</Card.Title>
+                <Card.Description className="text-xs text-muted">All clear</Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <div className="flex items-center gap-2 text-success text-sm py-4">
+                  <CheckCircle2 size={18} />
+                  <span>No alerts — all shipments are on track</span>
+                </div>
+              </Card.Content>
+            </Card>
+          )}
+          <ActionCard router={router} onRetry={onRetry} />
+        </div>
       </div>
 
-      {/* Activity + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <ActivityLog />
-        </div>
-        <ActionCard router={router} onRetry={onRetry} />
-      </div>
+      <ActivityLog />
     </div>
   );
 }
@@ -1282,7 +1212,7 @@ function renderAlerts(alerts: Alert[]) {
   return (
     <Card>
       <Card.Header>
-        <Card.Title className="text-sm font-semibold">Alerts — Shipments Needing Attention</Card.Title>
+        <Card.Title className="text-sm font-semibold">Alerts</Card.Title>
         <Card.Description className="text-xs text-muted">
           {alerts.length > 0
             ? `${alerts.length} shipment${alerts.length > 1 ? 's' : ''} need attention`

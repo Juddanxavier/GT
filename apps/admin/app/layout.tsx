@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     template: '%s — Gajan Traders',
     default: 'Gajan Traders Admin',
   },
+  description: 'Gajan Traders Admin',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
