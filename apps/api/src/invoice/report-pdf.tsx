@@ -1,6 +1,8 @@
 import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 
+import { currencySymbol } from '../lib/currency';
+
 const green = '#15803d';
 const black = '#111827';
 const gray = '#6b7280';
@@ -37,7 +39,7 @@ const styles = StyleSheet.create({
   pageNumber: { position: 'absolute' as const, bottom: 20, right: 36, fontSize: 6, color: gray },
 });
 
-function ShipmentTable({ rows }: { rows: Record<string, unknown>[] }) {
+function ShipmentTable({ rows, sym }: { rows: Record<string, unknown>[]; sym: string }) {
   return (
     <View>
       <View style={styles.tableHeaderRow}>
@@ -64,7 +66,7 @@ function ShipmentTable({ rows }: { rows: Record<string, unknown>[] }) {
           <Text style={[styles.tableCell, { width: '9%', fontSize: 6.5 }]}>{(r.destination as string) || '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.carrier as string) || '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.branch_name as string) || '\u2014'}</Text>
-          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `Rs. ${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
+          <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.bill_amount as string) && Number(r.bill_amount) > 0 ? `${sym} ${Number(r.bill_amount).toFixed(2)}` : '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '8%', fontSize: 6.5 }]}>{(r.status as string) || ''}</Text>
           <Text style={[styles.tableCellMuted, { width: '7%', fontSize: 6.5 }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
         </View>
@@ -73,7 +75,7 @@ function ShipmentTable({ rows }: { rows: Record<string, unknown>[] }) {
   );
 }
 
-function QuotationTable({ rows }: { rows: Record<string, unknown>[] }) {
+function QuotationTable({ rows, sym }: { rows: Record<string, unknown>[]; sym: string }) {
   return (
     <View>
       <View style={styles.tableHeaderRow}>
@@ -89,7 +91,7 @@ function QuotationTable({ rows }: { rows: Record<string, unknown>[] }) {
           <Text style={[styles.tableCell, { width: '20%', fontFamily: 'Courier' }]}>{(r.quote_no as string) || ''}</Text>
           <Text style={[styles.tableCell, { width: '25%' }]}>{(r.customer_name as string) || '\u2014'}</Text>
           <Text style={[styles.tableCell, { width: '15%' }]}>{(r.status as string) || ''}</Text>
-          <Text style={[styles.tableCell, { width: '15%' }]}>Rs. {(r.total as string) ? Number(r.total).toFixed(2) : '0.00'}</Text>
+          <Text style={[styles.tableCell, { width: '15%' }]}>{sym} {(r.total as string) ? Number(r.total).toFixed(2) : '0.00'}</Text>
           <Text style={[styles.tableCellMuted, { width: '13%' }]}>{(r.valid_until as string)?.slice(5) || '\u2014'}</Text>
           <Text style={[styles.tableCellMuted, { width: '12%' }]}>{(r.created_at as string)?.slice(5) || ''}</Text>
         </View>
@@ -106,9 +108,11 @@ type ReportData = {
   generatedAt: string;
   recordType: 'shipments' | 'quotations';
   tenantName?: string;
+  currency?: string;
 };
 
 export function ReportDocument({ data }: { data: ReportData }) {
+  const sym = currencySymbol(data.currency);
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -135,9 +139,9 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
           <Text style={styles.sectionTitle}>Record Details ({data.records.length} records)</Text>
           {data.recordType === 'shipments' ? (
-            <ShipmentTable rows={data.records} />
+            <ShipmentTable rows={data.records} sym={sym} />
           ) : (
-            <QuotationTable rows={data.records} />
+            <QuotationTable rows={data.records} sym={sym} />
           )}
         </View>
 

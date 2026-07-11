@@ -46,26 +46,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 const icons: Record<ToastType, ReactNode> = {
-  success: <CheckCircle size={16} className="text-green-400" />,
-  error: <AlertTriangle size={16} className="text-red-400" />,
-  info: <Info size={16} className="text-blue-400" />,
+  success: <CheckCircle size={16} className="text-success" />,
+  error: <AlertTriangle size={16} className="text-danger" />,
+  info: <Info size={16} className="text-accent" />,
 };
 
 const borders: Record<ToastType, string> = {
-  success: 'border-green-500/30',
-  error: 'border-red-500/30',
-  info: 'border-blue-500/30',
+  success: 'border-success/30',
+  error: 'border-danger/30',
+  info: 'border-accent/30',
 };
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl bg-zinc-900 border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}>
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}>
       <span className="shrink-0 mt-0.5">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-100">{toast.title}</p>
-        {toast.message && <p className="text-xs text-zinc-400 mt-0.5">{toast.message}</p>}
+        <p className="text-sm font-medium text-foreground">{toast.title}</p>
+        {toast.message && <p className="text-xs text-muted mt-0.5">{toast.message}</p>}
       </div>
-      <button onClick={onDismiss} className="shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors">
+      <button onClick={onDismiss} className="shrink-0 text-muted hover:text-foreground transition-colors">
         <X size={14} />
       </button>
     </div>

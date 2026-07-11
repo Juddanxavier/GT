@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../db';
 import { ReportDocument } from './report-pdf';
+import { currencySymbol } from '../lib/currency';
 
 type ReportParams = {
   tenantFilter: SQL<unknown>;
@@ -15,6 +16,7 @@ type ReportParams = {
   startDate?: string;
   endDate?: string;
   tenantName?: string;
+  currency?: string;
 };
 
 const ALLOWED_COLUMNS = new Set(['created_at', 's.created_at', 'q.created_at']);
@@ -28,7 +30,8 @@ function dateFilter(col: string, start?: string, end?: string): SQL<unknown> {
 }
 
 export async function generateReportPdf(params: ReportParams) {
-  const { type, startDate, endDate, tenantFilter, branchFilter, sFilter, sbFilter, qFilter, qbFilter, tenantName } = params;
+  const { type, startDate, endDate, tenantFilter, branchFilter, sFilter, sbFilter, qFilter, qbFilter, tenantName, currency } = params;
+  const sym = currencySymbol(currency);
   const sDate = dateFilter('created_at', startDate, endDate);
   const sdDate = dateFilter('s.created_at', startDate, endDate);
   const qdDate = dateFilter('q.created_at', startDate, endDate);
@@ -60,6 +63,7 @@ export async function generateReportPdf(params: ReportParams) {
         records: records as Record<string, unknown>[],
         generatedAt,
         tenantName,
+        currency,
       },
     }));
   }
@@ -87,11 +91,12 @@ export async function generateReportPdf(params: ReportParams) {
         { label: 'Delivered', value: String(s.delivered as number) },
         { label: 'In Transit', value: String(s.in_transit as number) },
         { label: 'Exceptions', value: String(s.exceptions as number) },
-        { label: 'Bill Amount', value: `Rs. ${(rev?.total as string) ?? '0.00'}` },
+        { label: 'Bill Amount', value: `${sym} ${(rev?.total as string) ?? '0.00'}` },
       ],
         records: records as Record<string, unknown>[],
         generatedAt,
         tenantName,
+        currency,
       },
   }));
 }

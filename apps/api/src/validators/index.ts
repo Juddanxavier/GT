@@ -6,6 +6,17 @@ const numericString = z.string().regex(/^\d+(\.\d{1,2})?$/);
 
 const phoneRegex = /^\+[\d\s-]{4,20}$/;
 
+export const addressSchema = z.object({
+  name: z.string().max(255).transform(stripHtml).optional(),
+  phone: z.string().regex(phoneRegex, 'Phone must start with + and country code').max(50).transform(stripHtml).optional().or(z.literal('')),
+  email: z.string().email().max(255).transform(stripHtml).optional().or(z.literal('')),
+  street: z.string().max(500).transform(stripHtml).optional(),
+  city: z.string().max(255).transform(stripHtml).optional(),
+  state: z.string().max(255).transform(stripHtml).optional(),
+  pincode: z.string().max(20).transform(stripHtml).optional(),
+  country: z.string().max(255).transform(stripHtml).optional(),
+}).optional();
+
 export const createBranchSchema = z.object({
   name: z.string().min(1).max(255).transform(stripHtml),
   phone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).transform(stripHtml).optional().or(z.literal('')),
@@ -65,6 +76,8 @@ export const createShipmentSchema = z.object({
   estimatedDelivery: z.string().datetime().transform(stripHtml).optional(),
   origin: z.string().transform(stripHtml).optional(),
   destination: z.string().transform(stripHtml).optional(),
+  senderAddress: addressSchema,
+  recipientAddress: addressSchema,
   labelCode: z.string().max(20).transform(stripHtml).optional(),
   billAmount: z.coerce.number().positive().optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
@@ -95,6 +108,7 @@ export const updateUserSchema = z.object({
   branchId: uuidSchema.optional(),
   role: roleEnum.optional(),
   tenantId: uuidSchema.optional(),
+  address: addressSchema,
 });
 
 export const banUserSchema = z.object({
@@ -137,6 +151,7 @@ export const updateProfileSchema = z.object({
   name: z.string().transform(stripHtml).optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().optional(),
+  address: addressSchema,
 });
 
 export const fireNotificationSchema = z.object({

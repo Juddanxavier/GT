@@ -1,5 +1,7 @@
 import React from 'react';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+
+import { currencySymbol } from '../lib/currency';
 
 const accent = '#22c55e';
 const black = '#111827';
@@ -168,17 +170,24 @@ const styles = StyleSheet.create({
 
 type InvoicePdfData = {
   invoiceNo: string;
+  trackingNo: string;
   companyName: string;
   amount: string;
   customerName: string;
   createdAt: string;
   paidAt: string;
+  currency?: string;
+  senderAddress?: Record<string, string>;
+  recipientAddress?: Record<string, string>;
+  logoBase64?: string | null;
 };
 
 export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
+  const sym = currencySymbol(data.currency);
   const amt = Number(data.amount);
-  const gst = Math.round(amt * 0.18);
-  const subtotal = amt - gst;
+  const hasGst = data.companyName !== 'Lanka Mahal';
+  const gst = hasGst ? Math.round(amt * 0.18) : 0;
+  const subtotal = hasGst ? amt - gst : amt;
 
   return (
     <Document>
@@ -186,7 +195,11 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
         <View style={styles.body}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.brandName}>{data.companyName}</Text>
+            {data.companyName === 'Lanka Mahal' && data.logoBase64 ? (
+              <Image src={data.logoBase64} style={{ width: 50 }} />
+            ) : (
+              <Text style={styles.brandName}>{data.companyName}</Text>
+            )}
             <View style={styles.titleBlock}>
               <Text style={styles.titleLabel}>Invoice</Text>
               <Text style={styles.titleSub}>{data.invoiceNo}</Text>
@@ -196,11 +209,22 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
           {/* Info Panels */}
           <View style={styles.panels}>
             <View style={styles.panel}>
-              <Text style={styles.panelLabel}>Bill To</Text>
-              <Text style={styles.panelValue}>{data.customerName}</Text>
+              <Text style={styles.panelLabel}>Sender</Text>
+              <Text style={styles.panelValue}>{data.senderAddress?.name ?? data.customerName}</Text>
+              {data.senderAddress?.phone && <Text style={styles.panelLine}>Phone: {data.senderAddress.phone}</Text>}
+              {data.senderAddress?.email && <Text style={styles.panelLine}>Email: {data.senderAddress.email}</Text>}
+              <Text style={styles.panelLine}>{[data.senderAddress?.street, data.senderAddress?.city, data.senderAddress?.pincode, data.senderAddress?.country].filter(Boolean).join(', ') || '—'}</Text>
+            </View>
+            <View style={styles.panel}>
+              <Text style={styles.panelLabel}>Recipient</Text>
+              <Text style={styles.panelValue}>{data.recipientAddress?.name ?? '—'}</Text>
+              {data.recipientAddress?.phone && <Text style={styles.panelLine}>Phone: {data.recipientAddress.phone}</Text>}
+              {data.recipientAddress?.email && <Text style={styles.panelLine}>Email: {data.recipientAddress.email}</Text>}
+              <Text style={styles.panelLine}>{[data.recipientAddress?.street, data.recipientAddress?.city, data.recipientAddress?.pincode, data.recipientAddress?.country].filter(Boolean).join(', ') || '—'}</Text>
             </View>
             <View style={styles.panel}>
               <Text style={styles.panelLabel}>Invoice Details</Text>
+              <Text style={styles.panelLine}>Tracking: {data.trackingNo}</Text>
               <Text style={styles.panelLine}>Date: {data.createdAt}</Text>
               <Text style={styles.panelLine}>Status: Paid</Text>
             </View>
@@ -219,40 +243,58 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
             <Text style={[styles.cellText, styles.cellDesc]}>Freight Charges</Text>
             <Text style={[styles.cellMuted, styles.cellRef]}>{data.invoiceNo}</Text>
             <Text style={[styles.cellText, styles.cellQty]}>1</Text>
-            <Text style={[styles.cellText, styles.cellRate]}>Rs. {subtotal.toLocaleString('en-IN')}</Text>
-            <Text style={[styles.cellText, styles.cellAmount]}>Rs. {subtotal.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.cellText, styles.cellRate]}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.cellText, styles.cellAmount]}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
           </View>
 
-          <View style={styles.tableRow}>
-            <Text style={[styles.cellMuted, styles.cellDesc]}>GST @ 18%</Text>
-            <Text style={[styles.cellMuted, styles.cellRef]} />
-            <Text style={[styles.cellMuted, styles.cellQty]}>1</Text>
-            <Text style={[styles.cellMuted, styles.cellRate]}>Rs. {gst.toLocaleString('en-IN')}</Text>
-            <Text style={[styles.cellMuted, styles.cellAmount]}>Rs. {gst.toLocaleString('en-IN')}</Text>
-          </View>
+          {hasGst && (
+            <View style={styles.tableRow}>
+              <Text style={[styles.cellMuted, styles.cellDesc]}>GST @ 18%</Text>
+              <Text style={[styles.cellMuted, styles.cellRef]} />
+              <Text style={[styles.cellMuted, styles.cellQty]}>1</Text>
+              <Text style={[styles.cellMuted, styles.cellRate]}>{sym} {gst.toLocaleString('en-IN')}</Text>
+              <Text style={[styles.cellMuted, styles.cellAmount]}>{sym} {gst.toLocaleString('en-IN')}</Text>
+            </View>
+          )}
 
           {/* Totals */}
           <View style={styles.totals}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal</Text>
-              <Text style={styles.totalValue}>Rs. {subtotal.toLocaleString('en-IN')}</Text>
+              <Text style={styles.totalValue}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
             </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>GST (18%)</Text>
-              <Text style={styles.totalValue}>Rs. {gst.toLocaleString('en-IN')}</Text>
-            </View>
+            {hasGst && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>GST (18%)</Text>
+                <Text style={styles.totalValue}>{sym} {gst.toLocaleString('en-IN')}</Text>
+              </View>
+            )}
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandLabel}>Total</Text>
-              <Text style={styles.grandValue}>Rs. {amt.toLocaleString('en-IN')}</Text>
+              <Text style={styles.grandValue}>{sym} {amt.toLocaleString('en-IN')}</Text>
             </View>
           </View>
 
           {/* Notes */}
           <View style={styles.notes}>
             <Text style={styles.notesLabel}>Notes</Text>
-            <Text style={styles.notesText}>
-              This is a computer-generated invoice. No signature required. Thank you for your business.
-            </Text>
+            {data.companyName === 'Lanka Mahal' ? (
+              <Text style={styles.notesText}>
+                {'CUSTOMER LIMITATION OF LIABILITY\n\n'}
+                {'The company shall not be held liable for any food items and prohibited items and for any penalties or customs duties that would be imposed by authorities.\n'}
+                {'The company shall not be held liable for incorrect information given by customers.\n'}
+                {'The company shall not be held accountable for loss, damage or delay caused by events we cannot control.\n\n'}
+                {'INSURANCE\n'}
+                {'Insurance is available for total loss of parcel (please note that no insurance is payable for damages caused to goods while being transported to the respective destinations).\n'}
+                {'Insurance fee is as follows:\n'}
+                {'Rs. 1,000 /= for the declared value of 50,000/= or Less.\n'}
+                {'For declared values over Rs. 50,000 the insurance fee would be 2% of the declared value.'}
+              </Text>
+            ) : (
+              <Text style={styles.notesText}>
+                This is a computer-generated invoice. No signature required. Thank you for your business.
+              </Text>
+            )}
           </View>
         </View>
 

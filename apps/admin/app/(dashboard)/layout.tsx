@@ -355,77 +355,44 @@ function DashboardLayoutInner({
       </aside>
 
       {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 overflow-auto">
         {/* Top navbar */}
-        <header className="flex items-center justify-between h-14 px-4 sm:px-6 border-b border-border bg-surface shrink-0">
-          <div className="flex items-center gap-3">
-            <Button size="sm" variant="ghost" className="hidden md:inline-flex" onPress={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-              {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-            </Button>
-            <Button size="sm" variant="ghost" className="md:hidden" onPress={() => setSidebarOpen(true)} aria-label="Open menu">
-<Menu size={18} />
-            </Button>
-            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0 md:hidden">GT</div>
-            <p className="text-sm font-semibold md:hidden">Gajan Traders</p>
-          </div>
+        <header className="border-b border-border bg-surface shrink-0">
+          <div className="flex items-center justify-between h-14 px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <Button size="sm" variant="ghost" className="hidden md:inline-flex" onPress={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              </Button>
+              <Button size="sm" variant="ghost" className="md:hidden" onPress={() => setSidebarOpen(true)} aria-label="Open menu">
+                <Menu size={18} />
+              </Button>
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0 md:hidden">GT</div>
+              <p className="text-sm font-semibold md:hidden">Gajan Traders</p>
+              <div className="hidden md:block">
+                <Breadcrumbs />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-3">
-            <Button size="sm" variant="ghost" className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground" onPress={() => setSearchOpen(true)}>
-              <Search size={16} />
-              <Kbd className="hidden lg:inline-flex">
-                <Kbd.Abbr keyValue="command" />
-                <Kbd.Content>K</Kbd.Content>
-              </Kbd>
-            </Button>
-            {isSuperadmin ? (
-              <Select
-                selectedKey={tenantFilter}
-                onSelectionChange={(k) => {
-                  const id = k as string;
-                  if (id === tenantFilter) return;
-                  const name = tenants.find((t) => t.id === id)?.name ?? 'this tenant';
-                  setConfirmTenant({ id, name });
-                }}
-                className="w-auto min-w-0"
-                placeholder="Select tenant"
-                aria-label="Filter by tenant"
-                variant="secondary"
-              >
-                <Select.Trigger className="h-8 text-xs">
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {tenants.map((t) => (
-                      <ListBox.Item key={t.id} id={t.id} textValue={t.name}>
-                        <div className="flex items-center gap-2">
-                          <Building2 size={16} className="text-muted" />
-                          {t.name}
-                        </div>
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            ) : null}
-            {userRole === 'tenant-admin' && (
-              <>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
-                  <Building2 size={14} className="text-muted" />
-                  {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
-                </span>
+            <div className="flex items-center gap-3">
+              <Button size="sm" variant="ghost" className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground" onPress={() => setSearchOpen(true)}>
+                <Search size={16} />
+                <Kbd className="hidden lg:inline-flex">
+                  <Kbd.Abbr keyValue="command" />
+                  <Kbd.Content>K</Kbd.Content>
+                </Kbd>
+              </Button>
+              {isSuperadmin ? (
                 <Select
-                  selectedKey={branchFilter}
+                  selectedKey={tenantFilter}
                   onSelectionChange={(k) => {
                     const id = k as string;
-                    if (id === branchFilter) return;
-                    const name = id ? branches.find((b) => b.id === id)?.name ?? 'this branch' : 'All Branches';
-                    setConfirmBranch({ id, name });
+                    if (id === tenantFilter) return;
+                    const name = tenants.find((t) => t.id === id)?.name ?? 'this tenant';
+                    setConfirmTenant({ id, name });
                   }}
                   className="w-auto min-w-0"
-                  placeholder="All Branches"
-                  aria-label="Filter by branch"
+                  placeholder="Select tenant"
+                  aria-label="Filter by tenant"
                   variant="secondary"
                 >
                   <Select.Trigger className="h-8 text-xs">
@@ -434,123 +401,161 @@ function DashboardLayoutInner({
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      <ListBox.Item id="" textValue="All Branches">
-                        <div className="flex items-center gap-2">
-                          <LayoutDashboard size={16} className="text-muted" />
-                          All Branches
-                        </div>
-                      </ListBox.Item>
-                      {branches.map((b) => (
-                        <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
+                      {tenants.map((t) => (
+                        <ListBox.Item key={t.id} id={t.id} textValue={t.name}>
                           <div className="flex items-center gap-2">
                             <Building2 size={16} className="text-muted" />
-                            {b.name}
+                            {t.name}
                           </div>
                         </ListBox.Item>
                       ))}
                     </ListBox>
                   </Select.Popover>
                 </Select>
-              </>
-            )}
-            {userRole === 'staff' && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
-                <Building2 size={14} className="text-muted" />
-                {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
-                <span className="text-muted">→</span>
-                {(session.user as Record<string, unknown>)?.branchName as string || 'Branch'}
-              </span>
-            )}
-            <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme" className="text-muted hover:text-foreground">
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </Button>
-            <Dropdown>
-              <Dropdown.Trigger className="text-muted hover:text-foreground relative" aria-label="Notifications">
-                <Bell size={16} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">
-                    {unreadCount > 99 ? '99+' : unreadCount}
+              ) : null}
+              {userRole === 'tenant-admin' && (
+                <>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                    <Building2 size={14} className="text-muted" />
+                    {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
                   </span>
-                )}
-              </Dropdown.Trigger>
-              <Dropdown.Popover className="w-80 p-0">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                  <span className="text-xs font-semibold">Notifications</span>
+                  <Select
+                    selectedKey={branchFilter}
+                    onSelectionChange={(k) => {
+                      const id = k as string;
+                      if (id === branchFilter) return;
+                      const name = id ? branches.find((b) => b.id === id)?.name ?? 'this branch' : 'All Branches';
+                      setConfirmBranch({ id, name });
+                    }}
+                    className="w-auto min-w-0"
+                    placeholder="All Branches"
+                    aria-label="Filter by branch"
+                    variant="secondary"
+                  >
+                    <Select.Trigger className="h-8 text-xs">
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="" textValue="All Branches">
+                          <div className="flex items-center gap-2">
+                            <LayoutDashboard size={16} className="text-muted" />
+                            All Branches
+                          </div>
+                        </ListBox.Item>
+                        {branches.map((b) => (
+                          <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
+                            <div className="flex items-center gap-2">
+                              <Building2 size={16} className="text-muted" />
+                              {b.name}
+                            </div>
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </>
+              )}
+              {userRole === 'staff' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                  <Building2 size={14} className="text-muted" />
+                  {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
+                  <span className="text-muted">&rarr;</span>
+                  {(session.user as Record<string, unknown>)?.branchName as string || 'Branch'}
+                </span>
+              )}
+              <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme" className="text-muted hover:text-foreground">
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              </Button>
+              <Dropdown>
+                <Dropdown.Trigger className="text-muted hover:text-foreground relative" aria-label="Notifications">
+                  <Bell size={16} />
                   {unreadCount > 0 && (
-                    <button
-                      className="text-xs text-primary hover:underline"
-                      onClick={async () => {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
-                        setUnreadCount(0);
-                        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-                      }}
-                    >
-                      Mark all read
-                    </button>
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {notifs.length === 0 ? (
-                    <p className="text-xs text-muted px-3 py-4 text-center">No notifications</p>
-                  ) : (
-                    notifs.map((n) => (
+                </Dropdown.Trigger>
+                <Dropdown.Popover className="w-80 p-0">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                    <span className="text-xs font-semibold">Notifications</span>
+                    {unreadCount > 0 && (
                       <button
-                        key={n.id}
-                        className={`w-full text-left px-3 py-2 text-xs border-b border-border hover:bg-muted/20 flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
+                        className="text-xs text-primary hover:underline"
                         onClick={async () => {
-                          if (!n.read) {
-                            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`, { method: 'PATCH', credentials: 'include' });
-                            setUnreadCount((c) => Math.max(0, c - 1));
-                            setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
-                          }
-                          if (n.link) router.push(n.link);
+                          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
+                          setUnreadCount(0);
+                          setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
                         }}
                       >
-                        <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`} />
-                        <div className="min-w-0">
-                          <p className="truncate">{n.title}</p>
-                          <p className="text-muted font-normal truncate">{n.message}</p>
-                        </div>
+                        Mark all read
                       </button>
-                    ))
-                  )}
-                </div>
-              </Dropdown.Popover>
-            </Dropdown>
-            <Dropdown>
-              <Dropdown.Trigger className="flex items-center gap-2 rounded-full outline-none hover:bg-muted transition-colors px-1 py-1">
-                <Avatar size="md" className="rounded-full">
-                  <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
-                </Avatar>
-                <span className="text-sm font-medium hidden sm:inline">{session.user.name}</span>
-                <ChevronDown size={14} className="text-muted hidden sm:block" />
-              </Dropdown.Trigger>
-              <Dropdown.Popover>
-                <div className="px-3 pt-3 pb-1">
-                  <div className="flex items-center gap-2">
-                    <Avatar size="md" className="rounded-full">
-                      <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
-                    </Avatar>
-                    <div className="flex flex-col gap-0">
-                      <p className="text-sm leading-5 font-medium">{session.user.name}</p>
-                      <p className="text-xs leading-none text-muted">{session.user.email}</p>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifs.length === 0 ? (
+                      <p className="text-xs text-muted px-3 py-4 text-center">No notifications</p>
+                    ) : (
+                      notifs.map((n) => (
+                        <button
+                          key={n.id}
+                          className={`w-full text-left px-3 py-2 text-xs border-b border-border hover:bg-muted/20 flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
+                          onClick={async () => {
+                            if (!n.read) {
+                              await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`, { method: 'PATCH', credentials: 'include' });
+                              setUnreadCount((c) => Math.max(0, c - 1));
+                              setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
+                            }
+                            if (n.link) router.push(n.link);
+                          }}
+                        >
+                          <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`} />
+                          <div className="min-w-0">
+                            <p className="truncate">{n.title}</p>
+                            <p className="text-muted font-normal truncate">{n.message}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </Dropdown.Popover>
+              </Dropdown>
+              <Dropdown>
+                <Dropdown.Trigger className="flex items-center gap-2 rounded-full outline-none hover:bg-muted transition-colors px-1 py-1">
+                  <Avatar size="md" className="rounded-full">
+                    <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+                  </Avatar>
+                  <span className="text-sm font-medium hidden sm:inline">{session.user.name}</span>
+                  <ChevronDown size={14} className="text-muted hidden sm:block" />
+                </Dropdown.Trigger>
+                <Dropdown.Popover>
+                  <div className="px-3 pt-3 pb-1">
+                    <div className="flex items-center gap-2">
+                      <Avatar size="md" className="rounded-full">
+                        <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+                      </Avatar>
+                      <div className="flex flex-col gap-0">
+                        <p className="text-sm leading-5 font-medium">{session.user.name}</p>
+                        <p className="text-xs leading-none text-muted">{session.user.email}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Dropdown.Menu>
-                  <Dropdown.Item id="profile" textValue="Profile" onPress={() => router.push('/profile')}>
-                    <User size={16} />
-                    <Label>Profile</Label>
-                  </Dropdown.Item>
-                  <Dropdown.Item id="signout" textValue="Sign out" variant="danger" onPress={handleSignOut}>
-                    <div className="flex w-full items-center justify-between gap-2">
-                      <Label>Sign out</Label>
-                      <LogOut size={14} className="text-danger" />
-                    </div>
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
+                  <Dropdown.Menu>
+                    <Dropdown.Item id="profile" textValue="Profile" onPress={() => router.push('/profile')}>
+                      <User size={16} />
+                      <Label>Profile</Label>
+                    </Dropdown.Item>
+                    <Dropdown.Item id="signout" textValue="Sign out" variant="danger" onPress={handleSignOut}>
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <Label>Sign out</Label>
+                        <LogOut size={14} className="text-danger" />
+                      </div>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
+            </div>
           </div>
         </header>
 
@@ -598,10 +603,13 @@ function DashboardLayoutInner({
 
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <Breadcrumbs />
+        <main className="p-4 sm:p-6 lg:p-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
+        <footer className="border-t border-border px-6 py-3 text-xs text-muted flex items-center justify-between shrink-0">
+          <span>© {new Date().getFullYear()} Gajan Traders. All rights reserved.</span>
+          <span>v1.0.0</span>
+        </footer>
       </div>
     </div>
   );

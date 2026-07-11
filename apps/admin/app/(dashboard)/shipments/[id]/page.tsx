@@ -6,11 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Card, Chip, Skeleton, Tabs, cn, Spinner } from '@heroui/react';
 import { api } from '@/lib/api';
-import { useShipment, useShipmentTracking, useShipmentInvoice, useGenerateInvoice, useTrackShipment, useStopTracking, useDeleteShipment, useUpdateShipment } from '@/lib/queries';
+import { useShipment, useShipmentTracking, useShipmentInvoice, useGenerateInvoice, useTrackShipment, useStopTracking, useDeleteShipment, useUpdateShipment, useTenants } from '@/lib/queries';
 import { STATUS_META } from '@/lib/status-config';
 import { TrackingTimeline } from './tracking-timeline';
 import { AssignedTo } from '@/components/assigned-to';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
+import { addressDisplay } from '@/components/address-form';
+import { formatCurrency } from '@/lib/currency';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/lib/use-page-title';
 import { ArrowLeft, Package, MapPin, Clock, Calendar, FileText, MessageSquare, Check, RefreshCw, Trash2, Pencil, Ban, Send, Plus, DollarSign, Globe, Users } from 'lucide-react';
@@ -23,6 +25,11 @@ export default function ShipmentDetailPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { tenantFilter, branchFilter } = useTenantFilter();
+  const { data: tenants = [] } = useTenants();
+  const tenantCurrency = useMemo(() => {
+    const t = tenants.find((t) => t.id === tenantFilter);
+    return t?.currency ?? undefined;
+  }, [tenantFilter, tenants]);
 
   const { data: shipment, isLoading, error, refetch } = useShipment(id);
   const { data: trackingData, isLoading: trackingLoading } = useShipmentTracking(id);
@@ -191,9 +198,12 @@ export default function ShipmentDetailPage(): ReactNode {
             {/* Customer & Assignment */}
             <Card>
               <div className="px-5 py-4 border-b border-border">
-                <h3 className="text-sm font-semibold flex items-center gap-2"><Users size={14} /> Customer</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                  <h3 className="text-sm font-semibold">Customer</h3>
+                </div>
               </div>
-              <div className="p-5 space-y-3">
+              <div className="p-5">
                 <AssignedTo
                   shipmentId={id}
                   customerId={shipment.customerId}
@@ -207,12 +217,15 @@ export default function ShipmentDetailPage(): ReactNode {
             {/* Shipment Info */}
             <Card>
               <div className="px-5 py-4 border-b border-border">
-                <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> Shipment Info</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                  <h3 className="text-sm font-semibold">Shipment Info</h3>
+                </div>
               </div>
               <div className="p-5 space-y-3">
                 <InfoRow label="Carrier" value={shipment.carrier || '—'} />
                 <InfoRow label="Provider" value={shipment.trackingProvider || '—'} />
-                <InfoRow label="Bill Amount" value={shipment.billAmount ? `₹${shipment.billAmount}` : '—'} />
+                <InfoRow label="Bill Amount" value={shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'} />
                 <InfoRow label="Tracking" value={shipment.trackingRegistered ? 'Active' : 'Inactive'} />
                 <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'} />
                 <InfoRow label="Created" value={new Date(shipment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
@@ -221,44 +234,68 @@ export default function ShipmentDetailPage(): ReactNode {
             </Card>
 
             {/* Route */}
-            {(shipment.origin || shipment.destination) && (
-              <Card className="lg:col-span-2">
-                <div className="px-5 py-4 border-b border-border">
-                  <h3 className="text-sm font-semibold flex items-center gap-2"><MapPin size={14} /> Route</h3>
+            <Card className="lg:col-span-2">
+              <div className="px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                  <h3 className="text-sm font-semibold">Route</h3>
                 </div>
-                <div className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center gap-1.5">
-                      <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20" />
-                      <div className="w-0.5 h-8 bg-gradient-to-b from-primary/60 to-muted" />
-                      <div className="w-4 h-4 rounded-full border-2 border-success bg-success/20" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20" />
+                    <div className="w-0.5 h-8 bg-gradient-to-b from-primary/60 to-muted" />
+                    <div className="w-4 h-4 rounded-full border-2 border-success bg-success/20" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-6">
+                    <div>
+                      <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Origin</p>
+                      <p className="text-sm font-medium flex items-center gap-1.5">
+                        {originCountry && <Flag country={originCountry} />}
+                        {shipment.origin || addressDisplay(shipment.senderAddress) || '—'}
+                      </p>
                     </div>
-                    <div className="flex-1 min-w-0 space-y-6">
-                      <div>
-                        <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Origin</p>
-                        <p className="text-sm font-medium flex items-center gap-1.5">
-                          {originCountry && <Flag country={originCountry} />}
-                          {shipment.origin || '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Destination</p>
-                        <p className="text-sm font-medium flex items-center gap-1.5">
-                          {destCountry && <Flag country={destCountry} />}
-                          {shipment.destination || '—'}
-                        </p>
-                      </div>
+                    <div>
+                      <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Destination</p>
+                      <p className="text-sm font-medium flex items-center gap-1.5">
+                        {destCountry && <Flag country={destCountry} />}
+                        {shipment.destination || addressDisplay(shipment.recipientAddress) || '—'}
+                      </p>
                     </div>
                   </div>
-                  {shipment.estimatedDelivery && (
-                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                      <span className="text-muted">Estimated delivery</span>
-                      <span className="font-semibold">{new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                  )}
                 </div>
-              </Card>
-            )}
+                {shipment.estimatedDelivery && (
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                    <span className="text-muted">Estimated delivery</span>
+                    <span className="font-semibold">{new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <div className="px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                  <h3 className="text-sm font-semibold">Sender & Recipient</h3>
+                </div>
+              </div>
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <p className="text-[11px] text-muted font-medium uppercase tracking-wider">Sender</p>
+                  <p className="text-sm">{addressDisplay(shipment.senderAddress)}</p>
+                  {shipment.senderAddress?.phone && <p className="text-xs text-muted">{shipment.senderAddress?.phone}</p>}
+                  {shipment.senderAddress?.email && <p className="text-xs text-muted">{shipment.senderAddress?.email}</p>}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[11px] text-muted font-medium uppercase tracking-wider">Recipient</p>
+                  <p className="text-sm">{addressDisplay(shipment.recipientAddress)}</p>
+                  {shipment.recipientAddress?.phone && <p className="text-xs text-muted">{shipment.recipientAddress?.phone}</p>}
+                  {shipment.recipientAddress?.email && <p className="text-xs text-muted">{shipment.recipientAddress?.email}</p>}
+                </div>
+              </div>
+            </Card>
           </div>
         </Tabs.Panel>
 
@@ -289,7 +326,7 @@ export default function ShipmentDetailPage(): ReactNode {
               ) : invoice ? (
                 <div className="space-y-3 max-w-md">
                   <InfoRow label="Invoice #" value={invoice.invoiceNo} />
-                  <InfoRow label="Amount" value={`₹${Number(invoice.amount).toLocaleString('en-IN')}`} />
+                  <InfoRow label="Amount" value={formatCurrency(invoice.amount, tenantCurrency)} />
                   <InfoRow label="Sent" value={`${invoice.emailCount}/2 today`} />
                   <InfoRow label="Created" value={new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
                   <div className="flex gap-2 pt-2">

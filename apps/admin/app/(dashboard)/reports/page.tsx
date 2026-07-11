@@ -6,9 +6,10 @@ import { FileText, Download, LoaderCircle, Filter, Package, Receipt, Truck, Chec
 import { KpiCard } from '@/components/kpi-card';
 import { authClient } from '@/lib/auth-client';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
-import { useDashboardBranches } from '@/lib/queries';
+import { useDashboardBranches, useTenants } from '@/lib/queries';
 import { api, getTenantFilter, getBranchFilter } from '@/lib/api';
 import { usePageTitle } from '@/lib/use-page-title';
+import { formatCurrency } from '@/lib/currency';
 
 type ShipmentRow = {
   id: string;
@@ -59,7 +60,8 @@ export default function ReportsPage() {
   const { data: session } = authClient.useSession();
   const isStaff = (session?.user as Record<string, unknown>)?.role === 'staff';
   const userRole = (session?.user as Record<string, unknown>)?.role as string;
-  const { branchFilter, setBranch } = useTenantFilter();
+  const { tenantFilter, branchFilter, setBranch } = useTenantFilter();
+  const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useDashboardBranches();
 
   const [filterOpen, setFilterOpen] = useState(false);
@@ -296,7 +298,7 @@ export default function ReportsPage() {
                         <Table.Cell className="font-mono text-xs font-medium">{r.quote_no}</Table.Cell>
                         <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>
                         <Table.Cell><Chip size="sm" variant="soft" color={STATUS_COLORS[r.status] ?? 'default'}>{r.status}</Chip></Table.Cell>
-                        <Table.Cell className="font-medium">₹{Number(r.total).toFixed(2)}</Table.Cell>
+                        <Table.Cell className="font-medium">{formatCurrency(Number(r.total), tenants.find((t) => t.id === tenantFilter)?.currency ?? undefined)}</Table.Cell>
                         <Table.Cell className="text-xs text-muted">{r.valid_until ? new Date(r.valid_until).toLocaleDateString() : '\u2014'}</Table.Cell>
                         <Table.Cell className="text-xs text-muted">{new Date(r.created_at).toLocaleDateString()}</Table.Cell>
                       </Table.Row>

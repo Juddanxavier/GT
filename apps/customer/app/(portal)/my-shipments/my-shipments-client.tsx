@@ -209,7 +209,7 @@ export function MyShipmentsClient(): ReactNode {
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-gray-200 bg-white p-5">
+              <div key={i} className="rounded-xl border border-border bg-surface p-5">
                 <Skeleton className="h-4 w-1/3 rounded mb-3" />
                 <Skeleton className="h-3 w-1/2 rounded mb-2" />
                 <Skeleton className="h-3 w-2/3 rounded" />

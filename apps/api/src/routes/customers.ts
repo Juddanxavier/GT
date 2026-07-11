@@ -7,7 +7,7 @@ import { auth } from '../auth';
 import { user, invoices as invoicesTable, quotations, quoteItems, shipments, tenants } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { errorResponse } from '../error-response';
-import { registerCustomerSchema, updateProfileSchema } from '../validators';
+import { registerCustomerSchema, updateProfileSchema, addressSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -241,6 +241,18 @@ app.patch('/profile', async (c) => {
     }
   }
 
+  if (parsed.data.address) {
+    try {
+      await db
+        .update(user)
+        .set({ address: parsed.data.address, updatedAt: new Date() })
+        .where(eq(user.id, currentUser.id));
+    } catch (err) {
+      console.error('[profile] address update failed:', err);
+      updateErrors.push('Failed to update address');
+    }
+  }
+
   if (currentPassword && newPassword) {
     try {
       await auth.api.changePassword({
@@ -422,7 +434,7 @@ app.get('/my-invoices/:id/pdf', async (c) => {
   const pdf = await generateInvoicePdf(data);
   return new Response(pdf as unknown as BodyInit, {
     status: 200,
-    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="invoice-${data.invoiceNo}.pdf"` },
+    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${data.trackingNo}.pdf"` },
   });
 });
 
@@ -432,6 +444,7 @@ const adminCreateCustomerSchema = z.object({
   name: z.string().min(1).max(255).transform((v) => v.replace(/<[^>]*>/g, '')),
   email: z.string().email().max(255).optional(),
   phone: z.string().regex(/^\+[\d\s-]{4,20}$/, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
+  address: addressSchema,
   branchId: z.string().uuid().optional(),
 });
 
@@ -489,6 +502,7 @@ app.get(
               name: user.name,
               email: user.email,
               phone: user.phone,
+              address: user.address,
               branchId: user.branchId,
               isActive: user.isActive,
               tenantId: user.tenantId,
@@ -510,6 +524,7 @@ app.get(
             name: user.name,
             email: user.email,
             phone: user.phone,
+            address: user.address,
             branchId: user.branchId,
             isActive: user.isActive,
             tenantId: user.tenantId,
@@ -571,6 +586,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
       name: created.user.name,
       email: created.user.email,
       phone: created.user.phone ?? null,
+      address: created.user.address ?? null,
       branchId: created.user.branchId ?? null,
       isActive: created.user.isActive ?? true,
       tenantId: created.user.tenantId ?? null,
@@ -608,6 +624,7 @@ app.get(
             name: user.name,
             email: user.email,
             phone: user.phone,
+            address: user.address,
             branchId: user.branchId,
             isActive: user.isActive,
             tenantId: user.tenantId,
@@ -660,6 +677,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
   if (parsed.data.phone !== undefined) updateData.phone = parsed.data.phone || null;
   if (parsed.data.branchId !== undefined) updateData.branchId = parsed.data.branchId || null;
+  if (parsed.data.address !== undefined) updateData.address = parsed.data.address;
 
   const [row] = await db
     .update(user)
@@ -670,6 +688,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
       name: user.name,
       email: user.email,
       phone: user.phone,
+      address: user.address,
       branchId: user.branchId,
       isActive: user.isActive,
       tenantId: user.tenantId,
@@ -706,6 +725,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
       name: user.name,
       email: user.email,
       phone: user.phone,
+      address: user.address,
       branchId: user.branchId,
       isActive: user.isActive,
       tenantId: user.tenantId,

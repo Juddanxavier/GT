@@ -41,8 +41,10 @@ function TrackDetailInner(): ReactNode {
   const [claimSuccess, setClaimSuccess] = useState('');
   const [claimError, setClaimError] = useState('');
 
-  const isEmerald = config.theme === 'emerald';
-  const btnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white';
+  const accent = config.theme === 'emerald' ? 'text-emerald-600' : 'text-violet-600';
+  const btnClass = config.theme === 'emerald'
+    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+    : 'bg-violet-600 hover:bg-violet-700 text-white';
 
   const {
     data: result,
@@ -73,10 +75,9 @@ function TrackDetailInner(): ReactNode {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back link */}
-      <a href={session ? '/my-shipments' : '/'} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
-        <ArrowLeft size={16} /> {session ? 'Back to my shipments' : 'Back to home'}
+    <div className="space-y-5">
+      <a href={session ? '/my-shipments' : '/'} className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors">
+        <ArrowLeft size={14} /> {session ? 'Back to my shipments' : 'Back to home'}
       </a>
 
       {loading ? (
@@ -85,55 +86,59 @@ function TrackDetailInner(): ReactNode {
         </div>
       ) : error ? (
         <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 border border-red-200 mb-4">
-            <PackageSearch size={28} className="text-red-400" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-100 mb-4">
+            <PackageSearch size={24} className="text-red-400" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">Shipment not found</h2>
+          <h2 className="text-base font-semibold text-foreground mb-1">Shipment not found</h2>
           <p className="text-sm text-muted">{errorMessage}</p>
         </div>
       ) : result ? (
         <>
-          {/* Status header */}
-          <div className="rounded-xl border border-border bg-surface p-6">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-mono text-lg font-bold text-foreground">{result.trackingNo}</p>
-                <Chip size="sm" variant="soft" color={STATUS_COLORS[result.status] ?? 'default'} className="mt-2">
-                  {STATUS_LABELS[result.status] || result.status}
-                </Chip>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full ${config.theme === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'} flex items-center justify-center`}>
+                  <PackageSearch size={18} />
+                </div>
+                <div>
+                  <p className="font-mono text-base font-bold text-foreground">{result.trackingNo}</p>
+                  <Chip size="sm" variant="flat" color={STATUS_COLORS[result.status] ?? 'default'} className="mt-1.5">
+                    {STATUS_LABELS[result.status] || result.status}
+                  </Chip>
+                </div>
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {result.carrier && (
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Truck size={16} className="text-muted/60 shrink-0" />
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                  <Truck size={14} className="text-muted/50 shrink-0" />
                   <span>{result.carrier}</span>
                 </div>
               )}
               {(result.origin || result.destination) && (
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <MapPin size={16} className="text-muted/60 shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-muted">
+                  <MapPin size={14} className="text-muted/50 shrink-0" />
                   <span>{result.origin || '?'} → {result.destination || '?'}</span>
                 </div>
               )}
               {result.lastTrackedAt && (
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Clock size={16} className="text-muted/60 shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-muted">
+                  <Clock size={14} className="text-muted/50 shrink-0" />
                   <span>Last updated {new Date(result.lastTrackedAt).toLocaleDateString()}</span>
                 </div>
               )}
             </div>
 
             {result.estimatedDelivery && (
-              <div className={`mt-4 p-3 rounded-lg ${isEmerald ? 'bg-emerald-50 border border-emerald-200' : 'bg-violet-50 border border-violet-200'}`}>
-                <p className={`text-xs font-medium ${isEmerald ? 'text-emerald-700' : 'text-violet-700'}`}>
+              <div className="mt-4 p-3 rounded-lg bg-background border border-border">
+                <p className="text-xs font-medium text-foreground">
                   Estimated delivery: {new Date(result.estimatedDelivery).toLocaleDateString()}
                 </p>
               </div>
             )}
             {result.actualDelivery && (
-              <div className="mt-2 p-3 rounded-lg bg-green-50 border border-green-200">
+              <div className="mt-2 p-3 rounded-lg bg-green-50 border border-green-100">
                 <p className="text-xs font-medium text-green-700">
                   Delivered on: {new Date(result.actualDelivery).toLocaleDateString()}
                 </p>
@@ -141,50 +146,49 @@ function TrackDetailInner(): ReactNode {
             )}
           </div>
 
-          {/* Claim section */}
           {!result.claimed && (
-            <div className="rounded-xl border border-border bg-surface p-6">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
               {session ? (
                 claimSuccess ? (
-                  <div className={`flex items-center gap-2 text-sm ${isEmerald ? 'text-emerald-700' : 'text-violet-700'}`}>
+                  <div className={`flex items-center gap-2 text-sm ${config.theme === 'emerald' ? 'text-emerald-600' : 'text-violet-600'}`}>
                     <CheckCircle2 size={16} /> {claimSuccess}
                   </div>
                 ) : (
-                  <>
-                    <h2 className="text-sm font-semibold text-foreground mb-2">Is this your shipment?</h2>
-                    <p className="text-xs text-muted mb-4">
-                      Link this shipment to your account to receive updates on status changes.
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
+                      <p className="text-xs text-muted mt-0.5">Link to receive updates on status changes.</p>
+                    </div>
                     <Button
                       isDisabled={claimMutation.isPending}
                       isPending={claimMutation.isPending}
                       onPress={handleClaim}
+                      size="sm"
                       className={btnClass}
                     >
-                      <Link2 size={16} />
-                      {claimMutation.isPending ? 'Linking...' : 'Link to my account'}
+                      <Link2 size={14} />
+                      {claimMutation.isPending ? 'Linking...' : 'Link'}
                     </Button>
-                    {claimError && <p className="mt-3 text-xs text-danger">{claimError}</p>}
-                  </>
+                    {claimError && <p className="mt-2 text-xs text-red-500 w-full">{claimError}</p>}
+                  </div>
                 )
               ) : (
-                <>
-                  <h2 className="text-sm font-semibold text-foreground mb-2">Is this your shipment?</h2>
-                  <p className="text-xs text-muted mb-4">
-                    Claim this shipment to get notified on status changes.
-                  </p>
-                  <a href={`/claim?trackingNo=${trackingNo}`} className={btnClass + ' inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors'}>
-                    <Link2 size={16} />
-                    Claim this shipment
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
+                      <p className="text-xs text-muted mt-0.5">Claim to get notified on status changes.</p>
+                  </div>
+                  <a href={`/claim?trackingNo=${trackingNo}`} className={`inline-flex items-center gap-1.5 ${btnClass} px-4 py-1.5 rounded-lg text-xs font-medium transition-colors`}>
+                    <Link2 size={14} />
+                    Claim
                   </a>
-                </>
+                </div>
               )}
             </div>
           )}
 
-          {/* Tracking timeline */}
-          <div className="rounded-xl border border-border bg-surface p-6">
-            <h2 className="text-sm font-semibold text-foreground mb-6">Tracking History</h2>
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-6">Tracking History</h2>
             {result.events.length === 0 ? (
               <p className="text-sm text-muted text-center py-8">No tracking events yet.</p>
             ) : (
@@ -192,13 +196,13 @@ function TrackDetailInner(): ReactNode {
                 {result.events.map((event, i) => (
                   <div key={i} className="flex gap-4 pb-6 relative last:pb-0">
                     {i < result.events.length - 1 && (
-                      <div className="absolute left-[11px] top-5 bottom-0 w-0.5 bg-gray-200" />
+                      <div className="absolute left-[9px] top-5 bottom-0 w-0.5 bg-surface-secondary" />
                     )}
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        i === 0 ? 'border-emerald-500 bg-emerald-100' : 'border-gray-300 bg-white'
+                      <div className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
+                        i === 0 ? 'border-foreground bg-foreground' : 'border-border bg-surface'
                       }`}>
-                        {i === 0 && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                        {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-surface" />}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0 -mt-0.5">
@@ -206,12 +210,12 @@ function TrackDetailInner(): ReactNode {
                         <p className="text-sm font-semibold text-foreground">
                           {STATUS_LABELS[event.status] || event.status}
                         </p>
-                        <span className="text-xs text-muted/60">
+                        <span className="text-xs text-muted">
                           {new Date(event.eventTime).toLocaleString()}
                         </span>
                       </div>
-                      {event.description && <p className="text-sm text-muted mt-1">{event.description}</p>}
-                      {event.location && <p className="text-xs text-muted/60 mt-0.5">{event.location}</p>}
+                      {event.description && <p className="text-xs text-muted mt-1">{event.description}</p>}
+                      {event.location && <p className="text-xs text-muted mt-0.5">{event.location}</p>}
                     </div>
                   </div>
                 ))}

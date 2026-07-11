@@ -8,6 +8,7 @@ import { usePageTitle } from '@/lib/use-page-title';
 import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
+import { AddressForm, type AddressData } from '@/components/address-form';
 
 type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
@@ -62,6 +63,7 @@ export default function UsersPage() {
   const [editTenantId, setEditTenantId] = useState('');
   const [editBranchId, setEditBranchId] = useState('');
   const [editPassword, setEditPassword] = useState('');
+  const [editAddress, setEditAddress] = useState<AddressData>({});
 
   const [deleteTarget, setDeleteTarget] = useState<UserRecord | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
@@ -107,16 +109,18 @@ export default function UsersPage() {
     setEditTenantId(user.tenantId ?? '');
     setEditBranchId(user.branchId ?? '');
     setEditPassword('');
+    setEditAddress((user.address ?? {}) as AddressData);
   }
 
   async function handleEditSave() {
     if (!editTarget) return;
     setEditSaving(true);
     try {
-      const data: Record<string, string> = { name: editName, email: editEmail };
+      const data: Record<string, unknown> = { name: editName, email: editEmail };
       if (userRole === 'superadmin' || userRole === 'tenant-admin') data.role = editRole;
       if (userRole === 'superadmin') data.tenantId = editTenantId;
       data.branchId = editBranchId;
+      data.address = editAddress;
       await updateUser({ id: editTarget.id, ...data });
       if (editPassword) {
         await authClient.admin.setUserPassword({ userId: editTarget.id, newPassword: editPassword });
@@ -421,6 +425,10 @@ export default function UsersPage() {
                       </ListBox>
                     </Select.Popover>
                   </Select>
+                </div>
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold text-muted mb-3">Address</p>
+                  <AddressForm prefix="user" value={editAddress} onChange={setEditAddress} showContact />
                 </div>
               </form>
             </Modal.Body>

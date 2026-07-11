@@ -1,13 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META } from '@/lib/status-config';
 import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
-import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
+import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, ProgressBar, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
 import { CopyButton, Flag } from '@/components/copy-button';
+import { AddressForm, type AddressData, addressDisplay } from '@/components/address-form';
+import { formatCurrency } from '@/lib/currency';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@/components/toast';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend, type PaginatedResult, type Shipment } from '@/lib/queries';
@@ -23,19 +25,29 @@ interface Customer {
   phone?: string;
 }
 
-const ROWS_PER_PAGE = 10;
-
-
+const ROWS_PER_PAGE = 50;
 
 export default function ShipmentsPage() {
   usePageTitle('Shipments');
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(value);
+      setPage(1);
+    }, 300);
+  }, []);
+  useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'trackingNumber', direction: 'ascending' });
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('delivered');
   const [createOpen, setCreateOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
   const [assignerData, setAssignerData] = useState<{ customerId: string | null; contactEmail: string; contactPhone: string }>({
     customerId: null,
     contactEmail: '',
@@ -43,6 +55,8 @@ export default function ShipmentsPage() {
   });
   const [newTrackingNumber, setNewTrackingNumber] = useState('');
   const [billAmount, setBillAmount] = useState(0);
+  const [senderAddress, setSenderAddress] = useState<AddressData>({});
+  const [recipientAddress, setRecipientAddress] = useState<AddressData>({});
 
 
   const { data: session } = authClient.useSession();
@@ -51,12 +65,18 @@ export default function ShipmentsPage() {
   const isSuperAdmin = userRole === 'superadmin';
   const isTenantAdmin = userRole === 'tenant-admin';
   const userTenantId = userData?.tenantId as string | undefined;
+  const userBranchId = userData?.branchId as string | undefined;
+  const isStaff = !isSuperAdmin && !isTenantAdmin;
   const { tenantFilter, branchFilter } = useTenantFilter();
   const effectiveTenantId = isSuperAdmin ? tenantFilter : (userTenantId ?? '');
   const { data: tenants = [] } = useTenants();
   const tenantCountry = useMemo(() => {
     const t = tenants.find((t) => t.id === effectiveTenantId);
     return t?.country ?? undefined;
+  }, [effectiveTenantId, tenants]);
+  const tenantCurrency = useMemo(() => {
+    const t = tenants.find((t) => t.id === effectiveTenantId);
+    return t?.currency ?? undefined;
   }, [effectiveTenantId, tenants]);
   const phoneDialCode = getCountryCode(tenantCountry).dialCode;
   const phoneFlag = getCountryCode(tenantCountry).flag;
@@ -67,22 +87,11 @@ export default function ShipmentsPage() {
     return STATUS_GROUPS[statusFilter]?.join(',') ?? 'all';
   }, [statusFilter]);
 
-  // Server-side pagination: pass page, ROWS_PER_PAGE, status, and search to the API
-  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, search);
+  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, debouncedSearch);
   const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
   const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
   const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
   const counts = !Array.isArray(shipmentsResp) ? shipmentsResp?.counts : undefined;
-
-  // Compute count badges per group from per-status counts
-  const groupCounts = useMemo(() => {
-    const result: Record<string, number> = { all: totalCount };
-    if (!counts) return result;
-    for (const [group, statuses] of Object.entries(STATUS_GROUPS)) {
-      result[group] = statuses.reduce((sum, s) => sum + (counts[s] ?? 0), 0);
-    }
-    return result;
-  }, [counts, totalCount]);
 
   const { data: trendData = [] } = useShipmentTrend();
 
@@ -124,7 +133,7 @@ export default function ShipmentsPage() {
   const { data: newBranches = [] } = useBranches();
   const queryClient = useQueryClient();
 
-  const [selectedBranchId, setSelectedBranchId] = useState(branchFilter);
+  const [selectedBranchId, setSelectedBranchId] = useState(isStaff ? (userBranchId ?? '') : branchFilter);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const clearError = (field: string) => setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
   const createShipment = useCreateShipment();
@@ -195,8 +204,9 @@ export default function ShipmentsPage() {
           <p className="text-sm text-muted">Track and manage shipments</p>
         </div>
         <Button onPress={() => {
-          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true);
+          setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true); setCreateStep(1);
           setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
+          setSenderAddress({}); setRecipientAddress({});
         }}>New Shipment</Button>
       </div>
 
@@ -226,7 +236,7 @@ export default function ShipmentsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-bold tracking-tight">{count}</p>
-                    <span className={`text-xs font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
+                    <span className={`text-xs font-medium ${up ? 'text-success' : 'text-danger'}`}>
                       {up ? '↑' : '↓'} {Math.abs(t)}%
                     </span>
                   </div>
@@ -252,13 +262,13 @@ export default function ShipmentsPage() {
       <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="sm:flex-1"><Input id="shipment-search" variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
+            <div className="sm:flex-1"><Input id="shipment-search" variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => handleSearch(e.target.value)} fullWidth /></div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
-                <Tabs.Tab id="all">All{groupCounts.all! > 0 ? ` (${groupCounts.all!})` : ''}</Tabs.Tab>
-                {FILTER_GROUPS.map((group) => (
+                <Tabs.Tab id="all">All</Tabs.Tab>
+                {Object.keys(STATUS_GROUPS).map((group) => (
                   <Tabs.Tab key={group} id={group}>
-                    {group}{groupCounts[group]! > 0 ? ` (${groupCounts[group]!})` : ''}
+                    {group}
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
@@ -301,7 +311,7 @@ export default function ShipmentsPage() {
                     <Table.Cell className="font-mono text-xs">{shipment.labelCode || '—'}</Table.Cell>
                     <Table.Cell>{shipment.customerName || '—'}</Table.Cell>
                     <Table.Cell>{shipment.carrier}</Table.Cell>
-                    <Table.Cell>{shipment.billAmount ? `₹${shipment.billAmount}` : '—'}</Table.Cell>
+                    <Table.Cell>{shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'}</Table.Cell>
                     <Table.Cell>
                       <Chip size="sm" variant="soft" color={(STATUS_META[shipment.status as keyof typeof STATUS_META]?.color ?? 'default') as Parameters<typeof Chip>[0]['color']}>{STATUS_META[shipment.status as keyof typeof STATUS_META]?.label ?? (shipment.status as string).replace(/_/g, ' ')}</Chip>
                     </Table.Cell>
@@ -349,13 +359,27 @@ export default function ShipmentsPage() {
         </Table>
       </div>
 
-      <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
+      <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) { setCreateOpen(false); setCreateStep(1); } }}>
         <Modal.Container>
-          <Modal.Dialog aria-label="New Shipment">
-            <Modal.Header>New Shipment</Modal.Header>
-            <Modal.Body>
+          <Modal.Dialog aria-label="New Shipment" className="max-w-2xl">
+            <Modal.Header className="border-b border-border pb-0">
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold">New Shipment</h2>
+                  <span className="text-[11px] text-muted font-medium">Step {createStep} of 4</span>
+                </div>
+                <div className="h-1 bg-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${((createStep - 1) / 3) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </Modal.Header>
+            <Modal.Body className="pt-4">
               <form id="create-form" onSubmit={async (e) => {
                 e.preventDefault();
+                if (createStep < 4) return;
                 setErrors({});
                 if ((document.getElementById('hp-create') as HTMLInputElement)?.value) return;
 
@@ -363,10 +387,9 @@ export default function ShipmentsPage() {
                 const trackingNo = newTrackingNumber.trim();
                 const branchVisible = isSuperAdmin || isTenantAdmin;
 
-                // Validate all fields
                 if (!trackingNo) newErrors.trackingNo = 'Tracking number is required';
                 else {
-                  const dup = shipmentRows.find((s) => s.trackingNo.toLowerCase() === trackingNo.toLowerCase());
+                  const dup = shipmentRows.find((s: { trackingNo: string }) => s.trackingNo.toLowerCase() === trackingNo.toLowerCase());
                   if (dup) newErrors.trackingNo = `Already exists (${dup.id.slice(0, 8)}...)`;
                 }
 
@@ -382,6 +405,7 @@ export default function ShipmentsPage() {
 
                 if (Object.keys(newErrors).length > 0) {
                   setErrors(newErrors);
+                  setCreateStep(1);
                   return;
                 }
 
@@ -397,17 +421,21 @@ export default function ShipmentsPage() {
                   customerId,
                   contactEmail: email,
                   contactPhone: phone,
+                  senderAddress,
+                  recipientAddress,
                   ...payload,
                   tenantId: effectiveTenantId || undefined,
                 }, {
                   onSuccess: (data) => {
                     toast('success', 'Shipment created', `Tracking #${data.trackingNo}`);
                     setCreateOpen(false);
+                    setCreateStep(1);
                     setNewTrackingNumber('');
                     setBillAmount(0);
-
+                    setSenderAddress({});
+                    setRecipientAddress({});
                     setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
-                    setSelectedBranchId(branchFilter);
+                    setSelectedBranchId(isStaff ? (userBranchId ?? '') : branchFilter);
                     setErrors({});
                   },
                   onError: (err) => {
@@ -420,96 +448,184 @@ export default function ShipmentsPage() {
                   <label htmlFor="hp-create">Leave empty</label>
                   <input id="hp-create" name="website" type="text" tabIndex={-1} autoComplete="off" />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="new-trackingNo">Tracking Number *</Label>
-                  <Input id="new-trackingNo" variant="secondary" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value.trimStart()); clearError('trackingNo'); }} required />
-                  {errors.trackingNo && <p className="text-xs text-danger">{errors.trackingNo}</p>}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="new-billAmount">Bill Amount *</Label>
-                  <NumberField.Root aria-label="Bill amount" variant="secondary" fullWidth value={billAmount} onChange={(v) => { setBillAmount(v); clearError('billAmount'); }}>
-                    <NumberField.Group>
-                      <NumberField.DecrementButton />
-                      <NumberField.Input id="new-billAmount" placeholder="0.00" />
-                      <NumberField.IncrementButton />
-                    </NumberField.Group>
-                  </NumberField.Root>
-                  {errors.billAmount && <p className="text-xs text-danger">{errors.billAmount}</p>}
-                </div>
 
-                {(isSuperAdmin || isTenantAdmin) && (
-                  <div className="flex flex-col gap-1">
-                    <Label>Branch *</Label>
-                    <Select
-                      selectedKey={selectedBranchId}
-                      onSelectionChange={(k) => { setSelectedBranchId(k as string); clearError('branchId'); }}
-                      placeholder="Select branch"
-                      variant="secondary"
-                      aria-label="Select branch"
-                    >
-                      <Select.Trigger className={`h-10 text-sm ${errors.branchId ? 'border-danger' : ''}`}>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {newBranches.filter((b) => b.tenantId === effectiveTenantId).map((b) => (
-                            <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
-                              {b.name}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    {errors.branchId && <p className="text-xs text-danger">{errors.branchId}</p>}
+                {createStep === 1 && (
+                  <div className="pt-2 space-y-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                      <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Shipment Info</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="new-trackingNo" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Tracking Number *</label>
+                        <Input id="new-trackingNo" variant="secondary" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value.trimStart()); clearError('trackingNo'); }} required />
+                        {errors.trackingNo && <p className="text-xs text-danger">{errors.trackingNo}</p>}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="new-billAmount" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Bill Amount *</label>
+                        <NumberField.Root aria-label="Bill amount" variant="secondary" fullWidth value={billAmount} onChange={(v) => { setBillAmount(v); clearError('billAmount'); }}>
+                          <NumberField.Group>
+                            <NumberField.DecrementButton />
+                            <NumberField.Input id="new-billAmount" placeholder="0.00" />
+                            <NumberField.IncrementButton />
+                          </NumberField.Group>
+                        </NumberField.Root>
+                        {errors.billAmount && <p className="text-xs text-danger">{errors.billAmount}</p>}
+                      </div>
+                    </div>
+                    {(isSuperAdmin || isTenantAdmin) && (
+                      <div className="flex flex-col gap-1.5 mt-3">
+                        <label className="text-[11px] font-semibold text-muted uppercase tracking-widest">Branch *</label>
+                        <Select
+                          selectedKey={selectedBranchId}
+                          onSelectionChange={(k) => { setSelectedBranchId(k as string); clearError('branchId'); }}
+                          placeholder="Select branch"
+                          variant="secondary"
+                          aria-label="Select branch"
+                        >
+                          <Select.Trigger className={`h-10 text-sm ${errors.branchId ? 'border-danger' : ''}`}>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {newBranches.filter((b) => b.tenantId === effectiveTenantId).map((b) => (
+                                <ListBox.Item key={b.id} id={b.id} textValue={b.name}>
+                                  {b.name}
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                        {errors.branchId && <p className="text-xs text-danger">{errors.branchId}</p>}
+                      </div>
+                    )}
+
+                    <div className="h-px bg-border/60 my-4" />
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                      <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Customer</span>
+                    </div>
+                    <CustomerAssigner
+                      customers={allCustomers}
+                      customerId={assignerData.customerId ?? ''}
+                      onChange={handleAssignerChange}
+                      phoneDialCode={phoneDialCode}
+                      phoneFlag={phoneFlag}
+                      clearError={() => clearError('customerId')}
+                      errors={errors}
+                    />
+
+                    {!assignerData.customerId && (
+                      <>
+                        <div className="h-px bg-border/60 my-4" />
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Contact</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="manual-email" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Email</label>
+                            <Input id="manual-email" variant="secondary" type="email" placeholder="customer@example.com"
+                              value={assignerData.contactEmail}
+                              onChange={(e) => handleAssignerChange({ ...assignerData, contactEmail: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="manual-phone" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Phone</label>
+                            <div className="flex">
+                              <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
+                                {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+                              </div>
+                              <Input id="manual-phone" variant="secondary" type="tel" placeholder="Phone number"
+                                value={assignerData.contactPhone.replace(phoneDialCode, '').trim()}
+                                onChange={(e) => {
+                                  const raw = e.target.value.replace(/\D/g, '');
+                                  handleAssignerChange({
+                                    ...assignerData,
+                                    contactPhone: raw ? `${phoneDialCode} ${raw}` : '',
+                                  });
+                                }}
+                                className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
-                <CustomerAssigner
-                  customers={allCustomers}
-                  customerId={assignerData.customerId ?? ''}
-                  onChange={handleAssignerChange}
-                  phoneDialCode={phoneDialCode}
-                  phoneFlag={phoneFlag}
-                  clearError={() => clearError('customerId')}
-                  errors={errors}
-                />
 
-                {!assignerData.customerId && (
-                  <div className="space-y-2 border-t border-border pt-3">
-                    <p className="text-xs text-muted font-medium">No customer assigned — add contact for notifications:</p>
-                    <div className="flex flex-col gap-1">
-                      <Label htmlFor="manual-email">Email</Label>
-                      <Input id="manual-email" variant="secondary" type="email" placeholder="customer@example.com"
-                        value={assignerData.contactEmail}
-                        onChange={(e) => handleAssignerChange({ ...assignerData, contactEmail: e.target.value })}
-                      />
+                {createStep === 2 && (
+                  <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-0.5 h-4 bg-primary rounded-full shrink-0" />
+                      <p className="text-sm font-semibold text-foreground">Sender</p>
+                      <p className="text-xs text-muted">— Pickup address</p>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <Label htmlFor="manual-phone">Phone</Label>
-                      <div className="flex">
-                        <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
-                          {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+                    <AddressForm prefix="sender" value={senderAddress} onChange={setSenderAddress} showCountry={false} />
+                  </div>
+                )}
+
+                {createStep === 3 && (
+                  <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-0.5 h-4 bg-primary rounded-full shrink-0" />
+                      <p className="text-sm font-semibold text-foreground">Recipient</p>
+                      <p className="text-xs text-muted">— Delivery address & contact</p>
+                    </div>
+                    <AddressForm prefix="recipient" value={recipientAddress} onChange={setRecipientAddress} showContact />
+                  </div>
+                )}
+
+                {createStep === 4 && (
+                  <div className="pt-2">
+                    <div className="divide-y divide-border/60 rounded-xl border border-border bg-muted/5">
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Shipment Info</span>
                         </div>
-                        <Input id="manual-phone" variant="secondary" type="tel" placeholder="Phone number"
-                          value={assignerData.contactPhone.replace(phoneDialCode, '').trim()}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/\D/g, '');
-                            handleAssignerChange({
-                              ...assignerData,
-                              contactPhone: raw ? `${phoneDialCode} ${raw}` : '',
-                            });
-                          }}
-                          className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none"
-                        />
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-muted">Tracking</div>
+                          <div className="font-medium">{newTrackingNumber}</div>
+                          <div className="text-muted">Bill Amount</div>
+                          <div className="font-medium">{formatCurrency(billAmount, tenantCurrency)}</div>
+                          <div className="text-muted">Customer</div>
+                          <div className="font-medium">{assignerData.customerId ? allCustomers.find(c => c.id === assignerData.customerId)?.name || 'Selected' : assignerData.contactEmail || assignerData.contactPhone || 'Self'}</div>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Sender</span>
+                        </div>
+                        <p className="text-sm">{addressDisplay(senderAddress) || <span className="text-muted italic">Not provided</span>}</p>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Recipient</span>
+                        </div>
+                        <p className="text-sm">{addressDisplay(recipientAddress) || <span className="text-muted italic">Not provided</span>}</p>
                       </div>
                     </div>
                   </div>
                 )}
               </form>
             </Modal.Body>
-            <Modal.Footer className="flex gap-2">
-              <Button variant="secondary" onPress={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" form="create-form" isPending={createShipment.isPending} isDisabled={!newTrackingNumber}>Create Shipment</Button>
+            <Modal.Footer className="flex gap-2 pt-4 border-t border-border">
+              {createStep > 1 ? (
+                <Button variant="secondary" onPress={() => setCreateStep((s) => s - 1)}>Back</Button>
+              ) : (
+                <Button variant="secondary" onPress={() => { setCreateOpen(false); setCreateStep(1); }}>Cancel</Button>
+              )}
+              {createStep < 4 ? (
+                <Button variant="primary" onPress={() => setCreateStep((s) => s + 1)}>Next</Button>
+              ) : (
+                <Button type="submit" form="create-form" isPending={createShipment.isPending} isDisabled={!newTrackingNumber}>Create Shipment</Button>
+              )}
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>

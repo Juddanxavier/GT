@@ -210,14 +210,14 @@ app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const body = parsed.data!;
   const { tFilter, bFilter, sFilter, sbFilter, qFilter, qbFilter } = scopeFilters(scope);
 
-  let tenantName: string | undefined;
+  let tenantData: { name: string; currency: string | null } | undefined;
   if (scope.tenantId) {
     const [t] = await db
-      .select({ name: tenants.name })
+      .select({ name: tenants.name, currency: tenants.currency })
       .from(tenants)
       .where(eq(tenants.id, scope.tenantId))
       .limit(1);
-    if (t) tenantName = t.name;
+    if (t) tenantData = t;
   }
 
   try {
@@ -231,7 +231,8 @@ app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
       type: body.type ?? 'shipments',
       startDate: body.startDate,
       endDate: body.endDate,
-      tenantName,
+      tenantName: tenantData?.name,
+      currency: tenantData?.currency ?? undefined,
     });
     return new Response(pdf as unknown as BodyInit, {
       headers: {
@@ -259,14 +260,14 @@ app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => 
   const startDate = clampEnd(body.startDate);
   const endDate = clampEnd(body.endDate);
 
-  let tenantName: string | undefined;
+  let tData: { name: string; currency: string | null } | undefined;
   if (scope.tenantId) {
     const [t] = await db
-      .select({ name: tenants.name })
+      .select({ name: tenants.name, currency: tenants.currency })
       .from(tenants)
       .where(eq(tenants.id, scope.tenantId))
       .limit(1);
-    if (t) tenantName = t.name;
+    if (t) tData = t;
   }
 
   try {
@@ -280,7 +281,8 @@ app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => 
       type: body.type ?? 'shipments',
       startDate,
       endDate,
-      tenantName,
+      tenantName: tData?.name,
+      currency: tData?.currency ?? undefined,
     });
 
     const type = body.type === 'quotations' ? 'Quotation' : 'Shipment';

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
-const jetbrainsMono = JetBrains_Mono({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" className={jetbrainsMono.variable}>
-      <body style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>{children}</body>
+    <html lang="en" data-theme="dark" className={inter.variable}>
+      <body style={{ fontFamily: 'var(--font-inter)' }}>{children}</body>
     </html>
   );
 }

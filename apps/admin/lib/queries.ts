@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryResult } from '@tanstack/react-query';
 import { api } from './api';
 import { useTenantFilter } from './tenant-filter-context';
 
@@ -32,6 +32,8 @@ export interface Shipment {
   carrier: string | null;
   origin: string | null;
   destination: string | null;
+  senderAddress: Record<string, string> | null;
+  recipientAddress: Record<string, string> | null;
   billAmount: string | null;
   labelCode: string | null;
   trackingRegistered: boolean;
@@ -97,9 +99,9 @@ export function useDeleteBranch() {
 // ─── Tenant queries ──────────────────────────────────────────────────
 
 export function useTenants() {
-  return useQuery<{ id: string; name: string; country: string | null }[]>({
+  return useQuery<{ id: string; name: string; country: string | null; currency: string | null }[]>({
     queryKey: ['tenants'],
-    queryFn: () => api.get<{ id: string; name: string; country: string | null }[]>('/api/tenants'),
+    queryFn: () => api.get<{ id: string; name: string; country: string | null; currency: string | null }[]>('/api/tenants'),
   });
 }
 
@@ -181,6 +183,7 @@ export function useShipments(page?: number, limit?: number, status?: string, sea
       }
       return api.get<Shipment[]>('/api/shipments');
     },
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -217,6 +220,7 @@ export interface UserRecord {
   banExpires: string | null;
   tenantId: string | null;
   branchId: string | null;
+  address: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
 }

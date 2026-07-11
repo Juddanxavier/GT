@@ -25,7 +25,7 @@ export function KpiCard({ label, count, color, icon: Icon, format = 'number', da
           <div className="flex items-baseline gap-2">
             <p className={`font-bold tracking-tight ${data ? 'text-4xl' : 'text-3xl'}`}>{displayCount}</p>
             {trend != null && (
-              <span className={`text-xs font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              <span className={`text-xs font-medium ${trend >= 0 ? 'text-success' : 'text-danger'}`}>
                 {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
               </span>
             )}

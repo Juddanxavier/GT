@@ -43,19 +43,19 @@ async function seed() {
   // If neither existed, this inserts a fresh record.
   const [gajan] = await db
     .insert(tenants)
-    .values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' })
+    .values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India', currency: 'INR' })
     .onConflictDoUpdate({
       target: tenants.slug,
-      set: { name: 'Gajan Traders', country: 'India', updatedAt: new Date() },
+      set: { name: 'Gajan Traders', country: 'India', currency: 'INR', updatedAt: new Date() },
     })
     .returning();
 
   const [lanka] = await db
     .insert(tenants)
-    .values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' })
+    .values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka', currency: 'LKR' })
     .onConflictDoUpdate({
       target: tenants.slug,
-      set: { name: 'Lanka Mahal', country: 'Sri Lanka', updatedAt: new Date() },
+      set: { name: 'Lanka Mahal', country: 'Sri Lanka', currency: 'LKR', updatedAt: new Date() },
     })
     .returning();
 
@@ -152,7 +152,8 @@ async function seed() {
       .where(eq(user.email, c.email))
       .limit(1);
     if (existing.length > 0) {
-      insertedCustomerUsers.push({ ...existing[0]!, phone: existing[0]!.phone ?? '' });
+      await db.update(user).set({ branchId: c.branchId, tenantId: c.tenantId }).where(eq(user.email, c.email));
+      insertedCustomerUsers.push({ ...existing[0]!, phone: existing[0]!.phone ?? '', branchId: c.branchId, tenantId: c.tenantId });
       continue;
     }
     const created = await (auth.api as any).createUser({
@@ -164,13 +165,14 @@ async function seed() {
         data: { tenantId: c.tenantId, branchId: c.branchId, phone: c.phone },
       },
     });
+    await db.update(user).set({ branchId: c.branchId, tenantId: c.tenantId }).where(eq(user.email, c.email));
     insertedCustomerUsers.push({
       id: created.user.id,
       email: created.user.email,
       name: created.user.name,
       phone: c.phone,
-      branchId: created.user.branchId ?? null,
-      tenantId: created.user.tenantId ?? null,
+      branchId: c.branchId,
+      tenantId: c.tenantId,
     });
   }
   const customerMap = new Map(insertedCustomerUsers.map((c) => [c.email, c]));
@@ -216,6 +218,28 @@ async function seed() {
       const billAmount = (Math.random() * 50000 + 1000).toFixed(2);
       const trackNum = `GT${String(Date.now()).slice(-6)}${String(shipmentCount).padStart(3, '0')}`;
       const labelCode = `${carrier.toUpperCase().slice(0, 2)}${String(Date.now()).slice(-8)}${String(shipmentCount).padStart(4, '0')}`;
+      const [senderCity, senderCountry] = origin.split(', ').map((s) => s.trim());
+      const [recipCity, recipCountry] = dest.split(', ').map((s) => s.trim());
+      const senderAddress = {
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        street: `${Math.floor(Math.random() * 999) + 1} ${['Main St', 'Park Ave', 'MG Road', 'Lake View', 'Church St', 'Green Lane'][Math.floor(Math.random() * 6)]}`,
+        city: senderCity ?? origin,
+        state: '',
+        pincode: String(100000 + Math.floor(Math.random() * 900000)),
+        country: senderCountry ?? '',
+      };
+      const recipientAddress = {
+        name: ['John Smith', 'Emma Wilson', 'Carlos Garcia', 'Yuki Tanaka', 'Sarah Johnson', 'Li Wei', 'Hans Mueller', 'Maria Lopez'][Math.floor(Math.random() * 8)],
+        phone: ['+1-212-555-', '+44-20-', '+61-2-', '+49-30-', '+33-1-', '+81-3-', '+86-10-', '+65-'][Math.floor(Math.random() * 8)] + String(100000 + Math.floor(Math.random() * 900000)),
+        email: `recipient${shipmentCount}@example.com`,
+        street: `${Math.floor(Math.random() * 999) + 1} ${['Oak St', 'Broadway', 'King St', 'High St', 'Market St', '5th Ave'][Math.floor(Math.random() * 6)]}`,
+        city: recipCity ?? dest,
+        state: '',
+        pincode: String(10000 + Math.floor(Math.random() * 90000)),
+        country: recipCountry ?? '',
+      };
 
       const [s] = await db
         .insert(shipments)
@@ -232,6 +256,8 @@ async function seed() {
           tenantId: branch.tenantId,
           contactEmail: customer.email,
           contactPhone: customer.phone,
+          senderAddress,
+          recipientAddress,
           createdAt,
           updatedAt: createdAt,
           lastTrackedAt: createdAt,

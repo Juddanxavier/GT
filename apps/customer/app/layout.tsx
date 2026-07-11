@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: ReactNode }):
 
   return (
     <html lang="en" data-tenant-slug={slug} className={jetbrainsMono.variable}>
-      <body className="bg-white text-gray-900 antialiased" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>
+      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>
         <Providers>
           {slug === 'lanka-mahal' ? (
             <LankaLayout>{children}</LankaLayout>

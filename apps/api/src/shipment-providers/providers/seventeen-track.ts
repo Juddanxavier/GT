@@ -92,12 +92,15 @@ export class SeventeenTrackProvider implements ShipmentProvider {
   async registerShipment(data: {
     trackingNo: string;
     orderNo?: string;
+    courierCode?: string;
     email?: string;
   }): Promise<boolean> {
     try {
       const body: Record<string, unknown> = { number: data.trackingNo };
       if (data.orderNo) body.order_no = data.orderNo;
       if (data.email) body.email = data.email;
+      const carrierNum = Number(data.courierCode);
+      if (!isNaN(carrierNum)) body.carrier = carrierNum;
 
       const res = await fetch(`${BASE}/register`, {
         method: 'POST',

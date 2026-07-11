@@ -151,6 +151,8 @@ export const shipments = pgTable(
     actualDelivery: timestamp('actual_delivery'),
     origin: text('origin'),
     destination: text('destination'),
+    senderAddress: jsonb('sender_address').default('{}'),
+    recipientAddress: jsonb('recipient_address').default('{}'),
     payload: jsonb('payload').notNull().default('{}'),
     billAmount: numeric('bill_amount', { precision: 12, scale: 2 }),
     labelCode: varchar('label_code', { length: 20 }),
@@ -241,6 +243,7 @@ export const user = pgTable(
     }),
     // Customer profile fields (from former customer table)
     phone: varchar('phone', { length: 50 }),
+    address: jsonb('address').default('{}'),
     isActive: boolean('is_active').notNull().default(true),
     // Admin plugin fields
     banned: boolean('banned').notNull().default(false),

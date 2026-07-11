@@ -224,6 +224,8 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     contactEmail: parsed.data.contactEmail,
     contactPhone: parsed.data.contactPhone,
     customerName: parsed.data.customerName,
+    senderAddress: parsed.data.senderAddress,
+    recipientAddress: parsed.data.recipientAddress,
   });
 
   return c.json({ data: shipment }, 201);
@@ -295,6 +297,8 @@ app.patch(
         'contactPhone',
         'origin',
         'destination',
+        'senderAddress',
+        'recipientAddress',
       ],
       'tenant-admin': [
         'customerId',
@@ -304,6 +308,8 @@ app.patch(
         'branchId',
         'origin',
         'destination',
+        'senderAddress',
+        'recipientAddress',
         'status',
         'billAmount',
       ],
@@ -315,6 +321,8 @@ app.patch(
         'branchId',
         'origin',
         'destination',
+        'senderAddress',
+        'recipientAddress',
         'status',
         'billAmount',
       ],

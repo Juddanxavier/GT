@@ -110,7 +110,7 @@ function LoginForm(): ReactNode {
 
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-            <input type="checkbox" defaultChecked className="rounded border-gray-300 accent-current" />
+            <input type="checkbox" defaultChecked className="rounded border-border accent-current" />
             Remember me
           </label>
           <a href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">

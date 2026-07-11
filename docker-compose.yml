@@ -1,80 +1,10 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: gt_dev
-    ports:
-      - '5432:5432'
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d gt_dev']
-      interval: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     ports:
       - '6379:6379'
+    restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       retries: 5
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: api
-    ports:
-      - '3001:3001'
-    env_file: .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  admin:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: admin
-      args:
-        - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
-    ports:
-      - '3000:3000'
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
-    depends_on:
-      - api
-
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - '9090:9090'
-    volumes:
-      - promdata:/prometheus
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - '3003:3000'
-    volumes:
-      - grafanadata:/var/lib/grafana
-    environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-    depends_on:
-      - prometheus
-
-volumes:
-  pgdata:
-  promdata:
-  grafanadata:

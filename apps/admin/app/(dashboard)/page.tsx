@@ -16,6 +16,8 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { api, ApiError } from '@/lib/api';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { useTenants } from '@/lib/queries';
+import { getCurrencySymbol } from '@/lib/currency';
 import { connectSocket } from '@/lib/socket';
 import { usePageTitle } from '@/lib/use-page-title';
 
@@ -92,13 +94,6 @@ function statusLabel(s: string): string {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatCurrency(v: string): string {
-  const n = Number(v);
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-  return `₹${n.toLocaleString()}`;
-}
-
 function fillDays(data: { date: string; count: number }[], days: number) {
   const map = new Map(data.map(d => [d.date, d.count]));
   const result: { date: string; shipments: number }[] = [];
@@ -125,8 +120,8 @@ function KpiCard({
     red: 'bg-red-500', emerald: 'bg-emerald-500', violet: 'bg-violet-500',
     sky: 'bg-sky-500', purple: 'bg-purple-500',
   };
-  const dot = dotMap[accent] ?? 'bg-gray-500';
-  const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-muted';
+  const dot = dotMap[accent] ?? 'bg-default-400';
+  const trendColor = trend === 'up' ? 'text-success' : trend === 'down' ? 'text-danger' : 'text-muted';
 
   const cls = `block rounded-xl bg-surface border border-border p-5 transition-all hover:shadow-md`;
   const inner = (
@@ -134,6 +129,7 @@ function KpiCard({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className={`shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg ${dot} text-white`}>
+
             {icon}
           </span>
           <span className="text-sm font-medium text-muted truncate">{label}</span>
@@ -163,6 +159,13 @@ export default function DashboardPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchFilter, setBranchFilter] = useState('');
   const { tenantFilter, branchFilter: navBranchFilter } = useTenantFilter();
+  const { data: tenantsData = [] } = useTenants();
+  const sessionTenantId = (session?.user as Record<string, unknown> | undefined)?.tenantId as string | undefined;
+  const effectiveTidForCurrency = tenantFilter || sessionTenantId || '';
+  const tenantCurrency = useMemo(() => {
+    const t = tenantsData.find((t) => t.id === effectiveTidForCurrency);
+    return t?.currency ?? undefined;
+  }, [effectiveTidForCurrency, tenantsData]);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [carrierFilter, setCarrierFilter] = useState<string[]>([]);
@@ -210,15 +213,15 @@ export default function DashboardPage() {
   if (isPending) {
     return (
       <div className="w-full space-y-6">
-        <div className="h-32 rounded-2xl bg-gradient-to-br from-gray-200/50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 animate-pulse" />
+        <div className="h-32 rounded-2xl bg-surface-secondary/50 animate-pulse" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-surface-secondary/50 animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="h-64 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse lg:col-span-2" />
-          <div className="h-64 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse" />
+          <div className="h-64 rounded-2xl bg-surface-secondary/50 animate-pulse lg:col-span-2" />
+          <div className="h-64 rounded-2xl bg-surface-secondary/50 animate-pulse" />
         </div>
       </div>
     );
@@ -255,6 +258,7 @@ export default function DashboardPage() {
       onBranchChange={setBranchFilter}
       onRetry={fetchStats}
       router={router}
+      currencySymbol={getCurrencySymbol(tenantCurrency)}
     />
   );
 }
@@ -262,6 +266,13 @@ export default function DashboardPage() {
 function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
   stats: Stats; onRetry: () => void; router: ReturnType<typeof useRouter>; isTenantAdmin?: boolean;
 }) {
+  const fmtCurrency = useCallback((v: string) => {
+    const n = Number(v);
+    const sym = getCurrencySymbol(null);
+    if (n >= 100000) return `${sym}${(n / 100000).toFixed(1)}L`;
+    if (n >= 1000) return `${sym}${(n / 1000).toFixed(1)}K`;
+    return `${sym}${n.toLocaleString()}`;
+  }, []);
   const [chartRange, setChartRange] = useState<'1w' | '2w' | '1m'>('1w');
   const [revRange, setRevRange] = useState<'3m' | '6m' | '12m' | 'all'>('12m');
   const t = stats.total!;
@@ -302,7 +313,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
 
   const supCards = [
     { icon: <Package size={18} />, label: 'Total Shipments', value: t.shipments.total, sublabel: isTenantAdmin ? 'across all branches' : 'across all tenants', accent: 'blue' as const, trend: supTrend(supTrendShipments), trendValue: supPct(supTrendShipments) },
-    { icon: <IndianRupee size={18} />, label: 'Bill Amount', value: formatCurrency(t.invoices.revenueTotal), sublabel: 'lifetime', accent: 'emerald' as const, trend: supTrend(supTrendRevenue), trendValue: supPct(supTrendRevenue) },
+    { icon: <IndianRupee size={18} />, label: 'Bill Amount', value: fmtCurrency(t.invoices.revenueTotal), sublabel: 'lifetime', accent: 'emerald' as const, trend: supTrend(supTrendRevenue), trendValue: supPct(supTrendRevenue) },
     { icon: <Users size={18} />, label: 'Active Customers', value: t.customers.active, sublabel: 'registered', accent: 'violet' as const, trend: 'neutral' as const, trendValue: '—' },
     { icon: <TrendingUp size={18} />, label: 'Avg. Conversion', value: `${t.quotations.conversionRate}%`, sublabel: 'quote-to-ship', accent: 'amber' as const, trend: 'neutral' as const, trendValue: '—' },
   ];
@@ -310,19 +321,23 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
   return (
     <div className="w-full space-y-6">
       {/* Hero Greeting */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-surface to-primary/[0.02] border border-border p-6 sm:p-8">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
+      <div className="relative overflow-hidden rounded-xl bg-surface border border-border p-6 sm:p-8">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center bg-no-repeat opacity-20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/40" />
         <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <GreetingIcon />
-              <Heading level={1} weight="bold" className="text-foreground">{timeGreeting()}, {isTenantAdmin ? 'Admin' : 'Admin'}</Heading>
-              <Chip color="accent" variant="soft" size="sm" className="capitalize hidden sm:inline-flex">{isTenantAdmin ? 'admin' : 'super admin'}</Chip>
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-accent/10 text-accent">
+                <GreetingIcon />
+              </div>
+              <div>
+                <Heading level={1} weight="bold" className="text-foreground text-xl sm:text-2xl">{timeGreeting()}, {isTenantAdmin ? 'Admin' : 'Super Admin'}</Heading>
+                <Paragraph color="muted" className="text-sm flex items-center gap-2">
+                  <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                  <Chip color="accent" variant="soft" size="sm" className="capitalize">{isTenantAdmin ? 'admin' : 'super admin'}</Chip>
+                </Paragraph>
+              </div>
             </div>
-            <Paragraph color="muted" className="text-sm flex items-center gap-3">
-              <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-              <span className="opacity-40">·</span>
-            </Paragraph>
           </div>
           <div className="flex items-center gap-2">
             <Button isIconOnly variant="ghost" onPress={() => onRetry()}><RefreshCw size={16} /></Button>
@@ -391,20 +406,20 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
             </Card.Header>
             <Card.Content className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{t.shipments.inTransit}</p>
+                <div className="text-center p-3 rounded-xl bg-warning/10 border border-warning/20">
+                  <p className="text-xl font-bold text-warning">{t.shipments.inTransit}</p>
                   <p className="text-xs text-muted mt-1">In Transit</p>
                 </div>
-                <div className="text-center p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                  <p className="text-xl font-bold text-green-600 dark:text-green-400">{t.shipments.deliveredToday}</p>
+                <div className="text-center p-3 rounded-xl bg-success/10 border border-success/20">
+                  <p className="text-xl font-bold text-success">{t.shipments.deliveredToday}</p>
                   <p className="text-xs text-muted mt-1">Delivered Today</p>
                 </div>
-                <div className="text-center p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-xl font-bold text-red-600 dark:text-red-400">{t.shipments.exceptions}</p>
+                <div className="text-center p-3 rounded-xl bg-danger/10 border border-danger/20">
+                  <p className="text-xl font-bold text-danger">{t.shipments.exceptions}</p>
                   <p className="text-xs text-muted mt-1">Exceptions</p>
                 </div>
-                <div className="text-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{t.customers.active}</p>
+                <div className="text-center p-3 rounded-xl bg-accent/10 border border-accent/20">
+                  <p className="text-xl font-bold text-accent">{t.customers.active}</p>
                   <p className="text-xs text-muted mt-1">Active Customers</p>
                 </div>
               </div>
@@ -452,9 +467,9 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
                         <tr key={pb.branchId} className="border-b border-border hover:bg-muted/30 transition-colors">
                           <td className="py-3 font-medium">{pb.branchName}</td>
                           <td className="py-3 text-right">{pb.shipments.total}</td>
-                          <td className="py-3 text-right text-amber-600 dark:text-amber-400 font-medium">{pb.shipments.inTransit}</td>
-                          <td className="py-3 text-right text-green-600 dark:text-green-400 font-medium">{pb.shipments.deliveredToday}</td>
-                          <td className="py-3 text-right">{formatCurrency(pb.invoices.revenueTotal)}</td>
+                          <td className="py-3 text-right text-warning font-medium">{pb.shipments.inTransit}</td>
+                          <td className="py-3 text-right text-success font-medium">{pb.shipments.deliveredToday}</td>
+                          <td className="py-3 text-right">{fmtCurrency(pb.invoices.revenueTotal)}</td>
                           <td className="py-3 text-right">{pb.customers.active}/{pb.customers.total}</td>
                         </tr>
                       );
@@ -464,9 +479,9 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
                       <tr key={pt.tenantId} className="border-b border-border hover:bg-muted/30 transition-colors">
                         <td className="py-3 font-medium">{pt.tenantName}</td>
                         <td className="py-3 text-right">{pt.shipments.total}</td>
-                        <td className="py-3 text-right text-amber-600 dark:text-amber-400 font-medium">{pt.shipments.inTransit}</td>
-                        <td className="py-3 text-right text-green-600 dark:text-green-400 font-medium">{pt.shipments.deliveredToday}</td>
-                        <td className="py-3 text-right">{formatCurrency(pt.invoices.revenueTotal)}</td>
+                        <td className="py-3 text-right text-warning font-medium">{pt.shipments.inTransit}</td>
+                        <td className="py-3 text-right text-success font-medium">{pt.shipments.deliveredToday}</td>
+                        <td className="py-3 text-right">{fmtCurrency(pt.invoices.revenueTotal)}</td>
                         <td className="py-3 text-right">{pt.branches.total}</td>
                       </tr>
                     );
@@ -480,7 +495,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
           <div className="flex items-center justify-between px-6 pt-5 pb-2">
             <div>
               <Card.Title className="text-base font-semibold">Bill Amount — {isTenantAdmin ? 'All Branches' : 'All Tenants'}</Card.Title>
-              <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(t.invoices.revenueTotal)}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{fmtCurrency(t.invoices.revenueTotal)}</p>
             </div>
             <Select.Root
                 selectedKey={revRange}
@@ -540,15 +555,15 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
             <Card.Content className="space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">In Transit</span>
-                <span className="font-semibold text-amber-600">{t.shipments.inTransit}</span>
+                <span className="font-semibold text-warning">{t.shipments.inTransit}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Delivered Today</span>
-                <span className="font-semibold text-green-600">{t.shipments.deliveredToday}</span>
+                <span className="font-semibold text-success">{t.shipments.deliveredToday}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Exceptions</span>
-                <span className="font-semibold text-red-600">{t.shipments.exceptions}</span>
+                <span className="font-semibold text-danger">{t.shipments.exceptions}</span>
               </div>
               <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
                 <span className="text-muted">Active Shipments</span>
@@ -556,7 +571,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted">Bill Amount This Month</span>
-                <span className="font-semibold text-foreground">{formatCurrency(t.invoices.revenueThisMonth)}</span>
+                <span className="font-semibold text-foreground">{fmtCurrency(t.invoices.revenueThisMonth)}</span>
               </div>
             </Card.Content>
           </Card>
@@ -581,13 +596,21 @@ function SuperStatCard({ label, value, sub }: { label: string; value: string | n
 
 function OperationalDashboard({
   stats, loading, error, role, isTenantAdmin, isStaff, userName, branchName,
-  branches, branchFilter, onBranchChange, onRetry, router,
+  branches, branchFilter, onBranchChange, onRetry, router, currencySymbol,
 }: {
   stats: Stats | null; loading: boolean; error: string | null;
   role: string; isTenantAdmin: boolean; isStaff: boolean; userName: string; branchName?: string;
   branches: Branch[]; branchFilter: string; onBranchChange: (v: string) => void;
-  onRetry: () => void; router: ReturnType<typeof useRouter>;
+  onRetry: () => void; router: ReturnType<typeof useRouter>; currencySymbol?: string;
 }) {
+  const fmtCurrency = useCallback((v: string) => {
+    const n = Number(v);
+    const sym = currencySymbol || '₹';
+    if (n >= 100000) return `${sym}${(n / 100000).toFixed(1)}L`;
+    if (n >= 1000) return `${sym}${(n / 1000).toFixed(1)}K`;
+    return `${sym}${n.toLocaleString()}`;
+  }, [currencySymbol]);
+  const curSym = currencySymbol || '₹';
   const [chartRange, setChartRange] = useState<'1w' | '2w' | '1m'>('2w');
   const xTickFontSize = chartRange === '1m' ? 8 : 10;
 
@@ -709,7 +732,7 @@ function OperationalDashboard({
     { icon: <Package size={18} />, label: 'Out for Delivery', value: shipmentsData.outForDelivery, accent: 'blue', href: '/shipments?status=out_for_delivery', trend: trend(trendShipments), trendValue: pctStr(trendShipments) },
     { icon: <CheckCircle size={18} />, label: 'Delivered Today', value: shipmentsData.deliveredToday, accent: 'green', href: '/shipments?status=delivered', trend: trend(trendShipments), trendValue: pctStr(trendShipments) },
     { icon: <AlertTriangle size={18} />, label: 'Exceptions', value: shipmentsData.exceptions, accent: 'red', href: '/shipments?status=exception', trend: trend(-(trendShipments ?? 0)), trendValue: pctStr(trendShipments ? -trendShipments : null) },
-    { icon: <IndianRupee size={18} />, label: 'Bill Amount This Month', value: formatCurrency(stats.invoices.revenueThisMonth), accent: 'emerald', trend: trend(trendRevenue), trendValue: pctStr(trendRevenue) },
+    { icon: <IndianRupee size={18} />, label: 'Bill Amount This Month', value: fmtCurrency(stats.invoices.revenueThisMonth), accent: 'emerald', trend: trend(trendRevenue), trendValue: pctStr(trendRevenue) },
     { icon: <TrendingUp size={18} />, label: 'Quote Conversion', value: `${stats.quotations.conversionRate}%`, accent: 'violet', trend: 'neutral' as const, trendValue: '—' },
   ];
 
@@ -863,7 +886,7 @@ function OperationalDashboard({
                     contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
                     labelStyle={{ color: 'var(--foreground)' }}
                     // @ts-expect-error Recharts v3 Tooltip formatter type incompatibility
-                    formatter={(n: number) => `₹${n.toLocaleString()}`}
+                    formatter={(n: number) => `${curSym}${n.toLocaleString()}`}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={1.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 3, fill: 'var(--accent)' }} />
                 </AreaChart>
@@ -1067,20 +1090,20 @@ function OperationalDashboard({
           </Card.Header>
           <Card.Content className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats.invoices.revenueThisMonth)}</p>
+              <div className="text-center p-3 rounded-xl bg-success/10 border border-success/20">
+                <p className="text-lg font-bold text-success">{fmtCurrency(stats.invoices.revenueThisMonth)}</p>
                 <p className="text-xs text-muted mt-1">This Month</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(stats.invoices.revenueTotal)}</p>
+              <div className="text-center p-3 rounded-xl bg-accent/10 border border-accent/20">
+                <p className="text-lg font-bold text-accent">{fmtCurrency(stats.invoices.revenueTotal)}</p>
                 <p className="text-xs text-muted mt-1">Bill Amount</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                <p className="text-lg font-bold text-violet-600 dark:text-violet-400">{stats.quotations.conversionRate}%</p>
+              <div className="text-center p-3 rounded-xl bg-warning/10 border border-warning/20">
+                <p className="text-lg font-bold text-warning">{stats.quotations.conversionRate}%</p>
                 <p className="text-xs text-muted mt-1">Quote Conversion</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{stats.invoices.total}</p>
+              <div className="text-center p-3 rounded-xl bg-default/10 border border-default/20">
+                <p className="text-lg font-bold text-foreground">{stats.invoices.total}</p>
                 <p className="text-xs text-muted mt-1">Billable Shipments</p>
               </div>
             </div>
@@ -1246,9 +1269,9 @@ function renderAlerts(alerts: Alert[]) {
     exception: <AlertTriangle size={14} />,
   };
   const colorMap: Record<string, string> = {
-    stale: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-l-amber-500',
-    overdue: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-l-orange-500',
-    exception: 'text-red-600 dark:text-red-400 bg-red-500/10 border-l-red-500',
+    stale: 'text-warning bg-warning/10 border-l-warning',
+    overdue: 'text-danger bg-danger/10 border-l-danger',
+    exception: 'text-danger bg-danger/10 border-l-danger',
   };
   const labelMap: Record<string, string> = {
     stale: 'Stale',
@@ -1268,7 +1291,7 @@ function renderAlerts(alerts: Alert[]) {
       </Card.Header>
       <Card.Content>
         {alerts.length === 0 ? (
-          <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm py-4">
+          <div className="flex items-center gap-2 text-success text-sm py-4">
             <CheckCircle2 size={18} />
             <span>No alerts — all shipments are on track</span>
           </div>
@@ -1284,9 +1307,9 @@ function renderAlerts(alerts: Alert[]) {
                 <a
                   key={a.shipmentId}
                   href={`/shipments/${a.shipmentId}`}
-                  className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl border-l-4 transition-all hover:translate-x-0.5 ${colorMap[a.type] ?? 'text-gray-600 bg-gray-500/10 border-l-gray-500'}`}
+                  className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl border-l-4 transition-all hover:translate-x-0.5 ${colorMap[a.type] ?? 'text-muted bg-default/10 border-l-default'}`}
                 >
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 shrink-0">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-tertiary shrink-0">
                     {iconMap[a.type] ?? <AlertTriangle size={14} />}
                   </span>
                   <div className="flex-1 min-w-0">

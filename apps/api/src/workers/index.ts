@@ -9,6 +9,17 @@ import type { EventType } from '../email/templates';
 import type { Branding, ShipmentData } from '../email/types';
 import { generateInvoicePdf, getInvoiceData } from '../invoice/service';
 import './webhook-worker';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const lankaLogoDataUri: string | null = (() => {
+  try {
+    const buf = readFileSync(resolve(process.cwd(), 'public', 'lanka-mahal-logo.png'));
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+})();
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';
@@ -139,10 +150,12 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
       .where(eq(tenants.id, tenantId))
       .limit(1);
     if (tenant) {
+      const isLanka = tenant.name?.toLowerCase().includes('lanka');
       branding = {
         companyName: tenant.name ?? 'Gajan Traders',
         supportEmail: 'support@gajantraders.com',
-        primaryColor: tenant.name?.toLowerCase().includes('lanka') ? '#059669' : '#7c3aed',
+        primaryColor: isLanka ? '#059669' : '#7c3aed',
+        logoUrl: isLanka && lankaLogoDataUri ? lankaLogoDataUri : undefined,
       };
     }
   } catch {
@@ -210,11 +223,12 @@ export type EmailJobData = {
   shipment?: ShipmentData;
   branding?: Branding;
   invoiceId?: string;
+  trackingNo?: string;
   pdfBase64?: string;
 };
 
 export async function emailProcessor(job: EmailJobData): Promise<void> {
-  const { to, eventType, shipment, branding, invoiceId, pdfBase64 } = job;
+  const { to, eventType, shipment, branding, invoiceId, trackingNo, pdfBase64 } = job;
 
   if (invoiceId && pdfBase64) {
     const [inv] = await db
@@ -265,7 +279,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
       }),
       attachments: [
         {
-          filename: `invoice-${inv.invoiceNo}.pdf`,
+          filename: `${trackingNo ?? inv.invoiceNo}.pdf`,
           content: pdfBuffer,
           contentType: 'application/pdf',
         },
@@ -358,6 +372,7 @@ export const pdfWorker = createWorker<PdfJobData>(
       if (emailQueue) {
         await emailQueue.add('invoice', {
           invoiceId,
+          trackingNo: data.trackingNo,
           pdfBase64: pdf.toString('base64'),
         });
       }

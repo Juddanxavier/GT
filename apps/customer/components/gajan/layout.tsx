@@ -6,7 +6,7 @@ export function GajanLayout({ children }: { children: ReactNode }): ReactNode {
     <>
       <PortalNav />
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-      <footer className="border-t border-separator py-6 text-center text-sm text-muted">
+      <footer className="border-t border-border py-6 text-center text-xs text-muted">
         &copy; {new Date().getFullYear()} Gajan Traders
       </footer>
     </>

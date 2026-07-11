@@ -1,9 +1,20 @@
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { invoices, shipments, tenants, user } from '../db/schema';
 import { InvoiceDocument } from './pdf';
+
+const lankaLogoBase64: string | null = (() => {
+  try {
+    const buf = readFileSync(resolve(process.cwd(), 'public', 'lanka-mahal-logo.png'));
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+})();
 
 export type InvoiceData = {
   id: string;
@@ -21,9 +32,12 @@ export type InvoiceData = {
   carrier: string | null;
   origin: string | null;
   destination: string | null;
+  senderAddress: Record<string, string> | null;
+  recipientAddress: Record<string, string> | null;
   customerName: string | null;
   companyName: string;
   shipmentBranchId: string | null;
+  currency: string | null;
 };
 
 export async function getInvoiceByShipmentId(shipmentId: string, tenantId: string): Promise<InvoiceData | null> {
@@ -44,9 +58,12 @@ export async function getInvoiceByShipmentId(shipmentId: string, tenantId: strin
       carrier: shipments.carrier,
       origin: shipments.origin,
       destination: shipments.destination,
+      senderAddress: shipments.senderAddress as unknown as Record<string, string> | null,
+      recipientAddress: shipments.recipientAddress as unknown as Record<string, string> | null,
       customerName: user.name,
       companyName: tenants.name,
       shipmentBranchId: shipments.branchId,
+      currency: tenants.currency,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
@@ -76,9 +93,12 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
       carrier: shipments.carrier,
       origin: shipments.origin,
       destination: shipments.destination,
+      senderAddress: shipments.senderAddress as unknown as Record<string, string> | null,
+      recipientAddress: shipments.recipientAddress as unknown as Record<string, string> | null,
       customerName: user.name,
       companyName: tenants.name,
       shipmentBranchId: shipments.branchId,
+      currency: tenants.currency,
     })
     .from(invoices)
     .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
@@ -93,11 +113,16 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   const doc = <InvoiceDocument data={{
     invoiceNo: data.invoiceNo,
+    trackingNo: data.trackingNo,
     companyName: data.companyName,
     amount: data.amount,
     customerName: data.customerName ?? '—',
     createdAt: formatDate(data.createdAt),
     paidAt: data.paidAt ? formatDate(data.paidAt) : '—',
+    currency: data.currency ?? undefined,
+    senderAddress: data.senderAddress ?? undefined,
+    recipientAddress: data.recipientAddress ?? undefined,
+    logoBase64: lankaLogoBase64,
   }} />;
 
   return await renderToBuffer(doc);

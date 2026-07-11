@@ -36,6 +36,8 @@ export interface CreateShipmentInput {
   carrier?: string;
   origin?: string;
   destination?: string;
+  senderAddress?: Record<string, unknown>;
+  recipientAddress?: Record<string, unknown>;
   status?: string;
   billAmount?: number;
   contactEmail?: string;
@@ -75,6 +77,8 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
         carrier: input.carrier,
         origin: input.origin,
         destination: input.destination,
+        senderAddress: input.senderAddress,
+        recipientAddress: input.recipientAddress,
         status: input.status ?? 'pending',
         billAmount: input.billAmount ? String(input.billAmount) : undefined,
         contactEmail: input.contactEmail,
@@ -194,8 +198,8 @@ export async function performTracking(
     const courierCode = extra.courierCode;
     const carrierName = extra.carrier;
 
-    // 1. Register with tracking provider (if courier code is available)
-    if (provider.registerShipment && courierCode) {
+    // 1. Register with tracking provider (17TRACK auto-detects carrier from tracking number)
+    if (provider.registerShipment) {
       const [tenant] = await db
         .select({ name: tenants.name, country: tenants.country })
         .from(tenants)
@@ -214,10 +218,9 @@ export async function performTracking(
       });
     }
 
-    // 2. Fetch tracking data
+    // 2. Fetch tracking data (17TRACK auto-detects carrier)
     const trackResult = await provider.track(
       shipment.trackingNo,
-      courierCode ?? carrierName ?? undefined,
     );
 
     // 3. Insert deduplicated events

@@ -76,6 +76,7 @@ app.get(
       banExpires: user.banExpires,
       tenantId: user.tenantId,
       branchId: user.branchId,
+      address: user.address,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -187,6 +188,7 @@ app.get(
         banExpires: user.banExpires,
         tenantId: user.tenantId,
         branchId: user.branchId,
+        address: user.address,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
@@ -229,6 +231,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     name: 1,
     email: 1,
     branchId: 1,
+    address: 1,
   };
   if (currentUser.role === 'superadmin') {
     allowedFields.tenantId = 1;
@@ -262,7 +265,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
 
   if (!before) return c.json({ error: 'User not found' }, 404);
 
-  const [row] = await db
+    const [row] = await db
     .update(user)
     .set({ ...updates, updatedAt: new Date() })
     .where(and(...conditions) as SQL | undefined)
@@ -276,6 +279,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
       banned: user.banned,
       tenantId: user.tenantId,
       branchId: user.branchId,
+      address: user.address,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });

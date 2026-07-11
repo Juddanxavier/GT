@@ -81,7 +81,7 @@ function ResetPasswordForm(): ReactNode {
 
   if (!token && !submitError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Spinner size="lg" />
       </div>
     );
@@ -94,7 +94,7 @@ function ResetPasswordForm(): ReactNode {
           <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${successBg} shadow-inner`}>
             <CheckCircle2 size={32} className={successIcon} />
           </div>
-          <p className="text-sm text-gray-600">Redirecting you to sign in...</p>
+          <p className="text-sm text-foreground">Redirecting you to sign in...</p>
           <a href="/login" className={`inline-flex items-center gap-1.5 text-sm font-medium ${accentText} hover:opacity-80 transition-opacity`}>
             Go to sign in
           </a>
@@ -150,7 +150,7 @@ function ResetPasswordForm(): ReactNode {
 export default function ResetPasswordPage(): ReactNode {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white"><Spinner size="lg" /></div>}>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><Spinner size="lg" /></div>}>
         <ResetPasswordForm />
       </Suspense>
     </ErrorBoundary>
