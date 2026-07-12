@@ -10,8 +10,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get('better-auth.session_token');
-  if (!token?.value) {
+  const token = request.cookies.get('better-auth.session_token')?.value
+    ?? request.cookies.get('__Secure-better-auth.session_token')?.value;
+  if (!token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
