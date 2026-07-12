@@ -371,12 +371,10 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
 
   return (
     <div className="w-full space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border border-border">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface/80 via-surface/50 to-surface/20" />
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent/5 to-transparent">
         <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0 backdrop-blur-sm">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0">
               <GreetingIcon />
             </div>
             <div>
@@ -741,12 +739,10 @@ function OperationalDashboard({
 
   return (
     <div className="w-full space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border border-border">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface/80 via-surface/50 to-surface/20" />
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent/5 to-transparent">
         <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0 backdrop-blur-sm">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0">
               <GreetingIcon />
             </div>
             <div>
