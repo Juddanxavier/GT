@@ -11,8 +11,9 @@ import {
   numeric,
   jsonb,
   index,
-  unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ── Custom Multi-Tenant Tables ──
 
@@ -178,9 +179,9 @@ export const shipments = pgTable(
     shipmentUserIdx: index('shipment_user_idx').on(table.userId),
     shipmentStatusIdx: index('shipment_status_idx').on(table.status),
     shipmentTrackingIdx: index('shipment_tracking_idx').on(table.trackingNo),
-    shipmentTrackingUnique: unique('shipment_tracking_unique').on(
+    shipmentTrackingUniqueIdx: uniqueIndex('shipment_tracking_unique_idx').on(
       table.trackingNo,
-    ),
+    ).where(sql`archived_at IS NULL`),
     shipmentBranchIdx: index('shipment_branch_idx').on(table.branchId),
   }),
 );
