@@ -166,12 +166,10 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
   // Global duplicate tracking number check (cross-tenant, excludes archived)
-  const [dup] = await db
-    .select({ id: shipments.id })
-    .from(shipments)
-    .where(and(eq(shipments.trackingNo, parsed.data.trackingNo), isNull(shipments.archivedAt)))
-    .limit(1);
-  if (dup)
+  const [dup] = await db.execute<{ id: string }>(
+    sql`SELECT id FROM shipment WHERE tracking_no = ${parsed.data.trackingNo} AND archived_at IS NULL LIMIT 1`,
+  );
+  if (dup?.id)
     return c.json({ error: `Tracking number "${parsed.data.trackingNo}" already exists` }, 409);
 
   // Branch scope enforcement on creation (route-level concern)
