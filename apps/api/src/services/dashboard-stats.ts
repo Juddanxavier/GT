@@ -8,7 +8,7 @@
  * by extracting common query patterns into parameterized helpers.
  */
 
-import { and, eq, type SQL, sql } from 'drizzle-orm';
+import { and, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { branches, user, quotations, shipments } from '../db/schema';
 
@@ -70,7 +70,7 @@ export type PerTenantRow = {
  * Returns `and(...conditions)` — safe for parameterized queries.
  */
 export function makeShipmentWhere(filter: StatsFilter): SQL | undefined {
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [isNull(shipments.archivedAt)];
   if (filter.tenantId) conditions.push(eq(shipments.tenantId, filter.tenantId));
   if (filter.branchId) conditions.push(eq(shipments.branchId, filter.branchId));
   return conditions.length > 0 ? and(...conditions) : undefined;
@@ -82,11 +82,13 @@ export function makeShipmentWhere(filter: StatsFilter): SQL | undefined {
  * Returns `sql\`AND tenant_id=${tenantId}\`` or empty sql\`\``.
  */
 export function makeRawShipmentFilter(tenantId?: string): SQL {
-  return tenantId ? sql`AND tenant_id=${tenantId}` : sql``;
+  const base = sql`AND archived_at IS NULL`;
+  return tenantId ? sql`${base} AND tenant_id=${tenantId}` : base;
 }
 
 export function makeRawShipmentWhere(tenantId?: string): SQL {
-  return tenantId ? sql`WHERE tenant_id=${tenantId}` : sql``;
+  const base = sql`WHERE archived_at IS NULL`;
+  return tenantId ? sql`${base} AND tenant_id=${tenantId}` : base;
 }
 
 /**
@@ -218,7 +220,7 @@ export async function queryRevenueStatsRaw(filter: SQL | undefined): Promise<Row
       SELECT COUNT(*)::int AS total,
         COALESCE(SUM(CAST(bill_amount AS numeric)),0)::text AS "revenueTotal",
         COALESCE(SUM(CAST(bill_amount AS numeric)) FILTER (WHERE created_at>=date_trunc('month',CURRENT_DATE)),0)::text AS "revenueThisMonth"
-      FROM shipment WHERE bill_amount IS NOT NULL ${filter ?? sql``}
+      FROM shipment WHERE archived_at IS NULL AND bill_amount IS NOT NULL ${filter ?? sql``}
     `,
   );
   return row ?? {};
@@ -247,7 +249,7 @@ export async function queryPerDayShipmentsRaw(filter: SQL | undefined): Promise<
       SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val
       FROM (
         SELECT DATE(created_at) AS d, COUNT(*)::int AS c
-        FROM shipment WHERE created_at>=NOW()-INTERVAL '1 year' ${filter ?? sql``}
+        FROM shipment WHERE archived_at IS NULL AND created_at>=NOW()-INTERVAL '1 year' ${filter ?? sql``}
         GROUP BY d
       ) sub
     `,
@@ -282,7 +284,7 @@ export async function queryRevenuePerMonthRaw(filter: SQL | undefined): Promise<
         SELECT TO_CHAR(date_trunc('month',created_at),'Mon') AS m,
                date_trunc('month',created_at) AS month_date,
                SUM(CAST(bill_amount AS numeric))::float AS r
-        FROM shipment WHERE bill_amount IS NOT NULL AND created_at>=NOW()-INTERVAL '2 years' ${filter ?? sql``}
+        FROM shipment WHERE archived_at IS NULL AND bill_amount IS NOT NULL AND created_at>=NOW()-INTERVAL '2 years' ${filter ?? sql``}
         GROUP BY date_trunc('month',created_at)
       ) sub
     `,
@@ -401,12 +403,12 @@ export async function queryPerBranchBreakdown(tenantId: string): Promise<unknown
                COUNT(*) FILTER (WHERE status='in_transit')::int AS it,
                COUNT(*) FILTER (WHERE status='delivered' AND actual_delivery>=CURRENT_DATE)::int AS dt,
                COUNT(*) FILTER (WHERE status IN ('exception','failed_attempt'))::int AS ex
-        FROM shipment WHERE tenant_id=b.tenant_id AND branch_id=b.id
+        FROM shipment WHERE archived_at IS NULL AND tenant_id=b.tenant_id AND branch_id=b.id
       ) s ON true
       LEFT JOIN LATERAL (
         SELECT COALESCE(SUM(CAST(bill_amount AS numeric)),0)::text AS rt,
                COALESCE(SUM(CAST(bill_amount AS numeric)) FILTER (WHERE created_at>=date_trunc('month',CURRENT_DATE)),0)::text AS rm
-        FROM shipment WHERE bill_amount IS NOT NULL AND tenant_id=b.tenant_id AND branch_id=b.id
+        FROM shipment WHERE archived_at IS NULL AND bill_amount IS NOT NULL AND tenant_id=b.tenant_id AND branch_id=b.id
       ) i ON true
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS ct,
@@ -438,12 +440,12 @@ export async function queryPerTenantBreakdown(tenantId?: string | null): Promise
                COUNT(*) FILTER (WHERE status='in_transit')::int AS it,
                COUNT(*) FILTER (WHERE status='delivered' AND actual_delivery>=CURRENT_DATE)::int AS dt,
                COUNT(*) FILTER (WHERE status IN ('exception','failed_attempt'))::int AS ex
-        FROM shipment WHERE tenant_id=t.id
+        FROM shipment WHERE archived_at IS NULL AND tenant_id=t.id
       ) s ON true
       LEFT JOIN LATERAL (
         SELECT COALESCE(SUM(CAST(bill_amount AS numeric)),0)::text AS rt,
                COALESCE(SUM(CAST(bill_amount AS numeric)) FILTER (WHERE created_at>=date_trunc('month',CURRENT_DATE)),0)::text AS rm
-        FROM shipment WHERE bill_amount IS NOT NULL AND tenant_id=t.id
+        FROM shipment WHERE archived_at IS NULL AND bill_amount IS NOT NULL AND tenant_id=t.id
       ) i ON true
       LEFT JOIN LATERAL (SELECT COUNT(*)::int AS bc FROM branch WHERE tenant_id=t.id) b ON true
       ${tenantId ? sql`WHERE t.id=${tenantId}` : sql``}
