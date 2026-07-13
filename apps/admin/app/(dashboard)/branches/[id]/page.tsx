@@ -319,7 +319,7 @@ export default function BranchDetailPage() {
               <Form.Root id="edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-name">Name</Label>
-                  <Input id="edit-name" variant="secondary" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
+                  <Input id="edit-name" variant="secondary" placeholder="Branch name" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
                   {editErrors.name && <p className="text-xs text-danger">{editErrors.name}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
@@ -335,12 +335,12 @@ export default function BranchDetailPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-email">Email</Label>
-                  <Input id="edit-email" variant="secondary" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} fullWidth />
+                  <Input id="edit-email" variant="secondary" type="email" placeholder="branch@example.com" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} fullWidth />
                   {editErrors.email && <p className="text-xs text-danger">{editErrors.email}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-address">Address</Label>
-                  <Input id="edit-address" variant="secondary" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} fullWidth />
+                  <Input id="edit-address" variant="secondary" placeholder="Full street address" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} fullWidth />
                   {editErrors.address && <p className="text-xs text-danger">{editErrors.address}</p>}
                 </div>
               </Form.Root>

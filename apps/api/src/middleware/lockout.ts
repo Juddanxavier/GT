@@ -1,5 +1,3 @@
-/** @format */
-
 import type { Context } from 'hono';
 import { eq } from 'drizzle-orm';
 import { auth } from '../auth';
@@ -17,6 +15,9 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 1800;
 const ATTEMPT_WINDOW_SECONDS = 1800;
 
+const fallbackLockouts = new Map<string, { lockedUntil: number }>();
+const fallbackAttempts = new Map<string, number>();
+
 async function extractEmail(c: Context): Promise<string> {
   try {
     const body = (await c.req.raw.clone().json()) as Record<string, unknown>;
@@ -26,10 +27,6 @@ async function extractEmail(c: Context): Promise<string> {
   }
 }
 
-/**
- * Look up the tenantId for a given email to scope lockout keys per-tenant.
- * Returns null if the user doesn't exist (no tenant context to scope against).
- */
 async function resolveTenantIdForEmail(email: string): Promise<string | null> {
   try {
     const [user] = await db
@@ -56,50 +53,79 @@ export async function signInHandler(c: Context) {
   const tenantId = email ? await resolveTenantIdForEmail(email) : null;
 
   if (email) {
-    if (!cacheClient) {
-      console.warn('[lockout] Redis unavailable — account lockout DISABLED. Brute force protection is inactive!');
+    if (!cacheClient || fallbackLockouts.size > 0) {
+      const now = Date.now();
+      const lockEntry = fallbackLockouts.get(email.toLowerCase());
+      if (lockEntry && lockEntry.lockedUntil > now) {
+        const remainingMin = Math.ceil((lockEntry.lockedUntil - now) / 60000);
+        await logAudit('LOGIN_BLOCKED', null, { email, tenantId, remainingSeconds: Math.ceil((lockEntry.lockedUntil - now) / 1000) }, c);
+        return errorResponse(c, 'ACCOUNT_LOCKED', `Account locked due to too many failed attempts. Try again in ${remainingMin} minutes.`, 423);
+      }
     } else {
       try {
-        const locked = await cacheClient.get(lockoutKey(email, tenantId));
+        const lKey = lockoutKey(email, tenantId);
+        const locked = await cacheClient.get(lKey);
         if (locked) {
-          const ttl = await cacheClient.ttl(lockoutKey(email, tenantId));
+          const ttl = await cacheClient.ttl(lKey);
           await logAudit('LOGIN_BLOCKED', null, { email, tenantId, remainingSeconds: ttl }, c);
           return errorResponse(c, 'ACCOUNT_LOCKED', `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`, 423);
         }
       } catch (err) {
-        console.error('[lockout] Redis error during lockout check — allowing:', err instanceof Error ? err.message : err);
+        console.error('[lockout] Redis error during lockout check — allowing:', err);
       }
     }
   }
 
   let res = await auth.handler(c.req.raw);
 
-  if (email && cacheClient) {
-    try {
+  if (email) {
+    const useFallback = !cacheClient;
+    const now = Date.now();
+    const emailLower = email.toLowerCase();
+
+    if (useFallback) {
+      const failKey = attemptsKey(email, tenantId);
       if (res.status === 200) {
-        await cacheClient.del(lockoutKey(email, tenantId));
-        await cacheClient.del(attemptsKey(email, tenantId));
-        // Extract userId from the login response body
+        fallbackLockouts.delete(emailLower);
+        fallbackAttempts.delete(failKey);
         let userId: string | null = null;
         try {
           const body = await res.clone().json() as Record<string, unknown>;
           userId = (body?.user as Record<string, unknown> | undefined)?.id as string ?? null;
-        } catch {
-          // Non-JSON or empty response — userId stays null
-        }
+        } catch { /* ignore */ }
         await logAudit('LOGIN_SUCCESS', userId, { email, tenantId }, c);
         if (c.req.url.startsWith('https://')) {
-          // Better Auth sets __Secure-better-auth.session_token on HTTPS.
-          // Clear any legacy non-secure better-auth.session_token that may
-          // have been set from a previous HTTP session to avoid confusion.
           const oldHeaders = new Headers(res.headers);
           appendClearCookie(oldHeaders, 'better-auth.session_token');
           res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
         }
       } else if (res.status === 401) {
-        if (!cacheClient) {
-          console.error('[lockout] Redis unavailable — cannot track failed login attempts! Brute force protection inactive.');
-        } else {
+        const attempts = (fallbackAttempts.get(failKey) ?? 0) + 1;
+        fallbackAttempts.set(failKey, attempts);
+        setTimeout(() => fallbackAttempts.delete(failKey), ATTEMPT_WINDOW_SECONDS * 1000);
+        await logAudit('LOGIN_FAILED', null, { email, tenantId, attempts: `${attempts}/${MAX_ATTEMPTS}` }, c);
+        if (attempts >= MAX_ATTEMPTS) {
+          fallbackLockouts.set(emailLower, { lockedUntil: now + LOCKOUT_SECONDS * 1000 });
+          await logAudit('USER_BANNED', null, { email, tenantId, reason: `${MAX_ATTEMPTS} failed attempts - locked 30m` }, c);
+        }
+      }
+    } else {
+      try {
+        if (res.status === 200) {
+          await cacheClient.del(lockoutKey(email, tenantId));
+          await cacheClient.del(attemptsKey(email, tenantId));
+          let userId: string | null = null;
+          try {
+            const body = await res.clone().json() as Record<string, unknown>;
+            userId = (body?.user as Record<string, unknown> | undefined)?.id as string ?? null;
+          } catch { /* ignore */ }
+          await logAudit('LOGIN_SUCCESS', userId, { email, tenantId }, c);
+          if (c.req.url.startsWith('https://')) {
+            const oldHeaders = new Headers(res.headers);
+            appendClearCookie(oldHeaders, 'better-auth.session_token');
+            res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
+          }
+        } else if (res.status === 401) {
           const attempts = await cacheClient.incr(attemptsKey(email, tenantId));
           if (attempts === 1) {
             await cacheClient.expire(attemptsKey(email, tenantId), ATTEMPT_WINDOW_SECONDS);
@@ -110,9 +136,9 @@ export async function signInHandler(c: Context) {
             await logAudit('USER_BANNED', null, { email, tenantId, reason: `${MAX_ATTEMPTS} failed attempts - locked 30m` }, c);
           }
         }
+      } catch (err) {
+        console.error('[lockout] Redis error during attempt tracking:', err);
       }
-    } catch (err) {
-      console.error('[lockout] Redis error during attempt tracking:', err instanceof Error ? err.message : err);
     }
   }
 

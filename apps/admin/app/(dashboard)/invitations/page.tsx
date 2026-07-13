@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useTenants, useBranches, type ApiBranch } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { getUser } from '@/types/auth';
 import { Mail, MailX, Plus, LoaderCircle } from 'lucide-react';
 
 const SUPERADMIN_INVITE_ROLES = ['superadmin', 'tenant-admin', 'staff'];
@@ -55,7 +56,7 @@ export default function InvitationsPage() {
 
   useEffect(() => {
     authClient.getSession().then((res) => {
-      const u = res.data?.user as Record<string, unknown> | undefined;
+      const u = res.data?.user as { role?: string; tenantId?: string } | undefined;
       setUserRole((u?.role as string) ?? null);
       setSessionTenantId((u?.tenantId as string) ?? '');
     });
@@ -242,12 +243,12 @@ export default function InvitationsPage() {
                 {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
                 <div className="space-y-1">
                   <Label htmlFor="invite-email">Email *</Label>
-                  <Input id="invite-email" type="email" variant="secondary" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required fullWidth />
+                  <Input id="invite-email" type="email" variant="secondary" placeholder="colleague@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required fullWidth />
                   <Description>An invitation email will be sent to this address</Description>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="invite-name">Name</Label>
-                  <Input id="invite-name" variant="secondary" value={inviteName} onChange={(e) => setInviteName(e.target.value)} fullWidth />
+                  <Input id="invite-name" variant="secondary" placeholder="Full name" value={inviteName} onChange={(e) => setInviteName(e.target.value)} fullWidth />
                 </div>
                 <div className="space-y-1">
                   <Label>Role</Label>

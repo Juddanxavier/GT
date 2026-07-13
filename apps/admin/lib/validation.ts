@@ -47,13 +47,13 @@ export const dashboardAlertSchema = z.object({
 
 export const dashboardStatsSchema = z.object({
   role: z.string(),
-  scope: z.any(),
+  scope: z.string(),
   shipments: z.object({
     total: z.number(), inTransit: z.number(), outForDelivery: z.number(),
     deliveredToday: z.number(), deliveredThisMonth: z.number(),
     exceptions: z.number(), pending: z.number(),
     stale: z.number(), overdue: z.number(), notTracked: z.number(),
-    byStatus: z.any(),
+    byStatus: z.record(z.string(), z.number()),
     perDay: z.array(z.object({ date: z.string(), count: z.number() })),
     byCarrier: z.array(z.object({ carrier: z.string(), count: z.number() })),
     byBranch: z.array(z.object({ branch: z.string(), count: z.number() })),
@@ -70,8 +70,8 @@ export const dashboardStatsSchema = z.object({
     quotations: z.object({ total: z.number(), conversionRate: z.number() }),
     invoices: z.object({ total: z.number(), revenueThisMonth: z.string(), revenueTotal: z.string() }),
   }).optional(),
-  perTenant: z.array(z.any()).optional(),
-  perBranch: z.array(z.any()).optional(),
+  perTenant: z.array(z.record(z.string(), z.unknown())).optional(),
+  perBranch: z.array(z.record(z.string(), z.unknown())).optional(),
   perDay: z.array(z.object({ date: z.string(), count: z.number() })).optional(),
 });
 

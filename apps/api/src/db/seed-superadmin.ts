@@ -1,6 +1,7 @@
 import { db } from './index';
 import { user } from './schema';
 import { auth } from '../auth';
+import { createUser } from '../auth-api';
 import { eq } from 'drizzle-orm';
 
 async function seedSuperAdmin() {
@@ -15,14 +16,7 @@ async function seedSuperAdmin() {
     process.exit(0);
   }
 
-  await (auth.api as any).createUser({
-    body: {
-      email,
-      password,
-      name,
-      role: 'superadmin',
-    },
-  });
+  await createUser({ email, password, name, role: 'superadmin' });
 
   console.log(`Super admin created: ${email}`);
   console.warn('WARNING: Super admin credentials were set from environment variables. If SEED_SUPERADMIN_PASSWORD is not set, the default fallback is used — change it in production!');

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Avatar, Button, Card, Chip, Input, Label, Skeleton } from '@heroui/react';
+import { getUser } from '@/types/auth';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Shield, Save, Lock, User, Mail, Check, X, Building2, Trash2, AlertTriangle } from 'lucide-react';
@@ -9,7 +10,7 @@ import { Shield, Save, Lock, User, Mail, Check, X, Building2, Trash2, AlertTrian
 export default function ProfilePage() {
   usePageTitle('Profile');
   const { data: session, isPending, refetch } = authClient.useSession();
-  const user = session?.user as Record<string, unknown> | undefined;
+  const user = getUser(session);
 
   const [originalName, setOriginalName] = useState('');
   const [name, setName] = useState('');

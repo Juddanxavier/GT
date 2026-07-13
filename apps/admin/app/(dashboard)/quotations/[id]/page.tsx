@@ -214,12 +214,12 @@ export default function QuotationDetailPage() {
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="editValidUntil">Valid Until</Label>
-                    <Input id="editValidUntil" type="date" value={editValidUntil} onChange={(e) => setEditValidUntil(e.target.value)} fullWidth />
+                    <Input id="editValidUntil" type="date" value={editValidUntil} onChange={(e) => setEditValidUntil(e.target.value)} placeholder="yyyy-mm-dd" fullWidth />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="editNotes">Notes</Label>
-                  <textarea id="editNotes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className={ta} />
+                  <textarea id="editNotes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className={ta} placeholder="Additional notes..." />
                 </div>
                 <div className="border-t border-border pt-4">
                   <div className="flex justify-between items-center mb-3">
@@ -230,15 +230,15 @@ export default function QuotationDetailPage() {
                     <div key={item.id} className="flex items-end gap-3 p-3 border border-border rounded-lg mb-2">
                       <div className="flex-1 space-y-1">
                         <Label>Description</Label>
-                        <Input value={item.description} onChange={(e) => updateEditItem(i, 'description', e.target.value)} fullWidth />
+                        <Input value={item.description} onChange={(e) => updateEditItem(i, 'description', e.target.value)} placeholder="Item description" fullWidth />
                       </div>
                       <div className="w-20 space-y-1">
                         <Label>Qty</Label>
-                        <Input type="number" value={String(item.quantity)} onChange={(e) => updateEditItem(i, 'quantity', Number(e.target.value) || 0)} />
+                        <Input type="number" value={String(item.quantity)} onChange={(e) => updateEditItem(i, 'quantity', Number(e.target.value) || 0)} placeholder="Qty" />
                       </div>
                       <div className="w-28 space-y-1">
                         <Label>Rate</Label>
-                        <Input type="number" value={String(item.unitPrice)} onChange={(e) => updateEditItem(i, 'unitPrice', Number(e.target.value) || 0)} />
+                        <Input type="number" value={String(item.unitPrice)} onChange={(e) => updateEditItem(i, 'unitPrice', Number(e.target.value) || 0)} placeholder="Rate" />
                       </div>
                       <div className="w-24 space-y-1">
                         <Label>Total</Label>

@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ToastProvider } from '@/components/toast';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Tooltip } from '@heroui/react';
+import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Switch, Tooltip } from '@heroui/react';
 import { Modal } from '@heroui/react/modal';
 import { Activity, BarChart3, HelpCircle, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Search, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronDown, Bell, LogOut, Menu, User, UserPlus } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
@@ -18,10 +18,11 @@ import { useTenants, useDashboardBranches } from '@/lib/queries';
 import { SearchDialog } from '@/components/search-dialog';
 import { useToast } from '@/components/toast';
 import { connectSocket } from '@/lib/socket';
+import { getUser } from '@/types/auth';
 
 const ALLOWED_ROLES = ['superadmin', 'tenant-admin', 'staff'];
 
-function NavItems(role?: string) {
+function getNavItems(role?: string) {
   const items = [
     {
       href: '/',
@@ -92,25 +93,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') {
-      document.documentElement.setAttribute('data-theme', stored);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-    const saved = localStorage.getItem('sidebarCollapsed');
-    if (saved === 'true') setCollapsed(true);
-  }, []);
-
-  useEffect(() => {
     if (isPending) return;
     if (error) return;
     if (!session) { router.push('/login'); return; }
-    const userRole = (session.user as Record<string, unknown>).role as string;
+    const userRole = getUser(session)!.role;
     if (!ALLOWED_ROLES.includes(userRole)) router.push('/unauthorized');
   }, [session, isPending, error, router]);
 
-  const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
+  const userRole = getUser(session)?.role;
 
   if (isPending) return <div className="flex items-center justify-center min-h-screen"><p className="text-muted">Loading...</p></div>;
   if (!session) return null;
@@ -165,7 +155,6 @@ function DashboardLayoutInner({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const { tenantFilter, branchFilter, setTenant, setBranch } = useTenantFilter();
   const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useDashboardBranches();
@@ -173,8 +162,20 @@ function DashboardLayoutInner({
   const [confirmBranch, setConfirmBranch] = useState<{ id: string; name: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
-  const navItems = useMemo(() => NavItems(userRole), [userRole]);
+  const navItems = useMemo(() => getNavItems(userRole), [userRole]);
   const { toast } = useToast();
+
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') {
+      setTheme(saved);
+      document.documentElement.setAttribute('data-theme', saved);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
 
   useEffect(() => {
     return queryClient.getQueryCache().subscribe((event) => {
@@ -224,7 +225,7 @@ function DashboardLayoutInner({
   }, [session]);
 
   useEffect(() => {
-    const tenantId = (session?.user as Record<string, unknown>)?.tenantId as string | undefined;
+    const tenantId = getUser(session)?.tenantId;
     if (!tenantId) return;
     const socket = connectSocket(tenantId);
     const notifHandler = (data: { count: number }) => setUnreadCount((c) => c + data.count);
@@ -240,8 +241,7 @@ function DashboardLayoutInner({
     };
   }, [session, toast]);
 
-  function toggleTheme() {
-    const next = theme === 'light' ? 'dark' : 'light';
+  function handleThemeChange(next: 'light' | 'dark') {
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
@@ -417,7 +417,7 @@ function DashboardLayoutInner({
                 <>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
                     <Building2 size={14} className="text-muted" />
-                    {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
+                    {getUser(session)?.tenantName ?? 'Tenant'}
                   </span>
                   <Select
                     selectedKey={branchFilter}
@@ -460,13 +460,13 @@ function DashboardLayoutInner({
               {userRole === 'staff' && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
                   <Building2 size={14} className="text-muted" />
-                  {(session.user as Record<string, unknown>)?.tenantName as string || 'Tenant'}
+                  {getUser(session)?.tenantName ?? 'Tenant'}
                   <span className="text-muted">&rarr;</span>
-                  {(session.user as Record<string, unknown>)?.branchName as string || 'Branch'}
+                  {getUser(session)?.branchName ?? 'Branch'}
                 </span>
               )}
-              <Button size="sm" variant="ghost" onPress={toggleTheme} aria-label="Toggle theme" className="text-muted hover:text-foreground">
-                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              <Button size="sm" variant="ghost" onPress={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme" className="text-muted hover:text-foreground">
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </Button>
               <Dropdown>
                 <Dropdown.Trigger className="text-muted hover:text-foreground relative" aria-label="Notifications">

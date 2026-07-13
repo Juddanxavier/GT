@@ -16,6 +16,7 @@ import { useTenants } from '@/lib/queries';
 import { getCurrencySymbol } from '@/lib/currency';
 import { connectSocket } from '@/lib/socket';
 import { usePageTitle } from '@/lib/use-page-title';
+import { getUser } from '@/types/auth';
 
 type Stats = {
   role: string;
@@ -210,7 +211,7 @@ export default function DashboardPage() {
   const [branchFilter, setBranchFilter] = useState('');
   const { tenantFilter, branchFilter: navBranchFilter } = useTenantFilter();
   const { data: tenantsData = [] } = useTenants();
-  const sessionTenantId = (session?.user as Record<string, unknown> | undefined)?.tenantId as string | undefined;
+  const sessionTenantId = getUser(session)?.tenantId;
   const effectiveTidForCurrency = tenantFilter || sessionTenantId || '';
   const tenantCurrency = useMemo(() => {
     const t = tenantsData.find((t) => t.id === effectiveTidForCurrency);
@@ -243,8 +244,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isPending || !session) return;
-    const tenantId = (session.user as Record<string, unknown>).tenantId as string;
-    const role = (session.user as Record<string, unknown>).role as string;
+    const tenantId = getUser(session)!.tenantId;
+    const role = getUser(session)!.role;
 
     fetchStats(branchFilter || undefined);
 
@@ -252,7 +253,7 @@ export default function DashboardPage() {
       api.get<Branch[]>('/api/dashboard/branches').then((branches) => setBranches(branches ?? [])).catch(() => {});
     }
 
-    const socket = connectSocket(tenantId);
+    const socket = connectSocket(tenantId!);
     socket.on('dashboard:update', () => fetchStats(branchFilter || undefined));
 
     return () => {
@@ -279,7 +280,7 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  const user = session.user as Record<string, unknown>;
+  const user = getUser(session)!;
   const role = user.role as string;
   const tenantId = user.tenantId as string | undefined;
   const branchName = user.branchName as string | undefined;

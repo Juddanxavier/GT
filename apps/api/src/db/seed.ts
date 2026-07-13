@@ -12,6 +12,7 @@ import {
   invoices,
 } from './schema';
 import { auth } from '../auth';
+import { createUser } from '../auth-api';
 import { and, eq, sql } from 'drizzle-orm';
 
 async function seed() {
@@ -111,15 +112,7 @@ async function seed() {
       console.log(`  User exists (skipping): ${u.name} (${u.email})`);
       continue;
     }
-    await (auth.api as any).createUser({
-      body: {
-        email: u.email,
-        password: u.password,
-        name: u.name,
-        role: u.role,
-        data: { tenantId: u.tenantId, branchId: u.branchId },
-      },
-    });
+    await createUser({ email: u.email, password: u.password, name: u.name, role: u.role, tenantId: u.tenantId, branchId: u.branchId });
     console.log(`  User created: ${u.name} (${u.email}) — ${u.role}`);
   }
 
@@ -156,15 +149,7 @@ async function seed() {
       insertedCustomerUsers.push({ ...existing[0]!, phone: existing[0]!.phone ?? '', branchId: c.branchId, tenantId: c.tenantId });
       continue;
     }
-    const created = await (auth.api as any).createUser({
-      body: {
-        email: c.email,
-        password: 'Customer@123',
-        name: c.name,
-        role: 'customer',
-        data: { tenantId: c.tenantId, branchId: c.branchId, phone: c.phone },
-      },
-    });
+    const created = await createUser({ email: c.email, password: 'Customer@123', name: c.name, role: 'customer', tenantId: c.tenantId, branchId: c.branchId, data: { phone: c.phone } });
     await db.update(user).set({ branchId: c.branchId, tenantId: c.tenantId }).where(eq(user.email, c.email));
     insertedCustomerUsers.push({
       id: created.user.id,

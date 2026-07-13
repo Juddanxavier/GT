@@ -14,6 +14,8 @@ const defaultLimits: Record<string, RateLimitConfig> = {
   'POST:/api/invoices/shipment': { windowSeconds: 3600, maxRequests: 30 },
 };
 
+const fallbackStore = new Map<string, { count: number; resetAt: number }>();
+
 function getLimit(method: string, path: string): RateLimitConfig {
   const routeKey = `${method}:${path}`;
   for (const [pattern, config] of Object.entries(defaultLimits)) {
@@ -24,14 +26,7 @@ function getLimit(method: string, path: string): RateLimitConfig {
 
 export function globalRateLimit(config?: Partial<RateLimitConfig>) {
   return async function rateLimitMiddleware(c: Context, next: Next) {
-    // Auth routes have their own rate limiting via Better Auth
     if (c.req.path.startsWith('/api/auth/')) {
-      await next();
-      return;
-    }
-
-    if (!cacheClient) {
-      console.warn('[ratelimit] Redis unavailable — rate limiting DISABLED. All requests proceed without rate limits!');
       await next();
       return;
     }
@@ -46,18 +41,31 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
     const routeConfig = getLimit(method, path);
     const merged: RateLimitConfig = { ...routeConfig, ...config };
 
-    // Sanitize key parts to prevent Redis key injection
-    // \s already covers \r and \n, so no need to list them separately
+    if (!cacheClient) {
+      const now = Date.now();
+      const entry = fallbackStore.get(identifier);
+      if (entry && entry.resetAt > now) {
+        if (entry.count >= merged.maxRequests) {
+          return errorResponse(c, 'RATE_LIMITED', 'Too many requests. Please try again later.', 429);
+        }
+        entry.count++;
+      } else {
+        fallbackStore.set(identifier, { count: 1, resetAt: now + merged.windowSeconds * 1000 });
+      }
+      c.res.headers.set('X-RateLimit-Limit', String(merged.maxRequests));
+      c.res.headers.set('X-RateLimit-Remaining', String(Math.max(0, merged.maxRequests - (fallbackStore.get(identifier)?.count ?? 1))));
+      await next();
+      return;
+    }
+
     const sanitize = (s: string) => s.replace(/[\s:;]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
     const safeIdentifier = sanitize(identifier);
     const safePrefix = sanitize(merged.keyPrefix ?? 'ratelimit');
-    // Include tenantId in the key for per-tenant rate isolation
     const tenantSegment = tenantId ? `${sanitize(tenantId)}:` : '';
     const key = `${safePrefix}:${tenantSegment}${safeIdentifier}:${method}:${path}`;
 
     try {
       const rawCount = await cacheClient.incr(key);
-      // Handle non-numeric results (Redis errors return null/Error objects in pipelines)
       const count = typeof rawCount === 'number' ? rawCount : 1;
       if (count === 1) {
         await cacheClient.expire(key, merged.windowSeconds);
@@ -70,7 +78,7 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
         return errorResponse(c, 'RATE_LIMITED', 'Too many requests. Please try again later.', 429);
       }
     } catch (err) {
-      console.error('[ratelimit] Redis operation failed — rate limiting bypassed for this request:', err instanceof Error ? err.message : err);
+      console.error('[ratelimit] Redis operation failed — rate limiting bypassed for this request:', err);
     }
 
     await next();

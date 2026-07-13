@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Input, Select, ListBox } from '@heroui/react';
+import { Input } from '@heroui/react';
+import { getData } from 'country-list';
 
 export interface AddressData {
   name?: string;
@@ -22,18 +23,7 @@ interface AddressFormProps {
   showCountry?: boolean;
 }
 
-const COMMON_COUNTRIES = [
-  { code: 'IN', name: 'India' },
-  { code: 'LK', name: 'Sri Lanka' },
-  { code: 'AE', name: 'UAE' },
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'CN', name: 'China' },
-  { code: 'HK', name: 'Hong Kong' },
-  { code: 'TH', name: 'Thailand' },
-];
+const ALL_COUNTRIES = getData().slice().sort((a, b) => a.name.localeCompare(b.name));
 
 function Field({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-1.5">{children}</div>;
@@ -113,24 +103,19 @@ export function AddressForm({ prefix, value, onChange, showContact, showCountry 
         {showCountry && (
           <Field>
             <FormLabel htmlFor={`${prefix}-country`}>Country</FormLabel>
-            <Select
-              selectedKey={value.country ?? ''}
-              onSelectionChange={(k) => onChange({ ...value, country: k as string })}
+            <Input
+              id={`${prefix}-country`}
               variant="secondary"
-              aria-label="Country"
-            >
-              <Select.Trigger className="h-10 text-sm">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {[{ code: '', name: 'Select country' }, ...COMMON_COUNTRIES].map((c) => (
-                    <ListBox.Item key={c.code} id={c.code} textValue={c.name}>{c.name}</ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
+              value={value.country ?? ''}
+              onChange={(e) => onChange({ ...value, country: e.target.value })}
+              placeholder="Type or select a country"
+              list={`${prefix}-country-list`}
+            />
+            <datalist id={`${prefix}-country-list`}>
+              {ALL_COUNTRIES.map((c) => (
+                <option key={c.code} value={c.name} />
+              ))}
+            </datalist>
           </Field>
         )}
       </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Eye, Pencil, Trash2, MoreVertical, Phone } from 'lucide-react';
 import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Select, Spinner, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
+import { getUser } from '@/types/auth';
 import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
@@ -58,7 +59,7 @@ export default function BranchesPage() {
   const [newTenantId, setNewTenantId] = useState('');
   const [newPhoneLocal, setNewPhoneLocal] = useState('');
   const { data: session, isPending: sessionPending } = authClient.useSession();
-  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+  const userRole = getUser(session)?.role;
   const isSuperAdmin = userRole === 'superadmin';
 
   if (!sessionPending && (!userRole || userRole === 'staff')) { router.push('/unauthorized'); return null; }

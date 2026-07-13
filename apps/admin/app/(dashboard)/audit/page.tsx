@@ -8,6 +8,7 @@ import {
 import { api, getTenantFilter, getBranchFilter } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
+import { getUser } from '@/types/auth';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import {
   Activity, Clock, Download, RefreshCw, Monitor, Globe, Eye, X, List, Layout,
@@ -62,7 +63,7 @@ export default function AuditLogPage() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const { tenantFilter } = useTenantFilter();
-  const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined;
+  const userRole = getUser(session)?.role;
   const isSuperadmin = userRole === 'superadmin';
   const isTenantAdmin = userRole === 'tenant-admin';
 

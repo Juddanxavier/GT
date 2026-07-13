@@ -3,6 +3,7 @@ import { buildEmailHtml } from '@repo/auth-config';
 import { and, eq, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { auth } from '../auth';
+import { createUser, banUser, unbanUser } from '../auth-api';
 import { cacheDel, cacheFlushTenant } from '../cache';
 import { db } from '../db';
 import { account, onboardTokens, session, tenants, user, verification } from '../db/schema';
@@ -445,10 +446,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   // Ban user until they complete onboarding
   try {
-    await (auth.api as any).banUser({
-      body: { userId: createdUserId, banReason: 'Activate your account' },
-      headers: c.req.raw.headers,
-    });
+    await banUser({ userId: createdUserId, banReason: 'Activate your account' }, { headers: c.req.raw.headers });
   } catch (err) {
     console.error('[users/create] banUser error:', err);
   }
@@ -548,10 +546,7 @@ app.post('/:id/ban', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (!target) return c.json({ error: 'User not found' }, 404);
 
   try {
-    await (auth.api as any).banUser({
-      body: { userId: id!, banReason },
-      headers: c.req.raw.headers,
-    });
+    await banUser({ userId: id!, banReason }, { headers: c.req.raw.headers });
   } catch (err) {
     console.error('[users/ban] error:', err);
     return c.json({ error: 'Failed to ban user' }, 500);
@@ -587,10 +582,7 @@ app.post('/:id/unban', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (!target) return c.json({ error: 'User not found' }, 404);
 
   try {
-    await (auth.api as any).unbanUser({
-      body: { userId: id! },
-      headers: c.req.raw.headers,
-    });
+    await unbanUser({ userId: id! }, { headers: c.req.raw.headers });
   } catch (err) {
     console.error('[users/unban] error:', err);
     return c.json({ error: 'Failed to unban user' }, 500);

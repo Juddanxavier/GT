@@ -22,9 +22,11 @@ import { requireRole } from './middleware/authorization';
 import { signInHandler } from './middleware/lockout';
 import { isRedisConnected, queues } from './queues';
 import { cacheClient, connectRedis, disconnectRedis } from './redis';
+const forgotPwFallback = new Map<string, { count: number; resetAt: number }>();
 import { db } from './db';
 import { tenants as tenantTable, user as userTable, branches as branchTable } from './db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { createUser } from './auth-api';
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
 import { getEmailProviderStatus, closeTransport } from './email/provider';
@@ -201,9 +203,7 @@ app.post('/api/seed/superadmin', async (c) => {
   }
   const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
   if (existing) return c.json({ message: 'Super admin already exists' });
-  await (auth.api as any).createUser({
-    body: { email, password, name: process.env.SEED_SUPERADMIN_NAME || 'Super Admin', role: 'superadmin' },
-  });
+  await createUser({ email, password, name: process.env.SEED_SUPERADMIN_NAME || 'Super Admin', role: 'superadmin' });
   return c.json({ message: 'Super admin created' });
 });
 
@@ -262,9 +262,7 @@ app.post('/api/seed/tenant', async (c) => {
   for (const u of usersData) {
     const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
     if (existing) continue;
-    await (auth.api as any).createUser({
-      body: { email: u.email, password: u.password, name: u.name, role: u.role, data: { tenantId: u.tenantId, branchId: u.branchId } },
-    });
+    await createUser({ email: u.email, password: u.password, name: u.name, role: u.role, tenantId: u.tenantId, branchId: u.branchId });
   }
 
   return c.json({ message: 'Seed complete: tenants, branches, users created' });
@@ -296,21 +294,31 @@ app.post('/api/auth/forgot-password', async (c) => {
 
   // Rate limit: 3 requests per 5 minutes per email
   // (Better Auth's built-in rate limiter is bypassed by this custom handler)
+  const fpEmail = email.toLowerCase().trim();
+  const fpKey = `forgot-pw:${fpEmail}`;
   if (cacheClient) {
     try {
-      const key = `forgot-pw:${email.toLowerCase().trim()}`;
-      const count = await cacheClient.incr(key);
+      const count = await cacheClient.incr(fpKey);
       if (count === 1) {
-        await cacheClient.expire(key, 300);
+        await cacheClient.expire(fpKey, 300);
       }
       if (count > 3) {
         return errorResponse(c, 'RATE_LIMITED', 'Too many password reset requests. Please try again later.', 429);
       }
     } catch (err) {
-      console.error('[forgot-password] Redis rate limit error:', err instanceof Error ? err.message : err);
+      console.error('[forgot-password] Redis rate limit error:', err);
     }
   } else {
-    console.warn('[forgot-password] Redis unavailable — rate limiting disabled!');
+    const now = Date.now();
+    const fpEntry = forgotPwFallback.get(fpEmail);
+    if (fpEntry && fpEntry.resetAt > now) {
+      if (fpEntry.count >= 3) {
+        return errorResponse(c, 'RATE_LIMITED', 'Too many password reset requests. Please try again later.', 429);
+      }
+      fpEntry.count++;
+    } else {
+      forgotPwFallback.set(fpEmail, { count: 1, resetAt: now + 300_000 });
+    }
   }
 
   const [user] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);

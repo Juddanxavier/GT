@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord, type PaginatedResult } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
+import { getUser } from '@/types/auth';
 import { authClient } from '@/lib/auth-client';
 import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
 import { AddressForm, type AddressData } from '@/components/address-form';
@@ -54,7 +55,7 @@ export default function UsersPage() {
 
 
   const { data: session } = authClient.useSession();
-  const sessionUser = session?.user as Record<string, unknown> | undefined;
+  const sessionUser = getUser(session);
 
 
   const [editTarget, setEditTarget] = useState<UserRecord | null>(null);
@@ -75,7 +76,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     authClient.getSession().then((res) => {
-      const role = (res.data?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+      const role = (res.data?.user as { role?: string } | undefined)?.role;
       setUserRole(role ?? null);
     });
   }, []);
@@ -155,8 +156,8 @@ export default function UsersPage() {
     setBanSaving(false);
   }
 
-  const sessionUserId = (sessionUser?.id as string) ?? '';
-  const sessionUserRole = (sessionUser?.role as string) ?? '';
+  const sessionUserId = sessionUser?.id ?? '';
+  const sessionUserRole = sessionUser?.role ?? '';
 
   function canDeleteTarget(target: UserRecord): boolean {
     if (target.id === sessionUserId) return false;
@@ -349,11 +350,11 @@ export default function UsersPage() {
               <form id="edit-user-form" onSubmit={(e) => { e.preventDefault(); handleEditSave(); }} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="edit-name">Name *</Label>
-                  <Input id="edit-name" variant="secondary" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
+                  <Input id="edit-name" variant="secondary" placeholder="Full name" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-email">Email *</Label>
-                  <Input id="edit-email" type="email" variant="secondary" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required fullWidth />
+                  <Input id="edit-email" type="email" variant="secondary" placeholder="name@example.com" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required fullWidth />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-password">New Password (leave blank to keep current)</Label>

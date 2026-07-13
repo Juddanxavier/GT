@@ -29,7 +29,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { user, shipments, tenants } from '../db/schema';
 import { cacheDel, cacheDelPattern } from '../cache';
-import { auth } from '../auth';
+import { createUser } from '../auth-api';
 import { notificationQueue } from '../queues';
 import { statusToEventType } from '../notifications/event-map';
 import { sendEmail } from '../email/provider';
@@ -155,15 +155,7 @@ app.post('/claim', async (c) => {
   if (!matchedUser) {
     // Create a new user account from the shipment contact info
     const randomPwd = crypto.randomUUID();
-    const created = await (auth.api as any).createUser({
-      body: {
-        email: matchedEmail ?? `${ship.trackingNo?.toLowerCase()}@claim.gajantraders.com`,
-        password: randomPwd,
-        name: name ?? ship.contactEmail ?? ship.contactPhone ?? 'Claimed Customer',
-        role: 'customer',
-        data: { tenantId: effectiveTenantId, phone: matchedPhone },
-      },
-    });
+    const created = await createUser({ email: matchedEmail ?? `${ship.trackingNo?.toLowerCase()}@claim.gajantraders.com`, password: randomPwd, name: name ?? ship.contactEmail ?? ship.contactPhone ?? 'Claimed Customer', role: 'customer', tenantId: effectiveTenantId, data: { phone: matchedPhone } });
     matchedUser = { id: created.user.id };
   } else if (matchedPhone) {
     // Update phone on existing user
@@ -326,15 +318,7 @@ app.post('/claim/verify-otp', async (c) => {
 
   if (!matchedUser) {
     const randomPwd = crypto.randomUUID();
-    const created = await (auth.api as any).createUser({
-      body: {
-        email: matchedEmail ?? 'claimed@claim.gajantraders.com',
-        password: randomPwd,
-        name: matchedEmail ?? 'Claimed Customer',
-        role: 'customer',
-        data: { tenantId: effectiveTenantId, phone: ship.contactPhone },
-      },
-    });
+    const created = await createUser({ email: matchedEmail ?? 'claimed@claim.gajantraders.com', password: randomPwd, name: matchedEmail ?? 'Claimed Customer', role: 'customer', tenantId: effectiveTenantId, data: { phone: ship.contactPhone } });
     matchedUser = { id: created.user.id, name: created.user.name };
   }
 

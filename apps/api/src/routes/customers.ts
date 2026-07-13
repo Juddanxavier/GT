@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { cacheDel, withCache } from '../cache';
 import { db } from '../db';
 import { auth } from '../auth';
+import { createUser, updateUser } from '../auth-api';
 import { user, invoices as invoicesTable, quotations, quoteItems, shipments, tenants } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { errorResponse } from '../error-response';
@@ -183,15 +184,7 @@ app.post('/register', async (c) => {
 
   try {
     // Create user via BetterAuth server API
-    const created = await (auth.api as any).createUser({
-      body: {
-        email,
-        password,
-        name,
-        role: 'customer',
-        data: { tenantId: tenant.id },
-      },
-    });
+    const created = await createUser({ email, password, name, role: 'customer', tenantId: tenant.id });
 
     if (!created || !created.user) {
       return c.json({ error: 'Failed to create account' }, 500);
@@ -232,9 +225,7 @@ app.patch('/profile', async (c) => {
 
   if (name) {
     try {
-      await (auth.api as any).updateUser({
-        body: { userId: currentUser.id, name },
-      });
+      await updateUser({ userId: currentUser.id, name });
     } catch (err: any) {
       console.error('[profile] name update failed:', err);
       updateErrors.push(err?.message || 'Failed to update name');
@@ -569,15 +560,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
 
   // Create user via BA API with role='customer'
   const randomPwd = crypto.randomUUID();
-  const created = await (auth.api as any).createUser({
-    body: {
-      email: parsed.data.email,
-      password: randomPwd,
-      name: parsed.data.name,
-      role: 'customer',
-      data: { tenantId, branchId: parsed.data.branchId, phone: parsed.data.phone },
-    },
-  });
+  const created = await createUser({ email: parsed.data.email, password: randomPwd, name: parsed.data.name, role: 'customer', tenantId, branchId: parsed.data.branchId });
 
   await cacheDel(tenantId, 'customers:list');
   return c.json({
@@ -668,10 +651,10 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
 
   // Update profile fields on user table directly
   if (parsed.data.name) {
-    await (auth.api as any).updateUser({ body: { userId: id, name: parsed.data.name } });
+    await updateUser({ userId: id, name: parsed.data.name });
   }
   if (parsed.data.email) {
-    await (auth.api as any).updateUser({ body: { userId: id, email: parsed.data.email } });
+    await updateUser({ userId: id, email: parsed.data.email });
   }
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() };

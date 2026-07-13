@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Download, Send, Trash2, FileText } from 'lucide-react';
 import { Button, Chip, Modal, Spinner } from '@heroui/react';
-import { api, fmtINR, getTenantFilter } from '@/lib/api';
+import { api, getTenantFilter } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 import { useSendInvoice, useDeleteInvoice } from '@/lib/queries';
 
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
@@ -68,7 +69,7 @@ export default function InvoiceDetailPage() {
               { label: 'Invoice No', value: invoice.invoiceNo as string },
               { label: 'Tracking No', value: invoice.trackingNo as string },
               { label: 'Customer', value: (invoice.customerName as string) ?? '—' },
-               { label: 'Amount', value: fmtINR(invoice.amount) },
+               { label: 'Amount', value: formatCurrency(invoice.amount as number | string, 'INR') },
               { label: 'Status', value: invoice.status as string },
               { label: 'Created', value: invoice.createdAt ? new Date(invoice.createdAt as string).toLocaleDateString() : '—' },
               { label: 'Emails Sent', value: `${invoice.emailCount ?? 0}/2 today` },

@@ -15,6 +15,7 @@ import { useToast } from '@/components/toast';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend, type PaginatedResult, type Shipment } from '@/lib/queries';
 import { KpiCard } from '@/components/kpi-card';
 import { usePageTitle } from '@/lib/use-page-title';
+import { getUser } from '@/types/auth';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { getCountryCode } from '@/lib/country-codes';
 
@@ -60,11 +61,11 @@ export default function ShipmentsPage() {
 
 
   const { data: session } = authClient.useSession();
-  const userData = session?.user as Record<string, unknown> | undefined;
-  const userRole = userData?.role as string | undefined;
+  const userData = getUser(session);
+  const userRole = userData?.role;
   const isSuperAdmin = userRole === 'superadmin';
   const isTenantAdmin = userRole === 'tenant-admin';
-  const userTenantId = userData?.tenantId as string | undefined;
+  const userTenantId = userData?.tenantId;
   const userBranchId = userData?.branchId as string | undefined;
   const isStaff = !isSuperAdmin && !isTenantAdmin;
   const { tenantFilter, branchFilter } = useTenantFilter();
@@ -227,7 +228,7 @@ export default function ShipmentsPage() {
           const pts = data.map((v, i) => `${((i / (data.length - 1)) * w).toFixed(1)},${(h - ((v - min) / range) * (h - 4) - 2).toFixed(1)}`).join(' ');
           const area = `0,${h} ${pts} ${w},${h}`;
           return (
-            <a key={label} className="rounded-xl border border-border bg-surface hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden flex flex-col">
+            <div key={label} className="rounded-xl border border-border bg-surface hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden flex flex-col">
               <div className="p-5 pb-3 flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">{label}</span>
@@ -254,7 +255,7 @@ export default function ShipmentsPage() {
                   </div>
                 </div>
               </div>
-            </a>
+            </div>
           );
         })}
       </div>
@@ -458,7 +459,7 @@ export default function ShipmentsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1.5">
                         <label htmlFor="new-trackingNo" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Tracking Number *</label>
-                        <Input id="new-trackingNo" variant="secondary" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value.trimStart()); clearError('trackingNo'); }} required />
+                        <Input id="new-trackingNo" variant="secondary" placeholder="e.g. 1Z999AA10123456784" value={newTrackingNumber} onChange={(e) => { setNewTrackingNumber(e.target.value.trimStart()); clearError('trackingNo'); }} required />
                         {errors.trackingNo && <p className="text-xs text-danger">{errors.trackingNo}</p>}
                       </div>
                       <div className="flex flex-col gap-1.5">

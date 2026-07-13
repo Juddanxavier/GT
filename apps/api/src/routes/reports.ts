@@ -16,12 +16,13 @@ const app = new Hono<{ Variables: AppVariables }>();
 
 const ALLOWED_COLUMNS = new Set(['created_at', 's.created_at', 'q.created_at']);
 
-function dateFilter(col: string, start?: string, end?: string) {
+function dateFilter(col: keyof typeof ALLOWED_COLUMNS extends string ? string : never, start?: string, end?: string) {
   if (!ALLOWED_COLUMNS.has(col)) throw new Error(`Invalid column: ${col}`);
+  const colId = sql.identifier(col);
   if (start && end)
-    return sql`${sql.raw(col)} >= ${start}::date AND ${sql.raw(col)} < (${end}::date + INTERVAL '1 day')`;
-  if (start) return sql`${sql.raw(col)} >= ${start}::date`;
-  if (end) return sql`${sql.raw(col)} < (${end}::date + INTERVAL '1 day')`;
+    return sql`${colId} >= ${start}::date AND ${colId} < (${end}::date + INTERVAL '1 day')`;
+  if (start) return sql`${colId} >= ${start}::date`;
+  if (end) return sql`${colId} < (${end}::date + INTERVAL '1 day')`;
   return sql`TRUE`;
 }
 
@@ -49,6 +50,8 @@ app.get('/shipments', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
+  const queryBranchId = c.req.query('branchId');
+  if (queryBranchId) scope.branchId = queryBranchId;
   const cacheKey = `reports:shipments:${scope.branchId ?? 'all'}:${start ?? ''}:${end ?? ''}`;
 
   const data = await withCache(
@@ -94,6 +97,8 @@ app.get('/quotations', requireRole('superadmin', 'tenant-admin'), async (c) => {
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
   const start = c.req.query('start');
   const end = clampEnd(c.req.query('end'));
+  const queryBranchId = c.req.query('branchId');
+  if (queryBranchId) scope.branchId = queryBranchId;
   const cacheKey = `reports:quotations:${scope.branchId ?? 'all'}:${start ?? ''}:${end ?? ''}`;
 
   const data = await withCache(
@@ -141,6 +146,8 @@ app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) 
   const end = clampEnd(c.req.query('end'));
   const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
   const offset = Math.max(parseInt(c.req.query('offset') ?? '0', 10) || 0, 0);
+  const queryBranchId = c.req.query('branchId');
+  if (queryBranchId) scope.branchId = queryBranchId;
   const cacheKey = `reports:shipments-data:${scope.branchId ?? 'all'}:${start ?? ''}:${end ?? ''}:${limit}:${offset}`;
 
   const result = await withCache(
@@ -156,7 +163,7 @@ app.get('/shipments/data', requireRole('superadmin', 'tenant-admin'), async (c) 
       const total = (countResult?.total as number) ?? 0;
 
       const rows = await db.execute<Record<string, unknown>>(
-        sql`SELECT s.id, s.tracking_no, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+        sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, s.created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.sender_address->>'name', '') AS sender_name, COALESCE(s.sender_address->>'phone', '') AS sender_phone, COALESCE(s.recipient_address->>'name', '') AS recipient_name, COALESCE(s.recipient_address->>'phone', '') AS recipient_phone FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id WHERE ${sFilter} AND ${sbFilter} AND ${sdFilter} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       );
 
       return { rows, total };
@@ -175,6 +182,8 @@ app.get('/quotations/data', requireRole('superadmin', 'tenant-admin'), async (c)
   const end = clampEnd(c.req.query('end'));
   const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
   const offset = Math.max(parseInt(c.req.query('offset') ?? '0', 10) || 0, 0);
+  const queryBranchId = c.req.query('branchId');
+  if (queryBranchId) scope.branchId = queryBranchId;
   const cacheKey = `reports:quotations-data:${scope.branchId ?? 'all'}:${start ?? ''}:${end ?? ''}:${limit}:${offset}`;
 
   const result = await withCache(

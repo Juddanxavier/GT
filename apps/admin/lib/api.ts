@@ -1,11 +1,8 @@
 import type { z } from 'zod';
 import { validateResponse } from './validation';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-export function fmtINR(n: unknown) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(Number(n));
-}
+const BASE = process.env.NEXT_PUBLIC_API_URL;
+if (!BASE) throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
 
 let tenantOverride: string | null = null;
 let branchOverride: string | null = null;

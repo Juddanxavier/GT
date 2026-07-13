@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { getUser } from '@/types/auth';
 import { setTenantFilter, setBranchFilter } from './api';
 import { authClient } from './auth-client';
 
@@ -49,7 +50,7 @@ export function TenantFilterProvider({ children }: { children: ReactNode }) {
 
   // Reset filters when the authenticated user changes (logout / different user logs in)
   useEffect(() => {
-    const currentId = (session?.user as Record<string, unknown>)?.id as string | undefined;
+    const currentId = getUser(session)?.id;
     if (prevUserId.current && prevUserId.current !== currentId) {
       localStorage.removeItem(STORAGE_TENANT);
       localStorage.removeItem(STORAGE_BRANCH);
