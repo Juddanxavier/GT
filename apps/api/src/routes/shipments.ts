@@ -165,11 +165,11 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
 
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-  // Duplicate tracking number check (route-level concern)
+  // Global duplicate tracking number check (cross-tenant)
   const [dup] = await db
     .select({ id: shipments.id })
     .from(shipments)
-    .where(and(eq(shipments.tenantId, tenantId!), eq(shipments.trackingNo, parsed.data.trackingNo)))
+    .where(eq(shipments.trackingNo, parsed.data.trackingNo))
     .limit(1);
   if (dup)
     return c.json({ error: `Tracking number "${parsed.data.trackingNo}" already exists` }, 409);

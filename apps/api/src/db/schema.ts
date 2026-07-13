@@ -178,8 +178,7 @@ export const shipments = pgTable(
     shipmentUserIdx: index('shipment_user_idx').on(table.userId),
     shipmentStatusIdx: index('shipment_status_idx').on(table.status),
     shipmentTrackingIdx: index('shipment_tracking_idx').on(table.trackingNo),
-    shipmentTenantTrackingUnique: unique('shipment_tenant_tracking_unique').on(
-      table.tenantId,
+    shipmentTrackingUnique: unique('shipment_tracking_unique').on(
       table.trackingNo,
     ),
     shipmentBranchIdx: index('shipment_branch_idx').on(table.branchId),

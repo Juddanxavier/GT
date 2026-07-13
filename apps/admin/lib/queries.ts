@@ -91,7 +91,7 @@ export function useDeleteBranch() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/branches/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['branches'], refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: ['branches'] });
     },
   });
 }
@@ -607,7 +607,7 @@ export function useDeleteShipment() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/shipments/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['shipments'], refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: ['shipments'] });
     },
   });
 }
