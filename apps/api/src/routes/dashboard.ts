@@ -189,7 +189,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
   const tWhere = makeRawShipmentWhere(tenantId!);
 
   const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, alVal] = await Promise.all([
-    queryShipmentSummary(tWhere),
+    queryShipmentSummary(tenantId),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
     queryRevenueStatsRaw(tFilter),
@@ -233,7 +233,7 @@ async function buildSuperadminStats(filterTenantId: string | null) {
   const tWhere = makeRawShipmentWhere(filterTenantId ?? undefined);
 
   const [s, cRow, qRow, iRow, ptVal, rmVal, pdVal, alVal] = await Promise.all([
-    queryShipmentSummary(tWhere),
+    queryShipmentSummary(filterTenantId ?? undefined),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
     queryRevenueStatsRaw(tFilter),

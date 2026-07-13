@@ -82,13 +82,11 @@ export function makeShipmentWhere(filter: StatsFilter): SQL | undefined {
  * Returns `sql\`AND tenant_id=${tenantId}\`` or empty sql\`\``.
  */
 export function makeRawShipmentFilter(tenantId?: string): SQL {
-  const base = sql`AND archived_at IS NULL`;
-  return tenantId ? sql`${base} AND tenant_id=${tenantId}` : base;
+  return tenantId ? sql`AND tenant_id=${tenantId}` : sql``;
 }
 
 export function makeRawShipmentWhere(tenantId?: string): SQL {
-  const base = sql`WHERE archived_at IS NULL`;
-  return tenantId ? sql`${base} AND tenant_id=${tenantId}` : base;
+  return tenantId ? sql`WHERE tenant_id=${tenantId}` : sql``;
 }
 
 /**
@@ -133,7 +131,7 @@ export async function queryShipmentDetailed(filter: StatsFilter): Promise<Row> {
 }
 
 /** Summary shipment stats (4 columns) */
-export async function queryShipmentSummary(where: SQL | undefined): Promise<Row> {
+export async function queryShipmentSummary(tenantId?: string): Promise<Row> {
   const [row] = await db.execute<Row>(
     sql`
       SELECT
@@ -141,7 +139,8 @@ export async function queryShipmentSummary(where: SQL | undefined): Promise<Row>
         COALESCE(SUM(CASE WHEN status='in_transit' THEN 1 ELSE 0 END),0) AS "inTransit",
         COALESCE(SUM(CASE WHEN status IN ('exception','failed_attempt') THEN 1 ELSE 0 END),0) AS exceptions,
         COALESCE(SUM(CASE WHEN status='delivered' AND actual_delivery>=CURRENT_DATE THEN 1 ELSE 0 END),0) AS "deliveredToday"
-      FROM shipment${where ? sql` ${where}` : sql``}
+      FROM shipment WHERE archived_at IS NULL
+      ${tenantId ? sql`AND tenant_id=${tenantId}` : sql``}
     `,
   );
   return row ?? {};
@@ -347,7 +346,7 @@ export async function queryAlertsRaw(filter: SQL | undefined): Promise<unknown[]
         'shipmentId',id,'trackingNo',tracking_no,'status',status,
         'lastTrackedAt',last_tracked_at,'estimatedDelivery',estimated_delivery,'updatedAt',updated_at
       ) ORDER BY updated_at DESC),'[]'::json) AS val
-      FROM shipment WHERE (status IN ('exception','failed_attempt')
+      FROM shipment WHERE archived_at IS NULL AND (status IN ('exception','failed_attempt')
         OR (status NOT IN ('delivered','expired') AND last_tracked_at IS NOT NULL AND last_tracked_at<NOW()-INTERVAL '72 hours')
         OR (status NOT IN ('delivered','expired') AND estimated_delivery IS NOT NULL AND estimated_delivery<NOW()-INTERVAL '24 hours'))
       ${filter ?? sql``}
