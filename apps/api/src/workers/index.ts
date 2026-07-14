@@ -1,6 +1,6 @@
 import { buildEmailHtml } from '@repo/auth-config';
 import { Worker } from 'bullmq';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { invoices as invoiceSchema, shipments, tenants, user } from '../db/schema';
 import { sendEmail } from '../email/provider';
@@ -424,6 +424,36 @@ async function registerArchiveRepeatable(maxRetries = 3): Promise<void> {
 
 registerArchiveRepeatable();
 
+// Register periodic re-tracking (every 2 hours) with retries.
+async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
+  if (!shipmentQueue) return;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await shipmentQueue.add(
+        'retrack',
+        {},
+        {
+          repeat: { pattern: '0 */2 * * *' },
+          removeOnComplete: { age: 86400 * 7, count: 50 },
+          removeOnFail: { age: 86400 * 30, count: 100 },
+        },
+      );
+      console.log('[retrack] repeatable job registered (every 2 hours)');
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[retrack] failed to register repeatable job (attempt ${attempt}/${maxRetries}): ${message}`,
+      );
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      }
+    }
+  }
+}
+
+registerRetrackingRepeatable();
+
 // ── Shipment Worker (tracking + invoice retries) ──
 
 // Job data types for the shipment worker
@@ -482,6 +512,37 @@ export const shipmentWorker = createWorker(
         },
         trackData.tenantId,
       );
+      return;
+    }
+
+    if (data.type === 'retrack') {
+      const rows = await db.execute<{
+        id: string; tracking_no: string; tenant_id: string;
+        carrier: string | null; courier_code: string | null;
+      }>(sql`
+        SELECT id, tracking_no, tenant_id, carrier, courier_code
+        FROM shipment
+        WHERE archived_at IS NULL
+          AND status NOT IN ('delivered','expired')
+          AND (last_tracked_at IS NULL OR last_tracked_at < NOW() - INTERVAL '6 hours')
+        LIMIT 200
+      `);
+
+      let enqueued = 0;
+      for (const row of rows) {
+        if (!shipmentQueue) break;
+        await shipmentQueue.add('track', {
+          type: 'track',
+          shipmentId: row.id,
+          tenantId: row.tenant_id,
+          trackingNo: row.tracking_no,
+          courierCode: row.courier_code,
+          carrier: row.carrier,
+        });
+        enqueued++;
+      }
+
+      console.log(`[retrack] enqueued ${enqueued} track jobs`);
       return;
     }
 
