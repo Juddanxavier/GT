@@ -49,6 +49,15 @@ export interface CreateShipmentResult {
   shipment: typeof shipments.$inferSelect;
 }
 
+export class DuplicateTrackingError extends Error {
+  trackingNo: string;
+  constructor(trackingNo: string) {
+    super(`Tracking number "${trackingNo}" already exists`);
+    this.name = 'DuplicateTrackingError';
+    this.trackingNo = trackingNo;
+  }
+}
+
 // ── Core Creation ──
 
 /**
@@ -65,12 +74,13 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
   let row: typeof shipments.$inferSelect | undefined;
   let labelCode: string | undefined;
 
-  await db.transaction(async (tx) => {
-    [row] = await tx
-      .insert(shipments)
-      .values({
-        tenantId: input.tenantId,
-        trackingNo: input.trackingNo,
+  try {
+    await db.transaction(async (tx) => {
+      [row] = await tx
+        .insert(shipments)
+        .values({
+          tenantId: input.tenantId,
+          trackingNo: input.trackingNo,
         userId: input.userId,
         branchId: input.branchId,
         courierCode: input.courierCode,
@@ -94,7 +104,15 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
       .update(shipments)
       .set({ labelCode, updatedAt: new Date() })
       .where(eq(shipments.id, row.id));
-  });
+    });
+  } catch (err) {
+    // Postgres unique_violation (23505) on the tracking number index.
+    // The route pre-checks this, but a race or archived-row reuse can still hit it.
+    if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+      throw new DuplicateTrackingError(input.trackingNo);
+    }
+    throw err;
+  }
 
   // The transaction returned `row` with the labelCode update applied.
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

@@ -7,7 +7,7 @@ import { getQueryScope, requireBranchScope, requireRole } from '../middleware/au
 import { emitToTenant } from '../realtime';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
-import { createShipment } from '../services/shipment';
+import { createShipment, DuplicateTrackingError } from '../services/shipment';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
@@ -208,7 +208,9 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   }
 
   // Delegate to service: core transaction + async tracking/invoice
-  const { shipment } = await createShipment({
+  let shipment: typeof shipments.$inferSelect;
+  try {
+    ({ shipment } = await createShipment({
     trackingNo: parsed.data.trackingNo,
     tenantId,
     userId: parsed.data.customerId ?? undefined,
@@ -224,7 +226,13 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     customerName: parsed.data.customerName,
     senderAddress: parsed.data.senderAddress,
     recipientAddress: parsed.data.recipientAddress,
-  });
+    }));
+  } catch (err) {
+    if (err instanceof DuplicateTrackingError) {
+      return c.json({ error: err.message }, 409);
+    }
+    throw err;
+  }
 
   return c.json({ data: shipment }, 201);
 });
