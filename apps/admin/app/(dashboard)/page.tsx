@@ -375,7 +375,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
 
   return (
     <div className="w-full space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border border-border ">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0">
@@ -746,7 +746,7 @@ function OperationalDashboard({
 
   return (
     <div className="w-full space-y-5">
-      <div className="relative overflow-hidden rounded-2xl border border-border ">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-accent/15 text-accent shrink-0">
