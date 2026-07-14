@@ -206,6 +206,31 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
   return {
     role: 'tenant-admin',
     scope: {},
+    shipments: {
+      total: Number(s.total ?? 0),
+      inTransit: Number(s.inTransit ?? 0),
+      outForDelivery: Number(s.outForDelivery ?? 0),
+      deliveredToday: Number(s.deliveredToday ?? 0),
+      deliveredThisMonth: Number(s.deliveredThisMonth ?? 0),
+      exceptions: Number(s.exceptions ?? 0),
+      pending: Number(s.pending ?? 0),
+      stale: Number(s.stale ?? 0),
+      overdue: Number(s.overdue ?? 0),
+      notTracked: Number(s.notTracked ?? 0),
+      byStatus: {
+        in_transit: Number(s.inTransit ?? 0),
+        out_for_delivery: Number(s.outForDelivery ?? 0),
+        delivered: Number(s.delivered ?? 0),
+        exception: Number(s.exceptions ?? 0),
+        pending: Number(s.pending ?? 0),
+        info_received: Number(s.infoReceived ?? 0),
+        expired: Number(s.expired ?? 0),
+        failed_attempt: 0,
+      },
+      perDay: pdVal,
+      byCarrier: [],
+      byBranch: [],
+    },
     total: {
       shipments: {
         total: Number(s.total ?? 0),

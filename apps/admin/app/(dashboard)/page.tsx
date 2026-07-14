@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Truck, Package, CheckCircle, AlertTriangle, IndianRupee, TrendingUp,
-  Clock, CalendarClock, CheckCircle2, RefreshCw,
+  Clock, CalendarClock, CheckCircle2, RefreshCw, WifiOff, Hourglass,
   ArrowRight, Users, FileText, Building2, Activity,
   TrendingDown, Sunrise, Sun, Moon, LogIn, Bell, Mail,
 } from 'lucide-react';
@@ -365,6 +365,9 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
     { icon: <IndianRupee size={18} />, label: 'Bill Amount', value: fmtCurrency(t.invoices.revenueTotal), sublabel: 'lifetime', accent: 'emerald' as const, trend: supTrend(supTrendRevenue), trendValue: supPct(supTrendRevenue) },
     { icon: <Users size={18} />, label: 'Active Customers', value: t.customers.active, sublabel: 'registered', accent: 'violet' as const, trend: 'neutral' as const, trendValue: '—' },
     { icon: <TrendingUp size={18} />, label: 'Avg. Conversion', value: `${t.quotations.conversionRate}%`, sublabel: 'quote-to-ship', accent: 'amber' as const, trend: 'neutral' as const, trendValue: '—' },
+    { icon: <Hourglass size={18} />, label: 'Overdue', value: stats.shipments?.overdue ?? 0, sublabel: 'past ETA', accent: 'red' as const, trend: 'neutral' as const, trendValue: '—' },
+    { icon: <Activity size={18} />, label: 'Stale', value: stats.shipments?.stale ?? 0, sublabel: '72h no update', accent: 'sky' as const, trend: 'neutral' as const, trendValue: '—' },
+    { icon: <WifiOff size={18} />, label: 'Not Tracked', value: stats.shipments?.notTracked ?? 0, sublabel: 'not registered', accent: 'purple' as const, trend: 'neutral' as const, trendValue: '—' },
   ];
 
   const supTotalActive = t.shipments.inTransit + t.shipments.deliveredToday + t.shipments.exceptions;
@@ -714,6 +717,9 @@ function OperationalDashboard({
     { icon: <Package size={18} />, label: 'Out for Delivery', value: shipmentsData.outForDelivery, accent: 'blue', href: '/shipments?status=out_for_delivery', trend: trend(trendShipments), trendValue: pctStr(trendShipments) },
     { icon: <CheckCircle size={18} />, label: 'Delivered Today', value: shipmentsData.deliveredToday, accent: 'green', href: '/shipments?status=delivered', trend: trend(trendShipments), trendValue: pctStr(trendShipments) },
     { icon: <AlertTriangle size={18} />, label: 'Exceptions', value: shipmentsData.exceptions, accent: 'red', href: '/shipments?status=exception', trend: trend(-(trendShipments ?? 0)), trendValue: pctStr(trendShipments ? -trendShipments : null) },
+    { icon: <Hourglass size={18} />, label: 'Overdue', value: shipmentsData.overdue, accent: 'red', sublabel: 'past ETA', trend: 'neutral' as const, trendValue: '—' },
+    { icon: <Activity size={18} />, label: 'Stale', value: shipmentsData.stale, accent: 'sky', sublabel: '72h no update', trend: 'neutral' as const, trendValue: '—' },
+    { icon: <WifiOff size={18} />, label: 'Not Tracked', value: shipmentsData.notTracked, accent: 'purple', sublabel: 'not registered', trend: 'neutral' as const, trendValue: '—' },
     { icon: <IndianRupee size={18} />, label: 'Bill Amount This Month', value: fmtCurrency(stats.invoices.revenueThisMonth), accent: 'emerald', trend: trend(trendRevenue), trendValue: pctStr(trendRevenue) },
     { icon: <TrendingUp size={18} />, label: 'Quote Conversion', value: `${stats.quotations.conversionRate}%`, accent: 'violet', trend: 'neutral' as const, trendValue: '—' },
   ];
