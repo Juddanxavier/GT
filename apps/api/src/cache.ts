@@ -1,8 +1,9 @@
 import { cacheClient } from './redis';
 
 function sanitizeKeyPart(part: string): string {
-  // Replace colons, newlines, spaces, and other Redis-problematic characters
-  return part.replace(/[\s:;\r\n]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
+  // Colons are kept (valid Redis key separators and used in delete patterns);
+  // only strip whitespace, semicolons, newlines, and other problematic chars.
+  return part.replace(/[\s;\r\n]+/g, '_').replace(/[^a-zA-Z0-9_\-.:@]/g, '');
 }
 
 function prefixKey(tenantId: string | null, key: string): string {
