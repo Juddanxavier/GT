@@ -18,7 +18,7 @@ const ALLOWED_COLUMNS = new Set(['created_at', 's.created_at', 'q.created_at']);
 
 function dateFilter(col: keyof typeof ALLOWED_COLUMNS extends string ? string : never, start?: string, end?: string) {
   if (!ALLOWED_COLUMNS.has(col)) throw new Error(`Invalid column: ${col}`);
-  const colId = sql.identifier(col);
+  const colId = sql.raw(col);
   if (start && end)
     return sql`${colId} >= ${start}::date AND ${colId} < (${end}::date + INTERVAL '1 day')`;
   if (start) return sql`${colId} >= ${start}::date`;
