@@ -60,6 +60,7 @@ import notificationPrefsRoute from './notification-preferences';
 import auditLogsRoute from './audit-logs';
 import publicTrack from './public-track';
 import claimShipment from './claim-shipment';
+import shipments from './shipments';
 
 // ── Test users ──
 
@@ -164,20 +165,73 @@ describe('role enforcement', () => {
   }
 
   const roleTests: { name: string; route: ReturnType<typeof Hono>; prefix: string; path: string; method?: string; allowed: string[]; denied: string[] }[] = [
-    // Branch DELETE — tenant-admin only (requireRole redirects on fail)
+    // ── Branches ──
+    { name: 'branches POST', route: branches, prefix: '/api/branches', path: '/api/branches', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'branches PATCH', route: branches, prefix: '/api/branches', path: '/api/branches/b1', method: 'PATCH', allowed: ['sa', 'ta'], denied: ['st'] },
     { name: 'branches DELETE', route: branches, prefix: '/api/branches', path: '/api/branches/b1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st'] },
-    // Users create — tenant-admin+
+    // ── Customers ──
+    { name: 'customers GET', route: customers, prefix: '/api/customers', path: '/api/customers', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'customers POST', route: customers, prefix: '/api/customers', path: '/api/customers', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'customers GET :id', route: customers, prefix: '/api/customers', path: '/api/customers/c1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'customers PATCH :id', route: customers, prefix: '/api/customers', path: '/api/customers/c1', method: 'PATCH', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'customers DELETE :id', route: customers, prefix: '/api/customers', path: '/api/customers/c1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st'] },
+    // ── Shipments ──
+    { name: 'shipments GET', route: shipments, prefix: '/api/shipments', path: '/api/shipments', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'shipments POST', route: shipments, prefix: '/api/shipments', path: '/api/shipments', method: 'POST', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'shipments GET :id', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'shipments PATCH :id', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1', method: 'PATCH', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'shipments DELETE :id', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'shipments POST restore', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1/restore', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'shipments PUT assign', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1/assign', method: 'PUT', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'shipments POST stop-tracking', route: shipments, prefix: '/api/shipments', path: '/api/shipments/s1/stop-tracking', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    // ── Invoices ──
+    { name: 'invoices GET', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'invoices GET shipment', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/shipment/s1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'invoices POST shipment', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/shipment/s1', method: 'POST', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'invoices GET :id', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/i1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'invoices POST :id/send', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/i1/send', method: 'POST', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'invoices PATCH :id', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/i1', method: 'PATCH', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'invoices DELETE :id', route: invoicesRoute, prefix: '/api/invoices', path: '/api/invoices/i1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st'] },
+    // ── Quotations ──
+    { name: 'quotations GET', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations POST', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations', method: 'POST', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations GET :id', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/q1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations PATCH :id', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/q1', method: 'PATCH', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations PATCH :id/status', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/q1/status', method: 'PATCH', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations POST :id/convert', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/q1/convert', method: 'POST', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations DELETE :id', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/q1', method: 'DELETE', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'quotations GET trend', route: quotationsRoute, prefix: '/api/quotations', path: '/api/quotations/trend', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    // ── Users ──
+    { name: 'users GET', route: usersRoute, prefix: '/api/users', path: '/api/users', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'users GET :id', route: usersRoute, prefix: '/api/users', path: '/api/users/u1', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    { name: 'users PATCH :id', route: usersRoute, prefix: '/api/users', path: '/api/users/u1', method: 'PATCH', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
     { name: 'users POST create', route: usersRoute, prefix: '/api/users', path: '/api/users/create', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
-    // Dashboard — tenant-admin+, staff allowed
+    { name: 'users POST :id/ban', route: usersRoute, prefix: '/api/users', path: '/api/users/u1/ban', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'users POST :id/unban', route: usersRoute, prefix: '/api/users', path: '/api/users/u1/unban', method: 'POST', allowed: ['sa', 'ta'], denied: ['st'] },
+    { name: 'users DELETE :id', route: usersRoute, prefix: '/api/users', path: '/api/users/u1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st'] },
+    // ── Dashboard ──
     { name: 'dashboard GET stats', route: dashboardRoute, prefix: '/api/dashboard', path: '/api/dashboard/stats', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
-    // Reports — tenant-admin+
+    { name: 'dashboard GET branches', route: dashboardRoute, prefix: '/api/dashboard', path: '/api/dashboard/branches', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    // ── Reports ──
     { name: 'reports GET shipments', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/shipments', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
-    // Audit logs — tenant-admin+
+    { name: 'reports GET quotations', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/quotations', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'reports GET shipments/data', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/shipments/data', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'reports GET quotations/data', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/quotations/data', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'reports POST pdf', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/pdf', method: 'POST', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'reports POST send-email', route: reportsRoute, prefix: '/api/reports', path: '/api/reports/send-email', method: 'POST', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    // ── Search ──
+    { name: 'search GET', route: searchRoute, prefix: '/api/search', path: '/api/search', allowed: ['sa', 'ta', 'st'], denied: ['cx'] },
+    // ── Audit logs ──
     { name: 'audit-logs GET', route: auditLogsRoute, prefix: '/api/audit-logs', path: '/api/audit-logs', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
-    // Invitations — tenant-admin+
+    { name: 'audit-logs GET timeline', route: auditLogsRoute, prefix: '/api/audit-logs', path: '/api/audit-logs/timeline', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'audit-logs GET events', route: auditLogsRoute, prefix: '/api/audit-logs', path: '/api/audit-logs/events', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    // ── Invitations ──
     { name: 'invitations GET', route: invitationsRoute, prefix: '/api/invitations', path: '/api/invitations', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
-    // Notification prefs — all roles including customer
+    { name: 'invitations POST invite', route: invitationsRoute, prefix: '/api/invitations', path: '/api/invitations/invite', method: 'POST', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    { name: 'invitations DELETE :id', route: invitationsRoute, prefix: '/api/invitations', path: '/api/invitations/i1', method: 'DELETE', allowed: ['sa', 'ta'], denied: ['st', 'cx'] },
+    // ── Notification prefs — all roles including customer
     { name: 'notification-prefs GET', route: notificationPrefsRoute, prefix: '/api/notification-preferences', path: '/api/notification-preferences', allowed: ['sa', 'ta', 'st', 'cx'], denied: [] },
+    { name: 'notification-prefs PUT', route: notificationPrefsRoute, prefix: '/api/notification-preferences', path: '/api/notification-preferences', method: 'PUT', allowed: ['sa', 'ta', 'st', 'cx'], denied: [] },
   ];
 
   for (const { name, route, prefix, path, method, allowed, denied } of roleTests) {

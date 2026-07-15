@@ -260,8 +260,13 @@ app.post('/api/seed/tenant', async (c) => {
     { name: 'Lanka Staff Jaffna', email: 'staff-jaffna@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: jaffna.id },
   ];
   for (const u of usersData) {
-    const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
-    if (existing) continue;
+    const [existing] = await db.select({ id: userTable.id, branchId: userTable.branchId, tenantId: userTable.tenantId }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
+    if (existing) {
+      if (existing.branchId !== u.branchId || existing.tenantId !== u.tenantId) {
+        await db.update(userTable).set({ branchId: u.branchId, tenantId: u.tenantId }).where(eq(userTable.email, u.email));
+      }
+      continue;
+    }
     await createUser({ email: u.email, password: u.password, name: u.name, role: u.role, tenantId: u.tenantId, branchId: u.branchId });
   }
 

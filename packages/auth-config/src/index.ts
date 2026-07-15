@@ -184,12 +184,12 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
         tenantId: {
           type: 'string' as const,
           required: false,
-          input: false,
+          input: true,
         },
         branchId: {
           type: 'string' as const,
           required: false,
-          input: false,
+          input: true,
         },
       },
     },

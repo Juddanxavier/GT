@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/lib/use-page-title';
 import { ArrowLeft, Package, MapPin, Clock, Calendar, FileText, MessageSquare, Check, RefreshCw, Trash2, Pencil, Ban, Send, Plus, DollarSign, Globe, Users } from 'lucide-react';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { useToast } from '@/components/toast';
 
 type TabKey = 'details' | 'tracking' | 'invoice' | 'notes';
 
@@ -25,6 +26,7 @@ export default function ShipmentDetailPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { tenantFilter, branchFilter } = useTenantFilter();
+  const { toast } = useToast();
   const { data: tenants = [] } = useTenants();
   const tenantCurrency = useMemo(() => {
     const t = tenants.find((t) => t.id === tenantFilter);
@@ -331,13 +333,16 @@ export default function ShipmentDetailPage(): ReactNode {
                   <InfoRow label="Created" value={new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="secondary" onPress={async () => {
-                      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                      const headers: Record<string, string> = {};
-                      const tid = tenantFilter;
-                      if (tid) headers['X-Tenant-ID'] = tid;
-                      const res = await fetch(`${base}/api/invoices/${invoice.id}/pdf`, { credentials: 'include', headers });
-                      const blob = await res.blob();
-                      window.open(URL.createObjectURL(blob), '_blank');
+                      try {
+                        const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                        const headers: Record<string, string> = {};
+                        const tid = tenantFilter;
+                        if (tid) headers['X-Tenant-ID'] = tid;
+                        const res = await fetch(`${base}/api/invoices/${invoice.id}/pdf`, { credentials: 'include', headers });
+                        if (!res.ok) throw new Error('Failed to generate PDF');
+                        const blob = await res.blob();
+                        window.open(URL.createObjectURL(blob), '_blank');
+                      } catch (e) { toast('error', 'Failed to generate PDF', e instanceof Error ? e.message : undefined); }
                     }}>
                       <FileText size={14} /> View PDF
                     </Button>
@@ -345,7 +350,7 @@ export default function ShipmentDetailPage(): ReactNode {
                       try {
                         await api.post(`/api/invoices/${invoice.id}/send`);
                         queryClient.invalidateQueries({ queryKey: ['shipment-invoice', id] });
-                      } catch (e) { console.error('[invoice] send failed:', e); }
+                      } catch (e) { toast('error', 'Failed to send invoice', e instanceof Error ? e.message : undefined); }
                     }}>
                       <Send size={14} /> Send
                     </Button>

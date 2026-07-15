@@ -86,7 +86,7 @@ function getEntityKey(event: string, meta: Record<string, unknown>): {
 
 app.get(
   '/',
-  requireRole('superadmin', 'tenant-admin'),
+  requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
   async (c) => {
     const scope = getQueryScope(c);
@@ -160,7 +160,7 @@ app.get(
  */
 app.get(
   '/timeline',
-  requireRole('superadmin', 'tenant-admin'),
+  requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
   async (c) => {
     const scope = getQueryScope(c);
@@ -291,7 +291,7 @@ app.get(
 // Get distinct audit event types (for the filter dropdown)
 app.get(
   '/events',
-  requireRole('superadmin', 'tenant-admin'),
+  requireRole('superadmin', 'tenant-admin', 'staff'),
   async (c) => {
     const scope = getQueryScope(c);
 
@@ -316,7 +316,7 @@ app.get(
  */
 app.get(
   '/export',
-  requireRole('superadmin', 'tenant-admin'),
+  requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
   async (c) => {
     const scope = getQueryScope(c);

@@ -27,11 +27,21 @@ interface BanUserInput {
 }
 
 export async function createUser(input: CreateUserInput, extra?: Record<string, unknown>) {
-  return (auth.api as any).createUser({ body: input, ...extra }) as Promise<{ user: { id: string; email: string; name: string; role: string; tenantId?: string; branchId?: string; createdAt: Date; updatedAt: Date } }>;
+  const { tenantId, branchId, ...rest } = input;
+  const body = {
+    ...rest,
+    data: { ...(input.data ?? {}), ...(tenantId ? { tenantId } : {}), ...(branchId ? { branchId } : {}) },
+  };
+  return (auth.api as any).createUser({ body, ...extra }) as Promise<{ user: { id: string; email: string; name: string; role: string; tenantId?: string; branchId?: string; createdAt: Date; updatedAt: Date } }>;
 }
 
 export async function updateUser(input: UpdateUserInput) {
-  return (auth.api as any).updateUser({ body: { userId: input.userId, ...input } }) as Promise<{ user: { id: string } }>;
+  const { userId, tenantId, branchId, ...rest } = input;
+  const body = {
+    userId,
+    data: { ...rest, ...(tenantId ? { tenantId } : {}), ...(branchId ? { branchId } : {}) },
+  };
+  return (auth.api as any).updateUser({ body }) as Promise<{ user: { id: string } }>;
 }
 
 export async function banUser(input: BanUserInput, extra?: Record<string, unknown>) {

@@ -354,3 +354,49 @@ export async function autoCreateInvoice(
     throw err;
   }
 }
+
+/**
+ * Regenerate invoice when an admin edits a shipment's billAmount.
+ * Updates the existing invoice amount and re-queues PDF generation.
+ * If no invoice exists and billAmount > 0, creates one.
+ */
+export async function regenerateInvoice(
+  shipmentId: string,
+  billAmount: number,
+  tenantId: string,
+  userId?: string,
+): Promise<void> {
+  try {
+    const [existing] = await db
+      .select({ id: invoices.id, invoiceNo: invoices.invoiceNo })
+      .from(invoices)
+      .where(eq(invoices.shipmentId, shipmentId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(invoices)
+        .set({ amount: String(billAmount), updatedAt: new Date() })
+        .where(eq(invoices.id, existing.id));
+
+      await cacheDelPattern(tenantId, 'invoices:*');
+
+      if (pdfQueue) {
+        await pdfQueue.add('invoice', {
+          type: 'invoice',
+          invoiceId: existing.id,
+          tenantId,
+        });
+      }
+    } else if (billAmount > 0) {
+      await autoCreateInvoice(
+        { id: shipmentId, trackingNo: '' },
+        billAmount,
+        tenantId,
+        userId,
+      );
+    }
+  } catch (err) {
+    console.error(`[shipment/invoice] regenerate failed for shipment ${shipmentId}:`, err);
+  }
+}

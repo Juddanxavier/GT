@@ -34,11 +34,11 @@ function getNavItems(role?: string) {
       label: 'Users',
       icon: <Users size={18} />,
     },
-    {
+    ...(role !== 'staff' ? [{
       href: '/invitations',
       label: 'Invitations',
       icon: <UserPlus size={18} />,
-    },
+    }] : []),
     ...(role !== 'staff' ? [{
       href: '/branches',
       label: 'Branches',
@@ -64,11 +64,11 @@ function getNavItems(role?: string) {
       label: 'Reports',
       icon: <BarChart3 size={18} />,
     }] : []),
-    ...(role !== 'staff' ? [{
+    {
       href: '/audit',
       label: 'Audit Log',
       icon: <Activity size={18} />,
-    }] : []),
+    },
   ];
   return items;
 }
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </DashboardLayoutInner>
         </ToastProvider>
       </TenantFilterProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </PersistQueryClientProvider>
   );
 }
@@ -217,11 +217,11 @@ function DashboardLayoutInner({
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setUnreadCount(d.count ?? 0))
-      .catch(() => {});
+      .catch((e) => console.error('[notifications] unread count fetch failed:', e));
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications?limit=10`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setNotifs(d.data ?? []))
-      .catch(() => {});
+      .catch((e) => console.error('[notifications] fetch failed:', e));
   }, [session]);
 
   useEffect(() => {
@@ -263,6 +263,9 @@ function DashboardLayoutInner({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-surface focus:text-foreground focus:rounded-lg focus:border focus:border-border focus:text-sm">
+          Skip to content
+        </a>
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
@@ -603,7 +606,7 @@ function DashboardLayoutInner({
 
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main id="main-content" className="p-4 sm:p-6 lg:p-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
         <footer className="border-t border-border px-6 py-3 text-xs text-muted flex items-center justify-between shrink-0">

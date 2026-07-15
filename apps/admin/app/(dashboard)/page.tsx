@@ -250,7 +250,7 @@ export default function DashboardPage() {
     fetchStats(branchFilter || undefined);
 
     if (role === 'tenant-admin' || role === 'staff') {
-      api.get<Branch[]>('/api/dashboard/branches').then((branches) => setBranches(branches ?? [])).catch(() => {});
+      api.get<Branch[]>('/api/dashboard/branches').then((branches) => setBranches(branches ?? [])).catch((e) => console.error('[dashboard] branches fetch failed:', e));
     }
 
     const socket = connectSocket(tenantId!);
@@ -1116,7 +1116,7 @@ function ActivityLog() {
     setLoading(true);
     api.getFull<{ data: typeof entries }>('/api/audit-logs?page=1&limit=5')
       .then((b) => setEntries(b.data ?? []))
-      .catch(() => {})
+      .catch((e) => console.error('[dashboard] activity log fetch failed:', e))
       .finally(() => setLoading(false));
   }, [tenantFilter]);
 

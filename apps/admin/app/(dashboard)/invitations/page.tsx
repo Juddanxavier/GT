@@ -123,6 +123,26 @@ export default function InvitationsPage() {
   const pendingInvitations = invitations.filter((i) => i.status === 'pending');
   const otherInvitations = invitations.filter((i) => i.status !== 'pending');
 
+  if (!userRole) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoaderCircle size={20} className="animate-spin text-muted" />
+      </div>
+    );
+  }
+
+  if (userRole === 'staff') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-2">
+          <Mail size={32} className="mx-auto text-muted" />
+          <p className="text-lg font-semibold text-foreground">Access Denied</p>
+          <p className="text-sm text-muted">Only admins can manage invitations.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -130,17 +150,15 @@ export default function InvitationsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Invitations</h1>
           <p className="text-sm text-muted">Invite users to join your organization</p>
         </div>
-        {userRole !== 'staff' && (
-          <Button onPress={() => {
-            setInviteEmail(''); setInviteName(''); setInviteRole('staff'); setInviteError('');
-            setInviteTenantId(isTenantAdmin ? sessionTenantId : '');
-            setInviteBranchId('');
-            setInviteOpen(true);
-          }}>
-            <Plus size={16} />
-            Invite User
-          </Button>
-        )}
+        <Button onPress={() => {
+          setInviteEmail(''); setInviteName(''); setInviteRole('staff'); setInviteError('');
+          setInviteTenantId(isTenantAdmin ? sessionTenantId : '');
+          setInviteBranchId('');
+          setInviteOpen(true);
+        }}>
+          <Plus size={16} />
+          Invite User
+        </Button>
       </div>
 
       {/* Stats */}

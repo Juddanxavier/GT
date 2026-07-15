@@ -7,7 +7,7 @@ import { getQueryScope, requireBranchScope, requireRole } from '../middleware/au
 import { emitToTenant } from '../realtime';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
-import { createShipment, DuplicateTrackingError } from '../services/shipment';
+import { createShipment, DuplicateTrackingError, regenerateInvoice } from '../services/shipment';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
@@ -440,6 +440,14 @@ app.patch(
             }, c);
           }
         }
+      }
+    }
+
+    // Regenerate invoice when billAmount changes (admin only)
+    if ('billAmount' in filteredData && Number(filteredData.billAmount) !== Number(existing.billAmount)) {
+      if (role === 'tenant-admin' || role === 'superadmin') {
+        const newAmount = Number(filteredData.billAmount) || 0;
+        await regenerateInvoice(row.id, newAmount, scope.tenantId!, row.userId ?? undefined);
       }
     }
 

@@ -98,7 +98,7 @@ export default function AuditLogPage() {
   useEffect(() => {
     api.get<string[]>('/api/audit-logs/events')
       .then(setEventTypes)
-      .catch(() => {});
+      .catch((e) => console.error('[audit] event types fetch failed:', e));
   }, [tenantFilter]);
 
   const buildParams = useCallback((pageNum: number, limit: number) => {
@@ -152,7 +152,7 @@ export default function AuditLogPage() {
   }, [buildParams, tenantFilter]);
 
   useEffect(() => {
-    if (!isSuperadmin && !isTenantAdmin) return;
+    if (!isSuperadmin && !isTenantAdmin && userRole !== 'staff') return;
     if (viewMode === 'table') {
       fetchLogs(1);
     } else {
@@ -235,12 +235,12 @@ export default function AuditLogPage() {
     return ua.length > 80 ? ua.slice(0, 80) + '…' : ua;
   }
 
-  if (!isSuperadmin && !isTenantAdmin) {
+  if (!isSuperadmin && !isTenantAdmin && userRole !== 'staff') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
         <Activity size={40} className="text-muted" />
         <p className="text-lg font-medium">Audit log not available</p>
-        <p className="text-sm text-muted">Only superadmins and tenant-admins can access audit logs.</p>
+        <p className="text-sm text-muted">You do not have permission to view audit logs.</p>
       </div>
     );
   }
