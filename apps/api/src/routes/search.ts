@@ -1,4 +1,4 @@
-import { and, eq, like, sql } from 'drizzle-orm';
+import { and, eq, isNull, like, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db';
 import { user, invoices, shipments } from '../db/schema';
@@ -27,6 +27,7 @@ app.get(
     const shipConditions: ReturnType<typeof eq>[] = [
       sql`${like(shipments.trackingNo, `%${search}%`)}`,
       eq(shipments.tenantId, scope.tenantId),
+      isNull(shipments.archivedAt),
     ];
     if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
 
@@ -40,6 +41,7 @@ app.get(
     const invoiceConditions: ReturnType<typeof eq>[] = [
       sql`${like(invoices.invoiceNo, `%${search}%`)}`,
       eq(invoices.tenantId, scope.tenantId),
+      isNull(invoices.archivedAt),
     ];
     if (scope.branchId) invoiceConditions.push(eq(shipments.branchId, scope.branchId));
 

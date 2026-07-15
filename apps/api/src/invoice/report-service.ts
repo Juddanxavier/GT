@@ -69,16 +69,16 @@ export async function generateReportPdf(params: ReportParams) {
   }
 
   const [summary] = await db.execute<Record<string, unknown>>(
-    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END),0)::int AS delivered, COALESCE(SUM(CASE WHEN status='in_transit' THEN 1 ELSE 0 END),0)::int AS in_transit, COALESCE(SUM(CASE WHEN status IN ('exception','failed_attempt') THEN 1 ELSE 0 END),0)::int AS exceptions FROM shipment WHERE ${tenantFilter} AND ${branchFilter} AND ${sDate}`,
+    sql`SELECT COUNT(*)::int AS total, COALESCE(SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END),0)::int AS delivered, COALESCE(SUM(CASE WHEN status='in_transit' THEN 1 ELSE 0 END),0)::int AS in_transit, COALESCE(SUM(CASE WHEN status IN ('exception','failed_attempt') THEN 1 ELSE 0 END),0)::int AS exceptions FROM shipment WHERE ${tenantFilter} AND ${branchFilter} AND ${sDate} AND archived_at IS NULL`,
   );
   const s = summary ?? { total: 0, delivered: 0, in_transit: 0, exceptions: 0 };
 
   const [rev] = await db.execute<Record<string, unknown>>(
-    sql`SELECT COALESCE(SUM(amount),0)::numeric(12,2) AS total FROM invoice WHERE ${tenantFilter} AND ${branchFilter} AND ${sDate}`,
+    sql`SELECT COALESCE(SUM(amount),0)::numeric(12,2) AS total FROM invoice WHERE ${tenantFilter} AND ${branchFilter} AND ${sDate} AND archived_at IS NULL`,
   );
 
   const records = await db.execute<Record<string, unknown>>(
-    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.bill_amount, inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} ORDER BY s.created_at DESC LIMIT 1000`,
+    sql`SELECT s.id, s.tracking_no, s.label_code, s.status, s.origin, s.destination, s.carrier, TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at, COALESCE(u.name, '') AS customer_name, COALESCE(u.phone, '') AS customer_phone, COALESCE(u.email, '') AS customer_email, COALESCE(b.name, '') AS branch_name, COALESCE(s.bill_amount, inv.amount, '0') AS bill_amount FROM shipment s LEFT JOIN "user" u ON u.id = s.user_id LEFT JOIN branch b ON b.id = s.branch_id LEFT JOIN invoice inv ON inv.shipment_id = s.id WHERE ${sFilter} AND ${sbFilter} AND ${sdDate} AND s.archived_at IS NULL ORDER BY s.created_at DESC LIMIT 1000`,
   );
 
   return await renderToBuffer(ReportDocument({
