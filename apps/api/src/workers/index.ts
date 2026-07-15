@@ -454,6 +454,38 @@ async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
 
 registerRetrackingRepeatable();
 
+export async function retrackActiveShipments(): Promise<number> {
+  if (!shipmentQueue) return 0;
+
+  const rows = await db.execute<{
+    id: string; tracking_no: string; tenant_id: string;
+    carrier: string | null; courier_code: string | null;
+  }>(sql`
+    SELECT id, tracking_no, tenant_id, carrier, courier_code
+    FROM shipment
+    WHERE archived_at IS NULL
+      AND status NOT IN ('delivered','expired')
+      AND (last_tracked_at IS NULL OR last_tracked_at < NOW() - INTERVAL '6 hours')
+    LIMIT 200
+  `);
+
+  let enqueued = 0;
+  for (const row of rows) {
+    if (!shipmentQueue) break;
+    await shipmentQueue.add('track', {
+      type: 'track',
+      shipmentId: row.id,
+      tenantId: row.tenant_id,
+      trackingNo: row.tracking_no,
+      courierCode: row.courier_code,
+      carrier: row.carrier,
+    });
+    enqueued++;
+  }
+
+  return enqueued;
+}
+
 // ── Shipment Worker (tracking + invoice retries) ──
 
 // Job data types for the shipment worker
@@ -516,33 +548,8 @@ export const shipmentWorker = createWorker(
     }
 
     if (data.type === 'retrack') {
-      const rows = await db.execute<{
-        id: string; tracking_no: string; tenant_id: string;
-        carrier: string | null; courier_code: string | null;
-      }>(sql`
-        SELECT id, tracking_no, tenant_id, carrier, courier_code
-        FROM shipment
-        WHERE archived_at IS NULL
-          AND status NOT IN ('delivered','expired')
-          AND (last_tracked_at IS NULL OR last_tracked_at < NOW() - INTERVAL '6 hours')
-        LIMIT 200
-      `);
-
-      let enqueued = 0;
-      for (const row of rows) {
-        if (!shipmentQueue) break;
-        await shipmentQueue.add('track', {
-          type: 'track',
-          shipmentId: row.id,
-          tenantId: row.tenant_id,
-          trackingNo: row.tracking_no,
-          courierCode: row.courier_code,
-          carrier: row.carrier,
-        });
-        enqueued++;
-      }
-
-      console.log(`[retrack] enqueued ${enqueued} track jobs`);
+      const count = await retrackActiveShipments();
+      console.log(`[retrack] enqueued ${count} track jobs`);
       return;
     }
 
