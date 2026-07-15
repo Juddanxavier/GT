@@ -16,11 +16,14 @@ const app = new Hono<Env>();
 
 app.use('*', sessionMiddleware, tenantMiddleware);
 
-// List notifications for current user/tenant
+  // List notifications for current user/tenant
 app.get('/', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  // Superadmins without tenant scope see no notifications
+  if (!tenantId) return c.json({ data: [], total: 0, limit: 0, offset: 0 });
 
   const limit = Math.min(Number(c.req.query('limit')) || 20, 50);
   const offset = Number(c.req.query('offset')) || 0;
@@ -52,7 +55,8 @@ app.get('/', async (c) => {
 app.get('/unread-count', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  if (!tenantId) return c.json({ count: 0 });
 
   const [row] = await db
     .select({ count: sql<number>`COUNT(*)` })
