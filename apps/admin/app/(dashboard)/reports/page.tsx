@@ -65,6 +65,15 @@ export default function ReportsPage() {
   usePageTitle('Reports');
   const { data: session } = authClient.useSession();
   const isStaff = getUser(session)?.role === 'staff';
+
+  if (isStaff) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <FileText size={48} className="text-muted" />
+        <p className="text-lg text-muted">Only admins can access reports.</p>
+      </div>
+    );
+  }
   const userRole = getUser(session)!.role;
   const { tenantFilter, branchFilter, setBranch } = useTenantFilter();
   const { data: tenants = [] } = useTenants();

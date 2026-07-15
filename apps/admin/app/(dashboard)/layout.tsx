@@ -59,11 +59,11 @@ function getNavItems(role?: string) {
       label: 'Invoices',
       icon: <Receipt size={18} />,
     },
-    {
+    ...(role !== 'staff' ? [{
       href: '/reports',
       label: 'Reports',
       icon: <BarChart3 size={18} />,
-    },
+    }] : []),
     ...(role !== 'staff' ? [{
       href: '/audit',
       label: 'Audit Log',
