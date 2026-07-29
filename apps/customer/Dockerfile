@@ -11,14 +11,14 @@ RUN pnpm --filter=customer build
 
 FROM node:22-alpine AS runner
 RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/customer/package.json apps/customer/
+COPY packages/ packages/
+RUN pnpm install --prod --frozen-lockfile
+COPY --from=builder /app/apps/customer/.next apps/customer/.next
+COPY --from=builder /app/apps/customer/public apps/customer/public
+COPY --from=builder /app/apps/customer/next.config.ts apps/customer/
 WORKDIR /app/apps/customer
-RUN mkdir -p .next
-COPY --from=builder /app/apps/customer/.next ./.next
-COPY --from=builder /app/apps/customer/public ./public
-COPY --from=builder /app/apps/customer/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/pnpm-lock.yaml ./
-COPY --from=builder /app/apps/customer/next.config.ts ./
 EXPOSE 3002
-CMD pnpm next start --port 3002
+CMD node /app/node_modules/next/dist/bin/next start --port 3002
