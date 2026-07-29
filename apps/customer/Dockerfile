@@ -21,4 +21,4 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/apps/customer/next.config.ts ./
 EXPOSE 3002
-CMD npx next start
+CMD npx next start -p 3002
