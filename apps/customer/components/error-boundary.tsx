@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <span className="text-danger text-xl font-bold">!</span>
             </div>
             <h2 className="text-lg font-semibold text-foreground">Something went wrong</h2>
-            <p className="text-sm text-muted">
+            <p className="text-muted">
               {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
             </p>
             <button

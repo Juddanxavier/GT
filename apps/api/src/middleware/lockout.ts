@@ -7,10 +7,6 @@ import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
 import { errorResponse } from '../error-response';
 
-function appendClearCookie(headers: Headers, name: string) {
-  headers.append('Set-Cookie', `${name}=; Path=/; Secure; SameSite=None; Max-Age=0`);
-}
-
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 1800;
 const ATTEMPT_WINDOW_SECONDS = 1800;
@@ -94,11 +90,6 @@ export async function signInHandler(c: Context) {
           userId = (body?.user as Record<string, unknown> | undefined)?.id as string ?? null;
         } catch { /* ignore */ }
         await logAudit('LOGIN_SUCCESS', userId, { email, tenantId }, c);
-        if (c.req.url.startsWith('https://')) {
-          const oldHeaders = new Headers(res.headers);
-          appendClearCookie(oldHeaders, 'better-auth.session_token');
-          res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
-        }
       } else if (res.status === 401) {
         const attempts = (fallbackAttempts.get(failKey) ?? 0) + 1;
         fallbackAttempts.set(failKey, attempts);
@@ -120,11 +111,6 @@ export async function signInHandler(c: Context) {
             userId = (body?.user as Record<string, unknown> | undefined)?.id as string ?? null;
           } catch { /* ignore */ }
           await logAudit('LOGIN_SUCCESS', userId, { email, tenantId }, c);
-          if (c.req.url.startsWith('https://')) {
-            const oldHeaders = new Headers(res.headers);
-            appendClearCookie(oldHeaders, 'better-auth.session_token');
-            res = new Response(res.body, { status: res.status, statusText: res.statusText, headers: oldHeaders });
-          }
         } else if (res.status === 401) {
           const attempts = await cacheClient.incr(attemptsKey(email, tenantId));
           if (attempts === 1) {

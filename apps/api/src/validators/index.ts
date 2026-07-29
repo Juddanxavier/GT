@@ -151,6 +151,8 @@ export const updateProfileSchema = z.object({
   name: z.string().transform(stripHtml).optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().optional(),
+  phone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).transform(stripHtml).optional().or(z.literal('')),
+  branchId: uuidSchema.optional(),
   address: addressSchema,
 });
 

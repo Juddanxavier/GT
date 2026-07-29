@@ -314,6 +314,43 @@ export default function DashboardPage() {
   );
 }
 
+function TrackQuotaCard() {
+  const [quota, setQuota] = useState<{ quota_total: number; quota_used: number; quota_remain: number; today_used: number } | null>(null);
+  const [err, setErr] = useState(false);
+  useEffect(() => {
+    api.get<{ quota_total: number; quota_used: number; quota_remain: number; today_used: number }>('/api/dashboard/17track-quota')
+      .then(setQuota)
+      .catch(() => setErr(true));
+  }, []);
+  if (err) return null;
+  if (!quota) return <div className="h-24 rounded-xl bg-surface animate-pulse" />;
+  const pct = quota.quota_total > 0 ? Math.round((quota.quota_used / quota.quota_total) * 100) : 0;
+  return (
+    <Card>
+      <Card.Header className="pb-1">
+        <Card.Title className="text-sm font-semibold">17TRACK Quota</Card.Title>
+      </Card.Header>
+      <Card.Content className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted">Used</span>
+          <span className="font-semibold text-foreground">{quota.quota_used} / {quota.quota_total}</span>
+        </div>
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted">Remaining</span>
+          <span className="font-semibold text-foreground">{quota.quota_remain}</span>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted">Used Today</span>
+          <span className="font-semibold text-foreground">{quota.today_used}</span>
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
+
 function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
   stats: Stats; onRetry: () => void; router: ReturnType<typeof useRouter>; isTenantAdmin?: boolean;
 }) {
@@ -536,7 +573,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
         </Card.Content>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Card>
           <Card.Header className="pb-0">
             <Card.Title className="text-sm font-semibold">Revenue</Card.Title>
@@ -593,6 +630,7 @@ function SuperadminDashboard({ stats, onRetry, router, isTenantAdmin }: {
         </Card>
 
         <ActionCard router={router} onRetry={onRetry} />
+        <TrackQuotaCard />
       </div>
 
       <ActivityLog />

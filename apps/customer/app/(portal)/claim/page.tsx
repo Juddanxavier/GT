@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, Input, Button, Chip } from '@heroui/react';
 import { Package, Mail, CheckCircle, ArrowLeft, Truck, RefreshCw } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
@@ -131,10 +132,8 @@ export default function ClaimShipmentPage(): ReactNode {
           </div>
         )}
         <div className="flex gap-3 justify-center mt-6">
-          <Button as="a" href="/my-shipments" color="primary">
-            <Truck size={16} /> View My Shipments
-          </Button>
-          <Button as="a" href="/claim" variant="flat">Claim Another</Button>
+          <Link href="/my-shipments"><Button variant="primary"><Truck size={16} /> View My Shipments</Button></Link>
+          <Link href="/claim"><Button variant="ghost">Claim Another</Button></Link>
         </div>
       </Card>
     );
@@ -144,10 +143,10 @@ export default function ClaimShipmentPage(): ReactNode {
     <div className="max-w-lg mx-auto mt-8 space-y-4">
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-sm">
-        <Chip color={step === 'enter-tracking' ? 'primary' : 'success'} variant="flat" size="sm">1</Chip>
-        <span className={step === 'enter-tracking' ? 'font-medium' : 'text-muted'}>Enter Tracking</span>
+        <Chip color={step === 'enter-tracking' ? 'accent' : 'success'} variant="soft" size="sm">1</Chip>
+        <span className={step === 'enter-tracking' ? 'font-medium' : 'text-muted'}>Enter Tracking No</span>
         <div className="w-8 h-px bg-border" />
-        <Chip color={step === 'verify-otp' ? 'primary' : 'default'} variant="flat" size="sm">2</Chip>
+        <Chip color={step === 'verify-otp' ? 'accent' : 'default'} variant="soft" size="sm">2</Chip>
         <span className={step === 'verify-otp' ? 'font-medium' : 'text-muted'}>Verify OTP</span>
       </div>
 
@@ -164,14 +163,17 @@ export default function ClaimShipmentPage(): ReactNode {
                 <p className="text-sm text-muted">
                   Enter your tracking number to claim this shipment. We&apos;ll send a verification code to your email.
                 </p>
-                <Input
-                  label="Tracking Number"
-                  placeholder="e.g. GT123456789"
-                  value={trackingNo}
-                  onValueChange={setTrackingNo}
-                  isRequired
-                  startContent={<Package size={16} />}
-                />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Tracking Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. GT123456789"
+                    value={trackingNo}
+                    onChange={(e) => setTrackingNo(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-base outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                </div>
               </>
             )}
 
@@ -180,28 +182,31 @@ export default function ClaimShipmentPage(): ReactNode {
                 <p className="text-sm text-muted">
                   We sent a 6-digit code to <strong>{email}</strong>
                 </p>
-                <Input
-                  label="OTP Code"
-                  placeholder="000000"
-                  value={otp}
-                  onValueChange={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
-                  isRequired
-                  maxLength={6}
-                  startContent={<Mail size={16} />}
-                />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">OTP Code</label>
+                  <input
+                    type="text"
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    maxLength={6}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-base outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     onPress={() => { setStep('enter-tracking'); setOtp(''); setError(''); }}
                   >
                     <ArrowLeft size={14} /> Change tracking number
                   </Button>
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     isDisabled={resendTimer > 0 || resendClaim.isPending}
-                    isLoading={resendClaim.isPending}
+                    isPending={resendClaim.isPending}
                     onPress={() => resendClaim.mutate(trackingNo)}
                   >
                     <RefreshCw size={14} /> {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}
@@ -213,10 +218,10 @@ export default function ClaimShipmentPage(): ReactNode {
             {error && <p className="text-sm text-danger">{error}</p>}
 
             <Button
-              color="primary"
+              variant="primary"
               type="submit"
               className="w-full"
-              isLoading={initiateClaim.isPending || verifyClaim.isPending}
+              isPending={initiateClaim.isPending || verifyClaim.isPending}
               isDisabled={step === 'enter-tracking' ? !trackingNo : otp.length !== 6}
             >
               {step === 'enter-tracking' ? 'Send OTP' : 'Verify & Claim'}

@@ -297,6 +297,23 @@ async function buildSuperadminStats(filterTenantId: string | null) {
   };
 }
 
+app.get('/17track-quota', requireRole('superadmin'), async (c) => {
+  const apiKey = process.env.TRACK_API_KEY;
+  if (!apiKey) return c.json({ error: '17TRACK API key not configured' }, 503);
+
+  try {
+    const res = await fetch('https://api.17track.net/track/v2.4/getquota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', '17token': apiKey },
+    });
+    const json = await res.json() as { code: number; data?: { quota_total: number; quota_used: number; quota_remain: number; today_used: number; free_email_quota: number; free_email_quotaused: number } };
+    if (json.code !== 0) return c.json({ error: '17TRACK API error' }, 502);
+    return c.json({ data: json.data });
+  } catch {
+    return c.json({ error: 'Failed to fetch 17TRACK quota' }, 502);
+  }
+});
+
 app.get('/branches', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
   const tenantId = c.get('tenantId');
   if (!tenantId) return c.json({ data: [] });

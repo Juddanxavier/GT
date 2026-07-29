@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { authClient } from '@/lib/auth-client';
 
 interface RecentShipment {
   id: string;
@@ -97,10 +98,25 @@ export function useMarkAllNotificationsRead() {
 
 // ── Profile ──
 
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+}
+
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name?: string; currentPassword?: string; newPassword?: string }) => {
+    mutationFn: async (data: {
+      name?: string;
+      currentPassword?: string;
+      newPassword?: string;
+      phone?: string;
+      branchId?: string;
+      address?: Address;
+    }) => {
       const res = await fetch(`${API_BASE}/api/customers/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -112,8 +128,20 @@ export function useUpdateProfile() {
       return body.data as { id: string; name: string; email: string };
     },
     onSuccess: () => {
-      // The session will auto-refresh via authClient
       queryClient.invalidateQueries({ queryKey: ['customer-dashboard'] });
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await authClient.deleteUser();
+      if (error) throw new Error(error.message || 'Failed to delete account');
+    },
+    onSuccess: () => {
+      queryClient.clear();
     },
   });
 }
@@ -211,82 +239,6 @@ export function useTrackShipment(trackingNo: string | undefined) {
   });
 }
 
-// ── Quotations ──
-
-export interface QuotationRow {
-  id: string;
-  quoteNo: string;
-  status: string;
-  total: string;
-  validUntil: string | null;
-  notes: string | null;
-  createdAt: string;
-}
-
-export interface QuotationDetail extends QuotationRow {
-  items: Array<{
-    description: string;
-    quantity: string;
-    rate: string;
-    amount: string;
-    type?: string | null;
-  }>;
-}
-
-export interface QuotationsResponse {
-  data: QuotationRow[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-export function useMyQuotations(statusFilter: string, page: number = 1) {
-  return useQuery<QuotationsResponse>({
-    queryKey: ['my-quotations', statusFilter, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`${API_BASE}/api/customers/my-quotations?${params}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load quotations');
-      return res.json();
-    },
-    placeholderData: (prev) => prev,
-  });
-}
-
-export function useMyQuotationDetail(id: string | undefined) {
-  return useQuery<{ data: QuotationDetail }>({
-    queryKey: ['my-quotation', id],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/customers/my-quotations/${id}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Not found');
-      return res.json();
-    },
-    enabled: !!id,
-  });
-}
-
-export function useUpdateQuotationStatus() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => {
-      const res = await fetch(`${API_BASE}/api/customers/my-quotations/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ status }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error((body as { error?: string }).error || 'Failed to update status');
-      return body;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-quotations'] });
-      queryClient.invalidateQueries({ queryKey: ['my-quotation'] });
-    },
-  });
-}
-
 // ── Claim Shipment (mutation) ──
 
 export function useClaimShipment() {
@@ -308,3 +260,4 @@ export function useClaimShipment() {
     },
   });
 }
+

@@ -2,9 +2,14 @@
   "name": "customer",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
   "scripts": {
     "dev": "next dev --port 3002",
-    "build": "next build"
+    "build": "next build",
+    "lint": "next lint"
   },
   "dependencies": {
     "@heroui/react": "^3.1.0",
@@ -13,10 +18,12 @@
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-query-devtools": "^5.101.0",
     "better-auth": "^1.6.23",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.18.0",
     "next": "^16.2.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

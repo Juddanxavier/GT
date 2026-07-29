@@ -1,36 +1,28 @@
 import type { ReactNode } from 'react';
-import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import { Bricolage_Grotesque } from 'next/font/google';
 import './globals.css';
 
-const jetbrainsMono = JetBrains_Mono({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
+  variable: '--font-bricolage-grotesque',
 });
-import { getTenantSlug } from '@/lib/tenant';
+
 import { GajanLayout } from '@/components/gajan/layout';
-import { LankaLayout } from '@/components/lanka/layout';
 import { Providers } from '@/components/providers';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: {
-    template: '%s — Gajan Traders / Lanka Mahal',
-    default: 'Track Your Shipment',
+    template: '%s — Gajan Traders',
+    default: 'Gajan Traders — International Courier',
   },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
-  const slug = await getTenantSlug();
-
   return (
-    <html lang="en" data-tenant-slug={slug} className={jetbrainsMono.variable}>
-      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>
+    <html lang="en" className={bricolage.variable}>
+      <body className="bg-background text-foreground antialiased overflow-x-hidden" style={{ fontFamily: 'var(--font-bricolage-grotesque)' }}>
         <Providers>
-          {slug === 'lanka-mahal' ? (
-            <LankaLayout>{children}</LankaLayout>
-          ) : (
-            <GajanLayout>{children}</GajanLayout>
-          )}
+          <GajanLayout>{children}</GajanLayout>
         </Providers>
       </body>
     </html>

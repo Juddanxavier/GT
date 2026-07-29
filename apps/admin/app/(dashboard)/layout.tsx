@@ -9,9 +9,40 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { ToastProvider } from '@/components/toast';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Avatar, Button, Dropdown, Kbd, Label, Select, ListBox, Switch, Tooltip } from '@heroui/react';
+import {
+  Avatar,
+  Button,
+  Dropdown,
+  Kbd,
+  Label,
+  Select,
+  ListBox,
+  Switch,
+  Tooltip,
+} from '@heroui/react';
 import { Modal } from '@heroui/react/modal';
-import { Activity, BarChart3, HelpCircle, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Search, Users, Building2, Package, FileText, Receipt, Moon, Sun, ChevronDown, Bell, LogOut, Menu, User, UserPlus } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  HelpCircle,
+  LayoutDashboard,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Users,
+  Building2,
+  Package,
+  FileText,
+  Receipt,
+  Moon,
+  Sun,
+  ChevronDown,
+  Bell,
+  LogOut,
+  Menu,
+  User,
+  UserPlus,
+} from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
 import { useTenants, useDashboardBranches } from '@/lib/queries';
@@ -34,16 +65,24 @@ function getNavItems(role?: string) {
       label: 'Users',
       icon: <Users size={18} />,
     },
-    ...(role !== 'staff' ? [{
-      href: '/invitations',
-      label: 'Invitations',
-      icon: <UserPlus size={18} />,
-    }] : []),
-    ...(role !== 'staff' ? [{
-      href: '/branches',
-      label: 'Branches',
-      icon: <Building2 size={18} />,
-    }] : []),
+    ...(role !== 'staff'
+      ? [
+          {
+            href: '/invitations',
+            label: 'Invitations',
+            icon: <UserPlus size={18} />,
+          },
+        ]
+      : []),
+    ...(role !== 'staff'
+      ? [
+          {
+            href: '/branches',
+            label: 'Branches',
+            icon: <Building2 size={18} />,
+          },
+        ]
+      : []),
     {
       href: '/shipments',
       label: 'Shipments',
@@ -59,11 +98,15 @@ function getNavItems(role?: string) {
       label: 'Invoices',
       icon: <Receipt size={18} />,
     },
-    ...(role !== 'staff' ? [{
-      href: '/reports',
-      label: 'Reports',
-      icon: <BarChart3 size={18} />,
-    }] : []),
+    ...(role !== 'staff'
+      ? [
+          {
+            href: '/reports',
+            label: 'Reports',
+            icon: <BarChart3 size={18} />,
+          },
+        ]
+      : []),
     {
       href: '/audit',
       label: 'Audit Log',
@@ -73,11 +116,14 @@ function getNavItems(role?: string) {
   return items;
 }
 
-
-
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30 * 1000, refetchOnWindowFocus: false, retry: 1, gcTime: 1000 * 60 * 30 },
+    queries: {
+      staleTime: 30 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+      gcTime: 1000 * 60 * 30,
+    },
   },
 });
 
@@ -95,14 +141,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isPending) return;
     if (error) return;
-    if (!session) { router.push('/login'); return; }
+    if (!session) {
+      router.push('/login');
+      return;
+    }
     const userRole = getUser(session)!.role;
     if (!ALLOWED_ROLES.includes(userRole)) router.push('/unauthorized');
   }, [session, isPending, error, router]);
 
   const userRole = getUser(session)?.role;
 
-  if (isPending) return <div className="flex items-center justify-center min-h-screen"><p className="text-muted">Loading...</p></div>;
+  if (isPending)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted">Loading...</p>
+      </div>
+    );
   if (!session) return null;
   if (!ALLOWED_ROLES.includes(userRole ?? '')) {
     router.push('/unauthorized');
@@ -112,10 +166,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isSuperadmin = userRole === 'superadmin';
 
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 30 }}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, maxAge: 1000 * 60 * 30 }}
+    >
       <TenantFilterProvider>
         <ToastProvider>
-          <DashboardLayoutInner isSuperadmin={isSuperadmin} session={session} userRole={userRole!} sidebarOpen={sidebarOpen} collapsed={collapsed} setSidebarOpen={setSidebarOpen} setCollapsed={setCollapsed}>
+          <DashboardLayoutInner
+            isSuperadmin={isSuperadmin}
+            session={session}
+            userRole={userRole!}
+            sidebarOpen={sidebarOpen}
+            collapsed={collapsed}
+            setSidebarOpen={setSidebarOpen}
+            setCollapsed={setCollapsed}
+          >
             {children}
           </DashboardLayoutInner>
         </ToastProvider>
@@ -148,10 +213,23 @@ function useIdleTimeout() {
 }
 
 function DashboardLayoutInner({
-  children, isSuperadmin, session, userRole, sidebarOpen, collapsed, setSidebarOpen, setCollapsed,
+  children,
+  isSuperadmin,
+  session,
+  userRole,
+  sidebarOpen,
+  collapsed,
+  setSidebarOpen,
+  setCollapsed,
 }: {
-  children: ReactNode; isSuperadmin: boolean; session: NonNullable<ReturnType<typeof authClient.useSession>['data']>; userRole: string;
-  sidebarOpen: boolean; collapsed: boolean; setSidebarOpen: (v: boolean) => void; setCollapsed: (v: boolean | ((prev: boolean) => boolean)) => void;
+  children: ReactNode;
+  isSuperadmin: boolean;
+  session: NonNullable<ReturnType<typeof authClient.useSession>['data']>;
+  userRole: string;
+  sidebarOpen: boolean;
+  collapsed: boolean;
+  setSidebarOpen: (v: boolean) => void;
+  setCollapsed: (v: boolean | ((prev: boolean) => boolean)) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -161,7 +239,7 @@ function DashboardLayoutInner({
   const [confirmTenant, setConfirmTenant] = useState<{ id: string; name: string } | null>(null);
   const [confirmBranch, setConfirmBranch] = useState<{ id: string; name: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
   const navItems = useMemo(() => getNavItems(userRole), [userRole]);
   const { toast } = useToast();
 
@@ -181,7 +259,8 @@ function DashboardLayoutInner({
     return queryClient.getQueryCache().subscribe((event) => {
       if (event.type === 'updated' && event.query.state.status === 'error') {
         const err = event.query.state.error;
-        if (err) toast('error', 'Failed to load data', err instanceof Error ? err.message : undefined);
+        if (err)
+          toast('error', 'Failed to load data', err instanceof Error ? err.message : undefined);
       }
     });
   }, [toast]);
@@ -194,7 +273,12 @@ function DashboardLayoutInner({
         e.preventDefault();
         setSearchOpen(true);
       }
-      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+      if (
+        e.key === '?' &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+      ) {
         e.preventDefault();
         setSearchOpen(true);
       }
@@ -210,15 +294,29 @@ function DashboardLayoutInner({
   }, [isSuperadmin, tenants, tenantFilter, setTenant]);
 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifs, setNotifs] = useState<{ id: string; type: string; title: string; message: string; link?: string | null; read: boolean; createdAt: string }[]>([]);
+  const [notifs, setNotifs] = useState<
+    {
+      id: string;
+      type: string;
+      title: string;
+      message: string;
+      link?: string | null;
+      read: boolean;
+      createdAt: string;
+    }[]
+  >([]);
 
   useEffect(() => {
     if (!session) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, { credentials: 'include' })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, {
+      credentials: 'include',
+    })
       .then((r) => r.json())
       .then((d) => setUnreadCount(d.count ?? 0))
       .catch((e) => console.error('[notifications] unread count fetch failed:', e));
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications?limit=10`, { credentials: 'include' })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications?limit=10`, {
+      credentials: 'include',
+    })
       .then((r) => r.json())
       .then((d) => setNotifs(d.data ?? []))
       .catch((e) => console.error('[notifications] fetch failed:', e));
@@ -263,18 +361,30 @@ function DashboardLayoutInner({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-surface focus:text-foreground focus:rounded-lg focus:border focus:border-border focus:text-sm">
-          Skip to content
-        </a>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-surface focus:text-foreground focus:rounded-lg focus:border focus:border-border focus:text-sm"
+      >
+        Skip to content
+      </a>
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:static inset-y-0 left-0 z-40 border-r border-border bg-surface flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-14' : 'w-60'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className={`flex items-center h-14 border-b border-border shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-3 px-5'}`}>
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0">GT</div>
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-40 border-r border-border bg-surface flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-14' : 'w-60'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div
+          className={`flex items-center h-14 border-b border-border shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-3 px-5'}`}
+        >
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0">
+            GT
+          </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate leading-tight">Gajan Traders</p>
@@ -290,7 +400,10 @@ function DashboardLayoutInner({
                 key={item.href}
                 variant={isActive(item.href) ? 'tertiary' : 'ghost'}
                 className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start'} ${isActive(item.href) ? 'bg-accent/10 text-accent' : 'text-foreground'}`}
-                onPress={() => { router.push(item.href); setSidebarOpen(false); }}
+                onPress={() => {
+                  router.push(item.href);
+                  setSidebarOpen(false);
+                }}
               >
                 <span className={collapsed ? '' : 'mr-2'}>{item.icon}</span>
                 {!collapsed && <span>{item.label}</span>}
@@ -314,7 +427,11 @@ function DashboardLayoutInner({
             <>
               <Tooltip>
                 <Tooltip.Trigger className="flex w-full">
-                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => setSearchOpen(true)}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-center px-0 min-w-0 text-foreground"
+                    onPress={() => setSearchOpen(true)}
+                  >
                     <Search size={18} />
                   </Button>
                 </Tooltip.Trigger>
@@ -322,7 +439,11 @@ function DashboardLayoutInner({
               </Tooltip>
               <Tooltip>
                 <Tooltip.Trigger className="flex w-full">
-                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => router.push('/profile')}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-center px-0 min-w-0 text-foreground"
+                    onPress={() => router.push('/profile')}
+                  >
                     <User size={18} />
                   </Button>
                 </Tooltip.Trigger>
@@ -331,7 +452,11 @@ function DashboardLayoutInner({
 
               <Tooltip>
                 <Tooltip.Trigger className="flex w-full">
-                  <Button variant="ghost" className="w-full justify-center px-0 min-w-0 text-foreground" onPress={() => {}}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-center px-0 min-w-0 text-foreground"
+                    onPress={() => {}}
+                  >
                     <HelpCircle size={18} />
                   </Button>
                 </Tooltip.Trigger>
@@ -340,15 +465,27 @@ function DashboardLayoutInner({
             </>
           ) : (
             <>
-              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => setSearchOpen(true)}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-foreground"
+                onPress={() => setSearchOpen(true)}
+              >
                 <Search size={18} className="mr-2" />
                 Search
               </Button>
-              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => router.push('/profile')}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-foreground"
+                onPress={() => router.push('/profile')}
+              >
                 <User size={18} className="mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" className="w-full justify-start text-foreground" onPress={() => {}}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-foreground"
+                onPress={() => {}}
+              >
                 <HelpCircle size={18} className="mr-2" />
                 Help
               </Button>
@@ -363,13 +500,27 @@ function DashboardLayoutInner({
         <header className="border-b border-border bg-surface shrink-0">
           <div className="flex items-center justify-between h-14 px-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <Button size="sm" variant="ghost" className="hidden md:inline-flex" onPress={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="hidden md:inline-flex"
+                onPress={toggleCollapsed}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
                 {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
               </Button>
-              <Button size="sm" variant="ghost" className="md:hidden" onPress={() => setSidebarOpen(true)} aria-label="Open menu">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="md:hidden"
+                onPress={() => setSidebarOpen(true)}
+                aria-label="Open menu"
+              >
                 <Menu size={18} />
               </Button>
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0 md:hidden">GT</div>
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0 md:hidden">
+                GT
+              </div>
               <p className="text-sm font-semibold md:hidden">Gajan Traders</p>
               <div className="hidden md:block">
                 <Breadcrumbs />
@@ -377,7 +528,12 @@ function DashboardLayoutInner({
             </div>
 
             <div className="flex items-center gap-3">
-              <Button size="sm" variant="ghost" className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground" onPress={() => setSearchOpen(true)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground"
+                onPress={() => setSearchOpen(true)}
+              >
                 <Search size={16} />
                 <Kbd className="hidden lg:inline-flex">
                   <Kbd.Abbr keyValue="command" />
@@ -427,7 +583,9 @@ function DashboardLayoutInner({
                     onSelectionChange={(k) => {
                       const id = k as string;
                       if (id === branchFilter) return;
-                      const name = id ? branches.find((b) => b.id === id)?.name ?? 'this branch' : 'All Branches';
+                      const name = id
+                        ? (branches.find((b) => b.id === id)?.name ?? 'this branch')
+                        : 'All Branches';
                       setConfirmBranch({ id, name });
                     }}
                     className="w-auto min-w-0"
@@ -468,11 +626,20 @@ function DashboardLayoutInner({
                   {getUser(session)?.branchName ?? 'Branch'}
                 </span>
               )}
-              <Button size="sm" variant="ghost" onPress={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme" className="text-muted hover:text-foreground">
+              <Button
+                size="sm"
+                variant="ghost"
+                onPress={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
+                aria-label="Toggle theme"
+                className="text-muted hover:text-foreground"
+              >
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </Button>
               <Dropdown>
-                <Dropdown.Trigger className="text-muted hover:text-foreground relative" aria-label="Notifications">
+                <Dropdown.Trigger
+                  className="text-muted hover:text-foreground relative"
+                  aria-label="Notifications"
+                >
                   <Bell size={16} />
                   {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">
@@ -487,7 +654,10 @@ function DashboardLayoutInner({
                       <button
                         className="text-xs text-primary hover:underline"
                         onClick={async () => {
-                          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
+                          await fetch(
+                            `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`,
+                            { method: 'PATCH', credentials: 'include' },
+                          );
                           setUnreadCount(0);
                           setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
                         }}
@@ -506,14 +676,21 @@ function DashboardLayoutInner({
                           className={`w-full text-left px-3 py-2 text-xs border-b border-border hover:bg-muted/20 flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
                           onClick={async () => {
                             if (!n.read) {
-                              await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`, { method: 'PATCH', credentials: 'include' });
+                              await fetch(
+                                `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`,
+                                { method: 'PATCH', credentials: 'include' },
+                              );
                               setUnreadCount((c) => Math.max(0, c - 1));
-                              setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
+                              setNotifs((prev) =>
+                                prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
+                              );
                             }
                             if (n.link) router.push(n.link);
                           }}
                         >
-                          <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`} />
+                          <span
+                            className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`}
+                          />
                           <div className="min-w-0">
                             <p className="truncate">{n.title}</p>
                             <p className="text-muted font-normal truncate">{n.message}</p>
@@ -536,7 +713,9 @@ function DashboardLayoutInner({
                   <div className="px-3 pt-3 pb-1">
                     <div className="flex items-center gap-2">
                       <Avatar size="md" className="rounded-full">
-                        <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+                        <Avatar.Fallback>
+                          {session.user.name.charAt(0).toUpperCase()}
+                        </Avatar.Fallback>
                       </Avatar>
                       <div className="flex flex-col gap-0">
                         <p className="text-sm leading-5 font-medium">{session.user.name}</p>
@@ -545,11 +724,20 @@ function DashboardLayoutInner({
                     </div>
                   </div>
                   <Dropdown.Menu>
-                    <Dropdown.Item id="profile" textValue="Profile" onPress={() => router.push('/profile')}>
+                    <Dropdown.Item
+                      id="profile"
+                      textValue="Profile"
+                      onPress={() => router.push('/profile')}
+                    >
                       <User size={16} />
                       <Label>Profile</Label>
                     </Dropdown.Item>
-                    <Dropdown.Item id="signout" textValue="Sign out" variant="danger" onPress={handleSignOut}>
+                    <Dropdown.Item
+                      id="signout"
+                      textValue="Sign out"
+                      variant="danger"
+                      onPress={handleSignOut}
+                    >
                       <div className="flex w-full items-center justify-between gap-2">
                         <Label>Sign out</Label>
                         <LogOut size={14} className="text-danger" />
@@ -563,42 +751,68 @@ function DashboardLayoutInner({
         </header>
 
         {/* Tenant switch confirmation */}
-        <Modal.Backdrop isOpen={!!confirmTenant} onOpenChange={(open) => { if (!open) setConfirmTenant(null); }}>
+        <Modal.Backdrop
+          isOpen={!!confirmTenant}
+          onOpenChange={(open) => {
+            if (!open) setConfirmTenant(null);
+          }}
+        >
           <Modal.Container>
             <Modal.Dialog>
               <Modal.Header>Switch Tenant</Modal.Header>
               <Modal.Body>
                 <p className="text-sm text-muted">
-                  Switch to <strong>{confirmTenant?.name}</strong>? Data on all pages will refresh to show that tenant's information.
+                  Switch to <strong>{confirmTenant?.name}</strong>? Data on all pages will refresh
+                  to show that tenant's information.
                 </p>
               </Modal.Body>
               <Modal.Footer className="flex gap-2">
-                <Button variant="ghost" onPress={() => setConfirmTenant(null)}>Cancel</Button>
-                <Button variant="primary" onPress={() => {
-                  if (confirmTenant) setTenant(confirmTenant.id);
-                  setConfirmTenant(null);
-                }}>Switch</Button>
+                <Button variant="ghost" onPress={() => setConfirmTenant(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={() => {
+                    if (confirmTenant) setTenant(confirmTenant.id);
+                    setConfirmTenant(null);
+                  }}
+                >
+                  Switch
+                </Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
 
         {/* Branch switch confirmation */}
-        <Modal.Backdrop isOpen={!!confirmBranch} onOpenChange={(open) => { if (!open) setConfirmBranch(null); }}>
+        <Modal.Backdrop
+          isOpen={!!confirmBranch}
+          onOpenChange={(open) => {
+            if (!open) setConfirmBranch(null);
+          }}
+        >
           <Modal.Container>
             <Modal.Dialog>
               <Modal.Header>Switch Branch</Modal.Header>
               <Modal.Body>
                 <p className="text-sm text-muted">
-                  Switch to <strong>{confirmBranch?.name}</strong>? Data on all pages will refresh to show that branch's information.
+                  Switch to <strong>{confirmBranch?.name}</strong>? Data on all pages will refresh
+                  to show that branch's information.
                 </p>
               </Modal.Body>
               <Modal.Footer className="flex gap-2">
-                <Button variant="ghost" onPress={() => setConfirmBranch(null)}>Cancel</Button>
-                <Button variant="primary" onPress={() => {
-                  if (confirmBranch) setBranch(confirmBranch.id);
-                  setConfirmBranch(null);
-                }}>Switch</Button>
+                <Button variant="ghost" onPress={() => setConfirmBranch(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={() => {
+                    if (confirmBranch) setBranch(confirmBranch.id);
+                    setConfirmBranch(null);
+                  }}
+                >
+                  Switch
+                </Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
@@ -606,7 +820,7 @@ function DashboardLayoutInner({
 
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <main id="main-content" className="p-4 sm:p-6 lg:p-8">
+        <main id="main-content" className="p-4 sm:p-6 lg:p-8 ">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
         <footer className="border-t border-border px-6 py-3 text-xs text-muted flex items-center justify-between shrink-0">

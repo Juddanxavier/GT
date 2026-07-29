@@ -141,7 +141,6 @@ describe('auth guards', () => {
     // Customer-facing (authenticated — my-*)
     { name: 'customers/my-shipments', route: customers, prefix: '/api/customers', path: '/api/customers/my-shipments' },
     { name: 'customers/my-dashboard', route: customers, prefix: '/api/customers', path: '/api/customers/my-dashboard' },
-    { name: 'customers/my-quotations', route: customers, prefix: '/api/customers', path: '/api/customers/my-quotations' },
     { name: 'customers/my-invoices', route: customers, prefix: '/api/customers', path: '/api/customers/my-invoices' },
     { name: 'customers/profile', route: customers, prefix: '/api/customers', path: '/api/customers/profile', method: 'PATCH' },
   ];

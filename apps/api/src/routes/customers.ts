@@ -5,7 +5,7 @@ import { cacheDel, withCache } from '../cache';
 import { db } from '../db';
 import { auth } from '../auth';
 import { createUser, updateUser } from '../auth-api';
-import { user, invoices as invoicesTable, quotations, quoteItems, shipments, tenants } from '../db/schema';
+import { user, invoices as invoicesTable, shipments, tenants } from '../db/schema';
 import { getQueryScope, requireBranchScope, requireRole } from '../middleware/authorization';
 import { errorResponse } from '../error-response';
 import { registerCustomerSchema, updateProfileSchema, addressSchema } from '../validators';
@@ -190,19 +190,7 @@ app.post('/register', async (c) => {
       return c.json({ error: 'Failed to create account' }, 500);
     }
 
-    // Sign the user in to create a session and get Set-Cookie headers
-    const signInRes = await auth.api.signInEmail({
-      body: { email, password },
-      headers: c.req.raw.headers,
-      asResponse: true,
-    });
-
-    if (!signInRes.ok) {
-      return c.json({ error: 'Account created but sign-in failed. Please log in.' }, 500);
-    }
-
-    // Forward BetterAuth's response directly to preserve Set-Cookie headers
-    return c.newResponse(signInRes.body, 200, Object.fromEntries(signInRes.headers.entries()));
+    return c.json({ data: { id: created.user.id } });
   } catch (err) {
     const baErr = err as { status?: number; message?: string };
     console.error('[customers] register error:', err);
@@ -220,7 +208,7 @@ app.patch('/profile', async (c) => {
 
   const parsed = updateProfileSchema.safeParse(await c.req.json());
   if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
-  const { name, currentPassword, newPassword } = parsed.data!;
+  const { name, currentPassword, newPassword, phone, branchId } = parsed.data!;
   let updateErrors: string[] = [];
 
   if (name) {
@@ -232,16 +220,13 @@ app.patch('/profile', async (c) => {
     }
   }
 
-  if (parsed.data.address) {
-    try {
-      await db
-        .update(user)
-        .set({ address: parsed.data.address, updatedAt: new Date() })
-        .where(eq(user.id, currentUser.id));
-    } catch (err) {
-      console.error('[profile] address update failed:', err);
-      updateErrors.push('Failed to update address');
-    }
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (phone !== undefined) updateData.phone = phone || null;
+  if (branchId !== undefined) updateData.branchId = branchId || null;
+  if (parsed.data.address !== undefined) updateData.address = parsed.data.address;
+
+  if (Object.keys(updateData).length > 1) {
+    await db.update(user).set(updateData).where(eq(user.id, currentUser.id));
   }
 
   if (currentPassword && newPassword) {
@@ -269,91 +254,6 @@ app.patch('/profile', async (c) => {
 
   const updated = await auth.api.getSession({ headers: c.req.raw.headers });
   return c.json({ data: { id: updated?.user?.id, name: updated?.user?.name, email: updated?.user?.email } });
-});
-
-// ── Customer-facing: my quotations ──
-app.get('/my-quotations', async (c) => {
-  const authUser = c.get('user') as { id: string; email: string } | null;
-  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
-
-  const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '20', 10) || 20, 1), 50);
-  const status = c.req.query('status');
-  const conditions: (ReturnType<typeof eq>)[] = [
-    eq(quotations.tenantId, tenantId),
-    eq(quotations.userId, authUser.id),
-  ];
-  if (status) conditions.push(eq(quotations.status, status));
-  const [countRow] = await db
-    .select({ count: sql<number>`COUNT(*)::int` })
-    .from(quotations)
-    .where(and(...conditions) as SQL | undefined);
-  const total = countRow?.count ?? 0;
-  const rows = await db
-    .select({ id: quotations.id, quoteNo: quotations.quoteNo, status: quotations.status, total: quotations.total, validUntil: quotations.validUntil, notes: quotations.notes, createdAt: quotations.createdAt })
-    .from(quotations)
-    .where(and(...conditions) as SQL | undefined)
-    .orderBy(desc(quotations.createdAt))
-    .limit(limit)
-    .offset((page - 1) * limit);
-  return c.json({ data: rows, total, page, limit });
-});
-
-app.patch('/my-quotations/:id/status', async (c) => {
-  const currentUser = c.get('user') as { id: string; email: string } | null;
-  if (!currentUser) return c.json({ error: 'Unauthorized' }, 401);
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
-  const { id } = c.req.param();
-  const { status: newStatus } = await c.req.json();
-
-  // Validate status transition
-  if (!['accepted', 'rejected'].includes(newStatus)) {
-    return c.json({ error: 'Invalid status. Only accepted or rejected allowed.' }, 400);
-  }
-
-  // Find quotation by userId directly
-  const [quote] = await db
-    .select({ id: quotations.id, status: quotations.status })
-    .from(quotations)
-    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.userId, currentUser.id)))
-    .limit(1);
-  if (!quote) return c.json({ error: 'Quotation not found' }, 404);
-
-  // Only allow accepting/rejecting from 'sent' status
-  if (quote.status !== 'sent') {
-    return c.json({ error: 'Can only accept or reject a quotation that has been sent.' }, 400);
-  }
-
-  await db
-    .update(quotations)
-    .set({ status: newStatus, updatedAt: new Date() })
-    .where(eq(quotations.id, id!));
-
-  return c.json({ data: { id, status: newStatus } });
-});
-
-app.get('/my-quotations/:id', async (c) => {
-  const authUser = c.get('user') as { id: string; email: string } | null;
-  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
-  const tenantId = c.get('tenantId');
-  if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
-  const { id } = c.req.param();
-
-  const [quote] = await db
-    .select()
-    .from(quotations)
-    .where(and(eq(quotations.id, id!), eq(quotations.tenantId, tenantId), eq(quotations.userId, authUser.id)))
-    .limit(1);
-  if (!quote) return c.json({ error: 'Not found' }, 404);
-  const items = await db
-    .select()
-    .from(quoteItems)
-    .where(eq(quoteItems.quotationId, id!))
-    .orderBy(quoteItems.createdAt);
-  return c.json({ data: { ...quote, items } });
 });
 
 // ── Customer-facing: my invoices ──

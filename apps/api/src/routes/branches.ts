@@ -17,6 +17,23 @@ import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
+// ponytail: public branch list for customer onboarding, no auth
+app.get('/public', async (c) => {
+  const tenantSlug = c.req.query('tenant') || 'gajan-traders';
+  const [tenant] = await db
+    .select({ id: tenants.id })
+    .from(tenants)
+    .where(eq(tenants.slug, tenantSlug))
+    .limit(1);
+  if (!tenant) return c.json({ error: 'Invalid tenant' }, 400);
+  const rows = await db
+    .select({ id: branches.id, name: branches.name, address: branches.address, phone: branches.email })
+    .from(branches)
+    .where(eq(branches.tenantId, tenant.id))
+    .orderBy(branches.name);
+  return c.json({ data: rows });
+});
+
 app.get(
   '/',
   requireRole('superadmin', 'tenant-admin', 'staff'),

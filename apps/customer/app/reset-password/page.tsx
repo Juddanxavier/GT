@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { Button, Input, InputGroup, Spinner, TextField, Label, FieldError } from '@heroui/react';
+import { Spinner } from '@heroui/react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { authClient } from '@/lib/auth-client';
 import { AuthLayout } from '@/components/auth-layout';
@@ -37,12 +37,6 @@ function ResetPasswordForm(): ReactNode {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  const isEmerald = config.theme === 'emerald';
-  const btnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-violet-600 hover:bg-violet-700';
-  const accentText = isEmerald ? 'text-emerald-600' : 'text-violet-600';
-  const successBg = isEmerald ? 'bg-emerald-50 border-emerald-200' : 'bg-violet-50 border-violet-200';
-  const successIcon = isEmerald ? 'text-emerald-600' : 'text-violet-600';
 
   useEffect(() => {
     if (!token) {
@@ -91,11 +85,11 @@ function ResetPasswordForm(): ReactNode {
     return (
       <AuthLayout config={config} title="Password reset" subtitle="Your password has been updated">
         <div className="text-center space-y-5 animate-[fade-up_0.4s_ease-out]">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${successBg} shadow-inner`}>
-            <CheckCircle2 size={32} className={successIcon} />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 border border-green-200 shadow-inner">
+            <CheckCircle2 size={32} className="text-green-600" />
           </div>
-          <p className="text-sm text-foreground">Redirecting you to sign in...</p>
-          <a href="/login" className={`inline-flex items-center gap-1.5 text-sm font-medium ${accentText} hover:opacity-80 transition-opacity`}>
+          <p className="text-foreground">Redirecting you to sign in...</p>
+          <a href="/login" className="inline-flex items-center gap-1.5 font-medium text-[#F94735] hover:text-[#e03e2d] transition-colors">
             Go to sign in
           </a>
         </div>
@@ -106,42 +100,66 @@ function ResetPasswordForm(): ReactNode {
   return (
     <AuthLayout config={config} title="Set new password" subtitle="Enter your new password below">
       {submitError && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger mb-6">
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
           {submitError}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => { setPassword(v); setFieldErrors((p) => ({ ...p, password: '' })); }}>
-          <Label>New Password</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter new password" autoComplete="new-password" />
-            <InputGroup.Suffix className="pr-0">
-              <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </InputGroup.Suffix>
-          </InputGroup>
-          {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
-        </TextField>
+        <div className="space-y-2">
+          <label className="font-medium text-foreground/80">New Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
+              placeholder="Enter new password"
+              autoComplete="new-password"
+              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
+        </div>
 
-        <TextField fullWidth isInvalid={!!fieldErrors.confirmPassword} name="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(v) => { setConfirmPassword(v); setFieldErrors((p) => ({ ...p, confirmPassword: '' })); }}>
-          <Label>Confirm Password</Label>
-          <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Re-enter new password" autoComplete="new-password" />
-            <InputGroup.Suffix className="pr-0">
-              <Button isIconOnly aria-label={showConfirm ? 'Hide confirm' : 'Show confirm'} size="sm" variant="ghost" onPress={() => setShowConfirm(!showConfirm)}>
-                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </InputGroup.Suffix>
-          </InputGroup>
-          {fieldErrors.confirmPassword && <FieldError>{fieldErrors.confirmPassword}</FieldError>}
-        </TextField>
+        <div className="space-y-2">
+          <label className="font-medium text-foreground/80">Confirm Password</label>
+          <div className="relative">
+            <input
+              type={showConfirm ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((p) => ({ ...p, confirmPassword: '' })); }}
+              placeholder="Re-enter new password"
+              autoComplete="new-password"
+              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.confirmPassword ? 'border-red-400' : 'border-border'}`}
+            />
+            <button
+              type="button"
+              aria-label={showConfirm ? 'Hide confirm' : 'Show confirm'}
+              onClick={() => setShowConfirm(!showConfirm)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+            >
+              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {fieldErrors.confirmPassword && <p className="text-xs text-red-500">{fieldErrors.confirmPassword}</p>}
+        </div>
 
-        <Button type="submit" fullWidth isDisabled={loading || !token} isPending={loading} className={`text-white font-medium shadow-sm shadow-black/10 ${btnClass} h-11`}>
+        <button
+          type="submit"
+          disabled={loading || !token}
+          className="w-full bg-[#F94735] hover:bg-[#e03e2d] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+        >
           {loading ? 'Resetting...' : 'Reset password'}
-        </Button>
+        </button>
       </form>
     </AuthLayout>
   );
