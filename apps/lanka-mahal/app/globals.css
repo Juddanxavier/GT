@@ -1,0 +1,289 @@
+@font-face {
+  font-family: 'Mazzard H';
+  font-weight: 400;
+  font-style: normal;
+  src: url('https://db.onlinewebfonts.com/t/eb5b5ee332420add9a40ee988cb6ac37.woff2') format('woff2'),
+       url('https://db.onlinewebfonts.com/t/eb5b5ee332420add9a40ee988cb6ac37.woff') format('woff'),
+       url('https://db.onlinewebfonts.com/t/eb5b5ee332420add9a40ee988cb6ac37.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Mazzard H';
+  font-weight: 500;
+  font-style: normal;
+  src: url('https://db.onlinewebfonts.com/t/875fffdfa62169a0f131e90f37f1faf4.woff2') format('woff2'),
+       url('https://db.onlinewebfonts.com/t/875fffdfa62169a0f131e90f37f1faf4.woff') format('woff'),
+       url('https://db.onlinewebfonts.com/t/875fffdfa62169a0f131e90f37f1faf4.ttf') format('truetype');
+}
+
+@import "tailwindcss";
+@import "@heroui/styles";
+
+html { font-size: 16px; }
+
+h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.025em; }
+h2 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+h3 { font-size: 1.5rem; font-weight: 600; }
+h4 { font-size: 1.25rem; font-weight: 600; }
+p, li, pre { font-size: 1rem; line-height: 1.625; }
+label { font-size: 0.9375rem; }
+input, textarea, select, button { font-size: 1rem; }
+small, .text-muted { font-size: 0.875rem; }
+
+@custom-variant dark (&:where([data-theme="dark"]));
+
+@theme {
+  --color-brand-blue: oklch(55.00% 0.2000 260.00);
+  --color-blue-50: oklch(97% 0.014 254);
+  --color-blue-100: oklch(93% 0.034 255);
+  --color-blue-200: oklch(88% 0.058 255);
+  --color-blue-300: oklch(80% 0.105 255);
+  --color-blue-400: oklch(70% 0.165 255);
+  --color-blue-500: oklch(62% 0.215 260);
+  --color-blue-600: oklch(54% 0.215 262);
+  --color-blue-700: oklch(46% 0.185 262);
+  --color-blue-800: oklch(38% 0.145 262);
+  --color-blue-900: oklch(30% 0.105 262);
+  --color-blue-950: oklch(22% 0.070 262);
+  --color-gray-50: oklch(98% 0.003 250);
+  --color-gray-100: oklch(96% 0.005 250);
+  --color-gray-200: oklch(92% 0.007 250);
+  --color-gray-300: oklch(85% 0.010 250);
+  --color-gray-400: oklch(75% 0.013 250);
+  --color-gray-500: oklch(63% 0.015 250);
+  --color-gray-600: oklch(52% 0.015 250);
+  --color-gray-700: oklch(42% 0.013 250);
+  --color-gray-800: oklch(34% 0.010 250);
+  --color-gray-900: oklch(26% 0.008 250);
+  --color-gray-950: oklch(18% 0.005 250);
+  --color-green-50: oklch(97% 0.030 150);
+  --color-green-100: oklch(95% 0.055 150);
+  --color-green-200: oklch(90% 0.095 150);
+  --color-green-300: oklch(82% 0.140 150);
+  --color-green-400: oklch(74% 0.175 150);
+  --color-green-500: oklch(65% 0.200 152);
+  --color-green-600: oklch(55% 0.200 152);
+  --color-green-700: oklch(46% 0.175 152);
+  --color-green-800: oklch(37% 0.135 152);
+  --color-green-900: oklch(29% 0.095 152);
+  --color-green-950: oklch(21% 0.060 152);
+  --color-blue-50: oklch(97% 0.030 164);
+  --color-blue-100: oklch(95% 0.055 164);
+  --color-blue-200: oklch(90% 0.095 164);
+  --color-emerald-300: oklch(81% 0.145 164);
+  --color-blue-400: oklch(74% 0.175 164);
+  --color-blue-500: oklch(70% 0.170 162);
+  --color-blue-600: oklch(60% 0.175 162);
+  --color-blue-700: oklch(50% 0.155 162);
+  --color-emerald-800: oklch(40% 0.120 162);
+  --color-emerald-900: oklch(32% 0.090 162);
+  --color-emerald-950: oklch(24% 0.060 162);
+  --color-red-50: oklch(97% 0.020 20);
+  --color-red-100: oklch(94% 0.045 20);
+  --color-red-200: oklch(90% 0.080 20);
+  --color-red-300: oklch(80% 0.130 25);
+  --color-red-400: oklch(70% 0.185 25);
+  --color-red-500: oklch(60% 0.215 25);
+  --color-red-600: oklch(50% 0.215 25);
+  --color-red-700: oklch(40% 0.180 25);
+  --color-red-800: oklch(32% 0.135 25);
+  --color-red-900: oklch(25% 0.090 25);
+  --color-red-950: oklch(18% 0.055 25);
+  --color-amber-50: oklch(98% 0.025 85);
+  --color-amber-100: oklch(96% 0.055 85);
+  --color-amber-200: oklch(92% 0.100 85);
+  --color-amber-300: oklch(85% 0.155 85);
+  --color-amber-400: oklch(80% 0.190 80);
+  --color-amber-500: oklch(77% 0.188 70);
+  --color-amber-600: oklch(67% 0.190 70);
+  --color-amber-700: oklch(56% 0.175 70);
+  --color-amber-800: oklch(46% 0.140 70);
+  --color-amber-900: oklch(37% 0.105 70);
+  --color-amber-950: oklch(28% 0.075 70);
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(30px, -40px) rotate(90deg); }
+  50% { transform: translate(-20px, -60px) rotate(180deg); }
+  75% { transform: translate(-40px, -10px) rotate(270deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 30px) scale(1.1); }
+  66% { transform: translate(30px, -30px) scale(0.9); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, -20px) rotate(180deg); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+*, *::before, *::after, *::backdrop {
+  scrollbar-color: var(--scrollbar-color);
+  scrollbar-width: var(--scrollbar-width, auto);
+}
+
+/* ─── HeroUI Theme ─── */
+
+:root,
+.light,
+.default,
+[data-theme="light"],
+[data-theme="default"] {
+  --accent: oklch(72.00% 0.1600 60.00);
+  --accent-foreground: oklch(98% 0 0);
+  --background: oklch(97% 0 0);
+  --border: oklch(90% 0 0);
+  --danger: oklch(65.32% 0.2374 13.04);
+  --danger-foreground: oklch(98% 0 0);
+  --default: oklch(94% 0 0);
+  --default-foreground: oklch(21% 0 0);
+  --field-background: oklch(100% 0 0);
+  --field-border: transparent;
+  --field-foreground: oklch(21% 0 0);
+  --field-placeholder: oklch(55% 0 0);
+  --focus: oklch(72.00% 0.1600 60.00);
+  --foreground: oklch(21% 0 0);
+  --muted: oklch(55% 0 0);
+  --overlay: oklch(100% 0 0);
+  --overlay-foreground: oklch(21% 0 0);
+  --scrollbar: oklch(87% 0 0);
+  --segment: oklch(100% 0 0);
+  --segment-foreground: oklch(21% 0 0);
+  --separator: oklch(92% 0 0);
+  --success: oklch(73.29% 0.1973 138.11);
+  --success-foreground: oklch(21% 0 0);
+  --surface: oklch(100% 0 0);
+  --surface-foreground: oklch(21% 0 0);
+  --surface-secondary: oklch(95% 0 0);
+  --surface-secondary-foreground: oklch(21% 0 0);
+  --surface-tertiary: oklch(93% 0 0);
+  --surface-tertiary-foreground: oklch(21% 0 0);
+  --warning: oklch(78.19% 0.1616 59.63);
+  --warning-foreground: oklch(21% 0 0);
+  --radius: 0.5rem;
+  --field-radius: 0.125rem;
+  --font-sans: var(--font-bricolage-grotesque);
+}
+
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --accent: oklch(72.00% 0.1600 60.00);
+  --accent-foreground: oklch(98% 0 0);
+  --background: oklch(12% 0 0);
+  --border: oklch(28% 0 0);
+  --danger: oklch(59.40% 0.2005 11.93);
+  --danger-foreground: oklch(98% 0 0);
+  --default: oklch(27% 0 0);
+  --default-foreground: oklch(98% 0 0);
+  --field-background: oklch(21% 0 0);
+  --field-border: transparent;
+  --field-foreground: oklch(98% 0 0);
+  --field-placeholder: oklch(70% 0 0);
+  --focus: oklch(72.00% 0.1600 60.00);
+  --foreground: oklch(98% 0 0);
+  --muted: oklch(70% 0 0);
+  --overlay: oklch(21% 0 0);
+  --overlay-foreground: oklch(98% 0 0);
+  --scrollbar: oklch(70% 0 0);
+  --segment: oklch(39% 0 0);
+  --segment-foreground: oklch(98% 0 0);
+  --separator: oklch(25% 0 0);
+  --success: oklch(73.29% 0.1973 138.11);
+  --success-foreground: oklch(21% 0 0);
+  --surface: oklch(21% 0 0);
+  --surface-foreground: oklch(98% 0 0);
+  --surface-secondary: oklch(25% 0 0);
+  --surface-secondary-foreground: oklch(98% 0 0);
+  --surface-tertiary: oklch(27% 0 0);
+  --surface-tertiary-foreground: oklch(98% 0 0);
+   --warning: oklch(82.03% 0.1415 63.64);
+  --warning-foreground: oklch(21% 0 0);
+}
+
+@property --c5-x1 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --c5-y1 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --c5-x2 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --c5-y2 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --c5-x3 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --c5-y3 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --c5-x4 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --c5-y4 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --c5-x5 { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --c5-y5 { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --c5-s1 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --c5-s2 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --c5-s3 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --c5-s4 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --c5-s5 { syntax: '<percentage>'; inherits: false; initial-value: 65%; }
+
+.c5-animated-gradient {
+  background-color: #ff8e53;
+  background-image:
+    radial-gradient(circle at var(--c5-x1) var(--c5-y1), #fff1aa 0px, transparent var(--c5-s1)),
+    radial-gradient(circle at var(--c5-x2) var(--c5-y2), #ff4b2b 0px, transparent var(--c5-s2)),
+    radial-gradient(circle at var(--c5-x3) var(--c5-y3), #8aff8a 0px, transparent var(--c5-s3)),
+    radial-gradient(circle at var(--c5-x4) var(--c5-y4), #ffd000 0px, transparent var(--c5-s4)),
+    radial-gradient(circle at var(--c5-x5) var(--c5-y5), #ff1493 0px, transparent var(--c5-s5));
+  animation:
+    c5-blob1 5s ease-in-out infinite,
+    c5-blob2 6s ease-in-out infinite,
+    c5-blob3 5.5s ease-in-out infinite,
+    c5-blob4 6.5s ease-in-out infinite,
+    c5-blob5 4s ease-in-out infinite,
+    c5-size1 3.5s ease-in-out infinite,
+    c5-size2 4.2s ease-in-out infinite,
+    c5-size3 3.8s ease-in-out infinite,
+    c5-size4 4.6s ease-in-out infinite,
+    c5-size5 3s ease-in-out infinite;
+}
+
+@keyframes c5-blob1 {
+  0%,100% { --c5-x1: 5%;  --c5-y1: 5%;  }
+  25%     { --c5-x1: 45%; --c5-y1: 20%; }
+  50%     { --c5-x1: 30%; --c5-y1: 55%; }
+  75%     { --c5-x1: 0%;  --c5-y1: 30%; }
+}
+@keyframes c5-blob2 {
+  0%,100% { --c5-x2: 95%; --c5-y2: 5%;  }
+  33%     { --c5-x2: 55%; --c5-y2: 35%; }
+  66%     { --c5-x2: 80%; --c5-y2: 65%; }
+}
+@keyframes c5-blob3 {
+  0%,100% { --c5-x3: 5%;  --c5-y3: 95%; }
+  40%     { --c5-x3: 45%; --c5-y3: 65%; }
+  70%     { --c5-x3: 25%; --c5-y3: 100%; }
+}
+@keyframes c5-blob4 {
+  0%,100% { --c5-x4: 95%; --c5-y4: 95%; }
+  30%     { --c5-x4: 60%; --c5-y4: 70%; }
+  60%     { --c5-x4: 100%; --c5-y4: 50%; }
+}
+@keyframes c5-blob5 {
+  0%,100% { --c5-x5: 50%; --c5-y5: 50%; }
+  25%     { --c5-x5: 70%; --c5-y5: 30%; }
+  50%     { --c5-x5: 40%; --c5-y5: 70%; }
+  75%     { --c5-x5: 30%; --c5-y5: 40%; }
+}
+
+@keyframes c5-size1 { 0%,100% { --c5-s1: 45%; } 50% { --c5-s1: 80%; } }
+@keyframes c5-size2 { 0%,100% { --c5-s2: 45%; } 50% { --c5-s2: 85%; } }
+@keyframes c5-size3 { 0%,100% { --c5-s3: 45%; } 50% { --c5-s3: 78%; } }
+@keyframes c5-size4 { 0%,100% { --c5-s4: 45%; } 50% { --c5-s4: 82%; } }
+@keyframes c5-size5 { 0%,100% { --c5-s5: 50%; } 50% { --c5-s5: 85%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .c5-animated-gradient { animation: none; }
+}

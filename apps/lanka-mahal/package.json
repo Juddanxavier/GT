@@ -1,0 +1,39 @@
+{
+  "name": "lanka-mahal",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "next dev --port 3003",
+    "build": "next build",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@heroui/react": "^3.1.0",
+    "@heroui/styles": "^3.1.0",
+    "@repo/ui": "workspace:*",
+    "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-query-devtools": "^5.101.0",
+    "better-auth": "^1.6.23",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.18.0",
+    "next": "^16.2.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^5.9.2"
+  }
+}

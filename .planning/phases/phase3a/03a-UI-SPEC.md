@@ -60,15 +60,14 @@ Exceptions: Hero section background may extend full viewport width (replacing th
 
 | Role | Size | Weight | Line Height | Tracking |
 |------|------|--------|-------------|----------|
-| Display | text-5xl (48px) sm:text-6xl (60px) | 700 (bold) | 1.08 | `tracking-tight` |
-| Heading h1 | text-3xl (30px) | 600 (semibold) | 1.2 | `tracking-tight` |
+| Display / h1 | text-3xl (30px) | 600 (semibold) | 1.2 | `tracking-tight` |
 | Heading h2 | text-xl (20px) | 600 (semibold) | 1.2 | `tracking-tight` |
-| Body | text-sm (14px) | 400 (regular) | 1.625 (`leading-relaxed`) | normal |
-| Subtitle | text-base (16px) | 400 (regular) | 1.625 (`leading-relaxed`) | normal |
-| Caption / meta | text-xs (12px) | 500 (medium) | 1.4 | normal |
+| Body / subtitle | text-sm (14px) | 400 (regular) | 1.625 (`leading-relaxed`) | normal |
+| Caption / meta | text-xs (12px) | 400 (regular) | 1.4 | normal |
 | Label / uppercase | text-xs (12px) | 600 (semibold) | 1.0 | `tracking-[0.15em]` |
 | Mono (tracking#) | text-sm (14px) | 600 (semibold) | 1.2 | `font-mono` |
 
+Font sizes: exactly 4 (30px, 20px, 14px, 12px). Font weights: exactly 2 (400 regular for body/caption, 600 semibold for display/headings/labels/mono).
 Font family: `var(--font-inter)` applied globally. No light (300) weights used for body text — 400 minimum per DESIGN.md.
 
 ---
@@ -109,6 +108,10 @@ Font family: `var(--font-inter)` applied globally. No light (300) weights used f
 | Lanka Mahal | `bg-gradient-to-r from-violet-400 to-fuchsia-500` |
 
 Skewed variant applied via `-skew-y-3` or `-skew-y-6` on clipped container.
+
+### Focal Points
+- **Primary focal point:** Hero headline + tracking number input form
+- **Secondary focal points:** Stats section's accent-colored numbers
 
 ### Semantic token usage rules
 - ALWAYS use Tailwind semantic classes: `bg-background`, `bg-surface`, `bg-surface-secondary`, `text-foreground`, `text-muted`, `border-border`
@@ -308,9 +311,9 @@ Not applicable — no shadcn used. Component library is @heroui/react v3.1 (inst
 ## Checker Sign-Off
 
 - [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
+- [x] Dimension 2 Visuals: PASS — Explicit focal points declared
 - [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
+- [x] Dimension 4 Typography: PASS — Fixed: 4 sizes (30/20/14/12px), 2 weights (400/600), removed subtitle role, removed weights 500/700
 - [ ] Dimension 5 Spacing: PASS
 - [ ] Dimension 6 Registry Safety: PASS
 

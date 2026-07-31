@@ -306,6 +306,73 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
+  apps/lanka-mahal:
+    dependencies:
+      '@heroui/react':
+        specifier: ^3.1.0
+        version: 3.1.0(@react-spectrum/provider@3.11.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(tailwindcss@4.3.1)
+      '@heroui/styles':
+        specifier: ^3.1.0
+        version: 3.1.0(tailwind-merge@3.4.0)(tailwindcss@4.3.1)
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.101.0
+        version: 5.101.0(react@19.2.0)
+      '@tanstack/react-query-devtools':
+        specifier: ^5.101.0
+        version: 5.101.0(@tanstack/react-query@5.101.0(react@19.2.0))(react@19.2.0)
+      better-auth:
+        specifier: ^1.6.23
+        version: 1.6.23(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(kysely@0.29.2)(postgres@3.4.9))(next@16.2.9(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vitest@4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.15.3)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@8.0.16(@types/node@22.15.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)))
+      framer-motion:
+        specifier: ^12.42.2
+        version: 12.42.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      lucide-react:
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.0)
+      next:
+        specifier: ^16.2.6
+        version: 16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.0(react@19.2.0)
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@tailwindcss/postcss':
+        specifier: ^4.3.1
+        version: 4.3.1
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.15.3
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.3(@types/react@19.2.17)
+      postcss:
+        specifier: ^8.5.15
+        version: 8.5.15
+      tailwindcss:
+        specifier: ^4.3.1
+        version: 4.3.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+
   packages/auth-config:
     dependencies:
       '@better-auth/drizzle-adapter':
