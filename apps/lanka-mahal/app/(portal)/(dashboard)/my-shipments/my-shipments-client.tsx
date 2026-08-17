@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Package, ExternalLink, Clock, MapPin, Truck, Link2, CheckCircle2, ChevronLeft, ChevronRight, Search, Box } from 'lucide-react';
-import { Button, Chip, Input, Pagination, Skeleton, Spinner, TextField } from '@heroui/react';
+import { Package, ExternalLink, Clock, MapPin, Truck, Link2, CheckCircle2, ChevronLeft, ChevronRight, Box } from 'lucide-react';
+import { Button, Chip, Pagination, Skeleton, Spinner } from '@heroui/react';
 import { authClient } from '@/lib/auth-client';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 import { useMyShipments, useTrackShipment, useClaimShipment, type ShipmentRow } from '@/lib/queries';
@@ -18,6 +18,12 @@ const STATUS_COLORS: Record<string, 'warning' | 'accent' | 'success' | 'danger' 
   pending: 'warning', info_received: 'accent', in_transit: 'warning',
   out_for_delivery: 'warning', delivered: 'success', delivery_failure: 'danger',
   cancelled: 'default', exception: 'danger',
+};
+
+const STATUS_HEX: Record<string, string> = {
+  pending: '#F59E0B', info_received: '#3B82F6', in_transit: '#F59E0B',
+  out_for_delivery: '#F59E0B', delivered: '#10B981', delivery_failure: '#EF4444',
+  cancelled: '#6B7280', exception: '#EF4444',
 };
 
 export function MyShipmentsClient(): ReactNode {
@@ -89,60 +95,62 @@ export function MyShipmentsClient(): ReactNode {
           <Box size={24} />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Shipments</h1>
+          <h1 className="text-lg md:text-xl font-bold text-foreground">My Shipments</h1>
           <p className="text-foreground/50 mt-0.5">Track and manage all your shipments.</p>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-foreground/[0.02] p-5 border border-foreground/5">
-        <h2 className="text-sm font-bold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Search size={14} className="text-foreground/40" /> Track by number
-        </h2>
-        <form onSubmit={handleTrackLookup} className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1">
-            <TextField
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 sm:p-8 border border-foreground/5">
+        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 w-56 h-56 rounded-full bg-[#F59E0B]/10 blur-3xl" />
+        <div className="relative">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-1 flex items-center gap-2">
+            <span className="w-6 h-px bg-[#F59E0B]" /> Track by number
+          </h2>
+          <p className="text-sm text-white/60 mb-4">Enter a tracking number to look up a shipment instantly.</p>
+          <form onSubmit={handleTrackLookup} className="flex flex-col sm:flex-row gap-2">
+            <input
               value={trackingSearch}
-              onChange={(v) => { setTrackingSearch(v); setSearchQuery(''); setClaimSuccess(''); setClaimError(''); }}
-              fullWidth
-            >
-              <Input placeholder="Enter tracking number" />
-            </TextField>
-          </div>
-          <Button type="submit" isDisabled={searching || !trackingSearch.trim()} isPending={searching} className="w-full sm:w-auto bg-[#F59E0B] text-white">
-            {searching ? 'Searching...' : 'Track'}
-          </Button>
-        </form>
-        {searchError && <p className="mt-2 text-danger">{searchError}</p>}
+              onChange={(e) => { setTrackingSearch(e.target.value); setSearchQuery(''); setClaimSuccess(''); setClaimError(''); }}
+              placeholder="Enter tracking number"
+              className="flex-1 px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base placeholder:text-white/60 outline-none focus:ring-2 focus:ring-[#F59E0B]/40 focus:border-[#F59E0B] transition-all"
+            />
+            <Button type="submit" isDisabled={searching || !trackingSearch.trim()} isPending={searching} className="w-full sm:w-auto bg-[#F59E0B] text-white">
+              {searching ? 'Searching...' : 'Track'}
+            </Button>
+          </form>
+          {searchError && <p className="mt-3 text-[#FCA5A5]">{searchError}</p>}
 
-        {searchResult && (
-          <div className="mt-4 p-4 rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] border border-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-foreground">{searchResult.trackingNo}</p>
-                <Chip size="sm" variant="soft" color={STATUS_COLORS[searchResult.status] ?? 'default'} className="mt-1">
-                  {STATUS_LABELS[searchResult.status] || searchResult.status}
-                </Chip>
+          {searchResult && (
+            <div className="mt-5 p-5 rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] border border-foreground/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-foreground">{searchResult.trackingNo}</p>
+                  <Chip size="sm" variant="soft" color={STATUS_COLORS[searchResult.status] ?? 'default'} className="mt-1">
+                    {STATUS_LABELS[searchResult.status] || searchResult.status}
+                  </Chip>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" isDisabled={claimMutation.isPending && claimMutation.variables?.trackingNo === searchResult.trackingNo} isPending={claimMutation.isPending && claimMutation.variables?.trackingNo === searchResult.trackingNo} onPress={() => handleClaim(searchResult.trackingNo)}>
+                    <Link2 size={12} /> Claim
+                  </Button>
+                  <a href={`/my-shipments/${searchResult.trackingNo}`} className="font-medium text-[#F59E0B] hover:underline inline-flex items-center gap-1">
+                    Details <ExternalLink size={14} />
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" isDisabled={claimMutation.isPending && claimMutation.variables?.trackingNo === searchResult.trackingNo} isPending={claimMutation.isPending && claimMutation.variables?.trackingNo === searchResult.trackingNo} onPress={() => handleClaim(searchResult.trackingNo)}>
-                  <Link2 size={12} /> Claim
-                </Button>
-                <a href={`/my-shipments/${searchResult.trackingNo}`} className="font-medium text-[#F59E0B] hover:underline inline-flex items-center gap-1">
-                  Details <ExternalLink size={14} />
-                </a>
-              </div>
+              {(searchResult.origin || searchResult.destination) && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-foreground/60">
+                  {searchResult.origin && <span>{searchResult.origin}</span>}
+                  {searchResult.origin && searchResult.destination && <span>→</span>}
+                  {searchResult.destination && <span>{searchResult.destination}</span>}
+                </div>
+              )}
+              {claimSuccess && <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600"><CheckCircle2 size={12} /> {claimSuccess}</div>}
+              {claimError && <p className="mt-2 text-xs text-danger">{claimError}</p>}
             </div>
-            {(searchResult.origin || searchResult.destination) && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-foreground/60">
-                {searchResult.origin && <span>{searchResult.origin}</span>}
-                {searchResult.origin && searchResult.destination && <span>→</span>}
-                {searchResult.destination && <span>{searchResult.destination}</span>}
-              </div>
-            )}
-            {claimSuccess && <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600"><CheckCircle2 size={12} /> {claimSuccess}</div>}
-            {claimError && <p className="mt-2 text-xs text-danger">{claimError}</p>}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div>
@@ -172,7 +180,7 @@ export function MyShipmentsClient(): ReactNode {
             <Button variant="ghost" size="sm" onPress={() => refetch()} className="mt-3 text-danger">Try again</Button>
           </div>
         ) : shipments.length === 0 ? (
-          <div className="rounded-2xl bg-foreground/[0.02] p-12 text-center border border-foreground/5">
+          <div className="rounded-2xl bg-white p-12 text-center border border-foreground/5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#F59E0B]/5 mb-4">
               <Package size={28} className="text-[#F59E0B]/40" />
             </div>
@@ -185,15 +193,23 @@ export function MyShipmentsClient(): ReactNode {
               <a key={shipment.id} href={`/my-shipments/${shipment.trackingNo}`}
                 className="block rounded-2xl bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_0_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 border border-foreground/5">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-sm font-bold text-foreground">{shipment.trackingNo}</span>
-                      {shipment.labelCode && <span className="text-xs text-foreground/30 font-mono bg-foreground/5 px-2 py-0.5 rounded">{shipment.labelCode}</span>}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${STATUS_HEX[shipment.status] ?? '#F59E0B'}15`, color: STATUS_HEX[shipment.status] ?? '#F59E0B' }}
+                    >
+                      <Package size={18} />
                     </div>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-foreground/50 flex-wrap">
-                      {shipment.carrier && <span className="inline-flex items-center gap-1"><Truck size={12} /> {shipment.carrier}</span>}
-                      {(shipment.origin || shipment.destination) && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {shipment.origin || '?'} → {shipment.destination || '?'}</span>}
-                      <span className="inline-flex items-center gap-1"><Clock size={12} /> {new Date(shipment.createdAt).toLocaleDateString()}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-sm font-bold text-foreground">{shipment.trackingNo}</span>
+                        {shipment.labelCode && <span className="text-xs text-foreground/30 font-mono bg-foreground/5 px-2 py-0.5 rounded">{shipment.labelCode}</span>}
+                      </div>
+                      <div className="mt-2 flex items-center gap-3 text-xs text-foreground/50 flex-wrap">
+                        {shipment.carrier && <span className="inline-flex items-center gap-1"><Truck size={12} /> {shipment.carrier}</span>}
+                        {(shipment.origin || shipment.destination) && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {shipment.origin || '?'} → {shipment.destination || '?'}</span>}
+                        <span className="inline-flex items-center gap-1"><Clock size={12} /> {new Date(shipment.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">

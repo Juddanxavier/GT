@@ -7,18 +7,17 @@ import { useTenantConfig } from '@/lib/use-tenant-config';
 
 export function TestimonialsSectionV2(): ReactNode {
   const config = useTenantConfig();
-  const isE = false;
 
-  const accentBg = isE ? 'bg-[#F59E0B]' : 'bg-violet-600';
+  const accentBg = 'bg-[#F59E0B]';
 
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface py-24 overflow-hidden">
+    <section className="w-screen left-[calc(-50vw+50%)] relative bg-[#FAFAF7] py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
-          <div className="border border-border py-1 px-4 rounded-full text-sm font-semibold tracking-wide uppercase text-foreground/60 bg-surface-secondary/50">
+          <div className="border border-[#F59E0B]/20 py-1 px-4 rounded-full text-sm font-semibold tracking-wide uppercase text-[#B45309] bg-[#F59E0B]/10">
             Testimonials
           </div>
-          <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             What <span className="text-[#F59E0B]">our users say</span>
           </h2>
           <p className="mt-5 text-foreground/70 text-base leading-relaxed max-w-sm">

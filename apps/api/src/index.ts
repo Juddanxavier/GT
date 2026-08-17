@@ -1,35 +1,37 @@
 /** @format */
 
-import { serve, type ServerType } from '@hono/node-server';
 import type { Socket } from 'node:net';
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { compress } from 'hono/compress';
-import { bodyLimit } from 'hono/body-limit';
-import { timeout } from 'hono/timeout';
-import { serveStatic } from '@hono/node-server/serve-static';
-import { HonoAdapter } from '@bull-board/hono';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { HonoAdapter } from '@bull-board/hono';
+import { type ServerType, serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
+import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
+import { compress } from 'hono/compress';
+import { cors } from 'hono/cors';
+import { timeout } from 'hono/timeout';
 import { auth } from './auth';
-import { sessionMiddleware, type AuthVariables } from './middleware/auth';
-import { securityHeadersMiddleware } from './middleware/security-headers';
-import { requestIdMiddleware, type RequestIdVariables } from './middleware/request-id';
-import { globalRateLimit } from './middleware/rate-limit';
-import { tenantMiddleware, type TenantVariables } from './middleware/tenant';
-import { branchMiddleware, type BranchVariables } from './middleware/branch';
+import { type AuthVariables, sessionMiddleware } from './middleware/auth';
 import { requireRole } from './middleware/authorization';
+import { type BranchVariables, branchMiddleware } from './middleware/branch';
 import { signInHandler } from './middleware/lockout';
+import { globalRateLimit } from './middleware/rate-limit';
+import { type RequestIdVariables, requestIdMiddleware } from './middleware/request-id';
+import { securityHeadersMiddleware } from './middleware/security-headers';
+import { type TenantVariables, tenantMiddleware } from './middleware/tenant';
 import { isRedisConnected, queues } from './queues';
 import { cacheClient, connectRedis, disconnectRedis } from './redis';
+
 const forgotPwFallback = new Map<string, { count: number; resetAt: number }>();
-import { db } from './db';
-import { tenants as tenantTable, user as userTable, branches as branchTable } from './db/schema';
-import { eq, sql } from 'drizzle-orm';
-import { createUser } from './auth-api';
+
 import path from 'node:path';
 import * as Sentry from '@sentry/hono/node';
-import { getEmailProviderStatus, closeTransport } from './email/provider';
+import { eq, sql } from 'drizzle-orm';
+import { createUser } from './auth-api';
+import { db } from './db';
+import { branches as branchTable, tenants as tenantTable, user as userTable } from './db/schema';
+import { closeTransport, getEmailProviderStatus } from './email/provider';
 
 // Global crash handlers (before any other code)
 process.on('unhandledRejection', (reason) => {
@@ -53,19 +55,29 @@ function validateEnv(): void {
     process.exit(1);
   }
   if (!process.env.TRACK_WEBHOOK_SECRET) {
-    console.warn('[env] TRACK_WEBHOOK_SECRET is empty — 17TRACK webhook verification will reject all requests');
+    console.warn(
+      '[env] TRACK_WEBHOOK_SECRET is empty — 17TRACK webhook verification will reject all requests',
+    );
   }
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.REDIS_URL) {
-      console.warn('[env] REDIS_URL is empty — job queues and real-time features will be unavailable');
+      console.warn(
+        '[env] REDIS_URL is empty — job queues and real-time features will be unavailable',
+      );
     }
     if (!process.env.SEED_SECRET) {
-      console.warn('[env] SEED_SECRET is empty — superadmin seed endpoint will reject all requests. Set SEED_SECRET to enable it.');
+      console.warn(
+        '[env] SEED_SECRET is empty — superadmin seed endpoint will reject all requests. Set SEED_SECRET to enable it.',
+      );
     }
   }
 }
 
-type AppVariables = AuthVariables & TenantVariables & BranchVariables & RequestIdVariables & LoggerVariables;
+type AppVariables = AuthVariables &
+  TenantVariables &
+  BranchVariables &
+  RequestIdVariables &
+  LoggerVariables;
 
 const app = new Hono<{
   Variables: AppVariables;
@@ -88,11 +100,12 @@ const app = new Hono<{
 // 12. Rate limiting — limits per-route requests (depends on session for authenticated limits)
 
 const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim());
-const corsOrigin = corsOrigins && corsOrigins.length > 0
-  ? corsOrigins
-  : process.env.NODE_ENV === 'production'
-    ? [] // reject all origins in production — must set CORS_ORIGIN explicitly
-    : (origin: string) => origin;
+const corsOrigin =
+  corsOrigins && corsOrigins.length > 0
+    ? corsOrigins
+    : process.env.NODE_ENV === 'production'
+      ? [] // reject all origins in production — must set CORS_ORIGIN explicitly
+      : (origin: string) => origin;
 
 app.use(
   '/api/auth/*',
@@ -106,13 +119,22 @@ app.use(
   }),
 );
 
-app.use('*', cors({
-  origin: corsOrigin,
-  credentials: true,
-}));
+app.use(
+  '*',
+  cors({
+    origin: corsOrigin,
+    credentials: true,
+  }),
+);
 
 // Body size limit (before anything that reads the body)
-app.use('*', bodyLimit({ maxSize: 5 * 1024 * 1024, onError: (c) => errorResponse(c, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 5 MB limit', 413) }));
+app.use(
+  '*',
+  bodyLimit({
+    maxSize: 5 * 1024 * 1024,
+    onError: (c) => errorResponse(c, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 5 MB limit', 413),
+  }),
+);
 
 // Content-Type validation for write methods (POST/PUT/PATCH)
 app.use('*', async (c, next) => {
@@ -120,7 +142,12 @@ app.use('*', async (c, next) => {
   if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
     const ct = c.req.header('Content-Type') ?? '';
     if (!ct.includes('application/json') && !ct.includes('multipart/form-data')) {
-      return errorResponse(c, 'UNSUPPORTED_MEDIA_TYPE', 'Content-Type must be application/json', 415);
+      return errorResponse(
+        c,
+        'UNSUPPORTED_MEDIA_TYPE',
+        'Content-Type must be application/json',
+        415,
+      );
     }
   }
   await next();
@@ -146,12 +173,16 @@ app.use('*', async (c, next) => {
   const ms = Date.now() - start;
   const user = c.get('user') as { id?: string; tenantId?: string; role?: string } | null;
   const tenantId = c.get('tenantId');
-  log.info({
-    status: c.res.status, ms,
-    userId: user?.id,
-    tenantId: tenantId || user?.tenantId,
-    role: user?.role,
-  }, 'response');
+  log.info(
+    {
+      status: c.res.status,
+      ms,
+      userId: user?.id,
+      tenantId: tenantId || user?.tenantId,
+      role: user?.role,
+    },
+    'response',
+  );
 });
 
 // Security headers
@@ -199,11 +230,25 @@ app.post('/api/seed/superadmin', async (c) => {
   const email = process.env.SEED_SUPERADMIN_EMAIL || 'juddan2008@gmail.com';
   const password = process.env.SEED_SUPERADMIN_PASSWORD;
   if (!password) {
-    return errorResponse(c, 'CONFIG_ERROR', 'SEED_SUPERADMIN_PASSWORD environment variable is required', 500);
+    return errorResponse(
+      c,
+      'CONFIG_ERROR',
+      'SEED_SUPERADMIN_PASSWORD environment variable is required',
+      500,
+    );
   }
-  const [existing] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
+  const [existing] = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(eq(userTable.email, email))
+    .limit(1);
   if (existing) return c.json({ message: 'Super admin already exists' });
-  await createUser({ email, password, name: process.env.SEED_SUPERADMIN_NAME || 'Super Admin', role: 'superadmin' });
+  await createUser({
+    email,
+    password,
+    name: process.env.SEED_SUPERADMIN_NAME || 'Super Admin',
+    role: 'superadmin',
+  });
   return c.json({ message: 'Super admin created' });
 });
 
@@ -216,25 +261,87 @@ app.post('/api/seed/tenant', async (c) => {
 
   // ── Tenants ──
   const existingTenants = await db.select().from(tenantTable);
-  const gajan = existingTenants.find((t) => t.slug === 'gajan-traders') ?? (await db.insert(tenantTable).values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' }).returning())[0]!;
-  const lanka = existingTenants.find((t) => t.slug === 'lanka-mahal') ?? (await db.insert(tenantTable).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' }).returning())[0]!;
+  const gajan =
+    existingTenants.find((t) => t.slug === 'gajan-traders') ??
+    (
+      await db
+        .insert(tenantTable)
+        .values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' })
+        .returning()
+    )[0]!;
+  const lanka =
+    existingTenants.find((t) => t.slug === 'lanka-mahal') ??
+    (
+      await db
+        .insert(tenantTable)
+        .values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' })
+        .returning()
+    )[0]!;
 
   // ── Branches ──
   await db.delete(branchTable);
-  const gBranches = await db.insert(branchTable).values([
-    { name: 'Mumbai HQ', tenantId: gajan!.id, phone: '+91-22-12345678', email: 'mumbai@gajantraders.com', address: '123 Business District, Mumbai' },
-    { name: 'Delhi Branch', tenantId: gajan!.id, phone: '+91-11-87654321', email: 'delhi@gajantraders.com', address: '456 Connaught Place, New Delhi' },
-    { name: 'Chennai Branch', tenantId: gajan!.id, phone: '+91-44-23456789', email: 'chennai@gajantraders.com', address: '789 Anna Salai, Chennai' },
-  ]).returning();
+  const gBranches = await db
+    .insert(branchTable)
+    .values([
+      {
+        name: 'Mumbai HQ',
+        slug: 'mumbai-hq',
+        tenantId: gajan!.id,
+        phone: '+91-22-12345678',
+        email: 'mumbai@gajantraders.com',
+        address: '123 Business District, Mumbai',
+      },
+      {
+        name: 'Delhi Branch',
+        slug: 'delhi-branch',
+        tenantId: gajan!.id,
+        phone: '+91-11-87654321',
+        email: 'delhi@gajantraders.com',
+        address: '456 Connaught Place, New Delhi',
+      },
+      {
+        name: 'Chennai Branch',
+        slug: 'chennai-branch',
+        tenantId: gajan!.id,
+        phone: '+91-44-23456789',
+        email: 'chennai@gajantraders.com',
+        address: '789 Anna Salai, Chennai',
+      },
+    ])
+    .returning();
   const mumbaiHq = gBranches[0]!;
   const delhi = gBranches[1]!;
   const chennai = gBranches[2]!;
 
-  const lBranches = await db.insert(branchTable).values([
-    { name: 'Colombo HQ', tenantId: lanka!.id, phone: '+94-11-2345678', email: 'colombo@lankamahal.lk', address: '1 Galle Road, Colombo 03' },
-    { name: 'Kandy Branch', tenantId: lanka!.id, phone: '+94-81-3456789', email: 'kandy@lankamahal.lk', address: '45 Peradeniya Road, Kandy' },
-    { name: 'Jaffna Branch', tenantId: lanka!.id, phone: '+94-21-4567890', email: 'jaffna@lankamahal.lk', address: '78 Hospital Road, Jaffna' },
-  ]).returning();
+  const lBranches = await db
+    .insert(branchTable)
+    .values([
+      {
+        name: 'Colombo HQ',
+        slug: 'colombo-hq',
+        tenantId: lanka!.id,
+        phone: '+94-11-2345678',
+        email: 'colombo@lankamahal.lk',
+        address: '1 Galle Road, Colombo 03',
+      },
+      {
+        name: 'Kandy Branch',
+        slug: 'kandy-branch',
+        tenantId: lanka!.id,
+        phone: '+94-81-3456789',
+        email: 'kandy@lankamahal.lk',
+        address: '45 Peradeniya Road, Kandy',
+      },
+      {
+        name: 'Jaffna Branch',
+        slug: 'jaffna-branch',
+        tenantId: lanka!.id,
+        phone: '+94-21-4567890',
+        email: 'jaffna@lankamahal.lk',
+        address: '78 Hospital Road, Jaffna',
+      },
+    ])
+    .returning();
   const colomboHq = lBranches[0]!;
   const kandy = lBranches[1]!;
   const jaffna = lBranches[2]!;
@@ -243,45 +350,115 @@ app.post('/api/seed/tenant', async (c) => {
   const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123';
   const seedStaffPassword = process.env.SEED_STAFF_PASSWORD || 'Staff@123';
   if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.warn('[seed] SEED_ADMIN_PASSWORD not set — using default password. Set it in production!');
+    console.warn(
+      '[seed] SEED_ADMIN_PASSWORD not set — using default password. Set it in production!',
+    );
   }
   if (!process.env.SEED_STAFF_PASSWORD) {
-    console.warn('[seed] SEED_STAFF_PASSWORD not set — using default password. Set it in production!');
+    console.warn(
+      '[seed] SEED_STAFF_PASSWORD not set — using default password. Set it in production!',
+    );
   }
 
   const usersData = [
-    { name: 'Gajan Admin', email: 'admin@gajantraders.com', password: seedAdminPassword, role: 'tenant-admin', tenantId: gajan!.id, branchId: mumbaiHq.id },
-    { name: 'Gajan Staff Mumbai', email: 'staff-mumbai@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: mumbaiHq.id },
-    { name: 'Gajan Staff Delhi', email: 'staff-delhi@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: delhi.id },
-    { name: 'Gajan Staff Chennai', email: 'staff-chennai@gajantraders.com', password: seedStaffPassword, role: 'staff', tenantId: gajan!.id, branchId: chennai.id },
-    { name: 'Lanka Admin', email: 'admin@lankamahal.lk', password: seedAdminPassword, role: 'tenant-admin', tenantId: lanka!.id, branchId: colomboHq.id },
-    { name: 'Lanka Staff Colombo', email: 'staff-colombo@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: colomboHq.id },
-    { name: 'Lanka Staff Kandy', email: 'staff-kandy@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: kandy.id },
-    { name: 'Lanka Staff Jaffna', email: 'staff-jaffna@lankamahal.lk', password: seedStaffPassword, role: 'staff', tenantId: lanka!.id, branchId: jaffna.id },
+    {
+      name: 'Gajan Admin',
+      email: 'admin@gajantraders.com',
+      password: seedAdminPassword,
+      role: 'tenant-admin',
+      tenantId: gajan!.id,
+      branchId: mumbaiHq.id,
+    },
+    {
+      name: 'Gajan Staff Mumbai',
+      email: 'staff-mumbai@gajantraders.com',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: gajan!.id,
+      branchId: mumbaiHq.id,
+    },
+    {
+      name: 'Gajan Staff Delhi',
+      email: 'staff-delhi@gajantraders.com',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: gajan!.id,
+      branchId: delhi.id,
+    },
+    {
+      name: 'Gajan Staff Chennai',
+      email: 'staff-chennai@gajantraders.com',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: gajan!.id,
+      branchId: chennai.id,
+    },
+    {
+      name: 'Lanka Admin',
+      email: 'admin@lankamahal.lk',
+      password: seedAdminPassword,
+      role: 'tenant-admin',
+      tenantId: lanka!.id,
+      branchId: colomboHq.id,
+    },
+    {
+      name: 'Lanka Staff Colombo',
+      email: 'staff-colombo@lankamahal.lk',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: lanka!.id,
+      branchId: colomboHq.id,
+    },
+    {
+      name: 'Lanka Staff Kandy',
+      email: 'staff-kandy@lankamahal.lk',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: lanka!.id,
+      branchId: kandy.id,
+    },
+    {
+      name: 'Lanka Staff Jaffna',
+      email: 'staff-jaffna@lankamahal.lk',
+      password: seedStaffPassword,
+      role: 'staff',
+      tenantId: lanka!.id,
+      branchId: jaffna.id,
+    },
   ];
   for (const u of usersData) {
-    const [existing] = await db.select({ id: userTable.id, branchId: userTable.branchId, tenantId: userTable.tenantId }).from(userTable).where(eq(userTable.email, u.email)).limit(1);
+    const [existing] = await db
+      .select({ id: userTable.id, branchId: userTable.branchId, tenantId: userTable.tenantId })
+      .from(userTable)
+      .where(eq(userTable.email, u.email))
+      .limit(1);
     if (existing) {
       if (existing.branchId !== u.branchId || existing.tenantId !== u.tenantId) {
-        await db.update(userTable).set({ branchId: u.branchId, tenantId: u.tenantId }).where(eq(userTable.email, u.email));
+        await db
+          .update(userTable)
+          .set({ branchId: u.branchId, tenantId: u.tenantId })
+          .where(eq(userTable.email, u.email));
       }
       continue;
     }
-    await createUser({ email: u.email, password: u.password, name: u.name, role: u.role, tenantId: u.tenantId, branchId: u.branchId });
+    await createUser({
+      email: u.email,
+      password: u.password,
+      name: u.name,
+      role: u.role,
+      tenantId: u.tenantId,
+      branchId: u.branchId,
+    });
   }
 
   return c.json({ message: 'Seed complete: tenants, branches, users created' });
 });
 
-// Public tracking endpoints (no auth required)
-app.route('/api/track', publicTrack);
-app.route('/api/track', claimShipment);
-
 // Webhooks (no auth — verified via webhook secret)
 app.route('/webhooks', webhooks);
 
-// Debug routes (non-production only)
-if (process.env.NODE_ENV !== 'production') {
+// Debug routes (only when explicitly enabled; require superadmin)
+if (process.env.ENABLE_DEBUG === 'true') {
   app.route('/api/debug', debug);
 }
 
@@ -294,7 +471,13 @@ app.post('/api/auth/sign-in/email', signInHandler);
 // Forgot-password with email existence check + rate limiting
 app.post('/api/auth/forgot-password', async (c) => {
   const parsed = forgotPasswordSchema.safeParse(await c.req.json());
-  if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
+  if (!parsed.success)
+    return errorResponse(
+      c,
+      'VALIDATION_ERROR',
+      parsed.error.issues.map((i) => i.message).join(', '),
+      400,
+    );
   const { email, redirectTo } = parsed.data!;
 
   // Rate limit: 3 requests per 5 minutes per email
@@ -308,7 +491,12 @@ app.post('/api/auth/forgot-password', async (c) => {
         await cacheClient.expire(fpKey, 300);
       }
       if (count > 3) {
-        return errorResponse(c, 'RATE_LIMITED', 'Too many password reset requests. Please try again later.', 429);
+        return errorResponse(
+          c,
+          'RATE_LIMITED',
+          'Too many password reset requests. Please try again later.',
+          429,
+        );
       }
     } catch (err) {
       console.error('[forgot-password] Redis rate limit error:', err);
@@ -318,7 +506,12 @@ app.post('/api/auth/forgot-password', async (c) => {
     const fpEntry = forgotPwFallback.get(fpEmail);
     if (fpEntry && fpEntry.resetAt > now) {
       if (fpEntry.count >= 3) {
-        return errorResponse(c, 'RATE_LIMITED', 'Too many password reset requests. Please try again later.', 429);
+        return errorResponse(
+          c,
+          'RATE_LIMITED',
+          'Too many password reset requests. Please try again later.',
+          429,
+        );
       }
       fpEntry.count++;
     } else {
@@ -326,9 +519,15 @@ app.post('/api/auth/forgot-password', async (c) => {
     }
   }
 
-  const [user] = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email)).limit(1);
+  const [user] = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(eq(userTable.email, email))
+    .limit(1);
   if (user) {
-    await auth.api.requestPasswordReset({ body: { email, redirectTo: redirectTo || '/reset-password' } });
+    await auth.api.requestPasswordReset({
+      body: { email, redirectTo: redirectTo || '/reset-password' },
+    });
   }
   return c.json({ success: true });
 });
@@ -347,6 +546,12 @@ app.use('*', branchMiddleware);
 
 // Rate limiting for API routes (auth routes use Better Auth's built-in rate limiter)
 app.use('*', globalRateLimit());
+
+// Public tracking endpoints (no auth required). Mounted after the middleware
+// above so lookups are scoped to the tenant resolved from the request domain
+// and are rate-limited per IP.
+app.route('/api/track', publicTrack);
+app.route('/api/track', claimShipment);
 
 // ── Bull Board (job queue dashboard) ──
 
@@ -367,7 +572,10 @@ if (queues.length > 0) {
   const serverAdapter = new HonoAdapter(serveStatic);
 
   serverAdapter.setBasePath('/jobs');
-  serverAdapter.setStaticPath('/static', path.join(process.cwd(), 'node_modules/@bull-board/ui/dist/static'));
+  serverAdapter.setStaticPath(
+    '/static',
+    path.join(process.cwd(), 'node_modules/@bull-board/ui/dist/static'),
+  );
   serverAdapter.setViewsPath(path.join(process.cwd(), 'node_modules/@bull-board/ui/dist/view'));
 
   createBullBoard({
@@ -380,32 +588,34 @@ if (queues.length > 0) {
 
 // ── Routes ──
 
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { errorResponse } from './error-response';
+import type { LoggerVariables } from './logger';
+import { childLogger, logger } from './logger';
+import auditLogsRoute from './routes/audit-logs';
 import branches from './routes/branches';
+import claimShipment from './routes/claim-shipment';
 import customers from './routes/customers';
+import dashboard from './routes/dashboard';
+import debug from './routes/debug';
+import invitations from './routes/invitations';
+import invoicesRoute from './routes/invoices';
+import notificationPrefsRoute from './routes/notification-preferences';
+import notificationsRoute from './routes/notifications';
+import onboard from './routes/onboard';
+import publicTrack from './routes/public-track';
 import quotations from './routes/quotations';
+import reports from './routes/reports';
+import searchRoute from './routes/search';
+import settingsRoute from './routes/settings';
 import shipments from './routes/shipments';
 import tenants from './routes/tenants';
 import users from './routes/users';
-import invitations from './routes/invitations';
-import onboard from './routes/onboard';
 import webhooks from './routes/webhooks';
-import debug from './routes/debug';
-import invoicesRoute from './routes/invoices';
-import dashboard from './routes/dashboard';
-import reports from './routes/reports';
-import searchRoute from './routes/search';
-import notificationsRoute from './routes/notifications';
-import publicTrack from './routes/public-track';
-import claimShipment from './routes/claim-shipment';
-import auditLogsRoute from './routes/audit-logs';
-import notificationPrefsRoute from './routes/notification-preferences';
 import { runArchive } from './services/archive';
 import { logAudit } from './services/audit';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { errorResponse } from './error-response';
 import { forgotPasswordSchema } from './validators';
-import { childLogger, logger } from './logger';
-import type { LoggerVariables } from './logger';
+
 // ── Global error handler ──
 
 app.onError((err, c) => {
@@ -462,19 +672,27 @@ app.route('/api/audit-logs', auditLogsRoute);
 // Notification preferences
 app.route('/api/notification-preferences', notificationPrefsRoute);
 
+// Settings (integration status, template previews)
+app.route('/api/settings', settingsRoute);
+
 // Manual archive trigger (protected)
 app.post('/api/cron/archive', requireRole('superadmin'), async (c) => {
   const result = await runArchive();
   const user = c.get('user');
-  await logAudit('ARCHIVE_RUN', user?.id ?? null, {
-    archived: result.archived,
-    skeletonized: result.skeletonized,
-    purged: result.purged,
-    notificationsArchived: result.notificationsArchived,
-    notificationsSkeletonized: result.notificationsSkeletonized,
-    notificationsPurged: result.notificationsPurged,
-    trigger: 'manual',
-  }, c);
+  await logAudit(
+    'ARCHIVE_RUN',
+    user?.id ?? null,
+    {
+      archived: result.archived,
+      skeletonized: result.skeletonized,
+      purged: result.purged,
+      notificationsArchived: result.notificationsArchived,
+      notificationsSkeletonized: result.notificationsSkeletonized,
+      notificationsPurged: result.notificationsPurged,
+      trigger: 'manual',
+    },
+    c,
+  );
   return c.json({ data: result });
 });
 
@@ -489,7 +707,11 @@ app.get('/api/me', async (c) => {
   const tenantId = u.tenantId as string | undefined;
   let tenantCountry: string | null = null;
   if (tenantId) {
-    const [t] = await db.select({ country: tenantTable.country }).from(tenantTable).where(eq(tenantTable.id, tenantId)).limit(1);
+    const [t] = await db
+      .select({ country: tenantTable.country })
+      .from(tenantTable)
+      .where(eq(tenantTable.id, tenantId))
+      .limit(1);
     if (t) tenantCountry = t.country;
   }
   return c.json({
@@ -525,10 +747,14 @@ async function main() {
   // Ensure default tenants exist
   const existingTenants = await db.select().from(tenantTable);
   if (!existingTenants.find((t) => t.slug === 'gajan-traders')) {
-    await db.insert(tenantTable).values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' });
+    await db
+      .insert(tenantTable)
+      .values({ name: 'Gajan Traders', slug: 'gajan-traders', country: 'India' });
   }
   if (!existingTenants.find((t) => t.slug === 'lanka-mahal')) {
-    await db.insert(tenantTable).values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' });
+    await db
+      .insert(tenantTable)
+      .values({ name: 'Lanka Mahal', slug: 'lanka-mahal', country: 'Sri Lanka' });
   }
 
   // Start BullMQ workers (importing triggers instantiation)
@@ -609,7 +835,9 @@ async function shutdown(signal: string) {
   try {
     const { getIO } = await import('./realtime.js');
     getIO()?.close();
-  } catch { /* realtime may not be initialized */ }
+  } catch {
+    /* realtime may not be initialized */
+  }
 
   // Close email transport
   closeTransport();

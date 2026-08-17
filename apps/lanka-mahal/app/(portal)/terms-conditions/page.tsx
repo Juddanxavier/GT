@@ -11,7 +11,7 @@ export default function TermsConditionsPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Terms &amp; Conditions</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Terms &amp; Conditions</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">Last updated: July 2026</p>
         </div>
       </section>

@@ -122,13 +122,13 @@ export default function ClaimShipmentPage(): ReactNode {
       <Card className="max-w-lg mx-auto mt-8 text-center py-12 px-6">
         <CheckCircle size={48} className="mx-auto text-success" />
         <h2 className="text-xl font-semibold mt-4">Shipment Claimed!</h2>
-        <p className="text-sm text-muted mt-2">
+        <p className="text-sm text-foreground/70 mt-2">
           Tracking {trackingNo} has been added to your shipments.
         </p>
         {claimed && (
-          <div className="mt-4 text-left bg-muted/5 rounded-lg p-4 space-y-2">
-            <p className="text-sm"><span className="text-muted">Status:</span> {claimed.status}</p>
-            {claimed.carrier && <p className="text-sm"><span className="text-muted">Carrier:</span> {claimed.carrier}</p>}
+          <div className="mt-4 text-left bg-foreground/5 rounded-lg p-4 space-y-2">
+            <p className="text-sm"><span className="text-foreground/70">Status:</span> {claimed.status}</p>
+            {claimed.carrier && <p className="text-sm"><span className="text-foreground/70">Carrier:</span> {claimed.carrier}</p>}
           </div>
         )}
         <div className="flex gap-3 justify-center mt-6">
@@ -144,10 +144,10 @@ export default function ClaimShipmentPage(): ReactNode {
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-sm">
         <Chip color={step === 'enter-tracking' ? 'accent' : 'success'} variant="soft" size="sm">1</Chip>
-        <span className={step === 'enter-tracking' ? 'font-medium' : 'text-muted'}>Enter Tracking No</span>
+        <span className={step === 'enter-tracking' ? 'font-medium' : 'text-foreground/70'}>Enter Tracking No</span>
         <div className="w-8 h-px bg-border" />
         <Chip color={step === 'verify-otp' ? 'accent' : 'default'} variant="soft" size="sm">2</Chip>
-        <span className={step === 'verify-otp' ? 'font-medium' : 'text-muted'}>Verify OTP</span>
+        <span className={step === 'verify-otp' ? 'font-medium' : 'text-foreground/70'}>Verify OTP</span>
       </div>
 
       <Card>
@@ -160,7 +160,7 @@ export default function ClaimShipmentPage(): ReactNode {
           <form onSubmit={handleSubmit} className="space-y-4">
             {step === 'enter-tracking' && (
               <>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-foreground/70">
                   Enter your tracking number to claim this shipment. We&apos;ll send a verification code to your email.
                 </p>
                 <div className="space-y-1.5">
@@ -171,7 +171,7 @@ export default function ClaimShipmentPage(): ReactNode {
                     value={trackingNo}
                     onChange={(e) => setTrackingNo(e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-2.5 rounded-xl border border-foreground/10 text-base outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B] transition-all"
                   />
                 </div>
               </>
@@ -179,7 +179,7 @@ export default function ClaimShipmentPage(): ReactNode {
 
             {step === 'verify-otp' && (
               <>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-foreground/70">
                   We sent a 6-digit code to <strong>{email}</strong>
                 </p>
                 <div className="space-y-1.5">
@@ -191,7 +191,7 @@ export default function ClaimShipmentPage(): ReactNode {
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
                     maxLength={6}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-base outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-2.5 rounded-xl border border-foreground/10 text-base outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B] transition-all"
                   />
                 </div>
                 <div className="flex items-center gap-2">

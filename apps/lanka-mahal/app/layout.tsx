@@ -1,10 +1,10 @@
 ﻿import type { ReactNode } from 'react';
-import { Bricolage_Grotesque } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import './globals.css';
 
-const bricolage = Bricolage_Grotesque({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-bricolage-grotesque',
+  variable: '--font-space-grotesk',
 });
 
 import { PortalNav } from '@/components/portal-nav';
@@ -23,8 +23,8 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
   return (
-    <html lang="en" className={bricolage.variable}>
-      <body className="bg-background text-foreground antialiased overflow-x-hidden" style={{ fontFamily: 'var(--font-bricolage-grotesque)' }}>
+    <html lang="en" className={spaceGrotesk.variable}>
+      <body className="bg-background text-foreground antialiased overflow-x-hidden" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
         <Providers>
           <PortalNav />
           {children}

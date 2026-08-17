@@ -76,17 +76,17 @@ function ResetPasswordForm() {
 
   return (
     <AuthLayout title="Set new password" subtitle="Enter your new password below." backHref="/login" backLabel="Back to sign in">
-      {error && <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
 
       <form onSubmit={handleReset} className="space-y-5" noValidate>
         <TextField fullWidth name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
           <Label>New password</Label>
-          <Input placeholder="At least 8 characters" autoComplete="new-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+          <Input placeholder="At least 8 characters" autoComplete="new-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-sm" />
         </TextField>
 
         <TextField fullWidth name="confirmPassword" type="password" value={confirmPassword} onChange={(v) => setConfirmPassword(v)}>
           <Label>Confirm password</Label>
-          <Input placeholder="Re-enter your new password" autoComplete="new-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+          <Input placeholder="Re-enter your new password" autoComplete="new-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-sm" />
         </TextField>
 
         <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11">

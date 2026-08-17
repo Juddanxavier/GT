@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Card, Select, ListBox, Tabs, Table, Skeleton, Chip } from '@heroui/react';
 import { FileText, Download, LoaderCircle, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle, Calendar, Building2, X } from 'lucide-react';
 import { KpiCard } from '@/components/kpi-card';
+import { PageHeader } from '@/components/page-header';
 import { authClient } from '@/lib/auth-client';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { useDashboardBranches, useTenants } from '@/lib/queries';
@@ -45,6 +47,7 @@ type ReportMeta = {
   summary: Record<string, number>;
   revenue?: string;
   statusDistribution: { status: string; count: number }[];
+  branchComparison: { name: string; count: number }[];
 };
 
 const STATUS_COLORS: Record<string, 'accent' | 'success' | 'danger' | 'warning' | 'default'> = {
@@ -61,8 +64,55 @@ const STATUS_COLORS: Record<string, 'accent' | 'success' | 'danger' | 'warning' 
 
 const ROWS_PER_PAGE = 20;
 
+const STATUS_BAR_COLORS: Record<string, string> = {
+  pending: 'bg-amber-500',
+  info_received: 'bg-amber-500',
+  in_transit: 'bg-blue-500',
+  out_for_delivery: 'bg-violet-500',
+  failed_attempt: 'bg-red-500',
+  delivered: 'bg-emerald-500',
+  exception: 'bg-red-500',
+  expired: 'bg-slate-400',
+  available_for_pickup: 'bg-sky-500',
+};
+
+function DistributionCard({ title, items, colorFor }: { title: string; items: { name?: string; status?: string; count: number }[]; colorFor: (key: string) => string }) {
+  const total = items.reduce((a, b) => a + b.count, 0);
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title className="text-sm font-semibold">{title}</Card.Title>
+      </Card.Header>
+      <Card.Content>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted">No data</p>
+        ) : (
+          <div className="space-y-2.5">
+            {items.map((it) => {
+              const key = it.name ?? it.status ?? 'unknown';
+              const pct = total > 0 ? Math.round((it.count / total) * 100) : 0;
+              return (
+                <div key={key}>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-muted capitalize">{key.replace(/_/g, ' ')}</span>
+                    <span className="font-medium">{it.count}{total > 0 && <span className="text-muted"> · {pct}%</span>}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted/30 overflow-hidden">
+                    <div className={`h-full rounded-full ${colorFor(key)}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card.Content>
+    </Card>
+  );
+}
+
 export default function ReportsPage() {
   usePageTitle('Reports');
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const isStaff = getUser(session)?.role === 'staff';
 
@@ -119,7 +169,7 @@ export default function ReportsPage() {
         const summary = aggRes.summary as Record<string, number> ?? {};
         const statusKey = type === 'shipments' ? 'statusDistribution' : 'funnel';
         const revenue = type === 'shipments' ? aggRes.revenue : undefined;
-        setMeta({ summary, revenue, statusDistribution: aggRes[statusKey] ?? [] });
+        setMeta({ summary, revenue, statusDistribution: aggRes[statusKey] ?? [], branchComparison: aggRes.branchComparison ?? [] });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load report');
@@ -248,12 +298,12 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Reports</h1>
-          <p className="text-muted text-sm">View and export reports</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Reports"
+        subtitle="View and export reports"
+        icon={<FileText size={18} />}
+        action={
+          <div className="flex items-center gap-2">
           <Button variant="secondary" onPress={downloadPdf} isDisabled={genPdf}>
             {genPdf ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
             {genPdf ? 'Generating...' : 'PDF'}
@@ -267,7 +317,8 @@ export default function ReportsPage() {
             {sendingEmail ? 'Sending...' : 'Send Email'}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-border">
         <Tabs selectedKey={reportType} onSelectionChange={(k) => handleFilterChange(k as string, startDate, endDate)}>
@@ -350,15 +401,32 @@ export default function ReportsPage() {
         {' \u2014 '}{total} record{total !== 1 ? 's' : ''}
       </p>
 
+      {reportType === 'shipments' && meta && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DistributionCard
+            title="Status Distribution"
+            items={meta.statusDistribution}
+            colorFor={(s) => STATUS_BAR_COLORS[s] ?? 'bg-accent'}
+          />
+          <DistributionCard
+            title="Branch Comparison"
+            items={meta.branchComparison}
+            colorFor={() => 'bg-accent'}
+          />
+        </div>
+      )}
+
       <Card>
       {loading ? (
         <div className="space-y-3 p-4">
           {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}
         </div>
       ) : (
-        <Table>
+        <Table className="table-clickable">
           <Table.ScrollContainer>
-            <Table.Content aria-label="Report records">
+            <Table.Content aria-label="Report records" onRowAction={(key) => {
+              if (reportType === 'shipments') router.push(`/shipments/${key}`);
+            }}>
               <Table.Header>
                 {reportType === 'shipments' ? (
                   <>
@@ -388,7 +456,7 @@ export default function ReportsPage() {
               <Table.Body renderEmptyState={() => <div className="text-center py-16 text-muted text-sm">No records</div>}>
                     {reportType === 'shipments'
                       ? (records as ShipmentRow[]).map((r) => (
-                          <Table.Row key={r.id}>
+                          <Table.Row key={r.id} id={r.tracking_no}>
                             <Table.Cell className="font-mono text-xs font-medium">{r.tracking_no}</Table.Cell>
                             <Table.Cell className="text-xs text-muted">{r.label_code || '\u2014'}</Table.Cell>
                             <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>

@@ -7,7 +7,7 @@ import { SearchField } from '@heroui/react/search-field';
 import { Modal } from '@heroui/react/modal';
 import {
   Search, Package, Users, Receipt, ArrowRight,
-  LayoutDashboard, Building2, FileText, BarChart3,
+  LayoutDashboard, Building2, BarChart3,
   Plus, User, ArrowUp, ArrowDown, CornerDownLeft,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -43,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'shipments', label: 'Shipments', href: '/shipments', icon: Package },
   { id: 'customers', label: 'Customers', href: '/customers', icon: Users },
   { id: 'invoices', label: 'Invoices', href: '/invoices', icon: Receipt },
-  { id: 'quotations', label: 'Quotations', href: '/quotations', icon: FileText },
   { id: 'branches', label: 'Branches', href: '/branches', icon: Building2 },
   { id: 'reports', label: 'Reports', href: '/reports', icon: BarChart3 },
 ];

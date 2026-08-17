@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState, useEffect, useCallback } from 'react';
@@ -6,21 +6,21 @@ import { ArrowRightLeft, RefreshCcw, FileText, MessageSquare, Building2, HelpCir
 import { FaqSection } from '@/components/sections/faq-section';
 
 const currencies = [
-  { code: 'USD', name: 'US Dollar', flag: 'ðŸ‡ºðŸ‡¸' },
-  { code: 'INR', name: 'Indian Rupee', flag: 'ðŸ‡®ðŸ‡³' },
-  { code: 'AED', name: 'UAE Dirham', flag: 'ðŸ‡¦ðŸ‡ª' },
-  { code: 'SAR', name: 'Saudi Riyal', flag: 'ðŸ‡¸ðŸ‡¦' },
-  { code: 'QAR', name: 'Qatari Riyal', flag: 'ðŸ‡¶ðŸ‡¦' },
-  { code: 'KWD', name: 'Kuwaiti Dinar', flag: 'ðŸ‡°ðŸ‡¼' },
-  { code: 'GBP', name: 'British Pound', flag: 'ðŸ‡¬ðŸ‡§' },
-  { code: 'EUR', name: 'Euro', flag: 'ðŸ‡ªðŸ‡º' },
-  { code: 'CAD', name: 'Canadian Dollar', flag: 'ðŸ‡¨ðŸ‡¦' },
-  { code: 'AUD', name: 'Australian Dollar', flag: 'ðŸ‡¦ðŸ‡º' },
-  { code: 'SGD', name: 'Singapore Dollar', flag: 'ðŸ‡¸ðŸ‡¬' },
-  { code: 'LKR', name: 'Sri Lankan Rupee', flag: 'ðŸ‡±ðŸ‡°' },
-  { code: 'JPY', name: 'Japanese Yen', flag: 'ðŸ‡¯ðŸ‡µ' },
-  { code: 'CNY', name: 'Chinese Yuan', flag: 'ðŸ‡¨ðŸ‡³' },
-  { code: 'MYR', name: 'Malaysian Ringgit', flag: 'ðŸ‡²ðŸ‡¾' },
+  { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
+  { code: 'INR', name: 'Indian Rupee', flag: '🇮🇳' },
+  { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪' },
+  { code: 'SAR', name: 'Saudi Riyal', flag: '🇸🇦' },
+  { code: 'QAR', name: 'Qatari Riyal', flag: '🇶🇦' },
+  { code: 'KWD', name: 'Kuwaiti Dinar', flag: '🇰🇼' },
+  { code: 'GBP', name: 'British Pound', flag: '🇬🇧' },
+  { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
+  { code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦' },
+  { code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺' },
+  { code: 'SGD', name: 'Singapore Dollar', flag: '🇸🇬' },
+  { code: 'LKR', name: 'Sri Lankan Rupee', flag: '🇱🇰' },
+  { code: 'JPY', name: 'Japanese Yen', flag: '🇯🇵' },
+  { code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳' },
+  { code: 'MYR', name: 'Malaysian Ringgit', flag: '🇲🇾' },
 ];
 
 export default function CurrencyConverterPage(): ReactNode {
@@ -86,11 +86,11 @@ export default function CurrencyConverterPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Useful Tools
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Currency Converter</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Currency Converter</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">Convert currencies using real-time exchange rates.</p>
         </div>
       </section>
@@ -171,11 +171,11 @@ export default function CurrencyConverterPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Popular Pairs
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Popular <span className="text-[#F59E0B]">currency pairs</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -189,7 +189,7 @@ export default function CurrencyConverterPage(): ReactNode {
                         className="flex items-center justify-between px-5 py-4 rounded-xl border border-border bg-white hover:border-[#F59E0B]/30 hover:shadow-sm transition-all cursor-pointer text-left"
                       >
                         <div>
-                          <p className="text-base font-bold text-foreground">{pair.from} â†’ {pair.to}</p>
+                          <p className="text-base font-bold text-foreground">{pair.from} → {pair.to}</p>
                           {rate ? (
                             <p className="text-sm text-foreground/80 mt-0.5">1 {pair.from} = {rate.toFixed(4)}</p>
                           ) : (
@@ -204,11 +204,11 @@ export default function CurrencyConverterPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   All Rates
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Exchange rates <span className="text-[#F59E0B]">for {from}</span>
                 </h2>
                 {loading ? (
@@ -263,7 +263,7 @@ export default function CurrencyConverterPage(): ReactNode {
               <div className="rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
                 <h3 className="text-base font-bold text-foreground mb-1">Need help?</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Monâ€“Sat, 9 AM â€“ 9 PM.</p>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Mon–Sat, 9 AM – 9 PM.</p>
                 <a href="tel:+919876543210" className="text-sm font-semibold text-[#F59E0B] hover:underline">+91 98765 43210</a>
               </div>
             </aside>

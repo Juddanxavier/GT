@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
@@ -7,50 +7,50 @@ import { FaqSection } from '@/components/sections/faq-section';
 
 const routes = [
   {
-    flag: 'ðŸ‡¨ðŸ‡¦',
+    flag: '🇨🇦',
     country: 'Canada',
     port: 'Toronto, Vancouver, Montreal',
-    transit: '25â€“30 days',
-    via: 'Colombo â†’ Halifax/Vancouver',
+    transit: '25–30 days',
+    via: 'Colombo → Halifax/Vancouver',
     desc: 'Reliable ocean freight from Sri Lanka to Canadian ports with full customs support.',
     color: 'from-red-100 to-white border-red-200',
     flagBg: 'bg-red-50',
   },
   {
-    flag: 'ðŸ‡¬ðŸ‡§',
+    flag: '🇬🇧',
     country: 'United Kingdom',
     port: 'Felixstowe, Southampton, London',
-    transit: '22â€“28 days',
-    via: 'Colombo â†’ Suez â†’ Felixstowe',
+    transit: '22–28 days',
+    via: 'Colombo → Suez → Felixstowe',
     desc: 'Regular LCL and FCL services to UK ports with door delivery options.',
     color: 'from-blue-100 to-white border-blue-200',
     flagBg: 'bg-blue-50',
   },
   {
-    flag: 'ðŸ‡¸ðŸ‡¬',
+    flag: '🇸🇬',
     country: 'Singapore',
     port: 'Singapore Port',
-    transit: '10â€“14 days',
-    via: 'Colombo â†’ Singapore',
+    transit: '10–14 days',
+    via: 'Colombo → Singapore',
     desc: 'Fast ocean freight to Singapore with frequent weekly sailings.',
     color: 'from-red-100 to-white border-red-200',
     flagBg: 'bg-red-50',
   },
   {
-    flag: 'ðŸ‡²ðŸ‡¾',
+    flag: '🇲🇾',
     country: 'Malaysia',
     port: 'Port Klang, Penang',
-    transit: '12â€“16 days',
-    via: 'Colombo â†’ Port Klang',
+    transit: '12–16 days',
+    via: 'Colombo → Port Klang',
     desc: 'Cost-effective ocean shipping to Malaysia for commercial and personal cargo.',
     color: 'from-blue-100 to-white border-blue-200',
     flagBg: 'bg-blue-50',
   },
   {
-    flag: 'ðŸ‡±ðŸ‡°',
+    flag: '🇱🇰',
     country: 'Sri Lanka',
     port: 'Colombo Port',
-    transit: '3â€“5 days',
+    transit: '3–5 days',
     via: 'Colombo (direct)',
     desc: 'Short-sea freight within the region with the fastest transit times.',
     color: 'from-amber-100 to-white border-amber-200',
@@ -80,11 +80,11 @@ export default function OceanFreightPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Ocean Freight
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Ocean Freight Services</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Ocean Freight Services</h1>
           <p className="text-lg text-white/90 max-w-xl mt-2">
             Affordable LCL & FCL shipping from Sri Lanka to Canada, UK, Singapore, and Malaysia.
           </p>
@@ -99,11 +99,11 @@ export default function OceanFreightPage(): ReactNode {
                 Shipping large or heavy cargo internationally doesn't have to be complicated or expensive. Ocean freight is the smartest way to move bulk goods across borders. We take care of everything from Sri Lanka's ports to doorsteps across <strong>Canada, UK, Singapore, and Malaysia</strong>.
               </p>
 
-              <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Routes & Transit
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
                 Our ocean freight <span className="text-[#F59E0B]">routes</span>
               </h2>
 
@@ -126,7 +126,7 @@ export default function OceanFreightPage(): ReactNode {
                           <h3 className="text-xl font-bold text-foreground">{r.country}</h3>
                           <span className="text-sm font-semibold text-[#F59E0B] bg-[#F59E0B]/10 px-3 py-0.5 rounded-full">{r.transit}</span>
                         </div>
-                        <p className=" text-foreground leading-relaxed mb-2">{r.desc}</p>
+                        <p className="text-lg text-foreground leading-relaxed mb-2">{r.desc}</p>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-foreground">
                           <span className="flex items-center gap-1.5"><MapPin size={14} className="text-[#F59E0B]" /> {r.port}</span>
                           <span className="flex items-center gap-1.5"><Ship size={14} className="text-[#F59E0B]" /> {r.via}</span>
@@ -139,11 +139,11 @@ export default function OceanFreightPage(): ReactNode {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Container Solutions
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
                 LCL & FCL <span className="text-[#F59E0B]">container options</span>
               </h2>
               <p className="text-lg text-foreground mb-8">
@@ -157,16 +157,16 @@ export default function OceanFreightPage(): ReactNode {
                     desc: 'Your cargo travels alongside other shipments in a shared container headed to the same destination. You only pay for the space you use.',
                     steps: ['We pack and prepare your cargo for ocean shipping', 'Goods are consolidated with compatible shipments', 'Container sails on a fixed schedule', 'Cargo is separated and ready for collection on arrival'],
                     best: 'Small businesses, product samples, personal exports',
-                    color: 'text-blue-600',
-                    bg: 'bg-blue-50 border-blue-200',
+                    color: 'text-[#F59E0B]',
+                    bg: 'bg-[#F59E0B]/5 border-[#F59E0B]/20',
                   },
                   {
                     title: 'Full Container Load (FCL)',
                     desc: 'Your goods get an entire container - less handling, lower damage risk, and better rates per unit for bulk cargo.',
                     steps: ['Right container size arranged for your cargo', 'Goods loaded securely and sealed before departure', 'Container ships directly to your destination port', 'Customs-cleared and released on arrival'],
                     best: 'Bulk cargo, machinery, retail inventory, commercial exports',
-                    color: 'text-blue-600',
-                    bg: 'bg-blue-50 border-blue-200',
+                    color: 'text-[#F59E0B]',
+                    bg: 'bg-[#F59E0B]/5 border-[#F59E0B]/20',
                   },
                 ].map((option, i) => (
                   <motion.div
@@ -178,11 +178,11 @@ export default function OceanFreightPage(): ReactNode {
                     className={`rounded-2xl border p-6 ${option.bg}`}
                   >
                     <h3 className="text-lg font-bold text-foreground mb-2">{option.title}</h3>
-                    <p className=" text-foreground leading-relaxed mb-4">{option.desc}</p>
+                    <p className="text-lg text-foreground leading-relaxed mb-4">{option.desc}</p>
                     <div className="space-y-1.5 mb-4">
                       {option.steps.map((s) => (
                         <div key={s} className="flex items-start gap-2 text-foreground">
-                          <CheckCircle size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                          <CheckCircle size={16} className="text-[#F59E0B] shrink-0 mt-0.5" />
                           <span>{s}</span>
                         </div>
                       ))}
@@ -234,8 +234,8 @@ export default function OceanFreightPage(): ReactNode {
                   <div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mx-auto mb-3">
                     <f.icon size={20} />
                   </div>
-                  <h3 className="text-base font-bold text-foreground mb-1">{f.title}</h3>
-                  <p className=" text-foreground leading-relaxed">{f.desc}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1">{f.title}</h3>
+                  <p className="text-lg text-foreground leading-relaxed">{f.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -243,7 +243,7 @@ export default function OceanFreightPage(): ReactNode {
             <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-8 md:p-12 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-[#F59E0B]/0 via-[#F59E0B]/10 to-[#F59E0B]/0 animate-gradient-x opacity-60" />
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">
                   Ready to ship <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F59E0B] via-orange-400 to-[#F59E0B] animate-gradient-x bg-[length:200%_auto]">by ocean?</span>
                 </h2>
                 <p className="text-lg text-white/85 max-w-lg mx-auto mb-8">

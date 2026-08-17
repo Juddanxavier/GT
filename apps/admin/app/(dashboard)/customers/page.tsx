@@ -3,19 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useUsers, useTenants, useBranches, useUpdateUser, useDeleteUser, type UserRecord, type PaginatedResult } from '@/lib/queries';
+import { useUsers, useBranches, useDeleteUser, type UserRecord, type PaginatedResult } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
-import { Button, Chip, Description, Input, Label, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
+import { Button, Chip, Input, ListBox, Modal, Pagination, Select, Table, Tabs, type SortDescriptor } from '@heroui/react';
+import { TablePreferences, useTablePreferences, densityClassName, type ColumnDef } from '@/components/table-preferences';
+import { PageHeader } from '@/components/page-header';
 import { getUser } from '@/types/auth';
 import { authClient } from '@/lib/auth-client';
-import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check } from 'lucide-react';
-import { AddressForm, type AddressData } from '@/components/address-form';
+import { Pencil, Trash2, Ban, ShieldOff, CircleX, Check, Users } from 'lucide-react';
 import { useToast } from '@/components/toast';
 
-type Tenant = { id: string; name: string };
 type Branch = { id: string; name: string; tenantId: string };
-
-const EDIT_ROLES = ['tenant-admin', 'staff', 'customer'];
 
 const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> = {
   superadmin: 'accent',
@@ -25,7 +23,16 @@ const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> 
   customer: 'default',
 };
 
-const ROWS_PER_PAGE = 10;
+const DEFAULT_ROWS = 10;
+
+const USER_COLUMNS: ColumnDef[] = [
+  { id: 'name', label: 'Name', always: true },
+  { id: 'email', label: 'Email' },
+  { id: 'phone', label: 'Phone' },
+  { id: 'role', label: 'Role' },
+  { id: 'branchId', label: 'Branch' },
+  { id: 'banned', label: 'Status', always: true },
+];
 
 
 
@@ -36,17 +43,17 @@ export default function UsersPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: tenants = [] } = useTenants();
   const { data: branches = [] } = useBranches();
-  const { mutateAsync: updateUser } = useUpdateUser();
   const { mutateAsync: deleteUser } = useDeleteUser();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' });
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS);
+  const prefs = useTablePreferences('users-table', USER_COLUMNS);
 
   // Server-side pagination
-  const usersQuery = useUsers(page, ROWS_PER_PAGE, search, undefined, statusFilter);
+  const usersQuery = useUsers(page, rowsPerPage, search, undefined, statusFilter);
   const usersResp = usersQuery.data as PaginatedResult<UserRecord> | undefined;
   const users = Array.isArray(usersResp) ? usersResp : (usersResp?.data ?? []);
   const totalCount = Array.isArray(usersResp) ? users.length : (usersResp?.total ?? 0);
@@ -57,16 +64,6 @@ export default function UsersPage() {
   const { data: session } = authClient.useSession();
   const sessionUser = getUser(session);
 
-
-  const [editTarget, setEditTarget] = useState<UserRecord | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editRole, setEditRole] = useState('');
-  const [editTenantId, setEditTenantId] = useState('');
-  const [editBranchId, setEditBranchId] = useState('');
-  const [editPassword, setEditPassword] = useState('');
-  const [editAddress, setEditAddress] = useState<AddressData>({});
 
   const [deleteTarget, setDeleteTarget] = useState<UserRecord | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
@@ -94,46 +91,13 @@ export default function UsersPage() {
     return items;
   }, [users, sortDescriptor]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
-
-  const editFilteredBranches = branches.filter((b) => !editTenantId || b.tenantId === editTenantId);
+  const start = (page - 1) * rowsPerPage + 1;
+  const end = Math.min(page * rowsPerPage, totalCount);
 
   const activeCount = counts?.active ?? 0;
   const bannedCount = counts?.banned ?? 0;
-
-  function openEdit(user: UserRecord) {
-    setEditTarget(user);
-    setEditName(user.name);
-    setEditEmail(user.email);
-    setEditRole(user.role);
-    setEditTenantId(user.tenantId ?? '');
-    setEditBranchId(user.branchId ?? '');
-    setEditPassword('');
-    setEditAddress((user.address ?? {}) as AddressData);
-  }
-
-  async function handleEditSave() {
-    if (!editTarget) return;
-    setEditSaving(true);
-    try {
-      const data: Record<string, unknown> = { name: editName, email: editEmail };
-      if (userRole === 'superadmin' || userRole === 'tenant-admin') data.role = editRole;
-      if (userRole === 'superadmin') data.tenantId = editTenantId;
-      data.branchId = editBranchId;
-      data.address = editAddress;
-      await updateUser({ id: editTarget.id, ...data });
-      if (editPassword) {
-        await authClient.admin.setUserPassword({ userId: editTarget.id, newPassword: editPassword });
-      }
-      setEditTarget(null);
-    } catch (e) {
-      toast('error', 'Failed to update user', e instanceof Error ? e.message : undefined);
-    }
-    setEditSaving(false);
-  }
 
   function openBan(user: UserRecord) {
     setBanTarget(user);
@@ -184,35 +148,44 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-            <p className="text-sm text-muted">Manage user accounts and permissions</p>
-          </div>
-          {userRole !== 'staff' && userRole !== 'customer' && (
+        <PageHeader
+          title="Users"
+          subtitle="Manage user accounts and permissions"
+          icon={<Users size={18} />}
+          action={userRole !== 'staff' && userRole !== 'customer' ? (
             <Button onPress={() => router.push('/invitations')}>Invite User</Button>
-          )}
-        </div>
+          ) : undefined}
+        />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{totalCount}</p>
           <p className="text-sm text-muted mt-1">Total Users</p>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+        </div>
+        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-success">{activeCount}</p>
           <p className="text-sm text-muted mt-1">Active</p>
-        </a>
-        <a className="rounded-2xl bg-surface shadow-sm hover:shadow-md hover:-translate-y-1 transition-all block p-5">
+        </div>
+        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-danger">{bannedCount}</p>
           <p className="text-sm text-muted mt-1">Banned</p>
-        </a>
+        </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+      <div className="rounded-sm border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1"><Input id="users-search" variant="secondary" placeholder="Search users..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>
+            <div className="flex items-center gap-2">
+              <TablePreferences
+                storageKey="users-table"
+                columns={USER_COLUMNS}
+                hidden={prefs.hidden}
+                onHiddenChange={prefs.setHidden}
+                density={prefs.density}
+                onDensityChange={prefs.setDensity}
+              />
+            </div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as 'all' | 'active' | 'banned'); setPage(1); }} className="sm:flex-1">
               <Tabs.List>
                 <Tabs.Tab id="all">All</Tabs.Tab>
@@ -237,7 +210,7 @@ export default function UsersPage() {
             ))}
           </div>
         ) : (
-          <Table>
+          <Table className={densityClassName(prefs.density)}>
             <Table.ScrollContainer>
               <Table.Content aria-label="Users" className="min-w-[950px]"
                 sortDescriptor={sortDescriptor}
@@ -246,11 +219,11 @@ export default function UsersPage() {
                   <Table.Column allowsSorting id="name" isRowHeader>
                     {({ sortDirection }) => <span className="flex items-center gap-1 select-none">{sortDirection === 'ascending' && '↑'}Name</span>}
                   </Table.Column>
-                  <Table.Column allowsSorting id="email">Email</Table.Column>
-                  <Table.Column id="role">Role</Table.Column>
-                  <Table.Column id="tenantId">Tenant</Table.Column>
-                  <Table.Column id="branchId">Branch</Table.Column>
-                  <Table.Column id="banned">Status</Table.Column>
+                  {prefs.isVisible('email') && <Table.Column allowsSorting id="email">Email</Table.Column>}
+                  {prefs.isVisible('phone') && <Table.Column allowsSorting id="phone">Phone</Table.Column>}
+                  {prefs.isVisible('role') && <Table.Column id="role">Role</Table.Column>}
+                  {prefs.isVisible('branchId') && <Table.Column id="branchId">Branch</Table.Column>}
+                  {prefs.isVisible('banned') && <Table.Column id="banned">Status</Table.Column>}
                   {userRole !== 'staff' && <Table.Column id="actions" width={100}>{() => null}</Table.Column>}
                 </Table.Header>
                 <Table.Body
@@ -265,36 +238,40 @@ export default function UsersPage() {
                           <div className="w-7 h-7 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold shrink-0">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium text-sm">{user.name}</span>
+                          <span className="font-medium text-sm"><a className="hover:text-accent hover:underline transition-colors" href={`/customers/${user.id}`}>{user.name}</a></span>
                         </div>
                       </Table.Cell>
-                      <Table.Cell className="text-sm">{user.email}</Table.Cell>
-                      <Table.Cell>
-                        <Chip size="sm" variant="soft" color={ROLE_COLORS[user.role] ?? 'default'}>{user.role}</Chip>
-                      </Table.Cell>
-                      <Table.Cell className="text-sm text-muted">
-                        {tenants.find((t) => t.id === user.tenantId)?.name || '—'}
-                      </Table.Cell>
-                      <Table.Cell className="text-sm text-muted">
-                        {branches.find((b) => b.id === user.branchId)?.name || '—'}
-                      </Table.Cell>
-                      <Table.Cell>
-                        {user.banned ? (
-                          <span className="text-xs text-danger flex items-center gap-1">
-                            <CircleX size={10} />
-                            Banned
-                          </span>
-                        ) : (
-                          <span className="text-xs text-success flex items-center gap-1">
-                            <Check size={10} />
-                            Active
-                          </span>
-                        )}
-                      </Table.Cell>
+                      {prefs.isVisible('email') && <Table.Cell className="text-sm">{user.email}</Table.Cell>}
+                      {prefs.isVisible('phone') && <Table.Cell className="text-sm text-muted">{user.phone || '—'}</Table.Cell>}
+                      {prefs.isVisible('role') && (
+                        <Table.Cell>
+                          <Chip size="sm" variant="soft" color={ROLE_COLORS[user.role] ?? 'default'}>{user.role}</Chip>
+                        </Table.Cell>
+                      )}
+                      {prefs.isVisible('branchId') && (
+                        <Table.Cell className="text-sm text-muted">
+                          {branches.find((b) => b.id === user.branchId)?.name || '—'}
+                        </Table.Cell>
+                      )}
+                      {prefs.isVisible('banned') && (
+                        <Table.Cell>
+                          {user.banned ? (
+                            <span className="text-xs text-danger flex items-center gap-1">
+                              <CircleX size={10} />
+                              Banned
+                            </span>
+                          ) : (
+                            <span className="text-xs text-success flex items-center gap-1">
+                              <Check size={10} />
+                              Active
+                            </span>
+                          )}
+                        </Table.Cell>
+                      )}
                       {userRole !== 'staff' && (
                         <Table.Cell>
                           <div className="flex items-center gap-0.5">
-                            <Button size="sm" variant="ghost" className="text-warning" onPress={() => openEdit(user)}>
+                            <Button size="sm" variant="ghost" className="text-warning" onPress={() => router.push(`/customers/${user.id}/edit`)}>
                               <Pencil size={16} />
                             </Button>
                             <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger'} onPress={() => openBan(user)}>
@@ -313,8 +290,23 @@ export default function UsersPage() {
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
-            {totalCount > ROWS_PER_PAGE && (
+            {totalCount > rowsPerPage && (
               <Table.Footer>
+                <div className="flex items-center justify-between w-full px-4 py-2 gap-4">
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                    <span>Rows</span>
+                    <Select selectedKey={String(rowsPerPage)} onSelectionChange={(k) => { setRowsPerPage(Number(k)); setPage(1); }} variant="secondary" className="w-20" aria-label="Rows per page">
+                      <Select.Trigger className="h-7 text-xs">
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {[10, 25, 50, 100].map((n) => <ListBox.Item key={n} id={String(n)} textValue={String(n)}>{n}</ListBox.Item>)}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
                   <Pagination size="sm">
                     <Pagination.Summary>{start} to {end} of {totalCount} users</Pagination.Summary>
                     <Pagination.Content>
@@ -334,114 +326,13 @@ export default function UsersPage() {
                         </Pagination.Next>
                       </Pagination.Item>
                     </Pagination.Content>
-              </Pagination>
-            </Table.Footer>
+                  </Pagination>
+                </div>
+              </Table.Footer>
             )}
         </Table>
         )}
       </div>
-
-      {/* Edit Modal */}
-      <Modal.Backdrop isOpen={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
-        <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header>Edit User</Modal.Header>
-            <Modal.Body>
-              <form id="edit-user-form" onSubmit={(e) => { e.preventDefault(); handleEditSave(); }} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="edit-name">Name *</Label>
-                  <Input id="edit-name" variant="secondary" placeholder="Full name" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-email">Email *</Label>
-                  <Input id="edit-email" type="email" variant="secondary" placeholder="name@example.com" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required fullWidth />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-password">New Password (leave blank to keep current)</Label>
-                  <Input id="edit-password" type="password" variant="secondary" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} fullWidth />
-                </div>
-                {(userRole === 'superadmin' || userRole === 'tenant-admin') && (
-                  <div className="space-y-1">
-                    <Label>Role</Label>
-                    <Select
-                      selectedKey={editRole}
-                      onSelectionChange={(k) => setEditRole(k as string)}
-                      variant="secondary"
-                      aria-label="Select role"
-                    >
-                      <Select.Trigger className="h-10 text-sm">
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {EDIT_ROLES.filter((r) => userRole === 'superadmin' ? true : !['superadmin'].includes(r)).map((r) => (
-                            <ListBox.Item key={r} id={r} textValue={r}>{r}</ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-                )}
-                {userRole === 'superadmin' && (
-                  <div className="space-y-1">
-                    <Label>Tenant</Label>
-                    <Select
-                      selectedKey={editTenantId}
-                      onSelectionChange={(k) => { setEditTenantId(k as string); setEditBranchId(''); }}
-                      variant="secondary"
-                      aria-label="Select tenant"
-                    >
-                      <Select.Trigger className="h-10 text-sm">
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
-                          {tenants.map((t: Tenant) => (
-                            <ListBox.Item key={t.id} id={t.id} textValue={t.name}>{t.name}</ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <Label>Branch</Label>
-                  <Select
-                    selectedKey={editBranchId || undefined}
-                    onSelectionChange={(k) => setEditBranchId((k as string) ?? '')}
-                    variant="secondary"
-                    aria-label="Select branch"
-                  >
-                    <Select.Trigger className="h-10 text-sm">
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item key="" id="" textValue="None">None</ListBox.Item>
-                        {editFilteredBranches.map((b) => (
-                          <ListBox.Item key={b.id} id={b.id} textValue={b.name}>{b.name}</ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </div>
-                <div className="border-t border-border pt-3">
-                  <p className="text-xs font-semibold text-muted mb-3">Address</p>
-                  <AddressForm prefix="user" value={editAddress} onChange={setEditAddress} showContact />
-                </div>
-              </form>
-            </Modal.Body>
-            <Modal.Footer className="flex gap-2">
-              <Button variant="secondary" onPress={() => setEditTarget(null)}>Cancel</Button>
-              <Button type="submit" form="edit-user-form" isPending={editSaving}>Save</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
 
       {/* Ban/Unban Modal */}
       <Modal.Backdrop isOpen={!!banTarget} onOpenChange={(v) => { if (!v) setBanTarget(null); }}>

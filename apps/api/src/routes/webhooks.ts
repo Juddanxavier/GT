@@ -6,7 +6,8 @@ const app = new Hono();
 
 async function handleWebhook(
   providerName: string,
-  body: unknown,
+  rawBody: string,
+  parsedBody: unknown,
   signature: string | null,
   c: { json: (arg: unknown, status?: number) => Response },
 ): Promise<Response> {
@@ -16,7 +17,8 @@ async function handleWebhook(
       return c.json({ error: `Not the active provider (expected ${provider.name})` }, 400);
     }
 
-    const rawBody = JSON.stringify(body);
+    // Verify the HMAC over the raw request body as received — re-serializing
+    // the parsed JSON would break the signature if key order/whitespace differs.
     if (!provider.verifyWebhook(rawBody, signature)) {
       return c.json({ error: 'Invalid signature' }, 401);
     }
@@ -26,7 +28,7 @@ async function handleWebhook(
     if (webhookQueue) {
       await webhookQueue.add('webhook-event', {
         provider: providerName,
-        body,
+        body: parsedBody,
         signature,
         timestamp: new Date().toISOString(),
       });
@@ -43,15 +45,17 @@ async function handleWebhook(
 }
 
 app.post('/17track', async (c) => {
-  const body = await c.req.json();
+  const rawBody = await c.req.raw.text();
+  const body = JSON.parse(rawBody);
   const signature = c.req.header('x-event-signature') ?? null;
-  return handleWebhook('17track', body, signature, c);
+  return handleWebhook('17track', rawBody, body, signature, c);
 });
 
 app.post('/trackingmore', async (c) => {
-  const body = await c.req.json();
+  const rawBody = await c.req.raw.text();
+  const body = JSON.parse(rawBody);
   const signature = c.req.header('x-webhook-signature') ?? null;
-  return handleWebhook('trackingmore', body, signature, c);
+  return handleWebhook('trackingmore', rawBody, body, signature, c);
 });
 
 export default app;

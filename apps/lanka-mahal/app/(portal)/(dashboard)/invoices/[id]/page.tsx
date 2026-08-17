@@ -35,7 +35,7 @@ function InvoiceDetailContent({ params: paramsPromise }: { params: Promise<{ id:
         <ArrowLeft size={16} /> Back to invoices
       </Link>
 
-      <div className="rounded-xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] p-6 space-y-6">
+      <div className="rounded-2xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] p-6 space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-foreground/5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
@@ -61,8 +61,8 @@ function InvoiceDetailContent({ params: paramsPromise }: { params: Promise<{ id:
           </div>
           {inv.paidAt && (
             <div className="flex justify-between py-2 px-3 bg-blue-50 rounded-lg">
-              <span className="text-blue-600 font-medium">Paid At</span>
-              <span className="text-blue-600 font-medium">{new Date(inv.paidAt).toLocaleDateString()}</span>
+              <span className="text-[#F59E0B] font-medium">Paid At</span>
+              <span className="text-[#F59E0B] font-medium">{new Date(inv.paidAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
@@ -71,7 +71,7 @@ function InvoiceDetailContent({ params: paramsPromise }: { params: Promise<{ id:
       <a
         href={`${API_BASE}/api/customers/my-invoices/${id}/pdf`}
         download
-        className="flex items-center justify-center gap-2 w-full rounded-xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all text-foreground text-sm font-medium"
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#F59E0B] p-4 hover:bg-[#D97706] hover:-translate-y-0.5 transition-all text-white text-sm font-semibold shadow-[0_1px_3px_0_rgba(245,158,11,0.3)]"
       >
         <Download size={16} /> Download PDF
       </a>

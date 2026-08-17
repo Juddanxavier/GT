@@ -178,9 +178,10 @@ app.get(
 
     const [row] = await db
       .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
         emailVerified: user.emailVerified,
         image: user.image,
         role: user.role,
@@ -265,6 +266,18 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
     .limit(1);
 
   if (!before) return c.json({ error: 'User not found' }, 404);
+
+  if (updates.role !== undefined && currentUser.role !== 'superadmin') {
+    if (!['staff', 'customer'].includes(updates.role as string)) {
+      return c.json({ error: `Cannot set role '${updates.role}'` }, 403);
+    }
+    if (id === currentUser.id) {
+      return c.json({ error: 'Cannot change your own role' }, 403);
+    }
+    if (before.role === 'superadmin' || before.role === 'tenant-admin') {
+      return c.json({ error: 'Cannot change role of this user' }, 403);
+    }
+  }
 
     const [row] = await db
     .update(user)

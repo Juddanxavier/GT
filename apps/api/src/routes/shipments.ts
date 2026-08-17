@@ -19,6 +19,33 @@ import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
+// Resolve a route param (shipment uuid or tracking number) to the shipment's uuid,
+// respecting the caller's tenant/branch scope.
+async function resolveShipmentId(
+  param: string,
+  scope: { tenantId?: string | null; branchId?: string | null },
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: shipments.id })
+    .from(shipments)
+    .where(
+      and(
+        or(eq(shipments.id, param), eq(shipments.trackingNo, param)),
+        ...shipmentScope(scope),
+      ) as SQL | undefined,
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
+// Build the tenant/branch scope conditions used across :id handlers.
+function shipmentScope(scope: { tenantId?: string | null; branchId?: string | null }): (ReturnType<typeof eq | typeof or> | ReturnType<typeof isNull>)[] {
+  const conditions: (ReturnType<typeof eq> | ReturnType<typeof or> | ReturnType<typeof isNull>)[] = [];
+  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
+  if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
+  return conditions;
+}
+
 app.get(
   '/',
   requireRole('superadmin', 'tenant-admin', 'staff'),
@@ -247,9 +274,11 @@ app.get(
 
     if (!scope.tenantId && !c.get('user')) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = (await resolveShipmentId(id!, scope)) ?? id!;
+
     // T002: match either explicit branch or unassigned (NULL)
     const conditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
-      eq(shipments.id, id!),
+      eq(shipments.id, resolvedId),
     ];
     if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
     if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
@@ -257,7 +286,7 @@ app.get(
     const cacheTenantId = scope.tenantId ?? '__all__';
     const row = await withCache(
       cacheTenantId,
-      `shipments:${id}`,
+      `shipments:${resolvedId}`,
       () =>
         db
           .select()
@@ -282,6 +311,9 @@ app.patch(
     const { id } = c.req.param();
     const user = c.get('user') as unknown as Record<string, unknown> | null;
     if (!scope.tenantId && !user) return c.json({ error: 'Tenant required' }, 400);
+
+    const resolvedId = await resolveShipmentId(id!, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
 
     const body = await c.req.json();
     const parsed = updateShipmentSchema.safeParse(body);
@@ -339,7 +371,7 @@ app.patch(
     );
 
     // T002: use or(eq, isNull) instead of COALESCE so NULL-branch shipments can be found
-    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, id!)];
+    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, resolvedId)];
     if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId!));
     if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
@@ -485,9 +517,12 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const { id } = c.req.param();
   if (!scope.tenantId && !c.get('user')) return c.json({ error: 'Tenant required' }, 400);
 
+  const resolvedId = await resolveShipmentId(id!, scope);
+  if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
+
   // T002: match either explicit branch or unassigned
   const shipmentScope: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
-    eq(shipments.id, id!),
+    eq(shipments.id, resolvedId),
   ];
   if (scope.tenantId) shipmentScope.push(eq(shipments.tenantId, scope.tenantId));
   if (scope.branchId) shipmentScope.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
@@ -517,7 +552,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
     return c.json({ data: existing });
   }
 
-  const invoiceConditions: (ReturnType<typeof eq>)[] = [eq(invoices.shipmentId, id!)];
+  const invoiceConditions: (ReturnType<typeof eq>)[] = [eq(invoices.shipmentId, resolvedId)];
   if (scope.tenantId) invoiceConditions.push(eq(invoices.tenantId, scope.tenantId));
   await db
     .update(invoices)
@@ -528,7 +563,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   await db
     .update(trackingEvents)
     .set({ archivedAt: now })
-    .where(and(eq(trackingEvents.shipmentId, id!), eq(trackingEvents.tenantId, scope.tenantId!), isNull(trackingEvents.archivedAt)) as SQL | undefined);
+    .where(and(eq(trackingEvents.shipmentId, resolvedId), eq(trackingEvents.tenantId, scope.tenantId!), isNull(trackingEvents.archivedAt)) as SQL | undefined);
 
   const [row] = await db
     .update(shipments)
@@ -565,12 +600,13 @@ app.post(
     const { id } = c.req.param();
     const scope = getQueryScope(c);
 
-    if (!id) return c.json({ error: 'Invalid shipment ID' }, 400);
+    const resolvedId = await resolveShipmentId(id!, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
 
     const [shipment] = await db
       .select({ id: shipments.id, trackingNo: shipments.trackingNo, archivedAt: shipments.archivedAt })
       .from(shipments)
-      .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
+      .where(and(eq(shipments.id, resolvedId), eq(shipments.tenantId, scope.tenantId!)))
       .limit(1);
 
     if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
@@ -579,9 +615,9 @@ app.post(
     await db
       .update(shipments)
       .set({ archivedAt: null, updatedAt: new Date() })
-      .where(eq(shipments.id, id));
+      .where(eq(shipments.id, resolvedId));
 
-    await cacheDel(scope.tenantId!, `shipments:${id}`);
+    await cacheDel(scope.tenantId!, `shipments:${resolvedId}`);
     await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
     await cacheDelPattern(scope.tenantId!, 'dashboard:*');
 
@@ -613,10 +649,13 @@ app.put(
       return c.json({ error: 'customerId must be a valid UUID or null' }, 400);
     }
 
+    const resolvedId = await resolveShipmentId(id, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
+
     const [shipment] = await db
       .select({ id: shipments.id, trackingNo: shipments.trackingNo, userId: shipments.userId, status: shipments.status, contactEmail: shipments.contactEmail, contactPhone: shipments.contactPhone })
       .from(shipments)
-      .where(and(eq(shipments.id, id), eq(shipments.tenantId, scope.tenantId!)))
+      .where(and(eq(shipments.id, resolvedId), eq(shipments.tenantId, scope.tenantId!)))
       .limit(1);
 
     if (!shipment) return c.json({ error: 'Shipment not found' }, 404);
@@ -648,9 +687,9 @@ app.put(
         contactPhone: customerId ? null : newContactPhone,
         updatedAt: new Date(),
       })
-      .where(eq(shipments.id, id));
+      .where(eq(shipments.id, resolvedId));
 
-    await cacheDel(scope.tenantId!, `shipments:${id}`);
+    await cacheDel(scope.tenantId!, `shipments:${resolvedId}`);
     await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
     await cacheDelPattern(scope.tenantId!, 'dashboard:*');
 
@@ -699,16 +738,19 @@ app.get(
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = await resolveShipmentId(id!, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
+
     // T002: match either explicit branch or unassigned
     const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
-      eq(shipments.id, id!),
+      eq(shipments.id, resolvedId),
       eq(shipments.tenantId, scope.tenantId!),
     ];
     if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
     const data = await withCache(
       scope.tenantId!,
-      `shipments:${id}:tracking`,
+      `shipments:${resolvedId}:tracking`,
       async () => {
         const [shipment] = await db
           .select({
@@ -728,7 +770,7 @@ app.get(
           .select()
           .from(trackingEvents)
           .where(
-            and(eq(trackingEvents.shipmentId, id!), eq(trackingEvents.tenantId, scope.tenantId!)) as
+            and(eq(trackingEvents.shipmentId, resolvedId), eq(trackingEvents.tenantId, scope.tenantId!)) as
               | SQL
               | undefined,
           )
@@ -766,8 +808,11 @@ app.post(
       }
     }
 
+    const resolvedId = await resolveShipmentId(id!, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
+
     // T002: match either explicit branch or unassigned
-    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, id!)];
+    const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [eq(shipments.id, resolvedId)];
     if (scope.tenantId) findConditions.push(eq(shipments.tenantId, scope.tenantId!));
     if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
 
@@ -824,9 +869,12 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
+  const resolvedId = await resolveShipmentId(id!, scope);
+  if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
+
   // T002: match either explicit branch or unassigned
   const findConditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [
-    eq(shipments.id, id!),
+    eq(shipments.id, resolvedId),
     eq(shipments.tenantId, scope.tenantId!),
   ];
   if (scope.branchId) findConditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
@@ -848,7 +896,7 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
     const [lastEvent] = await db
       .select({ carrierCode: trackingEvents.carrierCode })
       .from(trackingEvents)
-      .where(eq(trackingEvents.shipmentId, id!))
+      .where(eq(trackingEvents.shipmentId, resolvedId))
       .orderBy(desc(trackingEvents.eventTime))
       .limit(1);
 
@@ -863,10 +911,10 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
     await db
       .update(shipments)
       .set({ trackingRegistered: false, updatedAt: new Date() })
-      .where(eq(shipments.id, id!));
+      .where(eq(shipments.id, resolvedId));
 
-    await cacheDel(scope.tenantId!, `shipments:${id}`);
-    await cacheDel(scope.tenantId!, `shipments:${id}:tracking`);
+    await cacheDel(scope.tenantId!, `shipments:${resolvedId}`);
+    await cacheDel(scope.tenantId!, `shipments:${resolvedId}:tracking`);
     return c.json({ data: { stopped: true } });
   } catch (err) {
     console.error('[shipments] stop-tracking failed:', err);

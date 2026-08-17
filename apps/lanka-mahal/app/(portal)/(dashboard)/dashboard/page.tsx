@@ -171,13 +171,18 @@ function DashboardContent(): ReactNode {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-[#F59E0B] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-sm">
-          {initials}
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome back, {userName.split(' ')[0]}</h1>
-          <p className="text-foreground/50 mt-0.5">{email}</p>
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 sm:p-8">
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#F59E0B]/10 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F59E0B] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-sm">
+            {initials}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-1">Customer Portal</p>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Welcome back, {userName.split(' ')[0]}</h1>
+            <p className="text-white/70 mt-0.5">{email}</p>
+          </div>
         </div>
       </div>
 

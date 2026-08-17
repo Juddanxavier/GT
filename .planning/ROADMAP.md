@@ -11,6 +11,7 @@ The project has a fully functional backend API, a comprehensive admin panel, and
 - [ ] **Phase 3: Customer Portal Enhancement** — Build customer dashboard, profile, quotes, invoices, notification prefs, improved tracking UX
 - [ ] **Phase 4: Tenant Landing Pages** — Domain-aware home/landing pages for Gajan Traders and Lanka Mahal with shared Navbar, HeroSection, and Footer components in `@repo/ui`
 - [ ] **Phase 7: Re-imagine Shipment Assignment** — Rework creation, reassignment, and customer claiming across all three surfaces
+- [ ] **Phase 8: Admin Operational Features** — Customer profiles, report export + charts, global Cmd+K search, settings page, KPI dark-mode polish
 
 ## Phase Details
 
@@ -100,6 +101,25 @@ Plans:
 | 5. Shipment Module Improvements | 4/4 | **Complete** | 2026-07-07 |
 | 6. Customer Table Consolidation | 8/8 | **Complete** | 2026-07-08 |
 | 7. Re-imagine Shipment Assignment | 0/4 | **Planned** | - |
+| 8. Admin Operational Features | 0/4 | **Planned** | - |
+
+### Phase 8: Admin Operational Features
+
+**Goal:** Ship the remaining high-value admin features from the dashboard polish review — customer profiles, report CSV export + charts, global Cmd+K search, a read-only settings page — plus KPI dark-mode support.
+**Depends on:** Phase 6
+**Requirements:** TBD
+**Status:** Planned
+
+**Plans: 4 plans, 2 waves:**
+
+| Plan | Wave | Description |
+|------|------|-------------|
+| 08-01 | 1 | Customer profiles page + invoice `userId` filter API |
+| 08-02 | 1 | Reports CSV export + status/branch charts |
+| 08-03 | 2 | Global search modal (Cmd+K) |
+| 08-04 | 2 | Settings page + nav + KPI dark polish |
+
+**Deferred:** Notifications delivery log (needs new `notification_delivery` table + provider write-path); Exception queue (already covered by Shipments Exception tab + stale flags).
 
 ### Phase 5: lets improve and debug existing shipment module
 

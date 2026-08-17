@@ -5,8 +5,11 @@ import { useState, useMemo } from 'react';
 import { Card, Button, Chip, Select, ListBox, Pagination, Checkbox } from '@heroui/react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useNotifications, useMarkRead } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { PageHeader } from '@/components/page-header';
 
 export default function NotificationsPage(): ReactNode {
+  usePageTitle('Notifications');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -34,14 +37,16 @@ export default function NotificationsPage(): ReactNode {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Notifications</h1>
-        {selected.size > 0 && (
+      <PageHeader
+        title="Notifications"
+        subtitle="Alerts and updates across your shipments"
+        icon={<Bell size={18} />}
+        action={selected.size > 0 ? (
           <Button size="sm" variant="primary" onPress={handleBulkMarkRead} isPending={markRead.isPending}>
             <CheckCheck size={16} /> Mark {selected.size} Read
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Filters */}
       <div className="flex items-center gap-3">

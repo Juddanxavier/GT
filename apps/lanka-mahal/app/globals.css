@@ -174,7 +174,7 @@ small, .text-muted { font-size: 0.875rem; }
   --warning-foreground: oklch(21% 0 0);
   --radius: 0.5rem;
   --field-radius: 0.125rem;
-  --font-sans: var(--font-bricolage-grotesque);
+  --font-sans: var(--font-space-grotesk);
 }
 
 .dark,

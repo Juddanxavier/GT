@@ -8,7 +8,6 @@ const labels: Record<string, string> = {
   '': 'Home',
   customers: 'Users',
   shipments: 'Shipments',
-  quotations: 'Quotations',
   invoices: 'Invoices',
   branches: 'Branches',
   invitations: 'Invitations',

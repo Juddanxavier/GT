@@ -84,10 +84,10 @@ export function AssignedTo({ shipmentId, customerId, customerName, customerEmail
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button size="sm" variant="ghost" onPress={() => { setChanging(!changing); setSearch(''); }} isIconOnly>
+            <Button size="sm" variant="ghost" onPress={() => { setChanging(!changing); setSearch(''); }} isIconOnly aria-label="Change assignment">
               <Search size={14} />
             </Button>
-            <Button size="sm" variant="ghost" onPress={handleUnassign} isPending={assign.isPending} isIconOnly>
+            <Button size="sm" variant="ghost" onPress={handleUnassign} isPending={assign.isPending} isIconOnly aria-label="Unassign">
               <UserX size={14} />
             </Button>
           </div>

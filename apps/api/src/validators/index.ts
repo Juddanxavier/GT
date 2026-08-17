@@ -19,6 +19,7 @@ export const addressSchema = z.object({
 
 export const createBranchSchema = z.object({
   name: z.string().min(1).max(255).transform(stripHtml),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lowercase letters, numbers, and hyphens').transform(stripHtml).optional(),
   phone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).transform(stripHtml).optional().or(z.literal('')),
   email: z.string().email().max(255).transform(stripHtml).optional().or(z.literal('')),
   address: z.string().transform(stripHtml).optional(),

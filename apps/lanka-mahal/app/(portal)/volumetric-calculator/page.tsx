@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -40,11 +40,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Useful Tools
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Volumetric Calculator</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Volumetric Calculator</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">Calculate dimensional weight for your shipments using IATA standards.</p>
         </div>
       </section>
@@ -135,11 +135,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   What is Volumetric Weight?
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Volumetric weight <span className="text-[#F59E0B]">explained</span>
                 </h2>
                 <p className="text-lg text-foreground/90 leading-relaxed">
@@ -148,11 +148,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   How to Calculate
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   How to calculate <span className="text-[#F59E0B]">volumetric weight</span>
                 </h2>
                 <p className="text-lg text-foreground/90 leading-relaxed mb-6">
@@ -186,24 +186,24 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Chargeable Weight
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Chargeable <span className="text-[#F59E0B]">weight</span>
                 </h2>
                 <p className="text-lg text-foreground/90 leading-relaxed mb-6">
                   The <strong>Chargeable Weight</strong> is whichever is greater:
                 </p>
                 <div className="flex flex-wrap gap-4 mb-6">
-                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-blue-50 border border-blue-200">
-                    <Scale size={18} className="text-blue-600" />
-                    <span className="text-base font-medium text-blue-700">Actual Weight</span>
+                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+                    <Scale size={18} className="text-[#F59E0B]" />
+                    <span className="text-base font-medium text-[#B45309]">Actual Weight</span>
                   </div>
-                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-blue-50 border border-blue-200">
-                    <Package size={18} className="text-blue-600" />
-                    <span className="text-base font-medium text-blue-700">Volumetric Weight</span>
+                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+                    <Package size={18} className="text-[#F59E0B]" />
+                    <span className="text-base font-medium text-[#B45309]">Volumetric Weight</span>
                   </div>
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-border shadow-sm">
@@ -233,11 +233,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   How to Measure
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   How to measure <span className="text-[#F59E0B]">your parcel</span>
                 </h2>
                 <ol className="space-y-3">
@@ -257,11 +257,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Why Volumetric Weight?
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Why is volumetric <span className="text-[#F59E0B]">weight used?</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -281,11 +281,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Tips
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   Tips before <span className="text-[#F59E0B]">shipping</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -318,7 +318,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               <div className="rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
                 <h3 className="text-base font-bold text-foreground mb-1">Need help?</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Monâ€“Sat, 9 AM â€“ 9 PM.</p>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Mon–Sat, 9 AM – 9 PM.</p>
                 <a href="tel:+919876543210" className="text-sm font-semibold text-[#F59E0B] hover:underline">+91 98765 43210</a>
               </div>
             </aside>

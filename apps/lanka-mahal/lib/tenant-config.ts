@@ -72,7 +72,7 @@ export const tenantConfig: TenantCopy = {
   },
   services: {
     title: 'Quick Services',
-    subtitle: 'Track, quote, or schedule a pickup in under a minute.',
+    subtitle: 'Track your shipment or schedule a pickup in under a minute.',
   },
   about: {
     headline: 'Your trusted logistics partner, delivering across 200+ countries.',

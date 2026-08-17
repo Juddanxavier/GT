@@ -12,9 +12,9 @@ const app = new Hono();
 
 // ── Seed Verification ──
 // GET /api/debug/seed-status — checks that all expected seed data exists
-// No auth required in dev; in production it would need superadmin role
+// Superadmin only; routes are mounted only when ENABLE_DEBUG=true
 
-app.get('/seed-status', async (c) => {
+app.get('/seed-status', requireRole('superadmin'), async (c) => {
   const report: Record<string, unknown> = {};
   let allOk = true;
 

@@ -53,13 +53,13 @@ function ForgotPasswordForm() {
   return (
     <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a reset link." backHref="/login" backLabel="Back to sign in">
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>
+        <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>
       )}
 
       <form onSubmit={handleSend} className="space-y-6" noValidate>
         <TextField fullWidth isInvalid={!!fieldError} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <Input placeholder="name@example.com" autoComplete="email" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+          <Input placeholder="name@example.com" autoComplete="email" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-sm" />
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </TextField>
 

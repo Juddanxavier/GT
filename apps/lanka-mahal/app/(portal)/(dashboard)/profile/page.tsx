@@ -128,13 +128,16 @@ function ProfilePageContent(): ReactNode {
 
   return (
     <div className="max-w-lg mx-auto space-y-8">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
-          <User size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Profile</h1>
-          <p className="text-foreground/50 mt-0.5">Manage your account details.</p>
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 flex items-center gap-3">
+        <div className="absolute -top-14 -right-14 w-48 h-48 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#F59E0B] text-white flex items-center justify-center">
+            <User size={22} />
+          </div>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Profile</h1>
+            <p className="text-white/60 mt-0.5 text-sm">Manage your account details.</p>
+          </div>
         </div>
       </div>
 
@@ -142,7 +145,7 @@ function ProfilePageContent(): ReactNode {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F59E0B]/10 text-[#F59E0B] mb-4 shadow-sm">
           <User size={30} />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">{userInfo?.name}</h1>
+        <h1 className="text-xl font-bold text-foreground">{userInfo?.name}</h1>
         <div className="flex items-center justify-center gap-1.5 mt-2 text-foreground/50">
           <Mail size={14} />
           <span>{userInfo?.email}</span>
@@ -226,7 +229,7 @@ function ProfilePageContent(): ReactNode {
             </div>
           )}
           {saveSuccess && (
-            <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-[#B45309] bg-[#F59E0B]/10 rounded-lg px-3 py-2">
               <CheckCircle size={14} />
               <span>Profile updated successfully.</span>
             </div>

@@ -127,11 +127,11 @@ export default function AboutPage(): ReactNode {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               About Us
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
               Connecting Sri Lanka
               <br />
               <span className="text-[#F59E0B]">to the world.</span>
@@ -178,11 +178,11 @@ export default function AboutPage(): ReactNode {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Our Story
                 </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                   More than a courier. <span className="text-[#F59E0B]">A lifeline across borders.</span>
                 </h2>
                 <p className="text-lg text-foreground/90 leading-relaxed mb-6">
@@ -232,7 +232,7 @@ export default function AboutPage(): ReactNode {
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               What We Offer
             </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Built for reliability, <span className="text-[#F59E0B]">designed for trust.</span>
             </h2>
           </div>
@@ -265,7 +265,7 @@ export default function AboutPage(): ReactNode {
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Our Journey
             </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               15 years <span className="text-[#F59E0B]">of trust.</span>
             </h2>
           </div>
@@ -314,11 +314,11 @@ export default function AboutPage(): ReactNode {
         <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Our Edge
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-[1.15] mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.15] mb-4">
                 Why businesses <span className="text-[#F59E0B]">trust us.</span>
               </h2>
               <p className="text-lg text-white/85 leading-relaxed max-w-md">
@@ -359,7 +359,7 @@ export default function AboutPage(): ReactNode {
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Our Team
             </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               The people behind <span className="text-[#F59E0B]">the parcels.</span>
             </h2>
           </div>
@@ -394,7 +394,7 @@ export default function AboutPage(): ReactNode {
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Testimonials
             </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               What <span className="text-[#F59E0B]">our users say</span>
             </h2>
           </div>

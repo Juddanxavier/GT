@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Avatar, Button, Card, Chip, Input, Label, Skeleton } from '@heroui/react';
+import { Avatar, Button, Chip, Input, Label, Skeleton } from '@heroui/react';
 import { getUser } from '@/types/auth';
 import { authClient } from '@/lib/auth-client';
 import { usePageTitle } from '@/lib/use-page-title';
-import { Shield, Save, Lock, User, Mail, Check, X, Building2, Trash2, AlertTriangle } from 'lucide-react';
+import { Shield, Save, Lock, User, Mail, Check, X, Building2, Trash2, AlertTriangle, MapPin } from 'lucide-react';
+
+const sections = [
+  { id: 'account', label: 'Account Information', icon: User },
+  { id: 'security', label: 'Security', icon: Lock },
+  { id: 'danger', label: 'Danger Zone', icon: Trash2 },
+] as const;
 
 export default function ProfilePage() {
   usePageTitle('Profile');
@@ -84,18 +90,12 @@ export default function ProfilePage() {
 
   if (isPending) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Skeleton className="h-7 w-24 rounded" />
-        <Card>
-          <Card.Content className="flex items-center gap-5 p-6">
-            <Skeleton className="w-16 h-16 rounded-full" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-5 w-40 rounded" />
-              <Skeleton className="h-4 w-56 rounded" />
-            </div>
-          </Card.Content>
-        </Card>
-        <Card><Card.Content className="space-y-4 p-6"><Skeleton className="h-4 w-full rounded" /><Skeleton className="h-10 w-full rounded" /><Skeleton className="h-9 w-24 rounded" /></Card.Content></Card>
+      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        <Skeleton className="h-64 w-full rounded-sm" />
+        <div className="space-y-6">
+          <Skeleton className="h-40 w-full rounded-sm" />
+          <Skeleton className="h-64 w-full rounded-sm" />
+        </div>
       </div>
     );
   }
@@ -113,220 +113,237 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Profile</h1>
-        <p className="text-sm text-muted mt-0.5">Manage your account and security settings</p>
+    <div className="max-w-5xl mx-auto">
+      <div className="space-y-1 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
+        <p className="text-sm text-muted">Manage your account and security settings</p>
       </div>
 
-      {/* Profile summary */}
-      <Card className="border-t-2 border-t-accent">
-        <Card.Content className="flex items-center gap-5 p-6">
-          <Avatar size="lg" color={roleColor[role] ?? 'default'} className="text-2xl font-semibold shrink-0">
-            <Avatar.Fallback>{initials}</Avatar.Fallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-base font-medium">{user?.name as string}</span>
-              <Chip size="sm" variant="soft" color={roleColor[role] ?? 'default'}>{role}</Chip>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+        {/* Left profile sidebar */}
+        <aside className="lg:sticky lg:top-6 rounded-sm border border-border bg-surface overflow-hidden">
+          <div className="p-6 bg-gradient-to-b from-accent-soft/60 to-transparent border-b border-border">
+            <div className="flex flex-col items-center text-center">
+              <Avatar size="lg" color={roleColor[role] ?? 'default'} className="text-2xl font-semibold w-16 h-16 text-base mb-3">
+                <Avatar.Fallback>{initials}</Avatar.Fallback>
+              </Avatar>
+              <p className="text-base font-semibold text-foreground">{user?.name as string}</p>
+              <Chip size="sm" variant="soft" color={roleColor[role] ?? 'default'} className="mt-1.5">{role}</Chip>
             </div>
-            <p className="text-sm text-muted mt-0.5 flex items-center gap-1.5">
-              <Mail size={13} className="shrink-0" />
-              {email}
-            </p>
+          </div>
+
+          <div className="p-5 space-y-4 border-b border-border">
+            <div className="flex items-start gap-2.5">
+              <Mail size={14} className="text-muted shrink-0 mt-0.5" />
+              <span className="text-sm text-foreground break-all">{email}</span>
+            </div>
             {(tenantName || branchName) && (
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted">
-                {tenantName && (
-                  <span className="flex items-center gap-1">
-                    <Building2 size={12} />
-                    {tenantName}
-                  </span>
-                )}
-                {branchName && (
-                  <>
-                    <span className="text-muted/40">/</span>
-                    <span className="flex items-center gap-1">
-                      <Building2 size={12} />
+              <div className="flex items-start gap-2.5">
+                <Building2 size={14} className="text-muted shrink-0 mt-0.5" />
+                <div className="text-sm space-y-1">
+                  {tenantName && <p className="text-foreground">{tenantName}</p>}
+                  {branchName && (
+                    <p className="text-muted flex items-center gap-1">
+                      <MapPin size={12} />
                       {branchName}
-                    </span>
-                  </>
-                )}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </Card.Content>
-      </Card>
 
-      {/* Display name */}
-      <Card>
-        <Card.Header>
-          <Card.Title className="flex items-center gap-2 text-sm font-semibold">
-            <User size={15} />
-            Account Information
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <form onSubmit={handleNameSave} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Display Name</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
+          <nav className="p-2 space-y-0.5">
+            {sections.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm text-sm font-medium text-muted hover:bg-muted/40 hover:text-foreground transition-colors"
+              >
+                <s.icon size={15} />
+                {s.label}
+              </a>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Right content */}
+        <div className="space-y-6 min-w-0">
+          {/* Account Information */}
+          <section id="account" className="scroll-mt-6 rounded-sm border border-border bg-surface">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-accent-soft text-accent-soft-foreground shrink-0">
+                <User size={15} />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Account Information</h2>
+                <p className="text-xs text-muted mt-0.5">Update your display name</p>
+              </div>
+            </div>
+            <div className="p-5">
+              <form onSubmit={handleNameSave} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Display Name</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        id="name"
+                        variant="secondary"
+                        placeholder="Your display name"
+                        value={name}
+                        onChange={(e) => { setName(e.target.value); setNameDirty(true); setNameMessage(''); }}
+                        fullWidth
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      isDisabled={!nameDirty}
+                      onPress={() => { setName(originalName); setNameDirty(false); setNameMessage(''); }}
+                      className="flex items-center gap-1.5"
+                    >
+                      <X size={14} />
+                      Reset
+                    </Button>
+                    <Button type="submit" variant="secondary" isDisabled={!nameDirty} isPending={nameSaving} className="flex items-center gap-1.5">
+                      {nameSaving ? null : <Save size={14} />}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+                {nameMessage && (
+                  <div className={`flex items-center gap-1.5 text-xs ${nameMessage === 'Name updated' ? 'text-success' : 'text-danger'}`}>
+                    {nameMessage === 'Name updated' ? <Check size={12} /> : <X size={12} />}
+                    {nameMessage}
+                  </div>
+                )}
+              </form>
+            </div>
+          </section>
+
+          {/* Security */}
+          <section id="security" className="scroll-mt-6 rounded-sm border border-border bg-surface">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-accent-soft text-accent-soft-foreground shrink-0">
+                <Lock size={15} />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Security</h2>
+                <p className="text-xs text-muted mt-0.5">Update your password to keep your account secure</p>
+              </div>
+            </div>
+            <div className="p-5">
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="current-password">Current Password</Label>
                   <Input
-                    id="name"
+                    id="current-password"
+                    type="password"
                     variant="secondary"
-                    placeholder="Your display name"
-                    value={name}
-                    onChange={(e) => { setName(e.target.value); setNameDirty(true); setNameMessage(''); }}
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => { setCurrentPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
+                    required
                     fullWidth
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  isDisabled={!nameDirty}
-                  onPress={() => { setName(originalName); setNameDirty(false); setNameMessage(''); }}
-                  className="flex items-center gap-1.5"
-                >
-                  <X size={14} />
-                  Reset
-                </Button>
-                <Button type="submit" variant="secondary" isDisabled={!nameDirty} isPending={nameSaving} className="flex items-center gap-1.5">
-                  {nameSaving ? null : <Save size={14} />}
-                  Save
-                </Button>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      variant="secondary"
+                      placeholder="Min. 6 characters"
+                      value={newPassword}
+                      onChange={(e) => { setNewPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
+                      required
+                      fullWidth
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      variant="secondary"
+                      placeholder="Repeat new password"
+                      value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
+                      required
+                      fullWidth
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Button type="submit" variant="secondary" isDisabled={!passwordDirty} isPending={passwordSaving} className="flex items-center gap-1.5">
+                    {passwordSaving ? null : <Shield size={14} />}
+                    Change Password
+                  </Button>
+                  {passwordMessage && (
+                    <span className={`flex items-center gap-1.5 text-xs ${passwordMessage === 'Password changed' ? 'text-success' : 'text-danger'}`}>
+                      {passwordMessage === 'Password changed' ? <Check size={12} /> : <X size={12} />}
+                      {passwordMessage}
+                    </span>
+                  )}
+                </div>
+              </form>
             </div>
-            {nameMessage && (
-              <div className={`flex items-center gap-1.5 text-xs ${nameMessage === 'Name updated' ? 'text-success' : 'text-danger'}`}>
-                {nameMessage === 'Name updated' ? <Check size={12} /> : <X size={12} />}
-                {nameMessage}
-              </div>
-            )}
-          </form>
-        </Card.Content>
-      </Card>
+          </section>
 
-      {/* Change password */}
-      <Card>
-        <Card.Header>
-          <Card.Title className="flex items-center gap-2 text-sm font-semibold">
-            <Lock size={15} />
-            Security
-          </Card.Title>
-          <Card.Description className="text-xs text-muted">
-            Update your password to keep your account secure
-          </Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="current-password">Current Password</Label>
-              <Input
-                id="current-password"
-                type="password"
-                variant="secondary"
-                placeholder="Enter current password"
-                value={currentPassword}
-                onChange={(e) => { setCurrentPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
-                required
-                fullWidth
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  variant="secondary"
-                  placeholder="Min. 6 characters"
-                  value={newPassword}
-                  onChange={(e) => { setNewPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
-                  required
-                  fullWidth
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  variant="secondary"
-                  placeholder="Repeat new password"
-                  value={confirmPassword}
-                  onChange={(e) => { setConfirmPassword(e.target.value); setPasswordDirty(true); setPasswordMessage(''); }}
-                  required
-                  fullWidth
-                />
+          {/* Danger Zone */}
+          <section id="danger" className="scroll-mt-6 rounded-sm border border-danger/20 bg-surface">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-danger/20">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-danger/10 text-danger shrink-0">
+                <Trash2 size={15} />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-danger">Danger Zone</h2>
+                <p className="text-xs text-muted mt-0.5">Permanently delete your account and all associated data</p>
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Button type="submit" variant="secondary"  isDisabled={!passwordDirty} isPending={passwordSaving} className="flex items-center gap-1.5">
-                {passwordSaving ? null : <Shield size={14} />}
-                Change Password
-              </Button>
-              {passwordMessage && (
-                <span className={`flex items-center gap-1.5 text-xs ${passwordMessage === 'Password changed' ? 'text-success' : 'text-danger'}`}>
-                  {passwordMessage === 'Password changed' ? <Check size={12} /> : <X size={12} />}
-                  {passwordMessage}
-                </span>
+            <div className="p-5 space-y-4">
+              {role === 'superadmin' ? (
+                <div className="flex items-center gap-2 p-3 rounded-sm bg-warning/10 border border-warning/20">
+                  <AlertTriangle size={16} className="text-warning shrink-0" />
+                  <p className="text-xs text-muted">
+                    <span className="font-medium text-warning">Super admin accounts cannot be deleted.</span> Contact another super admin to manage this account.
+                  </p>
+                </div>
+              ) : deleteConfirm === 'confirm' ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 rounded-sm bg-danger/10 border border-danger/20">
+                    <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
+                    <div className="text-xs text-muted">
+                      <p className="font-medium text-danger mb-1">This action cannot be undone.</p>
+                      <p>Your account, sessions, and all associated data will be permanently deleted. You will be signed out immediately.</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="delete-password">Enter your password to confirm</Label>
+                    <Input id="delete-password" type="password" variant="secondary" placeholder="Current password" value={deletePassword} onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(''); }} fullWidth />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="danger" onPress={handleDeleteAccount} isDisabled={!deletePassword} isPending={deleteLoading} className="flex items-center gap-1.5">
+                      <Trash2 size={14} />Permanently delete account
+                    </Button>
+                    <Button variant="ghost" onPress={() => { setDeleteConfirm('idle'); setDeletePassword(''); setDeleteError(''); }}>Cancel</Button>
+                  </div>
+                  {deleteError && (
+                    <div className="flex items-center gap-1.5 text-xs text-danger">
+                      <X size={12} />{deleteError}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Button variant="danger" onPress={() => setDeleteConfirm('confirm')} className="flex items-center gap-1.5">
+                  <Trash2 size={14} />Delete account
+                </Button>
               )}
             </div>
-          </form>
-        </Card.Content>
-      </Card>
-
-      {/* Delete account */}
-      <Card className="border border-danger/20">
-        <Card.Header>
-          <Card.Title className="flex items-center gap-2 text-sm font-semibold text-danger">
-            <Trash2 size={15} />
-            Danger Zone
-          </Card.Title>
-          <Card.Description className="text-xs text-muted">
-            Permanently delete your account and all associated data
-          </Card.Description>
-        </Card.Header>
-        <Card.Content className="space-y-4">
-          {role === 'superadmin' ? (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-              <AlertTriangle size={16} className="text-warning shrink-0" />
-              <p className="text-xs text-muted">
-                <span className="font-medium text-warning">Super admin accounts cannot be deleted.</span> Contact another super admin to manage this account.
-              </p>
-            </div>
-          ) : deleteConfirm === 'confirm' ? (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-danger/10 border border-danger/20">
-                <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
-                <div className="text-xs text-muted">
-                  <p className="font-medium text-danger mb-1">This action cannot be undone.</p>
-                  <p>Your account, sessions, and all associated data will be permanently deleted. You will be signed out immediately.</p>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="delete-password">Enter your password to confirm</Label>
-                <Input id="delete-password" type="password" variant="secondary" placeholder="Current password" value={deletePassword} onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(''); }} fullWidth />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="danger" onPress={handleDeleteAccount} isDisabled={!deletePassword} isPending={deleteLoading} className="flex items-center gap-1.5">
-                  <Trash2 size={14} />Permanently delete account
-                </Button>
-                <Button variant="ghost" onPress={() => { setDeleteConfirm('idle'); setDeletePassword(''); setDeleteError(''); }}>Cancel</Button>
-              </div>
-              {deleteError && (
-                <div className="flex items-center gap-1.5 text-xs text-danger">
-                  <X size={12} />{deleteError}
-                </div>
-              )}
-            </div>
-          ) : (
-            <Button variant="danger" onPress={() => setDeleteConfirm('confirm')} className="flex items-center gap-1.5">
-              <Trash2 size={14} />Delete account
-            </Button>
-          )}
-        </Card.Content>
-      </Card>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

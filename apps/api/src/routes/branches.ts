@@ -17,6 +17,36 @@ import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
 
+// Resolve a route param (branch id or slug) to the branch's uuid.
+async function resolveBranchId(param: string, tenantId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: branches.id })
+    .from(branches)
+    .where(and(or(eq(branches.id, param), eq(branches.slug, param)), eq(branches.tenantId, tenantId)))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+// Generate a unique slug within the tenant from a name.
+async function uniqueBranchSlug(tenantId: string, base: string): Promise<string> {
+  const cleaned = base
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100);
+  let candidate = cleaned || 'branch';
+  let n = 2;
+  // ponytail: linear scan; fine for the handful of branches a tenant has
+  while (((await db.select({ id: branches.id })
+    .from(branches)
+    .where(and(eq(branches.tenantId, tenantId), eq(branches.slug, candidate)))
+    .limit(1))[0])) {
+    candidate = `${cleaned}-${n++}`;
+  }
+  return candidate;
+}
+
 // ponytail: public branch list for customer onboarding, no auth
 app.get('/public', async (c) => {
   const tenantSlug = c.req.query('tenant') || 'gajan-traders';
@@ -175,9 +205,10 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }
   }
 
+  const rowSlug = parsed.data.slug ?? await uniqueBranchSlug(tenantId!, parsed.data.name);
   const [row] = await db
     .insert(branches)
-    .values({ ...parsed.data, tenantId })
+    .values({ ...parsed.data, slug: rowSlug, tenantId })
     .returning();
 
   if (!row) return c.json({ error: 'Failed to create branch' }, 500);
@@ -205,8 +236,10 @@ app.get(
     const tenantId = c.get('tenantId');
     if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = (await resolveBranchId(id!, tenantId)) ?? id!;
+
     const conditions: ReturnType<typeof eq>[] = [
-      eq(branches.id, id!),
+      eq(branches.id, resolvedId),
       eq(branches.tenantId, tenantId!),
     ];
     if (curUser?.role === 'staff' && curUser.branchId) {
@@ -215,7 +248,7 @@ app.get(
 
     const row = await withCache(
       tenantId!,
-      `branches:${id}`,
+      `branches:${resolvedId}`,
       () =>
         db
           .select()
@@ -235,6 +268,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const tenantId = c.get('tenantId');
   const { id } = c.req.param();
   if (!tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+  const resolvedId = await resolveBranchId(id!, tenantId);
+  if (!resolvedId) return c.json({ error: 'Branch not found' }, 404);
 
   const body = await c.req.json();
   const parsed = updateBranchSchema.safeParse(body);
@@ -268,22 +304,27 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
     }
   }
 
+  // If the name changes and no explicit slug is given, keep the existing slug
+  // so detail URLs stay stable.
+  const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
+  if (parsed.data.name && !parsed.data.slug) delete updateData.slug;
+
   const [row] = await db
     .update(branches)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(and(eq(branches.id, id!), eq(branches.tenantId, tenantId!)) as SQL | undefined)
+    .set(updateData)
+    .where(and(eq(branches.id, resolvedId), eq(branches.tenantId, tenantId!)) as SQL | undefined)
     .returning();
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
   await cacheDelPattern(tenantId!, 'branches:list:*');
   await cacheDel(tenantId!, 'dashboard:branches');
-  await cacheDel(tenantId!, `branches:${id}`);
-  await invalidateBranchCache(id!, tenantId!);
+  await cacheDel(tenantId!, `branches:${resolvedId}`);
+  await invalidateBranchCache(resolvedId, tenantId!);
   await logAudit(
     'BRANCH_UPDATED',
     getUser(c)?.id ?? null,
-    { branchId: id, changes: parsed.data, tenantId },
+    { branchId: resolvedId, changes: parsed.data, tenantId },
     c,
   );
   emitToTenant(tenantId!, 'dashboard:update', {});
@@ -295,21 +336,24 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
+  const resolvedId = await resolveBranchId(id!, scope.tenantId);
+  if (!resolvedId) return c.json({ error: 'Branch not found' }, 404);
+
   const [row] = await db
     .delete(branches)
-    .where(and(eq(branches.id, id!), eq(branches.tenantId, scope.tenantId!)) as SQL | undefined)
+    .where(and(eq(branches.id, resolvedId), eq(branches.tenantId, scope.tenantId!)) as SQL | undefined)
     .returning();
 
   if (!row) return c.json({ error: 'Branch not found' }, 404);
 
   await cacheDelPattern(scope.tenantId!, 'branches:list:*');
   await cacheDel(scope.tenantId!, 'dashboard:branches');
-  await cacheDel(scope.tenantId!, `branches:${id}`);
-  await invalidateBranchCache(id!, scope.tenantId!);
+  await cacheDel(scope.tenantId!, `branches:${resolvedId}`);
+  await invalidateBranchCache(resolvedId, scope.tenantId!);
   await logAudit(
     'BRANCH_DELETED',
     getUser(c)?.id ?? null,
-    { branchId: id, branchName: row.name, tenantId: scope.tenantId! },
+    { branchId: resolvedId, branchName: row.name, tenantId: scope.tenantId! },
     c,
   );
   await emitToTenant(scope.tenantId!, 'dashboard:update', {});

@@ -161,7 +161,7 @@ function OnboardForm() {
           }}
         />
         <div className="relative z-10 text-center max-w-sm">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-6">
             <span className="text-emerald-400 text-3xl font-bold tracking-tight">GT</span>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Gajan Traders</h1>
@@ -178,7 +178,7 @@ function OnboardForm() {
         <div className="w-full max-w-sm">
           {/* Mobile brand */}
           <div className="lg:hidden text-center mb-10">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-4">
               <span className="text-emerald-400 text-xl font-bold tracking-tight">GT</span>
             </div>
             <h1 className="text-xl font-semibold text-white tracking-tight">Gajan Traders</h1>

@@ -285,7 +285,7 @@ export default function AuditTimeline({
                         {/* Event card */}
                         <button
                           type="button"
-                          className="w-full text-left rounded-xl border border-border/60 bg-muted/5 hover:bg-muted/10 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                          className="w-full text-left rounded-sm border border-border/60 bg-muted/5 hover:bg-muted/10 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                           onClick={() => setSelectedEntry(entry)}
                         >
                           <div className="px-3 py-2.5">

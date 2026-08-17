@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Search, PackageSearch, MapPin, Clock, Truck, ChevronDown, ArrowUpRight, HelpCircle, FileText, MessageSquare, Building2 } from 'lucide-react';
+import { Search, PackageSearch, MapPin, Clock, Truck, ChevronDown, ArrowUpRight, HelpCircle } from 'lucide-react';
 import { Chip, Spinner } from '@heroui/react';
 import { useTrackShipment } from '@/lib/queries';
 
@@ -57,11 +57,11 @@ export default function TrackPage(): ReactNode {
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20 w-full">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-            <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Track Shipment
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
               Track your shipment<br />
               <span className="text-[#F59E0B]">in real time.</span>
             </h1>
@@ -83,25 +83,25 @@ export default function TrackPage(): ReactNode {
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16">
           <div className="grid md:grid-cols-[280px_1fr] gap-8 md:gap-12">
             <aside className="space-y-6 order-last md:order-first">
-              <div className="rounded-xl border border-border bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider mb-3">Track Another</h3>
+              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Track Another</h3>
                 <form onSubmit={handleSubmit} className="flex gap-2">
-                  <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking no." className="flex-1 px-3 py-2 rounded-lg border border-border text-base text-foreground placeholder:text-foreground/60 outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B]" />
+                  <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking no." className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B]" />
                   <button type="submit" className="px-3 py-2 rounded-lg bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"><Search size={16} /></button>
                 </form>
               </div>
-              <div className="rounded-xl border border-border bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider mb-3">Quick Links</h3>
-                <div className="space-y-2">
-                  <a href="/quote" className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#F59E0B] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F59E0B]/5"><FileText size={16} className="shrink-0" /> Get a Quote</a>
-                  <a href="/contact" className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#F59E0B] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F59E0B]/5"><MessageSquare size={16} className="shrink-0" /> Contact Support</a>
-                  <a href="/branches" className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#F59E0B] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F59E0B]/5"><Building2 size={16} className="shrink-0" /> Our Branches</a>
+              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Quick Links</h3>
+                <div className="space-y-1">
+                  <a href="/quote" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#8B5CF6]" /> Get a Quote</a>
+                  <a href="/contact" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#10B981]" /> Contact Support</a>
+                  <a href="/branches" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Our Branches</a>
                 </div>
               </div>
-              <div className="rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
+              <div className="rounded-2xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
-                <h3 className="text-base font-bold text-foreground mb-1">Need help?</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Monâ€“Sat, 9 AM â€“ 9 PM.</p>
+                <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Mon–Sat, 9 AM – 9 PM.</p>
                 <a href="tel:+919876543210" className="text-sm font-semibold text-[#F59E0B] hover:underline">+91 98765 43210</a>
               </div>
             </aside>
@@ -127,7 +127,7 @@ export default function TrackPage(): ReactNode {
                       <Chip size="md" variant="soft" color={STATUS_COLORS[result.status] ?? 'default'} className="mt-1.5">{STATUS_LABELS[result.status] || result.status}</Chip>
                       <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-foreground/80">
                         {result.carrier && <span><Truck size={15} className="inline mr-1.5" />{result.carrier}</span>}
-                        {(result.origin || result.destination) && <span><MapPin size={15} className="inline mr-1.5" />{result.origin || '?'} â†’ {result.destination || '?'}</span>}
+                        {(result.origin || result.destination) && <span><MapPin size={15} className="inline mr-1.5" />{result.origin || '?'} → {result.destination || '?'}</span>}
                         {result.lastTrackedAt && <span><Clock size={15} className="inline mr-1.5" />Last updated {new Date(result.lastTrackedAt).toLocaleDateString()}</span>}
                       </div>
                     </div>
@@ -176,18 +176,18 @@ export default function TrackPage(): ReactNode {
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
-              <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 FAQ
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
                 Tracking <span className="text-[#F59E0B]">FAQs</span>
               </h2>
-              <p className=" text-foreground/90 leading-relaxed mb-6">Common questions about tracking shipments with Lanka Mahal.</p>
-              <p className="text-foreground/80 leading-relaxed mb-10">Can&apos;t find your answer? Contact our support team.</p>
+              <p className="text-lg text-foreground/90 leading-relaxed mb-6">Common questions about tracking shipments with Lanka Mahal.</p>
+              <p className="text-lg text-foreground/80 leading-relaxed mb-10">Can&apos;t find your answer? Contact our support team.</p>
               <div className="border-t border-border pt-8">
                 <h3 className="text-2xl font-bold tracking-tight text-foreground mb-2">Still need help?</h3>
-                <p className=" text-foreground/90 mb-6">Get in touch for personalised support.</p>
+                <p className="text-lg text-foreground/90 mb-6">Get in touch for personalised support.</p>
                 <a href="/contact" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer w-fit">
                   Contact Support <ArrowUpRight size={16} />
                 </a>

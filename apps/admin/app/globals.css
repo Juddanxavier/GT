@@ -4,22 +4,31 @@
 @custom-variant dark (&:where([data-theme="dark"]));
 
 @theme {
-  --color-brand-green: oklch(81.00% 0.2100 143.00);
+  --color-brand: #4F46E5;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-*, *::before, *::after {
-  transition: background-color 0.2s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-*, *::before, *::after, *::backdrop {
-  scrollbar-color: var(--scrollbar-color);
-  scrollbar-width: var(--scrollbar-width, auto);
+@theme inline {
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active-bg: var(--sidebar-active-bg);
+  --color-sidebar-active-fg: var(--sidebar-active-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
+  --color-muted-light: var(--muted-light);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-foreground: var(--info-soft-foreground);
 }
 
 /*
  * HeroUI Theme Customization
- * Add this to your global.css after importing @heroui/styles
- * Only includes variables users need to customize
  * @see https://heroui.com/docs/react/getting-started/theming
  */
 
@@ -28,81 +37,214 @@
 .default,
 [data-theme="light"],
 [data-theme="default"] {
-  /* Theme Colors (Light Mode) */
-  --accent: oklch(58.14% 0.2349 27.99);
-  --accent-foreground: oklch(99.11% 0 0);
-  --background: oklch(97.02% 0.0000 27.99);
-  --border: oklch(90.00% 0.0000 27.99);
-  --danger: oklch(65.32% 0.2328 358.64);
-  --danger-foreground: oklch(99.11% 0 0);
-  --default: oklch(94.00% 0.0000 27.99);
-  --default-foreground: oklch(21.03% 0.0059 27.99);
-  --field-background: oklch(100.00% 0.0000 27.99);
-  --field-border: transparent;
-  --field-foreground: oklch(21.03% 0.0000 27.99);
-  --field-placeholder: oklch(55.17% 0.0000 27.99);
-  --focus: oklch(58.14% 0.2349 27.99);
-  --foreground: oklch(21.03% 0.0000 27.99);
-  --muted: oklch(55.17% 0.0000 27.99);
-  --overlay: oklch(100.00% 0.0000 27.99);
-  --overlay-foreground: oklch(21.03% 0.0000 27.99);
-  --scrollbar: oklch(87.10% 0.0000 27.99);
-  --segment: oklch(100.00% 0.0000 27.99);
-  --segment-foreground: oklch(21.03% 0.0000 27.99);
-  --separator: oklch(92.00% 0.0000 27.99);
-  --success: oklch(73.29% 0.1935 123.71);
-  --success-foreground: oklch(21.03% 0.0059 123.71);
-  --surface: oklch(100.00% 0.0000 27.99);
-  --surface-foreground: oklch(21.03% 0.0000 27.99);
-  --surface-secondary: oklch(95.24% 0.0000 27.99);
-  --surface-secondary-foreground: oklch(21.03% 0.0000 27.99);
-  --surface-tertiary: oklch(93.73% 0.0000 27.99);
-  --surface-tertiary-foreground: oklch(21.03% 0.0000 27.99);
-  --warning: oklch(78.19% 0.1585 45.23);
-  --warning-foreground: oklch(21.03% 0.0059 45.23);
+  /* Brand / Primary — Indigo */
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-active: #3730A3;
+  --accent-soft: #EEF2FF;
+  --accent-soft-foreground: #4F46E5;
+  --accent-foreground: #FFFFFF;
+
+  /* Base — Slate */
+  --background: #F1F5F9;
+  --foreground: #0F172A;
+  --surface: #FFFFFF;
+  --sidebar: #111113;
+  --sidebar-foreground: #E4E4E7;
+  --sidebar-muted: #A1A1AA;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: #27244F;
+  --sidebar-active-fg: #A5B4FC;
+  --surface-hover: #F8FAFC;
+  --surface-active: #F1F5F9;
+  --surface-secondary: #F8FAFC;
+  --surface-secondary-foreground: #0F172A;
+  --surface-tertiary: #F1F5F9;
+  --surface-tertiary-foreground: #0F172A;
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
+  --muted: #475569;
+  --muted-light: #64748B;
+  --separator: #E2E8F0;
+
+  /* Fields */
+  --field-background: #FFFFFF;
+  --field-border: #E2E8F0;
+  --field-foreground: #0F172A;
+  --field-placeholder: #94A3B8;
+  --field-radius: 0.25rem;
+
+  /* Semantic */
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --success-soft: #ECFDF5;
+  --success-soft-foreground: #047857;
+  --warning: #F59E0B;
+  --warning-foreground: #FFFFFF;
+  --warning-soft: #FFFBEB;
+  --warning-soft-foreground: #B45309;
+  --danger: #EF4444;
+  --danger-foreground: #FFFFFF;
+  --danger-soft: #FEF2F2;
+  --danger-soft-foreground: #B91C1C;
+  --info: #0EA5E9;
+  --info-foreground: #FFFFFF;
+  --info-soft: #F0F9FF;
+  --info-soft-foreground: #0369A1;
+
+  --default: #F1F5F9;
+  --default-foreground: #0F172A;
+  --focus: #4F46E5;
+  --overlay: #FFFFFF;
+  --overlay-foreground: #0F172A;
+  --scrollbar: #CBD5E1;
+  --segment: #FFFFFF;
+  --segment-foreground: #0F172A;
+
+  /* Shadows — subtle */
+  --surface-shadow:
+    0 1px 2px 0 rgba(15, 23, 42, 0.04),
+    0 1px 3px 0 rgba(15, 23, 42, 0.06);
+  --overlay-shadow:
+    0 2px 8px -2px rgba(15, 23, 42, 0.08),
+    0 16px 40px -16px rgba(15, 23, 42, 0.12);
+  --field-shadow: 0 0 0 0 transparent;
 
   /* Border Radius */
-  --radius: 0.5rem;
-  --field-radius: 0.125rem;
+  --radius: 0.25rem;
 
   /* Font Family */
-  /* Make sure to load JetBrains Mono font in your app */
-  --font-sans: var(--font-jetbrains-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-inter);
 }
 
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  /* Theme Colors (Dark Mode) */
-  --accent: oklch(58.14% 0.2349 27.99);
-  --accent-foreground: oklch(99.11% 0 0);
-  --background: oklch(12.00% 0.0000 27.99);
-  --border: oklch(28.00% 0.0000 27.99);
-  --danger: oklch(59.40% 0.1967 357.53);
-  --danger-foreground: oklch(99.11% 0 0);
-  --default: oklch(27.40% 0.0000 27.99);
-  --default-foreground: oklch(99.11% 0 0);
-  --field-background: oklch(21.03% 0.0000 27.99);
-  --field-border: transparent;
-  --field-foreground: oklch(99.11% 0.0000 27.99);
-  --field-placeholder: oklch(70.50% 0.0000 27.99);
-  --focus: oklch(58.14% 0.2349 27.99);
-  --foreground: oklch(99.11% 0.0000 27.99);
-  --muted: oklch(70.50% 0.0000 27.99);
-  --overlay: oklch(21.03% 0.0000 27.99);
-  --overlay-foreground: oklch(99.11% 0.0000 27.99);
-  --scrollbar: oklch(70.50% 0.0000 27.99);
-  --segment: oklch(39.64% 0.0000 27.99);
-  --segment-foreground: oklch(99.11% 0.0000 27.99);
-  --separator: oklch(25.00% 0.0000 27.99);
-  --success: oklch(73.29% 0.1935 123.71);
-  --success-foreground: oklch(21.03% 0.0059 123.71);
-  --surface: oklch(21.03% 0.0000 27.99);
-  --surface-foreground: oklch(99.11% 0.0000 27.99);
-  --surface-secondary: oklch(25.70% 0.0000 27.99);
-  --surface-secondary-foreground: oklch(99.11% 0.0000 27.99);
-  --surface-tertiary: oklch(27.21% 0.0000 27.99);
-  --surface-tertiary-foreground: oklch(99.11% 0.0000 27.99);
-  --warning: oklch(82.03% 0.1388 49.24);
-  --warning-foreground: oklch(21.03% 0.0059 49.24);
+  /* Brand / Primary — lighter Indigo for contrast */
+  --accent: #818CF8;
+  --accent-hover: #A5B4FC;
+  --accent-active: #C7D2FE;
+  --accent-soft: #27244F;
+  --accent-soft-foreground: #A5B4FC;
+  --accent-foreground: #09090B;
+
+  /* Base — Zinc */
+  --background: #09090B;
+  --foreground: #F4F4F5;
+  --surface: #18181B;
+  --sidebar: #111113;
+  --sidebar-foreground: #E4E4E7;
+  --sidebar-muted: #A1A1AA;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: #27244F;
+  --sidebar-active-fg: #A5B4FC;
+  --surface-hover: #1F1F23;
+  --surface-active: #27272A;
+  --surface-secondary: #1F1F23;
+  --surface-secondary-foreground: #F4F4F5;
+  --surface-tertiary: #27272A;
+  --surface-tertiary-foreground: #F4F4F5;
+  --border: #27272A;
+  --border-hover: #3F3F46;
+  --muted: #A1A1AA;
+  --muted-light: #71717A;
+  --separator: #27272A;
+
+  /* Fields */
+  --field-background: #18181B;
+  --field-border: #27272A;
+  --field-foreground: #F4F4F5;
+  --field-placeholder: #71717A;
+
+  /* Semantic */
+  --success: #34D399;
+  --success-foreground: #052E1B;
+  --success-soft: #052E1B;
+  --success-soft-foreground: #6EE7B7;
+  --warning: #FBBF24;
+  --warning-foreground: #422006;
+  --warning-soft: #422006;
+  --warning-soft-foreground: #FCD34D;
+  --danger: #F87171;
+  --danger-foreground: #450A0A;
+  --danger-soft: #450A0A;
+  --danger-soft-foreground: #FCA5A5;
+  --info: #38BDF8;
+  --info-foreground: #082F49;
+  --info-soft: #082F49;
+  --info-soft-foreground: #7DD3FC;
+
+  --default: #27272A;
+  --default-foreground: #F4F4F5;
+  --focus: #818CF8;
+  --overlay: #18181B;
+  --overlay-foreground: #F4F4F5;
+  --scrollbar: #3F3F46;
+  --segment: #27272A;
+  --segment-foreground: #F4F4F5;
+
+  /* Shadows — subtle */
+  --surface-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --overlay-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 16px 40px -16px rgba(0, 0, 0, 0.5);
+  --field-shadow: 0 0 0 0 transparent;
+}
+
+*, *::before, *::after {
+  transition: background-color 0.2s var(--ease-out-quint), border-color 0.2s var(--ease-out-quint), color 0.2s var(--ease-out-quint), box-shadow 0.2s var(--ease-out-quint), transform 0.15s var(--ease-out-quint), opacity 0.15s var(--ease-out-quint);
+}
+
+html {
+  font-size: 17px;
+}
+
+*, *::before, *::after, *::backdrop {
+  scrollbar-color: var(--scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--focus);
+}
+
+/* Table density — column/cell padding scaled by a wrapper class */
+.table-density-compact .table__cell,
+.table-density-compact .table__column {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.table-density-compact .table__column {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.table-density-comfortable .table__cell,
+.table-density-comfortable .table__column {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Clickable rows — cursor pointer + hover animation */
+.table-clickable .table__row {
+  cursor: pointer;
+}
+
+.table-clickable .table__row .table__cell {
+  transition: background-color 0.15s var(--ease-out-quint), color 0.15s var(--ease-out-quint);
+}
+
+.table-clickable .table__row[data-hovered="true"] .table__cell {
+  background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.table-clickable .table__row[data-hovered="true"] {
+  box-shadow: inset 3px 0 0 0 var(--accent);
 }

@@ -11,5 +11,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['**/*.test.ts', '**/*.test.tsx'],
+    env: {
+      NEXT_PUBLIC_API_URL: 'http://localhost:3001',
+    },
   },
 });

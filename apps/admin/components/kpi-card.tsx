@@ -6,24 +6,34 @@ interface KpiCardProps {
   label: string;
   count: number;
   color: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   format?: 'number' | 'currency';
   data?: number[];
   trend?: number;
+  onPress?: () => void;
+  isActive?: boolean;
 }
 
-export function KpiCard({ label, count, color, icon: Icon, format = 'number', data, trend }: KpiCardProps) {
+export function KpiCard({ label, count, color, icon: Icon, format = 'number', data, trend, onPress, isActive }: KpiCardProps) {
   const displayCount = format === 'currency' ? `\u20B9${Number(count).toLocaleString('en-IN')}` : String(count);
+  const Comp = onPress ? 'button' : 'div';
   return (
-    <div className="rounded-xl border border-border bg-surface hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden flex flex-col">
-      <div className="p-5 pb-3 flex-1">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">{label}</span>
-          <Icon size={18} style={{ color }} />
+    <Comp
+      type={onPress ? 'button' : undefined}
+      onClick={onPress}
+      className={`rounded-sm border ${isActive ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]' : 'border-border'} bg-surface ${onPress ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg' : ''} transition-all duration-200 overflow-hidden flex flex-col text-left`}>
+      <div className="p-5 flex-1">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-muted">{label}</span>
+          {Icon && (
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm shrink-0" style={{ background: `color-mix(in oklab, ${color} 12%, transparent)` }}>
+              <Icon size={16} style={{ color }} />
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <p className={`font-bold tracking-tight ${data ? 'text-4xl' : 'text-3xl'}`}>{displayCount}</p>
+            <p className={`font-bold tracking-tight ${data ? 'text-3xl' : 'text-2xl'}`}>{displayCount}</p>
             {trend != null && (
               <span className={`text-xs font-medium ${trend >= 0 ? 'text-success' : 'text-danger'}`}>
                 {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
@@ -54,6 +64,6 @@ export function KpiCard({ label, count, color, icon: Icon, format = 'number', da
           })()}
         </div>
       </div>
-    </div>
+    </Comp>
   );
 }

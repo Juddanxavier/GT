@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -27,13 +27,16 @@ function MyInvoicesContent(): ReactNode {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
-          <Receipt size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Invoices</h1>
-          <p className="text-foreground/50 mt-0.5">View and download your invoices.</p>
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 flex items-center gap-3">
+        <div className="absolute -top-14 -right-14 w-48 h-48 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#F59E0B] text-white flex items-center justify-center">
+            <Receipt size={22} />
+          </div>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">My Invoices</h1>
+            <p className="text-white/60 mt-0.5 text-sm">View and download your invoices.</p>
+          </div>
         </div>
       </div>
 
@@ -45,12 +48,17 @@ function MyInvoicesContent(): ReactNode {
         <div className="space-y-4">
           <div className="space-y-2">
             {data.data.map((inv) => (
-              <a key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center justify-between rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] transition-all">
-                <div>
-                  <p className="text-sm font-mono font-bold text-foreground">{inv.invoiceNo}</p>
-                  <p className="text-xs text-foreground/50 mt-0.5">{inv.trackingNo} - {new Date(inv.createdAt).toLocaleDateString()}</p>
+              <a key={inv.id} href={`/invoices/${inv.invoiceNo}`} className="flex items-center justify-between gap-4 rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] transition-all group">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center shrink-0">
+                    <Receipt size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-mono font-bold text-foreground">{inv.invoiceNo}</p>
+                    <p className="text-xs text-foreground/50 mt-0.5">{inv.trackingNo} - {new Date(inv.createdAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <span className="text-sm font-semibold text-foreground tabular-nums">{Number(inv.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
                   <Chip size="sm" variant="soft" color={STATUS_COLORS[inv.status] ?? 'warning'}>{inv.status === 'unpaid' ? 'Unpaid' : inv.status === 'paid' ? 'Paid' : 'Cancelled'}</Chip>
                 </div>
@@ -58,7 +66,7 @@ function MyInvoicesContent(): ReactNode {
             ))}
           </div>
           <div className="flex items-center justify-between pt-4 border-t border-foreground/5">
-            <p className="text-xs text-foreground/40 tabular-nums">Showing {(page - 1) * limit + 1}â€“{Math.min(page * limit, total)} of {total}</p>
+            <p className="text-xs text-foreground/40 tabular-nums">Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</p>
             <div className={totalPages <= 1 ? 'opacity-40 pointer-events-none' : ''}>
               <Pagination size="sm">
                 <Pagination.Content>

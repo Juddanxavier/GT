@@ -218,6 +218,13 @@
       "when": 1783993000000,
       "tag": "0031_fix_shipment_tracking_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1784000000000,
+      "tag": "0032_add_branch_slug",
+      "breakpoints": true
     }
   ]
 }

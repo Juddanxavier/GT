@@ -32,11 +32,11 @@ export default function ProhibitedPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Restricted Items
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Prohibited Items</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Prohibited Items</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">Certain items cannot be shipped for safety, legal, or regulatory reasons.</p>
         </div>
       </section>
@@ -44,7 +44,7 @@ export default function ProhibitedPage(): ReactNode {
       <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
         <div className="max-w-6xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Quick overview <span className="text-[#F59E0B]">by category</span>
             </h2>
             <p className="text-lg text-foreground/90 mt-3 max-w-xl">
@@ -110,7 +110,7 @@ export default function ProhibitedPage(): ReactNode {
               <AlertTriangle size={14} />
               Need an exception?
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Special arrangements <span className="text-[#F59E0B]">may be possible</span>
             </h2>
             <p className="text-lg text-foreground/90 mt-3 max-w-xl">
@@ -132,7 +132,7 @@ export default function ProhibitedPage(): ReactNode {
                   <e.icon className="size-6" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-1.5">{e.title}</h3>
-                <p className="text-base text-foreground/85 leading-relaxed">{e.desc}</p>
+                <p className="text-lg text-foreground/85 leading-relaxed">{e.desc}</p>
               </motion.div>
             ))}
           </div>

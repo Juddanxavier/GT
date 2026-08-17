@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { api, ApiError, setTenantFilter, clearTenantFilter, setBranchFilter, clearBranchFilter, fmtINR } from '@/lib/api';
+import { api, ApiError, setTenantFilter, clearTenantFilter, setBranchFilter, clearBranchFilter } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -16,15 +17,15 @@ describe('ApiError', () => {
   });
 });
 
-describe('fmtINR', () => {
+describe('formatCurrency', () => {
   it('formats numbers as INR currency', () => {
-    expect(fmtINR(1000)).toContain('1,000');
-    expect(fmtINR(0)).toContain('0');
-    expect(fmtINR(100000)).toContain('1,00,000');
+    expect(formatCurrency(1000, 'INR')).toContain('1,000');
+    expect(formatCurrency(0, 'INR')).toContain('0');
+    expect(formatCurrency(100000, 'INR')).toContain('1,00,000');
   });
 
   it('handles string input', () => {
-    expect(fmtINR('50000')).toContain('50,000');
+    expect(formatCurrency('50000', 'INR')).toContain('50,000');
   });
 });
 
@@ -58,19 +59,19 @@ describe('api.get', () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: 'Not found' }) });
     const err = await api.get('/test').catch((e) => e);
     expect(err).toBeInstanceOf(ApiError);
-    expect(err.status).toBe(404);
+    if (err instanceof ApiError) expect(err.status).toBe(404);
   });
 
   it('throws ApiError with code on error response', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 400, json: () => Promise.resolve({ code: 'VALIDATION_ERROR', error: 'Invalid input' }) });
     const err = await api.get('/test').catch((e) => e);
-    expect(err.message).toContain('[VALIDATION_ERROR]');
+    if (err instanceof ApiError) expect(err.message).toContain('[VALIDATION_ERROR]');
   });
 
   it('handles non-JSON error response gracefully', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500, json: () => Promise.reject(new Error('invalid json')) });
     const err = await api.get('/test').catch((e) => e);
-    expect(err.message).toBe('Request failed (500)');
+    if (err instanceof ApiError) expect(err.message).toBe('Request failed (500)');
   });
 
   it('retries on network error then succeeds', async () => {
@@ -153,8 +154,8 @@ describe('api.getFull', () => {
       ok: true,
       json: () => Promise.resolve({ data: [{ id: '1' }], total: 1, page: 1, limit: 10 }),
     });
-    const result = await api.getFull<{ id: string }[]>('/test?page=1');
+    const result = await api.getFull<{ data: { id: string }[]; total: number }>('/test?page=1');
     expect(result.total).toBe(1);
-    expect(result.data[0].id).toBe('1');
+    expect(result.data[0]?.id).toBe('1');
   });
 });

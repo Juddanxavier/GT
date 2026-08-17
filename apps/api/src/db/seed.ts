@@ -69,9 +69,9 @@ async function seed() {
   const gBranches = await db
     .insert(branches)
     .values([
-      { name: 'Mumbai HQ', tenantId: gajan!.id, phone: '+91-22-12345678', email: 'mumbai@gajantraders.com', address: '123 Business District, Mumbai, Maharashtra 400001' },
-      { name: 'Delhi Branch', tenantId: gajan!.id, phone: '+91-11-87654321', email: 'delhi@gajantraders.com', address: '456 Connaught Place, New Delhi 110001' },
-      { name: 'Chennai Branch', tenantId: gajan!.id, phone: '+91-44-23456789', email: 'chennai@gajantraders.com', address: '789 Anna Salai, Chennai, Tamil Nadu 600002' },
+      { name: 'Mumbai HQ', slug: 'mumbai-hq', tenantId: gajan!.id, phone: '+91-22-12345678', email: 'mumbai@gajantraders.com', address: '123 Business District, Mumbai, Maharashtra 400001' },
+      { name: 'Delhi Branch', slug: 'delhi-branch', tenantId: gajan!.id, phone: '+91-11-87654321', email: 'delhi@gajantraders.com', address: '456 Connaught Place, New Delhi 110001' },
+      { name: 'Chennai Branch', slug: 'chennai-branch', tenantId: gajan!.id, phone: '+91-44-23456789', email: 'chennai@gajantraders.com', address: '789 Anna Salai, Chennai, Tamil Nadu 600002' },
     ])
     .returning();
   const mumbaiHq = gBranches[0]!;
@@ -81,9 +81,9 @@ async function seed() {
   const lBranches = await db
     .insert(branches)
     .values([
-      { name: 'Colombo HQ', tenantId: lanka!.id, phone: '+94-11-2345678', email: 'colombo@lankamahal.lk', address: '1 Galle Road, Colombo 03, Sri Lanka' },
-      { name: 'Kandy Branch', tenantId: lanka!.id, phone: '+94-81-3456789', email: 'kandy@lankamahal.lk', address: '45 Peradeniya Road, Kandy, Sri Lanka' },
-      { name: 'Jaffna Branch', tenantId: lanka!.id, phone: '+94-21-4567890', email: 'jaffna@lankamahal.lk', address: '78 Hospital Road, Jaffna, Sri Lanka' },
+      { name: 'Colombo HQ', slug: 'colombo-hq', tenantId: lanka!.id, phone: '+94-11-2345678', email: 'colombo@lankamahal.lk', address: '1 Galle Road, Colombo 03, Sri Lanka' },
+      { name: 'Kandy Branch', slug: 'kandy-branch', tenantId: lanka!.id, phone: '+94-81-3456789', email: 'kandy@lankamahal.lk', address: '45 Peradeniya Road, Kandy, Sri Lanka' },
+      { name: 'Jaffna Branch', slug: 'jaffna-branch', tenantId: lanka!.id, phone: '+94-21-4567890', email: 'jaffna@lankamahal.lk', address: '78 Hospital Road, Jaffna, Sri Lanka' },
     ])
     .returning();
   const colomboHq = lBranches[0]!;

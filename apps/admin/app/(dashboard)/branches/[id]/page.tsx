@@ -9,6 +9,7 @@ import { usePageTitle } from '@/lib/use-page-title';
 import { useTenants } from '@/lib/queries';
 import { getCountryCode, stripDialCode } from '@/lib/country-codes';
 import { ArrowLeft, Building2, Calendar, Clock, Mail, MapPin, Pencil, Phone, Trash2, RefreshCw } from 'lucide-react';
+import { DetailShell, DetailBack } from '@/components/detail-layout';
 
 interface BranchDetail {
   id: string;
@@ -117,7 +118,7 @@ export default function BranchDetailPage() {
   if (!branch || loadError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-muted/10 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-sm bg-muted/10 flex items-center justify-center">
           <Building2 size={20} className="text-muted" />
         </div>
         <p className="text-lg font-medium">Branch not found</p>
@@ -132,20 +133,17 @@ export default function BranchDetailPage() {
     : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <DetailShell>
       {/* Back button */}
-      <button onClick={() => router.push('/branches')} className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
-        <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-        Back to Branches
-      </button>
+      <DetailBack onClick={() => router.push('/branches')} label="Back to Branches" />
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/[0.08] to-transparent">
+      <div className="relative overflow-hidden rounded-sm border border-accent/30 bg-gradient-to-br from-accent/[0.08] to-transparent">
         <div className="relative px-8 py-7">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Left: Icon + Name */}
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-accent/15 text-accent">
+              <div className="w-14 h-14 rounded-sm flex items-center justify-center shrink-0 bg-accent/15 text-accent">
                 <Building2 size={24} />
               </div>
               <div className="min-w-0">
@@ -227,7 +225,7 @@ export default function BranchDetailPage() {
             <div className="divide-y divide-border">
               {/* Phone */}
               <div className="flex items-center gap-3 px-5 py-4">
-                <span className="w-8 h-8 rounded-xl bg-muted/10 flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-sm bg-muted/10 flex items-center justify-center shrink-0">
                   <Phone size={14} className="text-muted" />
                 </span>
                 <div className="flex-1 min-w-0">
@@ -239,7 +237,7 @@ export default function BranchDetailPage() {
 
               {/* Email */}
               <div className="flex items-center gap-3 px-5 py-4">
-                <span className="w-8 h-8 rounded-xl bg-muted/10 flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-sm bg-muted/10 flex items-center justify-center shrink-0">
                   <Mail size={14} className="text-muted" />
                 </span>
                 <div className="flex-1 min-w-0">
@@ -251,7 +249,7 @@ export default function BranchDetailPage() {
 
               {/* Address */}
               <div className="flex items-center gap-3 px-5 py-4">
-                <span className="w-8 h-8 rounded-xl bg-muted/10 flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-sm bg-muted/10 flex items-center justify-center shrink-0">
                   <MapPin size={14} className="text-muted" />
                 </span>
                 <div className="flex-1 min-w-0">
@@ -368,7 +366,7 @@ export default function BranchDetailPage() {
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
-    </div>
+    </DetailShell>
   );
 }
 
@@ -386,7 +384,7 @@ function StatCard({ label, value, icon, highlighted }: {
 }) {
   return (
     <Card className={cn(
-      'p-4 transition-shadow hover:shadow-sm',
+      'p-4 transition-shadow',
       highlighted && 'border-accent/30 bg-accent/[0.02]',
     )}>
       <div className="flex items-center gap-2 mb-2.5">
@@ -406,10 +404,10 @@ function LoadingSkeleton() {
     <div className="max-w-6xl mx-auto space-y-8">
       <Skeleton className="h-4 w-36" />
 
-      <div className="rounded-2xl border border-border overflow-hidden">
+      <div className="rounded-sm border border-border overflow-hidden">
         <div className="p-8">
           <div className="flex items-start gap-5">
-            <Skeleton className="w-14 h-14 rounded-2xl shrink-0" />
+            <Skeleton className="w-14 h-14 rounded-sm shrink-0" />
             <div className="flex-1">
               <div className="flex gap-2 mb-2">
                 <Skeleton className="h-5 w-16 rounded-full" />
@@ -443,7 +441,7 @@ function LoadingSkeleton() {
           <Card className="divide-y divide-border">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3 px-5 py-4">
-                <Skeleton className="w-8 h-8 rounded-xl shrink-0" />
+                <Skeleton className="w-8 h-8 rounded-sm shrink-0" />
                 <div className="flex-1">
                   <Skeleton className="h-3 w-12 mb-1" />
                   <Skeleton className="h-4 w-48" />

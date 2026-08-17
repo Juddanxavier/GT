@@ -18,6 +18,7 @@ import { usePageTitle } from '@/lib/use-page-title';
 import { ArrowLeft, Package, MapPin, Clock, Calendar, FileText, MessageSquare, Check, RefreshCw, Trash2, Pencil, Ban, Send, Plus, DollarSign, Globe, Users } from 'lucide-react';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { useToast } from '@/components/toast';
+import { DetailShell, DetailBack } from '@/components/detail-layout';
 
 type TabKey = 'details' | 'tracking' | 'invoice' | 'notes';
 
@@ -76,16 +77,13 @@ export default function ShipmentDetailPage(): ReactNode {
   // ── Error state ──
   if (error || !shipment) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <button onClick={() => router.push('/shipments')} className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-6">
-          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-          Back to Shipments
-        </button>
+      <DetailShell>
+        <DetailBack onClick={() => router.push('/shipments')} label="Back to Shipments" />
         <Card className="p-12 text-center">
           <p className="text-danger text-sm mb-3">{error?.message ?? 'Failed to load shipment'}</p>
           <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
         </Card>
-      </div>
+      </DetailShell>
     );
   }
 
@@ -98,16 +96,17 @@ export default function ShipmentDetailPage(): ReactNode {
     ? Math.ceil((new Date(shipment.estimatedDelivery).getTime() - new Date(shipment.createdAt).getTime()) / 86400000) : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <DetailShell>
       {/* Back button */}
-      <button onClick={() => router.push('/shipments')} className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
-        <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
-        Back to Shipments
-      </button>
+      <DetailBack onClick={() => router.push('/shipments')} label="Back to Shipments" />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
+        {/* Main column */}
+        <div className="space-y-5 min-w-0">
 
       {/* Hero section */}
       <div className={cn(
-        'relative overflow-hidden rounded-2xl border',
+        'relative overflow-hidden rounded-sm border',
         cfg.color === 'primary' && 'border-primary/30',
         cfg.color === 'success' && 'border-success/30',
         cfg.color === 'danger' && 'border-danger/30',
@@ -126,7 +125,7 @@ export default function ShipmentDetailPage(): ReactNode {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className={cn(
-                'w-12 h-12 rounded-2xl flex items-center justify-center shrink-0',
+                'w-12 h-12 rounded-sm flex items-center justify-center shrink-0',
                 cfg.color === 'primary' && 'bg-primary/15 text-primary',
                 cfg.color === 'success' && 'bg-success/15 text-success',
                 cfg.color === 'danger' && 'bg-danger/15 text-danger',
@@ -153,13 +152,6 @@ export default function ShipmentDetailPage(): ReactNode {
                   </p>
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending}>
-                <RefreshCw size={14} /> Track Now
-              </Button>
-              <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)}>Edit</Button>
-              <Button variant="ghost" size="sm" onPress={() => setDeleteOpen(true)}>Delete</Button>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-4 text-xs text-muted flex-wrap">
@@ -197,25 +189,6 @@ export default function ShipmentDetailPage(): ReactNode {
         {/* Details Tab */}
         <Tabs.Panel id="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Customer & Assignment */}
-            <Card>
-              <div className="px-5 py-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
-                  <h3 className="text-sm font-semibold">Customer</h3>
-                </div>
-              </div>
-              <div className="p-5">
-                <AssignedTo
-                  shipmentId={id}
-                  customerId={shipment.customerId}
-                  customerName={shipment.customerName}
-                  customerEmail={shipment.contactEmail}
-                  customerPhone={shipment.contactPhone}
-                />
-              </div>
-            </Card>
-
             {/* Shipment Info */}
             <Card>
               <div className="px-5 py-4 border-b border-border">
@@ -389,29 +362,86 @@ export default function ShipmentDetailPage(): ReactNode {
           </Card>
         </Tabs.Panel>
       </Tabs>
+        </div>
 
-      {/* Actions aside */}
-      <Card>
-        <div className="px-5 py-4 border-b border-border">
-          <h3 className="text-sm font-semibold">Actions</h3>
-        </div>
-        <div className="p-4 flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending}>
-            <RefreshCw size={14} /> Refresh Tracking
-          </Button>
-          <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)}>
-            <Pencil size={14} /> Edit
-          </Button>
-          {shipment.trackingRegistered && (
-            <Button variant="ghost" size="sm" onPress={handleStopTracking} isPending={stopMutation.isPending}>
-              <Ban size={14} /> Stop Tracking
-            </Button>
-          )}
-          <Button variant="danger" size="sm" onPress={() => setDeleteOpen(true)}>
-            <Trash2 size={14} /> Delete
-          </Button>
-        </div>
-      </Card>
+        {/* Right sidebar */}
+        <aside className="space-y-5 xl:sticky xl:top-24">
+          {/* Status card */}
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-sm font-semibold">Status</h3>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Chip size="sm" variant="soft" color={cfg.color as 'success' | 'danger' | 'warning' | 'default'}>{cfg.label}</Chip>
+                {shipment.trackingRegistered && (
+                  <span className="text-xs text-success flex items-center gap-1"><Check size={12} />Active</span>
+                )}
+              </div>
+              {shipment.estimatedDelivery && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Clock size={14} className="text-muted" />
+                  <span className="text-muted">Est. delivery</span>
+                  <span className="font-semibold ml-auto">{new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </div>
+              )}
+              {daysSinceUpdate !== null && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Calendar size={14} className="text-muted" />
+                  <span className="text-muted">Last update</span>
+                  <span className="font-semibold ml-auto">{daysSinceUpdate === 0 ? 'Today' : `${daysSinceUpdate}d ago`}</span>
+                </div>
+              )}
+              {shipment.lastTrackedAt && (
+                <div className="flex items-center gap-2 text-xs">
+                  <RefreshCw size={14} className="text-muted" />
+                  <span className="text-muted">Last tracked</span>
+                  <span className="font-semibold ml-auto">{new Date(shipment.lastTrackedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Customer card */}
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-sm font-semibold">Customer</h3>
+            </div>
+            <div className="p-5">
+              <AssignedTo
+                shipmentId={id}
+                customerId={shipment.customerId}
+                customerName={shipment.customerName}
+                customerEmail={shipment.contactEmail}
+                customerPhone={shipment.contactPhone}
+              />
+            </div>
+          </Card>
+
+          {/* Actions card */}
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-sm font-semibold">Actions</h3>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending} fullWidth>
+                <RefreshCw size={14} /> Track Now
+              </Button>
+              <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)} fullWidth>
+                <Pencil size={14} /> Edit
+              </Button>
+              {shipment.trackingRegistered && (
+                <Button variant="ghost" size="sm" onPress={handleStopTracking} isPending={stopMutation.isPending} fullWidth>
+                  <Ban size={14} /> Stop Tracking
+                </Button>
+              )}
+              <Button variant="danger" size="sm" onPress={() => setDeleteOpen(true)} fullWidth>
+                <Trash2 size={14} /> Delete
+              </Button>
+            </div>
+          </Card>
+        </aside>
+      </div>
 
       {/* Delete Modal */}
       {/* ponytail: keep simple modal pattern */}
@@ -428,7 +458,7 @@ export default function ShipmentDetailPage(): ReactNode {
           </Card>
         </div>
       )}
-    </div>
+    </DetailShell>
   );
 }
 
@@ -462,15 +492,15 @@ function DetailLoadingSkeleton(): ReactNode {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <Skeleton className="h-4 w-36" />
-      <div className="rounded-2xl border border-border overflow-hidden">
+      <div className="rounded-sm border border-border overflow-hidden">
         <div className="p-8">
           <div className="flex items-start gap-5">
-            <Skeleton className="w-14 h-14 rounded-2xl shrink-0" />
+            <Skeleton className="w-14 h-14 rounded-sm shrink-0" />
             <div className="flex-1">
               <div className="flex gap-2 mb-2"><Skeleton className="h-5 w-20 rounded-full" /><Skeleton className="h-5 w-16 rounded-full" /></div>
               <Skeleton className="h-8 w-64 mb-1" /><Skeleton className="h-4 w-40" />
             </div>
-            <div className="flex gap-2 shrink-0"><Skeleton className="h-9 w-24 rounded-lg" /><Skeleton className="h-9 w-16 rounded-lg" /></div>
+            <div className="flex gap-2 shrink-0"><Skeleton className="h-9 w-24 rounded-sm" /><Skeleton className="h-9 w-16 rounded-sm" /></div>
           </div>
           <div className="mt-6 flex gap-4">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-4 w-32" />)}</div>
         </div>
@@ -478,7 +508,7 @@ function DetailLoadingSkeleton(): ReactNode {
       <div className="grid grid-cols-4 gap-4">
         {Array.from({ length: 4 }, (_, i) => <Card key={i} className="p-4"><Skeleton className="h-3 w-16 mb-2" /><Skeleton className="h-5 w-28" /></Card>)}
       </div>
-      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-sm" />
     </div>
   );
 }

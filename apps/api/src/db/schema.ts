@@ -31,6 +31,7 @@ export const tenants = pgTable('tenant', {
 export const branches = pgTable('branch', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 100 }).notNull(),
   phone: varchar('phone', { length: 50 }),
   email: varchar('email', { length: 255 }),
   address: text('address'),
@@ -42,6 +43,10 @@ export const branches = pgTable('branch', {
 },
   (table) => ({
     branchTenantIdx: index('branch_tenant_idx').on(table.tenantId),
+    branchTenantSlugUnique: unique('branch_tenant_slug_unique').on(
+      table.tenantId,
+      table.slug,
+    ),
   }),
 );
 

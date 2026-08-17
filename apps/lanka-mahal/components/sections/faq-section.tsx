@@ -20,11 +20,11 @@ export function FaqSection(): ReactNode {
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
           <div>
-            <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               FAQ
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
               Frequently Asked <span className="text-[#F59E0B]">Questions</span>
             </h2>
             <p className="text-lg text-foreground/90 leading-relaxed mb-6">

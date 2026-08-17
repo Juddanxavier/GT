@@ -105,7 +105,7 @@ function OnboardingPageContent(): ReactNode {
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
           <CheckCircle size={32} className="text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground">All set!</h2>
+        <h2 className="text-xl font-bold text-foreground">All set!</h2>
         <p className="text-foreground/70">Redirecting to your dashboard...</p>
       </div>
     );
@@ -116,9 +116,12 @@ function OnboardingPageContent(): ReactNode {
 
   return (
     <div className="max-w-lg mx-auto py-8 px-0 animate-[fade-up_0.4s_ease-out] space-y-8">
-      <div className="text-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Complete your profile</h1>
-        <p className="text-foreground/50 mt-1">Tell us a bit about yourself to get started</p>
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-8 text-center">
+        <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="relative">
+          <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Complete your profile</h1>
+          <p className="text-white/60 mt-1 text-sm">Tell us a bit about yourself to get started</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] p-8 space-y-6">

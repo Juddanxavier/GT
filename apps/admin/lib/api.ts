@@ -33,6 +33,23 @@ export function clearBranchFilter() {
 
 const REQUEST_TIMEOUT = 15_000;
 
+function parseApiError(status: number, body: unknown): string {
+  if (body && typeof body === 'object') {
+    const b = body as { error?: unknown; detail?: unknown; code?: unknown };
+    const nested = b.error && typeof b.error === 'object'
+      ? (b.error as { code?: unknown; message?: unknown })
+      : null;
+    const parts: string[] = [];
+    if (typeof nested?.message === 'string') parts.push(nested.message);
+    else if (typeof b.error === 'string') parts.push(b.error);
+    const code = typeof nested?.code === 'string' ? nested.code : typeof b.code === 'string' ? b.code : null;
+    if (code) parts.push(`[${code}]`);
+    if (b.detail !== undefined && b.detail !== null) parts.push(`(${String(b.detail)})`);
+    if (parts.length > 0) return parts.join(' ');
+  }
+  return `Request failed (${status})`;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -65,11 +82,7 @@ async function fetchJson<T>(path: string, options?: RequestInit, retries = 1): P
 
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const parts: string[] = [];
-        if (body && typeof body.error === 'string') parts.push(body.error);
-        if (body && body.detail) parts.push(`(${body.detail})`);
-        if (body && body.code) parts.push(`[${body.code}]`);
-        const msg = parts.join(' ') || `Request failed (${res.status})`;
+        const msg = parseApiError(res.status, body);
         if (msg.includes('Branch not found')) {
           branchOverride = null;
           try { localStorage.removeItem('branchFilter'); } catch {}
@@ -107,11 +120,7 @@ async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${BASE}${path}`, { credentials: 'include', headers, signal: controller.signal, ...options });
     const body = await res.json().catch(() => null);
     if (!res.ok) {
-      const parts: string[] = [];
-      if (body && typeof body.error === 'string') parts.push(body.error);
-      if (body && body.detail) parts.push(`(${body.detail})`);
-      if (body && body.code) parts.push(`[${body.code}]`);
-      const msg = parts.join(' ') || `Request failed (${res.status})`;
+      const msg = parseApiError(res.status, body);
       if (msg.includes('Branch not found')) {
         branchOverride = null;
         try { localStorage.removeItem('branchFilter'); } catch {}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 
@@ -11,13 +11,13 @@ export default function RefundPolicyPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Refund &amp; Shipping Policy</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Refund &amp; Shipping Policy</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">Last updated: July 2026</p>
         </div>
       </section>
       <section className="max-w-4xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20 space-y-8 text-lg text-foreground leading-relaxed">
         <h2 className="text-2xl font-bold text-foreground">Shipping Policy</h2>
-        <p>We process shipments within 24 hours of booking. Delivery timelines vary by service type and destination. Express air shipments typically arrive in 3â€“15 days, while ocean freight takes 3â€“30 days depending on the route.</p>
+        <p>We process shipments within 24 hours of booking. Delivery timelines vary by service type and destination. Express air shipments typically arrive in 3–15 days, while ocean freight takes 3–30 days depending on the route.</p>
 
         <h2 className="text-2xl font-bold text-foreground">Refund Eligibility</h2>
         <p>Refunds are considered on a case-by-case basis. You may be eligible for a refund if your shipment is lost in transit or if we fail to deliver within the committed timeframe (excluding customs delays and force majeure events).</p>

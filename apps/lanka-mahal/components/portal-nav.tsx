@@ -8,6 +8,7 @@ import { Package, Receipt, Bell, User, LogOut, LogIn, UserPlus, Menu, X, Calenda
 import { authClient } from '@/lib/auth-client';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 import { useUnreadCount } from '@/lib/queries';
+import { connectSocket, disconnectSocket } from '@/lib/realtime';
 
 const dummyLinks = [
   { href: '/', label: 'Home' },
@@ -31,6 +32,14 @@ export function PortalNav(): ReactNode {
   const servicesRef = useRef<HTMLDivElement>(null);
   const supportRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Live notification updates for signed-in customers
+  useEffect(() => {
+    if (!session) return;
+    const tenantId = (session.user as Record<string, unknown>).tenantId as string | undefined;
+    if (tenantId) connectSocket(tenantId);
+    return () => disconnectSocket();
+  }, [session]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -58,14 +67,14 @@ export function PortalNav(): ReactNode {
   const isDashboardPage = !isAuthPage && !!session && (pathname.startsWith('/dashboard') || pathname.startsWith('/my-') || pathname.startsWith('/invoices') || pathname === '/notifications' || pathname === '/profile' || pathname === '/onboarding');
   const lightNav = isAuthPage || isDashboardPage;
   const tc = lightNav
-    ? { link: 'text-[#111111]/80 hover:text-[#111111]', muted: 'text-[#111111]/80 hover:text-[#111111]', logo: 'text-[#111111]', btn: 'text-[#111111]/80 hover:text-[#111111]' }
+    ? { link: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]', muted: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]', logo: 'text-[#1a1a2e]', btn: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]' }
     : { link: 'text-white/90 hover:text-white', muted: 'text-white/80 hover:text-white', logo: 'text-white', btn: 'text-white/80 hover:text-white' };
 
   const navBg = lightNav
     ? 'bg-white border-border'
     : !scrolled
       ? 'bg-transparent border-transparent'
-      : 'bg-[#111111]/95 backdrop-blur-md border-white/10';
+      : 'bg-[#1a1a2e]/95 backdrop-blur-md border-white/10';
 
   const badge = unreadData?.count ?? 0;
 
@@ -92,7 +101,7 @@ export function PortalNav(): ReactNode {
             </button>
             {servicesOpen && (
               <div className="absolute top-full left-0 pt-2 w-48">
-                <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                <div className="rounded-xl bg-[#1a1a2e] border border-white/10 shadow-xl overflow-hidden">
                   <a href="/air-freight" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"><Plane size={16} className="text-[#F59E0B]" /> Air Freight</a>
                   <a href="/ocean-freight" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"><Ship size={16} className="text-[#F59E0B]" /> Ocean Freight</a>
                 </div>
@@ -110,7 +119,7 @@ export function PortalNav(): ReactNode {
             </button>
             {supportOpen && (
               <div className="absolute top-full left-0 pt-2 w-56">
-                <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                <div className="rounded-xl bg-[#1a1a2e] border border-white/10 shadow-xl overflow-hidden">
                   <a href="/faq" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"><HelpCircle size={16} className="text-[#F59E0B]" /> FAQ</a>
                   <a href="/prohibited" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"><Ban size={16} className="text-[#F59E0B]" /> Prohibited Items</a>
                   <a href="/pickup" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"><Calendar size={16} className="text-[#F59E0B]" /> Pickup</a>
@@ -144,7 +153,7 @@ export function PortalNav(): ReactNode {
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2 w-56">
-                  <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                  <div className="rounded-xl bg-[#1a1a2e] border border-white/10 shadow-xl overflow-hidden">
                     <div className="px-4 py-3 border-b border-white/10">
                       <div className="text-sm font-medium text-white">{(session.user as Record<string, unknown>).name as string}</div>
                       <div className="text-xs text-white/60">{(session.user as Record<string, unknown>).email as string}</div>
@@ -206,7 +215,7 @@ export function PortalNav(): ReactNode {
 
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 top-16 z-40 bg-[#111111]/98 backdrop-blur-md animate-[fade-up_0.2s_ease-out]"
+          className="lg:hidden fixed inset-0 top-16 z-40 bg-[#1a1a2e]/98 backdrop-blur-md animate-[fade-up_0.2s_ease-out]"
           onClick={() => setMobileOpen(false)}
         >
           <div

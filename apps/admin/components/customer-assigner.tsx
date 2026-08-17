@@ -133,7 +133,7 @@ export function CustomerAssigner({
     return (
       <div className="space-y-2">
         <Label>Customer</Label>
-        <div className="rounded-xl border border-success/30 bg-success/[0.02] overflow-hidden">
+        <div className="rounded-sm border border-success/30 bg-success/[0.02] overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0 mt-0.5">
@@ -187,7 +187,7 @@ export function CustomerAssigner({
     return (
       <div className="space-y-2">
         <Label>Customer</Label>
-        <div className="rounded-xl border border-warning/30 bg-warning/[0.02] overflow-hidden">
+        <div className="rounded-sm border border-warning/30 bg-warning/[0.02] overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-full bg-warning/10 text-warning flex items-center justify-center shrink-0 mt-0.5"><UserX size={18} /></div>
@@ -218,7 +218,7 @@ export function CustomerAssigner({
           )}
               <input
                 ref={inputRef}
-                className="w-full h-10 px-9 rounded-xl border border-border bg-background text-sm placeholder:text-muted outline-none focus:border-foreground/30 transition-colors"
+                className="w-full h-10 px-9 rounded-sm border border-border bg-background text-sm placeholder:text-muted outline-none focus:border-foreground/30 transition-colors"
                 placeholder="Search customer by name, email, or phone..."
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setShowResults(true); clearError?.('customerId'); }}
@@ -226,7 +226,7 @@ export function CustomerAssigner({
           />
         </div>
         {showResults && query.trim() && (
-          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-xl shadow-lg max-h-64 overflow-y-auto">
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-sm shadow-lg max-h-64 overflow-y-auto">
             {results.length > 0 ? (
               results.map((c) => (
                 <button

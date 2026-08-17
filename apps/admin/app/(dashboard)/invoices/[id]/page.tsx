@@ -2,23 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Download, Send, Trash2, FileText } from 'lucide-react';
-import { Button, Chip, Modal, Spinner } from '@heroui/react';
+import { Download, Send, Trash2, FileText, Calendar, Clock, Mail, DollarSign, Receipt, CheckCircle2 } from 'lucide-react';
+import { Button, Chip, Modal, Spinner, Card, cn } from '@heroui/react';
 import { api, getTenantFilter } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
-import { useSendInvoice, useDeleteInvoice } from '@/lib/queries';
-
-const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
-  paid: 'success',
-  unpaid: 'warning',
-  cancelled: 'danger',
-  refunded: 'danger',
-};
+import { useSendInvoice, useDeleteInvoice, type InvoiceDetail } from '@/lib/queries';
+import { usePageTitle } from '@/lib/use-page-title';
+import { DetailBack, DetailShell, DetailGrid, DetailSection } from '@/components/detail-layout';
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const [invoice, setInvoice] = useState<Record<string, unknown> | null>(null);
+  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendOpen, setSendOpen] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -26,8 +21,10 @@ export default function InvoiceDetailPage() {
   const sendInvoice = useSendInvoice();
   const deleteInvoice = useDeleteInvoice();
 
+  usePageTitle(invoice ? `Invoice ${invoice.invoiceNo}` : 'Invoice');
+
   useEffect(() => {
-    api.get<Record<string, unknown>>(`/api/invoices/${id}`).then((data) => {
+    api.get<InvoiceDetail>(`/api/invoices/${id}`).then((data) => {
       setInvoice(data);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -41,77 +38,139 @@ export default function InvoiceDetailPage() {
     </div>
   );
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onPress={() => router.push('/invoices')}>
-          <ArrowLeft size={16} /> Back
-        </Button>
-      </div>
+  const emailCount = invoice.emailCount ?? 0;
+  const emailsLeft = Math.max(2 - emailCount, 0);
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileText size={20} className="text-muted" />
-              <div>
-                <h1 className="text-xl font-bold">{invoice.invoiceNo as string}</h1>
-                <p className="text-sm text-muted">Invoice Details</p>
+  return (
+    <DetailShell>
+      <DetailBack onClick={() => router.push('/invoices')} label="Back to Invoices" />
+
+      <DetailGrid
+        main={<>
+          {/* Hero section */}
+          <div className="relative overflow-hidden rounded-sm border border-success/30">
+            <div className="absolute inset-0 bg-gradient-to-br from-success/[0.08] to-transparent" />
+            <div className="relative px-6 py-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-sm flex items-center justify-center shrink-0 bg-success/15 text-success">
+                    <FileText size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Chip size="sm" variant="soft" color="success">Paid</Chip>
+                      <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight">{invoice.invoiceNo}</h1>
+                    {invoice.customerName && (
+                      <p className="text-sm text-muted mt-0.5">{invoice.customerName}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-4 text-xs text-muted flex-wrap">
+                <div className="flex items-center gap-1.5"><Receipt size={14} /><span>{invoice.invoiceNo}</span></div>
+                {invoice.trackingNo && (
+                  <div className="flex items-center gap-1.5"><DollarSign size={14} /><span>{invoice.trackingNo}</span></div>
+                )}
+                {invoice.createdAt && (
+                  <div className="flex items-center gap-1.5"><Calendar size={14} /><span>Created {new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span></div>
+                )}
+                {invoice.paidAt && (
+                  <div className="flex items-center gap-1.5"><CheckCircle2 size={14} /><span>Paid {new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span></div>
+                )}
               </div>
             </div>
-            <Chip size="sm" variant="soft" color={STATUS_COLORS[invoice.status as string] ?? 'default'}>
-              {invoice.status as string}
-            </Chip>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Invoice No', value: invoice.invoiceNo as string },
-              { label: 'Tracking No', value: invoice.trackingNo as string },
-              { label: 'Customer', value: (invoice.customerName as string) ?? '—' },
-               { label: 'Amount', value: formatCurrency(invoice.amount as number | string, 'INR') },
-              { label: 'Status', value: invoice.status as string },
-              { label: 'Created', value: invoice.createdAt ? new Date(invoice.createdAt as string).toLocaleDateString() : '—' },
-              { label: 'Emails Sent', value: `${invoice.emailCount ?? 0}/2 today` },
-              { label: 'Paid At', value: invoice.paidAt ? new Date(invoice.paidAt as string).toLocaleDateString() : '—' },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <p className="text-xs text-muted uppercase tracking-wider mb-1">{label}</p>
-                <p className="text-sm font-medium">{value}</p>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Amount" value={formatCurrency(invoice.amount, 'INR')} icon={<DollarSign size={14} />} highlighted />
+            <StatCard label="Status" value="Paid" icon={<Receipt size={14} />} highlighted />
+            <StatCard label="Emails Sent" value={`${emailCount}/2 today`} icon={<Mail size={14} />} />
+            <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Calendar size={14} />} />
+          </div>
+
+          {/* Details card */}
+          <DetailSection title="Invoice Details">
+            <div className="p-5 space-y-3">
+              <InfoRow label="Invoice No" value={invoice.invoiceNo} />
+              <InfoRow label="Tracking No" value={invoice.trackingNo ?? '—'} />
+              <InfoRow label="Customer" value={invoice.customerName ?? '—'} />
+              <InfoRow label="Amount" value={formatCurrency(invoice.amount, 'INR')} />
+              <InfoRow label="Emails Sent" value={`${emailCount}/2 today`} />
+              <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+              <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+            </div>
+          </DetailSection>
+        </>}
+        aside={<>
+          {/* Status card */}
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-sm font-semibold">Status</h3>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Chip size="sm" variant="soft" color="success">Paid</Chip>
+                <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Clock size={14} className="text-muted" />
+                <span className="text-muted">Amount</span>
+                <span className="font-semibold ml-auto">{formatCurrency(invoice.amount, 'INR')}</span>
+              </div>
+              {invoice.createdAt && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Calendar size={14} className="text-muted" />
+                  <span className="text-muted">Created</span>
+                  <span className="font-semibold ml-auto">{new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-xs">
+                <Mail size={14} className="text-muted" />
+                <span className="text-muted">Emails</span>
+                <span className="font-semibold ml-auto">{emailsLeft > 0 ? `${emailsLeft} left today` : 'Limit reached'}</span>
+              </div>
+            </div>
+          </Card>
 
-      <div className="flex gap-2">
-        <Button variant="secondary" size="sm" onPress={async () => {
-          const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-          const headers: Record<string, string> = {};
-          const tid = getTenantFilter();
-          if (tid) headers['X-Tenant-ID'] = tid;
-          const res = await fetch(`${base}/api/invoices/${id}/pdf`, { credentials: 'include', headers });
-          const blob = await res.blob();
-          window.open(URL.createObjectURL(blob), '_blank');
-        }}>
-          <Download size={14} /> Download PDF
-        </Button>
-        <Button variant="secondary" size="sm" onPress={() => setSendOpen(true)}>
-          <Send size={14} /> Send Email
-        </Button>
-        <Button variant="danger" size="sm" isPending={deleteInvoice.isPending} onPress={() => {
-          deleteInvoice.mutate(id, { onSuccess: () => router.push('/invoices') });
-        }}>
-          <Trash2 size={14} /> Delete
-        </Button>
-      </div>
+          {/* Actions card */}
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-sm font-semibold">Actions</h3>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <Button variant="secondary" size="sm" onPress={async () => {
+                const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                const headers: Record<string, string> = {};
+                const tid = getTenantFilter();
+                if (tid) headers['X-Tenant-ID'] = tid;
+                const res = await fetch(`${base}/api/invoices/${id}/pdf`, { credentials: 'include', headers });
+                const blob = await res.blob();
+                window.open(URL.createObjectURL(blob), '_blank');
+              }} fullWidth>
+                <Download size={14} /> Download PDF
+              </Button>
+              <Button variant="secondary" size="sm" onPress={() => setSendOpen(true)} isDisabled={emailsLeft === 0} fullWidth>
+                <Send size={14} /> Send Email
+              </Button>
+              <Button variant="danger" size="sm" isPending={deleteInvoice.isPending} onPress={() => {
+                deleteInvoice.mutate(id, { onSuccess: () => router.push('/invoices') });
+              }} fullWidth>
+                <Trash2 size={14} /> Delete
+              </Button>
+            </div>
+          </Card>
+        </>}
+      />
 
       <Modal.Backdrop isOpen={sendOpen} onOpenChange={(v) => { if (!v) { setSendOpen(false); setSendError(''); setSendSuccess(''); } }}>
         <Modal.Container>
           <Modal.Dialog>
             <Modal.Header>Send Invoice</Modal.Header>
             <Modal.Body>
-              <p className="text-sm text-muted">Send invoice <strong>{invoice.invoiceNo as string}</strong> via email?</p>
+              <p className="text-sm text-muted">Send invoice <strong>{invoice.invoiceNo}</strong> via email?</p>
               {sendError && <p className="text-sm text-danger mt-2">{sendError}</p>}
               {sendSuccess && <p className="text-sm text-success mt-2">{sendSuccess}</p>}
             </Modal.Body>
@@ -133,6 +192,29 @@ export default function InvoiceDetailPage() {
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
+    </DetailShell>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className="text-sm text-muted flex-1">{label}</span>
+      <span className="text-sm font-medium text-right max-w-[50%] truncate">{value}</span>
     </div>
+  );
+}
+
+function StatCard({ label, value, icon, highlighted }: {
+  label: string; value: string; icon: React.ReactNode; highlighted?: boolean;
+}) {
+  return (
+    <Card className={cn('p-4', highlighted && 'border-success/30 bg-success/[0.02]')}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="text-muted">{icon}</span>
+        <span className="text-[11px] text-muted font-medium uppercase tracking-wider">{label}</span>
+      </div>
+      <p className={cn('text-sm font-semibold truncate', highlighted && 'text-success')}>{value}</p>
+    </Card>
   );
 }

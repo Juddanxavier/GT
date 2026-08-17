@@ -5,6 +5,13 @@ import { notificationPreferences } from '../db/schema';
 type PrefCategory = 'delivery' | 'exception' | 'general';
 type PrefChannel = 'email' | 'whatsapp';
 
+// Map a shipment event type to a preference category so prefs can gate the send.
+export function eventTypeToPrefCategory(eventType: string): PrefCategory {
+  if (eventType === 'Exception') return 'exception';
+  if (eventType === 'OutForDelivery' || eventType === 'Delivered') return 'delivery';
+  return 'general';
+}
+
 const categoryChannelMap: Record<PrefCategory, { email: keyof typeof notificationPreferences.$inferInsert; whatsapp: keyof typeof notificationPreferences.$inferInsert }> = {
   delivery: { email: 'deliveryEmail', whatsapp: 'deliveryWhatsapp' },
   exception: { email: 'exceptionEmail', whatsapp: 'exceptionWhatsapp' },

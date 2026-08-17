@@ -7,6 +7,7 @@ import { Package, Receipt, Bell, User, LogOut, LogIn, UserPlus, Menu, X, Calenda
 import { authClient } from '@/lib/auth-client';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 import { useUnreadCount } from '@/lib/queries';
+import { connectSocket, disconnectSocket } from '@/lib/realtime';
 
 const dummyLinks = [
   { href: '/', label: 'Home' },
@@ -30,6 +31,14 @@ export function PortalNav(): ReactNode {
   const servicesRef = useRef<HTMLDivElement>(null);
   const supportRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Live notification updates for signed-in customers
+  useEffect(() => {
+    if (!session) return;
+    const tenantId = (session.user as Record<string, unknown>).tenantId as string | undefined;
+    if (tenantId) connectSocket(tenantId);
+    return () => disconnectSocket();
+  }, [session]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);

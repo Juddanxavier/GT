@@ -93,7 +93,7 @@ export default function SearchPage() {
               </h2>
               <div className="space-y-1">
                 {results.shipments.map((r) => (
-                  <ResultCard key={`ship-${r.id}`} icon={Package} href={`/shipments/${r.id}`} label={r.trackingNo} subtitle={r.carrier ?? r.status} />
+                  <ResultCard key={`ship-${r.id}`} icon={Package} href={`/shipments/${r.trackingNo}`} label={r.trackingNo} subtitle={r.carrier ?? r.status} />
                 ))}
               </div>
             </section>
@@ -117,7 +117,7 @@ export default function SearchPage() {
               </h2>
               <div className="space-y-1">
                 {results.invoices.map((r) => (
-                  <ResultCard key={`inv-${r.id}`} icon={Receipt} href={`/invoices/${r.id}`} label={r.invoiceNo} subtitle={`${r.amount} · ${r.status}`} />
+                  <ResultCard key={`inv-${r.id}`} icon={Receipt} href={`/invoices/${r.invoiceNo}`} label={r.invoiceNo} subtitle={`${r.amount} · ${r.status}`} />
                 ))}
               </div>
             </section>

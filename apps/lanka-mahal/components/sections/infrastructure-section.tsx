@@ -21,10 +21,10 @@ export function InfrastructureSection(): ReactNode {
             <span className="w-6 h-px bg-[#F59E0B]" />
             Why Choose Us
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15]">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15]">
             The foundation for <span className="text-[#F59E0B]">reliable shipping.</span>
           </h2>
-          <p className="mt-4 text-foreground/70 max-w-lg mx-auto leading-relaxed">
+          <p className="mt-4 text-lg text-foreground/70 max-w-lg mx-auto leading-relaxed">
             We combine technology, infrastructure, and expertise to move parcels across borders seamlessly.
           </p>
         </div>
@@ -35,8 +35,8 @@ export function InfrastructureSection(): ReactNode {
               <div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-5">
                 <f.icon className="size-5" />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-1.5">{f.title}</h3>
-              <p className="text-foreground/70 leading-relaxed">{f.desc}</p>
+              <h3 className="text-lg font-semibold text-foreground mb-1.5">{f.title}</h3>
+              <p className="text-lg text-foreground/70 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>

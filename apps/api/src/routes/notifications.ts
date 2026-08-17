@@ -20,7 +20,7 @@ app.use('*', sessionMiddleware, tenantMiddleware);
 app.get('/', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user?.id) return c.json({ error: 'Unauthorized' }, 401);
 
   // Superadmins without tenant scope see no notifications
   if (!tenantId) return c.json({ data: [], total: 0, limit: 0, offset: 0 });
@@ -55,7 +55,7 @@ app.get('/', async (c) => {
 app.get('/unread-count', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user?.id) return c.json({ error: 'Unauthorized' }, 401);
   if (!tenantId) return c.json({ count: 0 });
 
   const [row] = await db
@@ -76,7 +76,7 @@ app.get('/unread-count', async (c) => {
 app.patch('/:id/read', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user?.id || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
 
   const { id } = c.req.param();
   const [updated] = await db
@@ -106,7 +106,7 @@ app.patch('/:id/read', async (c) => {
 app.patch('/read-all', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
-  if (!user || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
+  if (!user?.id || !tenantId) return c.json({ error: 'Unauthorized' }, 401);
 
   const [countRow] = await db
     .select({ count: sql<number>`COUNT(*)` })

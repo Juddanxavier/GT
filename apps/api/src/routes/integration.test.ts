@@ -16,7 +16,7 @@ const mockDb = vi.hoisted(() => ({
   delete: vi.fn(() => chainable),
   execute: vi.fn(async () => [] as never[]),
 }));
-vi.mock('../db', () => ({ db: mockDb, default: mockDb }));
+vi.mock('../db', () => ({ db: mockDb, default: mockDb, runWithTenantContext: vi.fn(async (_id: string | null, fn: () => unknown) => fn()) }));
 
 const mockCache = vi.hoisted(() => ({ cacheDel: vi.fn(), cacheDelPattern: vi.fn(), cacheFlushTenant: vi.fn(), withCache: vi.fn((_t: unknown, _k: unknown, fn: () => unknown) => fn()) }));
 vi.mock('../cache', () => mockCache);
@@ -383,9 +383,9 @@ describe('webhooks', () => {
 describe('debug routes', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('GET /api/debug/seed-status returns 200 or 404 (public)', async () => {
+  it('GET /api/debug/seed-status is not mounted without ENABLE_DEBUG', async () => {
     const { app } = await import('../index');
     const res = await app.request('/api/debug/seed-status');
-    expect([200, 404, 500]).toContain(res.status);
+    expect(res.status).toBe(404);
   });
 });

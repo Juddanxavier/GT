@@ -45,12 +45,12 @@ export function HeroSection(): ReactNode {
             {config.hero.badge}
           </span>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
             {config.hero.headline[0]}{' '}
             <span className="text-[#F59E0B]">{config.hero.headline[1]}</span>
           </h1>
 
-          <p className="mt-5 text-white/70 max-w-md leading-relaxed">
+          <p className="mt-5 text-lg text-white/70 max-w-md leading-relaxed">
             {config.hero.description}
           </p>
 

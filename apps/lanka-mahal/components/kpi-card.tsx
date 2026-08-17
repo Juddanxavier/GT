@@ -15,7 +15,7 @@ export function KpiCard({ icon, label, value, accent }: KpiCardProps): ReactNode
           <span className={accent.replace('bg-', 'text-')}>{icon}</span>
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] text-muted font-medium tracking-wide uppercase">{label}</p>
+          <p className="text-[11px] text-foreground/70 font-medium tracking-wide uppercase">{label}</p>
           <p className="text-lg font-bold text-foreground mt-px">{value}</p>
         </div>
       </div>

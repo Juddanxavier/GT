@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -9,7 +9,7 @@ import { FaqSection } from '@/components/sections/faq-section';
 const contactInfo = [
   { icon: Mail, title: 'Email', value: 'support@lankamahal.lk' },
   { icon: Phone, title: 'Phone', value: '+94 77 123 4567' },
-  { icon: Clock, title: 'Working Hours', value: 'Monâ€“Sat, 9 AM â€“ 9 PM' },
+  { icon: Clock, title: 'Working Hours', value: 'Mon–Sat, 9 AM – 9 PM' },
 ];
 
 export default function ContactPage(): ReactNode {
@@ -32,11 +32,11 @@ export default function ContactPage(): ReactNode {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Contact Us
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
               Get in touch
               <br />
               <span className="text-[#F59E0B]">with our team.</span>
@@ -54,11 +54,11 @@ export default function ContactPage(): ReactNode {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Left */}
             <div>
-              <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Reach Us
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-6">
                 We&apos;d love <span className="text-[#F59E0B]">to hear from you.</span>
               </h2>
               <p className="text-lg text-foreground/90 leading-relaxed mb-10">

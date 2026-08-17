@@ -36,9 +36,10 @@ import { sendEmail } from '../email/provider';
 import { logAudit } from '../services/audit';
 import { generateOtp, verifyOtp, maskEmail } from '../services/otp';
 import { globalRateLimit } from '../middleware/rate-limit';
+import type { TenantVariables } from '../middleware/tenant';
 import type { InternalStatus } from '../shipment-providers/types';
 
-const app = new Hono();
+const app = new Hono<{ Variables: TenantVariables }>();
 
 const claimSchema = z.object({
   trackingNo: z.string().min(1).max(255),
@@ -48,7 +49,7 @@ const claimSchema = z.object({
   tenant: z.string().min(1).max(100).optional(),
 });
 
-app.post('/claim', async (c) => {
+app.post('/claim', globalRateLimit({ windowSeconds: 300, maxRequests: 5, keyPrefix: 'claim' }), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = claimSchema.safeParse(body);
 
@@ -69,7 +70,7 @@ app.post('/claim', async (c) => {
 
   // Build the shipment lookup
   const conditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo!)];
-  let tenantId: string | null = null;
+  let tenantId: string | null = (c.get('tenantId') as string | null) ?? null;
 
   if (tenantSlug) {
     const [tenant] = await db
@@ -80,7 +81,10 @@ app.post('/claim', async (c) => {
 
     if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
     tenantId = tenant.id;
-    conditions.push(eq(shipments.tenantId, tenant.id));
+  }
+
+  if (tenantId) {
+    conditions.push(eq(shipments.tenantId, tenantId));
   }
 
   // Find the shipment
@@ -195,6 +199,7 @@ app.post('/claim', async (c) => {
         customerName,
         customerEmail: matchedEmail ?? undefined,
         customerPhone: matchedPhone ?? undefined,
+        customerUserId: matchedUser.id,
       });
 
       await logAudit('NOTIFICATION_SENT', null, {
@@ -230,6 +235,12 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
   }
 
   // Find shipment
+  const claimConditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo)];
+  const resolvedTenantId = (c.get('tenantId') as string | null) ?? null;
+  if (resolvedTenantId) {
+    claimConditions.push(eq(shipments.tenantId, resolvedTenantId));
+  }
+
   const [ship] = await db
     .select({
       id: shipments.id,
@@ -239,7 +250,7 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
       tenantId: shipments.tenantId,
     })
     .from(shipments)
-    .where(eq(shipments.trackingNo, trackingNo))
+    .where(and(...claimConditions) as SQL | undefined)
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
@@ -248,7 +259,7 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
   const email = ship.contactEmail;
   if (!email) return c.json({ error: 'No contact email on record for this shipment' }, 400);
 
-  const otp = generateOtp(trackingNo, email);
+  const otp = await generateOtp(trackingNo, email);
   try {
     const brandColor = '#059669';
     await sendEmail({
@@ -273,7 +284,7 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
   return c.json({ message: 'OTP sent to your email', email: maskEmail(email) });
 });
 
-app.post('/claim/verify-otp', async (c) => {
+app.post('/claim/verify-otp', globalRateLimit({ windowSeconds: 300, maxRequests: 10, keyPrefix: 'claim-verify' }), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = z.object({ trackingNo: z.string().min(1).max(255), otpCode: z.string().length(6) }).safeParse(body);
   if (!parsed.success) {
@@ -282,9 +293,11 @@ app.post('/claim/verify-otp', async (c) => {
 
   const { trackingNo, otpCode } = parsed.data;
 
-  if (!verifyOtp(trackingNo, otpCode)) {
+  if (!(await verifyOtp(trackingNo, otpCode))) {
     return c.json({ error: 'Invalid or expired OTP' }, 400);
   }
+
+  const resolvedTenantId = (c.get('tenantId') as string | null) ?? null;
 
   const [ship] = await db
     .select({
@@ -300,7 +313,7 @@ app.post('/claim/verify-otp', async (c) => {
       tenantId: shipments.tenantId,
     })
     .from(shipments)
-    .where(eq(shipments.trackingNo, trackingNo))
+    .where(and(eq(shipments.trackingNo, trackingNo), ...(resolvedTenantId ? [eq(shipments.tenantId, resolvedTenantId)] : [])) as SQL | undefined)
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
@@ -359,10 +372,16 @@ app.post('/claim/resend-otp', globalRateLimit({ windowSeconds: 600, maxRequests:
     return c.json({ error: 'Valid trackingNo is required' }, 400);
   }
 
+  const resendConditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo)];
+  const resendTenantId = (c.get('tenantId') as string | null) ?? null;
+  if (resendTenantId) {
+    resendConditions.push(eq(shipments.tenantId, resendTenantId));
+  }
+
   const [ship] = await db
     .select({ contactEmail: shipments.contactEmail, userId: shipments.userId })
     .from(shipments)
-    .where(eq(shipments.trackingNo, trackingNo))
+    .where(and(...resendConditions) as SQL | undefined)
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
@@ -371,7 +390,7 @@ app.post('/claim/resend-otp', globalRateLimit({ windowSeconds: 600, maxRequests:
   const email = ship.contactEmail;
   if (!email) return c.json({ error: 'No contact email on record for this shipment' }, 400);
 
-  const otp = generateOtp(trackingNo, email);
+  const otp = await generateOtp(trackingNo, email);
   const brandColor = '#059669';
   try {
     await sendEmail({

@@ -73,14 +73,14 @@ export function Footer(): ReactNode {
   }
 
   return (
-    <footer className="w-screen left-[calc(-50vw+50%)] relative bg-[#111111] text-white overflow-hidden">
+    <footer className="w-screen left-[calc(-50vw+50%)] relative bg-[#1a1a2e] text-white overflow-hidden">
       <div className="absolute inset-0">
         <img
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1920&q=80"
           alt=""
           className="w-full h-full object-cover opacity-20"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#111111] via-[#111111]/95 to-[#111111]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a2e] via-[#1a1a2e]/95 to-[#1a1a2e]" />
       </div>
 
       <div className="relative z-10">
@@ -91,9 +91,9 @@ export function Footer(): ReactNode {
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#111111]/90 via-[#111111]/80 to-[#111111]/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/80 to-[#1a1a2e]/70" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 drop-shadow-lg">
+            <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-3 drop-shadow-lg">
               Ship <span className="text-[#F59E0B]">Without Borders</span>
             </h2>
             <p className="text-lg text-white/80 max-w-xl mb-6 drop-shadow">

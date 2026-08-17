@@ -293,6 +293,9 @@ app.get('/my-invoices/:id', async (c) => {
   if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
   const { id } = c.req.param();
 
+  const { resolveInvoiceId } = await import('./invoices');
+  const resolvedId = (await resolveInvoiceId(id, tenantId)) ?? id;
+
   const [inv] = await db
     .select({
       id: invoicesTable.id, invoiceNo: invoicesTable.invoiceNo, amount: invoicesTable.amount,
@@ -303,7 +306,7 @@ app.get('/my-invoices/:id', async (c) => {
     .from(invoicesTable)
     .innerJoin(shipments, eq(shipments.id, invoicesTable.shipmentId))
     .leftJoin(user, eq(user.id, invoicesTable.userId))
-    .where(and(eq(invoicesTable.id, id!), eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.userId, authUser.id)))
+    .where(and(eq(invoicesTable.id, resolvedId!), eq(invoicesTable.tenantId, tenantId), eq(invoicesTable.userId, authUser.id)))
     .limit(1);
   if (!inv) return c.json({ error: 'Not found' }, 404);
   return c.json({ data: inv });
@@ -318,7 +321,9 @@ app.get('/my-invoices/:id/pdf', async (c) => {
 
   // Reuse admin invoice data function — it already joins and returns full data
   const { getInvoiceData, generateInvoicePdf } = await import('../invoice/service');
-  const data = await getInvoiceData(id, tenantId);
+  const { resolveInvoiceId } = await import('./invoices');
+  const resolvedId = (await resolveInvoiceId(id, tenantId)) ?? id;
+  const data = await getInvoiceData(resolvedId, tenantId);
   if (!data) return c.json({ error: 'Not found' }, 404);
   if (data.userId !== authUser.id) return c.json({ error: 'Not found' }, 404);
 

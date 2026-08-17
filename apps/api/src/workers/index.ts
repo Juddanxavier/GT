@@ -2,7 +2,7 @@ import { buildEmailHtml } from '@repo/auth-config';
 import { Worker } from 'bullmq';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { invoices as invoiceSchema, shipments, tenants, user } from '../db/schema';
+import { invoices as invoiceSchema, notifications, shipments, tenants, user } from '../db/schema';
 import { sendEmail } from '../email/provider';
 import { renderEmail } from '../email/render';
 import type { EventType } from '../email/templates';
@@ -23,6 +23,8 @@ const lankaLogoDataUri: string | null = (() => {
 import { checkAndSetIdempotency } from '../notifications/idempotency';
 import { isWhatsAppConfigured } from '../notifications/whatsapp/config';
 import { getWhatsAppTemplateParams } from '../notifications/whatsapp/templates';
+import { eventTypeToPrefCategory, shouldNotifyByEmail, shouldNotifyByWhatsapp } from '../services/notification-prefs';
+import { emitToUser } from '../realtime';
 import {
   archiveQueue,
   deadLetterQueue,
@@ -111,6 +113,7 @@ type NotifyJobData = {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerUserId?: string;
 };
 
 export async function notificationProcessor(job: NotifyJobData): Promise<void> {
@@ -128,7 +131,42 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
     customerName,
     customerEmail,
     customerPhone,
+    customerUserId,
   } = job;
+
+  // In-app notification for the linked customer (admin app stays quote-only)
+  if (customerUserId && tenantId) {
+    try {
+      await db.insert(notifications).values({
+        tenantId,
+        userId: customerUserId,
+        type: 'status_update',
+        title: `Shipment ${trackingNo} ${statusLabel(eventType)}`,
+        message: `Your shipment ${trackingNo} status changed to ${statusLabel(eventType)}.`,
+        link: '/my-shipments',
+      });
+      emitToUser(customerUserId, 'notification:new', {});
+    } catch (err) {
+      console.error('[notifications] failed to create in-app notification:', err);
+    }
+  }
+
+  // Respect customer notification preferences when we know the user
+  const category = eventTypeToPrefCategory(eventType);
+  let emailOn = true;
+  let whatsappOn = true;
+  if (customerUserId) {
+    try {
+      const [emailPref, whatsappPref] = await Promise.all([
+        shouldNotifyByEmail(customerUserId, tenantId, category),
+        shouldNotifyByWhatsapp(customerUserId, tenantId, category),
+      ]);
+      emailOn = emailPref;
+      whatsappOn = whatsappPref;
+    } catch (err) {
+      console.error('[notifications] pref check failed — sending anyway:', err);
+    }
+  }
 
   const shipmentData: ShipmentData = {
     trackingNo,
@@ -163,7 +201,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
   }
 
   // Fan out: email
-  if (customerEmail && emailQueue) {
+  if (customerEmail && emailQueue && emailOn) {
     const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
     if (!emailAlreadySent) {
       await emailQueue.add('send', {
@@ -180,7 +218,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
   }
 
   // Fan out: WhatsApp (queued)
-  if (customerPhone && isWhatsAppConfigured() && whatsappQueue) {
+  if (customerPhone && isWhatsAppConfigured() && whatsappQueue && whatsappOn) {
     const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp');
     if (!waAlreadySent) {
       const waParams = getWhatsAppTemplateParams(eventType, shipmentData);
@@ -215,6 +253,18 @@ function getEmailSubject(eventType: EventType, shipment: ShipmentData): string {
     Exception: `Shipment ${ref} - Delivery Exception`,
   };
   return map[eventType] ?? `Shipment ${ref} - Status Update`;
+}
+
+const EVENT_LABELS: Record<EventType, string> = {
+  InfoReceived: 'Registered',
+  InTransit: 'In Transit',
+  OutForDelivery: 'Out for Delivery',
+  Delivered: 'Delivered',
+  Exception: 'Exception',
+};
+
+function statusLabel(eventType: EventType): string {
+  return EVENT_LABELS[eventType] ?? 'Updated';
 }
 
 export type EmailJobData = {

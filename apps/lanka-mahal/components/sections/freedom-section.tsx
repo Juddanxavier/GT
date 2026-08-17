@@ -21,10 +21,10 @@ export function FreedomSection(): ReactNode {
         <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr] items-center gap-12 lg:gap-16">
           <div className="flex flex-col order-last lg:order-first w-full">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">How It Works</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight leading-[1.15]">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight leading-[1.15]">
               {config.howItWorks.title}
             </h2>
-            <p className="mt-4 text-foreground/70 leading-relaxed max-w-lg mb-10">
+            <p className="mt-4 text-lg text-foreground/70 leading-relaxed max-w-lg mb-10">
               {config.howItWorks.subtitle}
             </p>
 
@@ -47,8 +47,8 @@ export function FreedomSection(): ReactNode {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-bold text-[#F59E0B] tracking-wider">STEP 0{i + 1}</span>
                       </div>
-                      <p className="font-semibold text-foreground text-base">{s.title}</p>
-                      <p className="text-foreground/70 mt-0.5 leading-relaxed">{s.desc}</p>
+                      <p className="font-semibold text-foreground text-lg">{s.title}</p>
+                      <p className="text-lg text-foreground/70 mt-0.5 leading-relaxed">{s.desc}</p>
                     </div>
                   </motion.div>
                 ))}

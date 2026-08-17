@@ -1,4 +1,4 @@
-import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, like, or, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -18,6 +18,16 @@ import { logAudit } from '../services/audit';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
+
+// Resolve a route param (invoice uuid or invoice number) to the invoice's uuid.
+async function resolveInvoiceId(param: string, tenantId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: invoices.id })
+    .from(invoices)
+    .where(and(or(eq(invoices.id, param), eq(invoices.invoiceNo, param)), eq(invoices.tenantId, tenantId)))
+    .limit(1);
+  return row?.id ?? null;
+}
 
 // Must be before /:id routes to avoid 'shipment' matching as :id
 app.get(
@@ -99,7 +109,7 @@ app.post(
         branchId: ship.branchId ?? null,
         invoiceNo,
         amount: String(amount),
-        status: 'unpaid' as const,
+        status: 'paid' as const,
         emailCount: 0,
         paidAt: now,
         lastEmailSentAt: now,
@@ -147,13 +157,15 @@ app.get(
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
     const status = c.req.query('status');
+    const userId = c.req.query('userId');
 
     const conditions: ReturnType<typeof eq>[] = [eq(invoices.tenantId, scope.tenantId)];
     if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
     if (search) conditions.push(sql`${like(invoices.invoiceNo, `%${search}%`)}`);
     if (status) conditions.push(eq(invoices.status, status!));
+    if (userId) conditions.push(eq(invoices.userId, userId!));
 
-    const cacheKey = `invoices:list:${scope.branchId ?? 'all'}:${search ?? ''}:${page}:${limit}`;
+    const cacheKey = `invoices:list:${scope.branchId ?? 'all'}:${search ?? ''}:${status ?? ''}:${userId ?? 'all'}:${page}:${limit}`;
     const result = await withCache(
       scope.tenantId,
       cacheKey,
@@ -189,6 +201,7 @@ app.get(
         // Compute status counts from ALL matching records (ignoring status filter)
           const countConditions: SQL[] = [eq(invoices.tenantId, scope.tenantId!)];
           if (scope.branchId) countConditions.push(eq(shipments.branchId, scope.branchId));
+          if (userId) countConditions.push(eq(invoices.userId, userId!));
           // search filter is intentionally excluded from counts
 
           const countRows = await db
@@ -222,6 +235,33 @@ app.get(
 );
 
 app.get(
+  '/trend',
+  requireRole('superadmin', 'tenant-admin', 'staff'),
+  requireBranchScope(),
+  async (c) => {
+    const scope = getQueryScope(c);
+    if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+
+    const conditions: SQL[] = [eq(invoices.tenantId, scope.tenantId)];
+    if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
+
+    const rows = await db
+      .select({
+        date: sql<string>`DATE(${invoices.createdAt})::text`,
+        total: sql<number>`COUNT(*)::int`,
+        paid: sql<number>`COUNT(*) FILTER (WHERE ${invoices.status} = 'paid')::int`,
+        unpaid: sql<number>`COUNT(*) FILTER (WHERE ${invoices.status} = 'unpaid')::int`,
+      })
+      .from(invoices)
+      .innerJoin(shipments, eq(shipments.id, invoices.shipmentId))
+      .where(and(...conditions) as SQL | undefined)
+      .groupBy(sql`DATE(${invoices.createdAt})`)
+      .orderBy(sql`DATE(${invoices.createdAt})`);
+    return c.json({ data: rows });
+  },
+);
+
+app.get(
   '/:id',
   requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
@@ -230,10 +270,12 @@ app.get(
     const id = c.req.param('id');
     if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = (await resolveInvoiceId(id, scope.tenantId)) ?? id;
+
     const data = await withCache(
       scope.tenantId!,
-      `invoices:${id}`,
-      () => getInvoiceData(id, scope.tenantId!),
+      `invoices:${resolvedId}`,
+      () => getInvoiceData(resolvedId, scope.tenantId!),
       120,
     );
     if (!data) return c.json({ error: 'Invoice not found' }, 404);
@@ -256,10 +298,12 @@ app.get(
     const id = c.req.param('id');
     if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = (await resolveInvoiceId(id, scope.tenantId)) ?? id;
+
     const data = await withCache(
       scope.tenantId!,
-      `invoices:${id}:data`,
-      () => getInvoiceData(id, scope.tenantId!),
+      `invoices:${resolvedId}:data`,
+      () => getInvoiceData(resolvedId, scope.tenantId!),
       120,
     );
     if (!data) return c.json({ error: 'Invoice not found' }, 404);
@@ -289,6 +333,9 @@ app.post(
     const id = c.req.param('id');
     if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
+    const resolvedId = await resolveInvoiceId(id, scope.tenantId);
+    if (!resolvedId) return c.json({ error: 'Invoice not found' }, 404);
+
     const [inv] = await db
       .select({
         id: invoices.id,
@@ -298,7 +345,7 @@ app.post(
         userId: invoices.userId,
       })
       .from(invoices)
-      .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)) as SQL | undefined)
+      .where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)) as SQL | undefined)
       .limit(1);
 
     if (!inv) return c.json({ error: 'Invoice not found' }, 404);
@@ -350,13 +397,13 @@ app.post(
       })
       .where(eq(invoices.id, inv.id));
 
-    await cacheDel(scope.tenantId!, `invoices:${id}`);
-    await cacheDel(scope.tenantId!, `invoices:${id}:data`);
+    await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
+    await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
     logAudit(
       'INVOICE_SENT',
       c.get('user')?.id ?? null,
       {
-        invoiceId: id,
+        invoiceId: resolvedId,
         userId: inv.userId,
         email: cust.email,
         tenantId: scope.tenantId,
@@ -374,6 +421,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   const id = c.req.param('id');
   if (!scope.tenantId || !id) return errorResponse(c, 'TENANT_REQUIRED', 'Tenant required', 400);
 
+  const resolvedId = await resolveInvoiceId(id, scope.tenantId);
+  if (!resolvedId) return errorResponse(c, 'NOT_FOUND', 'Invoice not found', 404);
+
   const parsed = updateInvoiceSchema.safeParse(await c.req.json());
   if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
   const filtered = parsed.data! as Record<string, unknown>;
@@ -383,18 +433,18 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   const [existing] = await db
     .select()
     .from(invoices)
-    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)))
     .limit(1);
   if (!existing) return c.json({ error: 'Invoice not found' }, 404);
 
   const [row] = await db
     .update(invoices)
     .set({ ...filtered, updatedAt: new Date() })
-    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)))
     .returning();
 
-  await cacheDel(scope.tenantId!, `invoices:${id}`);
-  await cacheDel(scope.tenantId!, `invoices:${id}:data`);
+  await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
+  await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
   await cacheDelPattern(scope.tenantId, 'invoices:list:*');
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
@@ -408,7 +458,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
       'INVOICE_UPDATED',
       c.get('user')?.id ?? null,
       {
-        invoiceId: id,
+        invoiceId: resolvedId,
         invoiceNo: existing.invoiceNo,
         changes,
         tenantId: scope.tenantId,
@@ -426,23 +476,26 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   const id = c.req.param('id');
   if (!scope.tenantId || !id) return c.json({ error: 'Tenant required' }, 400);
 
+  const resolvedId = await resolveInvoiceId(id, scope.tenantId);
+  if (!resolvedId) return c.json({ error: 'Invoice not found' }, 404);
+
   const [existing] = await db
     .select()
     .from(invoices)
-    .where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)))
+    .where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)))
     .limit(1);
   if (!existing) return c.json({ error: 'Invoice not found' }, 404);
 
-  await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.tenantId, scope.tenantId)));
+  await db.delete(invoices).where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)));
 
-  await cacheDel(scope.tenantId!, `invoices:${id}`);
-  await cacheDel(scope.tenantId!, `invoices:${id}:data`);
+  await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
+  await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
   await cacheDelPattern(scope.tenantId, 'invoices:list:*');
   logAudit(
     'INVOICE_DELETED',
     c.get('user')?.id ?? null,
     {
-      invoiceId: id,
+      invoiceId: resolvedId,
       invoiceNo: existing.invoiceNo,
       tenantId: scope.tenantId,
     },

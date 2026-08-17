@@ -1,6 +1,12 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient, keepPreviousData, type UseQueryResult } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  type UseQueryResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from './api';
 import { useTenantFilter } from './tenant-filter-context';
 
@@ -51,7 +57,11 @@ export interface Customer {
 // ─── Branch queries ──────────────────────────────────────────────────
 
 export function useBranches(): UseQueryResult<ApiBranch[], Error>;
-export function useBranches(page: number, limit?: number, search?: string): UseQueryResult<PaginatedResult<ApiBranch>, Error>;
+export function useBranches(
+  page: number,
+  limit?: number,
+  search?: string,
+): UseQueryResult<PaginatedResult<ApiBranch>, Error>;
 export function useBranches(page?: number, limit?: number, search?: string) {
   const { filterVersion } = useTenantFilter();
   const hasPage = page !== undefined && page > 0;
@@ -101,7 +111,84 @@ export function useDeleteBranch() {
 export function useTenants() {
   return useQuery<{ id: string; name: string; country: string | null; currency: string | null }[]>({
     queryKey: ['tenants'],
-    queryFn: () => api.get<{ id: string; name: string; country: string | null; currency: string | null }[]>('/api/tenants'),
+    queryFn: () =>
+      api.get<{ id: string; name: string; country: string | null; currency: string | null }[]>(
+        '/api/tenants',
+      ),
+  });
+}
+
+export function useUpdateTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; name: string; country: string; currency: string }) =>
+      api.patch<void>(`/api/tenants/${input.id}`, {
+        name: input.name,
+        country: input.country,
+        currency: input.currency,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
+  });
+}
+
+// ─── Settings queries ────────────────────────────────────────────────
+
+export function useIntegrations() {
+  return useQuery<{
+    email: { configured: boolean; provider: string | null };
+    whatsapp: { configured: boolean };
+    track17: { configured: boolean };
+  }>({
+    queryKey: ['settings-integrations'],
+    queryFn: () => api.get('/api/settings/integrations'),
+  });
+}
+
+export function useTemplatePreviews() {
+  return useQuery<
+    {
+      event: string;
+      title: string;
+      emailHtml: string;
+      whatsapp: { templateId: string; variables: Record<string, string> } | null;
+    }[]
+  >({
+    queryKey: ['settings-template-previews'],
+    queryFn: () => api.get('/api/settings/template-previews'),
+  });
+}
+
+export interface NotificationPrefs {
+  deliveryEmail: boolean;
+  deliveryWhatsapp: boolean;
+  exceptionEmail: boolean;
+  exceptionWhatsapp: boolean;
+  generalEmail: boolean;
+  generalWhatsapp: boolean;
+}
+
+export function useNotificationPrefs() {
+  const { filterVersion } = useTenantFilter();
+  return useQuery<Partial<NotificationPrefs>>({
+    queryKey: ['notification-prefs', filterVersion],
+    queryFn: () => api.getFull<Partial<NotificationPrefs>>('/api/notification-preferences'),
+  });
+}
+
+export function useUpdateNotificationPrefs() {
+  const queryClient = useQueryClient();
+  const { filterVersion } = useTenantFilter();
+  return useMutation({
+    mutationFn: (prefs: Partial<NotificationPrefs>) =>
+      api.getFull<NotificationPrefs>('/api/notification-preferences', {
+        method: 'PUT',
+        body: JSON.stringify(prefs),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-prefs', filterVersion] });
+    },
   });
 }
 
@@ -126,7 +213,10 @@ export interface PaginatedResult<T> {
 }
 
 export function useCustomers(): UseQueryResult<Customer[], Error>;
-export function useCustomers(page: number, limit?: number): UseQueryResult<PaginatedResult<Customer>, Error>;
+export function useCustomers(
+  page: number,
+  limit?: number,
+): UseQueryResult<PaginatedResult<Customer>, Error>;
 export function useCustomers(page?: number, limit?: number) {
   const { filterVersion } = useTenantFilter();
   const hasPage = page !== undefined && page > 0;
@@ -166,12 +256,24 @@ export function useAssignShipment() {
 // ─── Shipment queries ───────────────────────────────────────────────
 
 export function useShipments(): UseQueryResult<Shipment[], Error>;
-export function useShipments(page: number, limit?: number, status?: string, search?: string): UseQueryResult<PaginatedResult<Shipment>, Error>;
-export function useShipments(page?: number, limit?: number, status?: string, search?: string) {
+export function useShipments(
+  page: number,
+  limit?: number,
+  status?: string,
+  search?: string,
+  customerId?: string,
+): UseQueryResult<PaginatedResult<Shipment>, Error>;
+export function useShipments(
+  page?: number,
+  limit?: number,
+  status?: string,
+  search?: string,
+  customerId?: string,
+) {
   const { filterVersion } = useTenantFilter();
   const hasPage = page !== undefined && page > 0;
   return useQuery<Shipment[] | PaginatedResult<Shipment>>({
-    queryKey: ['shipments', filterVersion, page, limit, status, search],
+    queryKey: ['shipments', filterVersion, page, limit, status, search, customerId],
     queryFn: async () => {
       if (hasPage) {
         const params = new URLSearchParams();
@@ -179,6 +281,7 @@ export function useShipments(page?: number, limit?: number, status?: string, sea
         params.set('limit', String(limit ?? 10));
         if (status && status !== 'all') params.set('status', status);
         if (search) params.set('search', search);
+        if (customerId) params.set('customerId', customerId);
         return api.getFull<PaginatedResult<Shipment>>(`/api/shipments?${params}`);
       }
       return api.get<Shipment[]>('/api/shipments');
@@ -189,9 +292,26 @@ export function useShipments(page?: number, limit?: number, status?: string, sea
 
 export function useShipmentTrend() {
   const { filterVersion } = useTenantFilter();
-  return useQuery<{ date: string; total: number; intransit: number; delivered: number; pending: number }[]>({
+  return useQuery<
+    { date: string; total: number; intransit: number; delivered: number; pending: number }[]
+  >({
     queryKey: ['shipment-trend', filterVersion],
-    queryFn: () => api.get<{ date: string; total: number; intransit: number; delivered: number; pending: number }[]>('/api/shipments/trend'),
+    queryFn: () =>
+      api.get<
+        { date: string; total: number; intransit: number; delivered: number; pending: number }[]
+      >('/api/shipments/trend'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInvoiceTrend() {
+  const { filterVersion } = useTenantFilter();
+  return useQuery<{ date: string; total: number; paid: number; unpaid: number }[]>({
+    queryKey: ['invoice-trend', filterVersion],
+    queryFn: () =>
+      api.get<{ date: string; total: number; paid: number; unpaid: number }[]>(
+        '/api/invoices/trend',
+      ),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -212,6 +332,7 @@ export interface UserRecord {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   emailVerified: boolean;
   image: string | null;
   role: string;
@@ -226,8 +347,20 @@ export interface UserRecord {
 }
 
 export function useUsers(): UseQueryResult<UserRecord[], Error>;
-export function useUsers(page: number, limit?: number, search?: string, role?: string, banned?: string): UseQueryResult<PaginatedResult<UserRecord>, Error>;
-export function useUsers(page?: number, limit?: number, search?: string, role?: string, banned?: string) {
+export function useUsers(
+  page: number,
+  limit?: number,
+  search?: string,
+  role?: string,
+  banned?: string,
+): UseQueryResult<PaginatedResult<UserRecord>, Error>;
+export function useUsers(
+  page?: number,
+  limit?: number,
+  search?: string,
+  role?: string,
+  banned?: string,
+) {
   const { filterVersion } = useTenantFilter();
   const hasPage = page !== undefined && page > 0;
   return useQuery<UserRecord[] | PaginatedResult<UserRecord>>({
@@ -239,7 +372,8 @@ export function useUsers(page?: number, limit?: number, search?: string, role?: 
         params.set('limit', String(limit ?? 10));
         if (search) params.set('search', search);
         if (role) params.set('role', role);
-        if (banned && banned !== 'all') params.set('banned', banned === 'banned' ? 'true' : 'false');
+        if (banned && banned !== 'all')
+          params.set('banned', banned === 'banned' ? 'true' : 'false');
         return api.getFull<PaginatedResult<UserRecord>>(`/api/users?${params}`);
       }
       return api.get<UserRecord[]>('/api/users');
@@ -279,13 +413,35 @@ export interface Invoice {
   createdAt: string;
 }
 
+export interface InvoiceDetail extends Invoice {
+  shipmentId: string;
+  carrier: string | null;
+  origin: string | null;
+  destination: string | null;
+  senderAddress: Record<string, string> | null;
+  recipientAddress: Record<string, string> | null;
+  companyName: string;
+}
+
 export function useInvoices(search?: string): UseQueryResult<Invoice[], Error>;
-export function useInvoices(search: string | undefined, page: number, limit?: number, status?: string): UseQueryResult<PaginatedResult<Invoice>, Error>;
-export function useInvoices(search?: string, page?: number, limit?: number, status?: string) {
+export function useInvoices(
+  search: string | undefined,
+  page: number,
+  limit?: number,
+  status?: string,
+  userId?: string,
+): UseQueryResult<PaginatedResult<Invoice>, Error>;
+export function useInvoices(
+  search?: string,
+  page?: number,
+  limit?: number,
+  status?: string,
+  userId?: string,
+) {
   const { filterVersion } = useTenantFilter();
   const hasPage = page !== undefined && page > 0;
   return useQuery<Invoice[] | PaginatedResult<Invoice>>({
-    queryKey: ['invoices', filterVersion, search, page, limit, status],
+    queryKey: ['invoices', filterVersion, search, page, limit, status, userId],
     queryFn: async () => {
       const q = new URLSearchParams();
       if (search) q.set('search', search);
@@ -293,6 +449,7 @@ export function useInvoices(search?: string, page?: number, limit?: number, stat
         q.set('page', String(page));
         q.set('limit', String(limit ?? 10));
         if (status && status !== 'all') q.set('status', status);
+        if (userId) q.set('userId', userId);
       }
       const qs = q.toString();
       if (hasPage) {
@@ -318,114 +475,6 @@ export function useDeleteInvoice() {
   });
 }
 
-// ─── Quotation queries ───────────────────────────────────────────────
-
-export interface Quotation {
-  id: string;
-  quoteNo: string;
-  customerId: string;
-  customerName: string | null;
-  total: number;
-  status: string;
-  validUntil: string | null;
-  notes: string | null;
-  items: LineItem[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
-
-export function useQuotationTrend() {
-  const { filterVersion } = useTenantFilter();
-  return useQuery<{ date: string; total: number; draft: number; sent: number; accepted: number; rejected: number; converted: number }[]>({
-    queryKey: ['quotation-trend', filterVersion],
-    queryFn: () => api.get<{ date: string; total: number; draft: number; sent: number; accepted: number; rejected: number; converted: number }[]>('/api/quotations/trend'),
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useQuotations(): UseQueryResult<Quotation[], Error>;
-export function useQuotations(page: number, limit?: number, status?: string, search?: string): UseQueryResult<PaginatedResult<Quotation>, Error>;
-export function useQuotations(page?: number, limit?: number, status?: string, search?: string) {
-  const { filterVersion } = useTenantFilter();
-  const hasPage = page !== undefined && page > 0;
-  return useQuery<Quotation[] | PaginatedResult<Quotation>>({
-    queryKey: ['quotations', filterVersion, page, limit, status, search],
-    queryFn: async () => {
-      if (hasPage) {
-        const params = new URLSearchParams();
-        params.set('page', String(page));
-        params.set('limit', String(limit ?? 10));
-        if (status && status !== 'all') params.set('status', status);
-        if (search) params.set('search', search);
-        return api.getFull<PaginatedResult<Quotation>>(`/api/quotations?${params}`);
-      }
-      return api.get<Quotation[]>('/api/quotations');
-    },
-  });
-}
-
-export function useQuotation(id: string) {
-  return useQuery<Quotation>({
-    queryKey: ['quotation', id],
-    queryFn: () => api.get<Quotation>(`/api/quotations/${id}`),
-    enabled: !!id,
-  });
-}
-
-export function useCreateQuotation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: Record<string, unknown>) => api.post<Quotation>('/api/quotations', data),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['quotations'] }),
-  });
-}
-
-export function useUpdateQuotation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...data }: { id: string } & Record<string, unknown>) =>
-      api.patch<Quotation>(`/api/quotations/${id}`, data),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['quotations'] }),
-  });
-}
-
-export function useDeleteQuotation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api.delete(`/api/quotations/${id}`),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['quotations'] }),
-  });
-}
-
-export function useUpdateQuotationStatus() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/api/quotations/${id}/status`, { status }),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['quotation'] });
-      qc.invalidateQueries({ queryKey: ['quotations'] });
-    },
-  });
-}
-
-export function useConvertQuotation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, trackingNo }: { id: string; trackingNo: string }) =>
-      api.post<Quotation>(`/api/quotations/${id}/convert`, { trackingNo }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['quotation'] }),
-  });
-}
-
 // ─── Notification queries ────────────────────────────────────────────
 
 export interface NotificationRecord {
@@ -438,7 +487,12 @@ export interface NotificationRecord {
   createdAt: string;
 }
 
-export function useNotifications(params: { type?: string; status?: string; page?: number; limit?: number }) {
+export function useNotifications(params: {
+  type?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) {
   const { type, status, page = 1, limit = 20 } = params;
   return useQuery<{ data: NotificationRecord[]; total: number }>({
     queryKey: ['notifications', type, status, page, limit],
@@ -453,9 +507,9 @@ export function useNotifications(params: { type?: string; status?: string; page?
 }
 
 export function useUnreadCount() {
-  return useQuery<{ count: number }>({
+  return useQuery({
     queryKey: ['unread-count'],
-    queryFn: () => api.get<{ count: number }>('/api/notifications/unread-count'),
+    queryFn: () => api.getFull<{ count: number }>('/api/notifications/unread-count'),
     refetchInterval: 30_000,
   });
 }
@@ -535,7 +589,8 @@ export function useShipment(id: string) {
 export function useShipmentTracking(id: string) {
   return useQuery<{ shipment: object; events: TrackingEvent[] }>({
     queryKey: ['shipment-tracking', id],
-    queryFn: () => api.get<{ shipment: object; events: TrackingEvent[] }>(`/api/shipments/${id}/tracking`),
+    queryFn: () =>
+      api.get<{ shipment: object; events: TrackingEvent[] }>(`/api/shipments/${id}/tracking`),
     enabled: !!id,
   });
 }
@@ -543,7 +598,8 @@ export function useShipmentTracking(id: string) {
 export function useTrackShipment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.post<{ newEvents: number; currentStatus: string }>(`/api/shipments/${id}/track`),
+    mutationFn: (id: string) =>
+      api.post<{ newEvents: number; currentStatus: string }>(`/api/shipments/${id}/track`),
     onSettled: (_data, _err, id) => {
       qc.invalidateQueries({ queryKey: ['shipment', id] });
       qc.invalidateQueries({ queryKey: ['shipment-tracking', id] });
@@ -576,9 +632,22 @@ export function useUpdateShipment() {
 // ─── Invoice per shipment ────────────────────────────────────────────
 
 export function useShipmentInvoice(shipmentId: string) {
-  return useQuery<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string } | null>({
+  return useQuery<{
+    id: string;
+    invoiceNo: string;
+    amount: string;
+    emailCount: number;
+    createdAt: string;
+  } | null>({
     queryKey: ['shipment-invoice', shipmentId],
-    queryFn: () => api.get<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string } | null>(`/api/invoices/shipment/${shipmentId}`),
+    queryFn: () =>
+      api.get<{
+        id: string;
+        invoiceNo: string;
+        amount: string;
+        emailCount: number;
+        createdAt: string;
+      } | null>(`/api/invoices/shipment/${shipmentId}`),
     enabled: !!shipmentId,
   });
 }
@@ -587,7 +656,13 @@ export function useGenerateInvoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (shipmentId: string) =>
-      api.post<{ id: string; invoiceNo: string; amount: string; emailCount: number; createdAt: string }>(`/api/invoices/shipment/${shipmentId}`),
+      api.post<{
+        id: string;
+        invoiceNo: string;
+        amount: string;
+        emailCount: number;
+        createdAt: string;
+      }>(`/api/invoices/shipment/${shipmentId}`),
     onSettled: (_data, _err, shipmentId) => {
       qc.invalidateQueries({ queryKey: ['shipment-invoice', shipmentId] });
     },

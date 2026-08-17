@@ -2,10 +2,9 @@
 
 import type { Context, Next } from 'hono';
 import * as Sentry from '@sentry/hono/node';
-import { db } from '../db';
+import { db, runWithTenantContext } from '../db';
 import { tenantDomains, tenants } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { setRLSTenantContext } from '../db/rls';
 import { cacheGet, cacheSet } from '../cache';
 import { errorResponse } from '../error-response';
 
@@ -131,12 +130,10 @@ export async function tenantMiddleware(c: Context, next: Next) {
   Sentry.setTag('branchOverride', c.req.header('X-Branch-ID') ?? 'none');
 
   try {
-    await setRLSTenantContext(tenantId);
+    await runWithTenantContext(tenantId, () => next());
   } catch (error) {
     console.error('Failed to set RLS context:', error);
     return errorResponse(c, 'INTERNAL_ERROR', 'Internal server error', 500);
   }
-
-  await next();
 }
 

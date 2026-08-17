@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -10,17 +10,17 @@ import Link from 'next/link';
 const categories = [
   {
     label: 'General',
-    icon: 'ðŸ“‹',
+    icon: '📋',
     items: [
       { q: 'What is Lanka Mahal?', a: 'Lanka Mahal is an international courier and logistics provider offering express and ocean freight services to 200+ destinations worldwide. We handle everything from documents and parcels to bulk cargo.' },
       { q: 'What countries do you ship to?', a: 'We deliver to over 200 destinations worldwide, including major corridors to the USA, UK, Canada, UAE, Saudi Arabia, Qatar, Kuwait, Singapore, Malaysia, Australia, and Europe. Contact us for a specific country check.' },
       { q: 'Do you have a branch near me?', a: 'We have multiple branches across Sri Lanka. Visit our Branches page to find the nearest location or simply schedule a free door-to-door pickup online.' },
-      { q: 'What is the difference between air freight and ocean freight?', a: 'Air freight is faster (3â€“15 days) and ideal for urgent, smaller shipments. Ocean freight takes longer (3â€“30 days) but is more economical for heavy, bulky, or large-volume cargo.' },
+      { q: 'What is the difference between air freight and ocean freight?', a: 'Air freight is faster (3–15 days) and ideal for urgent, smaller shipments. Ocean freight takes longer (3–30 days) but is more economical for heavy, bulky, or large-volume cargo.' },
     ],
   },
   {
     label: 'Shipping',
-    icon: 'ðŸ“¦',
+    icon: '📦',
     items: [
       { q: 'How do I ship a parcel?', a: 'You can book a shipment online through our website, schedule a doorstep pickup, or drop off your parcel at any Lanka Mahal branch. We will handle the rest including documentation and customs clearance.' },
       { q: 'What is the weight limit for a shipment?', a: 'There is no strict upper limit. Small parcels, heavy cargo, and full container loads are all handled. For very heavy shipments, we recommend ocean freight for cost efficiency.' },
@@ -32,7 +32,7 @@ const categories = [
   },
   {
     label: 'Tracking',
-    icon: 'ðŸ”',
+    icon: '🔍',
     items: [
       { q: 'How do I track my shipment?', a: 'Enter your tracking number on the Track page. You will see real-time status updates including current location, estimated delivery date, and a complete tracking history timeline.' },
       { q: 'My tracking has not updated in days. Why?', a: 'Tracking may pause during customs clearance, weekends, holidays, or when the shipment is in transit between facilities. If there is no update for 7+ days, please contact our support team.' },
@@ -43,11 +43,11 @@ const categories = [
   },
   {
     label: 'Services',
-    icon: 'ðŸšš',
+    icon: '🚚',
     items: [
-      { q: 'What is volumetric weight and how is it calculated?', a: 'Volumetric (DIM) weight is calculated as (Length Ã— Width Ã— Height) Ã· 5000 for metric units. If the volumetric weight exceeds the actual weight, the chargeable weight will be the higher value. Use our Volumetric Calculator for instant results.' },
-      { q: 'How long does air freight take?', a: 'Air freight delivery times range from 3â€“5 days for priority, 3â€“7 days for standard express, 4â€“7 days for regional, 8â€“12 days for economy, and 10â€“15 days for standard shipping depending on destination.' },
-      { q: 'How long does ocean freight take?', a: 'Ocean freight transit depends on the route: Sri Lanka 3â€“5 days, Singapore 10â€“14 days, Malaysia 12â€“16 days, UK 22â€“28 days, Canada 25â€“30 days from Sri Lankan ports.' },
+      { q: 'What is volumetric weight and how is it calculated?', a: 'Volumetric (DIM) weight is calculated as (Length × Width × Height) ÷ 5000 for metric units. If the volumetric weight exceeds the actual weight, the chargeable weight will be the higher value. Use our Volumetric Calculator for instant results.' },
+      { q: 'How long does air freight take?', a: 'Air freight delivery times range from 3–5 days for priority, 3–7 days for standard express, 4–7 days for regional, 8–12 days for economy, and 10–15 days for standard shipping depending on destination.' },
+      { q: 'How long does ocean freight take?', a: 'Ocean freight transit depends on the route: Sri Lanka 3–5 days, Singapore 10–14 days, Malaysia 12–16 days, UK 22–28 days, Canada 25–30 days from Sri Lankan ports.' },
       { q: 'What is the difference between LCL and FCL?', a: 'LCL (Less than Container Load) means your cargo shares container space with other shipments - you pay only for the space you use. FCL (Full Container Load) gives you an entire container, ideal for bulk cargo.' },
       { q: 'Do you provide packaging services?', a: 'Yes. We offer packing guidance and trained professionals can carefully pack fragile, valuable, and important shipments. Contact us for specific packing requirements.' },
       { q: 'Can I insure my shipment?', a: 'Yes, cargo insurance is available as an optional add-on for both air and ocean freight shipments. It provides protection against loss or damage during transit.' },
@@ -55,7 +55,7 @@ const categories = [
   },
   {
     label: 'Billing',
-    icon: 'ðŸ’°',
+    icon: '💰',
     items: [
       { q: 'How do I get a shipping quote?', a: 'Use the Get a Quote page to fill in your shipment details. Our team will respond with a competitive rate within 24 hours. You can also use our Volumetric Calculator to estimate dimensional weight beforehand.' },
       { q: 'What payment methods do you accept?', a: 'We accept bank transfers, credit/debit cards, and online payment methods. Payment terms for regular business accounts can be arranged separately.' },
@@ -94,11 +94,11 @@ export default function FaqPage(): ReactNode {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             FAQ
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Frequently Asked Questions</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Frequently Asked Questions</h1>
           <p className="text-lg text-white/90 max-w-lg mt-2">
             Find answers to common questions about shipping, tracking, services, and billing.
           </p>

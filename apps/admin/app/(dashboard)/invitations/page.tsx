@@ -9,7 +9,8 @@ import { useTenants, useBranches, type ApiBranch } from '@/lib/queries';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { getUser } from '@/types/auth';
-import { Mail, MailX, Plus, LoaderCircle } from 'lucide-react';
+import { Mail, MailX, MailPlus, Plus, LoaderCircle } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
 
 const SUPERADMIN_INVITE_ROLES = ['superadmin', 'tenant-admin', 'staff'];
 const TENANT_ADMIN_INVITE_ROLES = ['staff'];
@@ -145,12 +146,11 @@ export default function InvitationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Invitations</h1>
-          <p className="text-sm text-muted">Invite users to join your organization</p>
-        </div>
-        <Button onPress={() => {
+      <PageHeader
+        title="Invitations"
+        subtitle="Invite users to join your organization"
+        icon={<MailPlus size={18} />}
+        action={<Button onPress={() => {
           setInviteEmail(''); setInviteName(''); setInviteRole('staff'); setInviteError('');
           setInviteTenantId(isTenantAdmin ? sessionTenantId : '');
           setInviteBranchId('');
@@ -158,27 +158,27 @@ export default function InvitationsPage() {
         }}>
           <Plus size={16} />
           Invite User
-        </Button>
-      </div>
+        </Button>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-2xl bg-surface shadow-sm p-5">
+        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{invitations.length}</p>
           <p className="text-sm text-muted mt-1">Total Invitations</p>
         </div>
-        <div className="rounded-2xl bg-surface shadow-sm p-5">
+        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-success">{pendingInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Pending</p>
         </div>
-        <div className="rounded-2xl bg-surface shadow-sm p-5">
+        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-muted">{otherInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Accepted / Cancelled</p>
         </div>
       </div>
 
       {/* Pending Invitations */}
-      <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+      <div className="rounded-sm border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="text-base font-semibold tracking-tight">Pending Invitations</h2>
         </div>
@@ -226,7 +226,7 @@ export default function InvitationsPage() {
 
       {/* History */}
       {otherInvitations.length > 0 && (
-        <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+        <div className="rounded-sm border border-border bg-surface overflow-hidden">
           <div className="p-4 border-b border-border">
             <h2 className="text-base font-semibold tracking-tight">History</h2>
           </div>

@@ -53,13 +53,16 @@ export default function CustomerNotificationSettingsPage(): ReactNode {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center">
-          <Bell size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Notification Preferences</h1>
-          <p className="text-foreground/50 mt-0.5">Choose how you want to be notified.</p>
+      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 flex items-center gap-3">
+        <div className="absolute -top-14 -right-14 w-48 h-48 rounded-full bg-[#F59E0B]/20 blur-3xl" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#F59E0B] text-white flex items-center justify-center">
+            <Bell size={22} />
+          </div>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Notification Preferences</h1>
+            <p className="text-white/60 mt-0.5 text-sm">Choose how you want to be notified.</p>
+          </div>
         </div>
       </div>
 

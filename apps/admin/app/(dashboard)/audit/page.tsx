@@ -14,6 +14,7 @@ import {
   Activity, Clock, Download, RefreshCw, Monitor, Globe, Eye, X, List, Layout,
 } from 'lucide-react';
 import AuditTimeline from '@/components/audit-timeline';
+import { PageHeader } from '@/components/page-header';
 
 type AuditEntry = {
   id: string;
@@ -247,12 +248,12 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Audit Log</h1>
-          <p className="text-muted text-sm">Track all system events and changes</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Audit Log"
+        subtitle="Track all system events and changes"
+        icon={<List size={18} />}
+        action={
+          <div className="flex items-center gap-2">
           <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
             <button
               type="button"
@@ -288,7 +289,8 @@ export default function AuditLogPage() {
             Refresh
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <Card>
@@ -427,9 +429,12 @@ export default function AuditLogPage() {
               ))}
             </div>
           ) : (
-            <Table>
+            <Table className="table-clickable">
               <Table.ScrollContainer>
-                <Table.Content aria-label="Audit log entries">
+                <Table.Content aria-label="Audit log entries" onRowAction={(key) => {
+                  const entry = entries?.find((e) => e.id === key);
+                  if (entry) setSelectedEntry(entry);
+                }}>
                   <Table.Header>
                     <Table.Column isRowHeader>Time</Table.Column>
                     <Table.Column>Event</Table.Column>
@@ -451,7 +456,7 @@ export default function AuditLogPage() {
                     )}
                   >
                     {entries?.map((entry) => (
-                      <Table.Row key={entry.id}>
+                      <Table.Row key={entry.id} id={entry.id}>
                         <Table.Cell>
                           <div className="flex items-center gap-1.5 text-xs text-muted">
                             <Clock size={12} />

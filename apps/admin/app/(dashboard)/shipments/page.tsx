@@ -1,16 +1,20 @@
 'use client';
 
 import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META } from '@/lib/status-config';
-import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock } from 'lucide-react';
-import { Button, Chip, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, ProgressBar, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FILTER_GROUPS, STATUS_GROUPS, STATUS_META, statusGroupCounts } from '@/lib/status-config';
+import { ShipmentStatusBadge } from '@/components/shipment-status-badge';
+import { Eye, MoreVertical, Pencil, Trash2, Package, Truck, CheckCircle, Clock, ChevronDown, FileDown, Printer, Tags } from 'lucide-react';
+import { Button, Description, Dropdown, Input, Label, ListBox, Modal, NumberField, Pagination, ProgressBar, Select, Spinner, Table, Tabs, type Key, type SortDescriptor } from '@heroui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CustomerAssigner } from '@/components/customer-assigner';
 import { CopyButton, Flag } from '@/components/copy-button';
+import { TablePreferences, useTablePreferences, densityClassName, type ColumnDef } from '@/components/table-preferences';
+import { PageHeader } from '@/components/page-header';
 import { AddressForm, type AddressData, addressDisplay } from '@/components/address-form';
 import { formatCurrency } from '@/lib/currency';
 import { authClient } from '@/lib/auth-client';
+import { api } from '@/lib/api';
 import { useToast } from '@/components/toast';
 import { useShipments, useCustomers, useBranches, useTenants, useCreateShipment, useDeleteShipment, useShipmentTrend, type PaginatedResult, type Shipment } from '@/lib/queries';
 import { KpiCard } from '@/components/kpi-card';
@@ -26,14 +30,33 @@ interface Customer {
   phone?: string;
 }
 
-const ROWS_PER_PAGE = 50;
 
 export default function ShipmentsPage() {
   usePageTitle('Shipments');
   const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('q') ?? '');
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'trackingNumber', direction: 'ascending' });
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') ?? 'all');
+const [rowsPerPage, setRowsPerPage] = useState(50);
+const [selected, setSelected] = useState<Set<string>>(new Set());
+const [bulkDeleting, setBulkDeleting] = useState(false);
+
+const SHIPMENT_COLUMNS: ColumnDef[] = [
+  { id: 'trackingNumber', label: 'Tracking #', always: true },
+  { id: 'labelCode', label: 'Label Code' },
+  { id: 'customerName', label: 'Customer' },
+  { id: 'carrier', label: 'Carrier' },
+  { id: 'billAmount', label: 'Bill' },
+  { id: 'status', label: 'Status', always: true },
+];
+const prefs = useTablePreferences('shipments-table', SHIPMENT_COLUMNS);
+
+const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -43,10 +66,7 @@ export default function ShipmentsPage() {
     }, 300);
   }, []);
   useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
-  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'trackingNumber', direction: 'ascending' });
-  const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; trackingNumber: string } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('delivered');
+
   const [createOpen, setCreateOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
   const [assignerData, setAssignerData] = useState<{ customerId: string | null; contactEmail: string; contactPhone: string }>({
@@ -88,7 +108,7 @@ export default function ShipmentsPage() {
     return STATUS_GROUPS[statusFilter]?.join(',') ?? 'all';
   }, [statusFilter]);
 
-  const shipmentsQuery = useShipments(page, ROWS_PER_PAGE, computedStatus, debouncedSearch);
+  const shipmentsQuery = useShipments(page, rowsPerPage, computedStatus, debouncedSearch);
   const shipmentsResp = shipmentsQuery.data as PaginatedResult<Shipment> | undefined;
   const shipmentRows = Array.isArray(shipmentsResp) ? shipmentsResp : (shipmentsResp?.data ?? []);
   const totalCount = Array.isArray(shipmentsResp) ? shipmentRows.length : (shipmentsResp?.total ?? 0);
@@ -134,6 +154,55 @@ export default function ShipmentsPage() {
   const { data: newBranches = [] } = useBranches();
   const queryClient = useQueryClient();
 
+  const toggleAll = useCallback((rows: typeof paginated[number][]) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (rows.every((r) => next.has(r.id))) rows.forEach((r) => next.delete(r.id));
+      else rows.forEach((r) => next.add(r.id));
+      return next;
+    });
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selected.size === 0) return;
+    if (!window.confirm(`Delete ${selected.size} selected shipment(s)? This cannot be undone.`)) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selected).map((id) => api.delete(`/api/shipments/${id}`)));
+      toast('success', 'Shipments deleted', `${selected.size} shipment(s) removed`);
+      setSelected(new Set());
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+    } catch (e) {
+      toast('error', 'Failed to delete shipments', e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setBulkDeleting(false);
+    }
+  }, [selected, toast, queryClient]);
+
+  const [bulkStatusUpdating, setBulkStatusUpdating] = useState(false);
+  const statusLabel = (s: string) => STATUS_META[s as keyof typeof STATUS_META]?.label ?? s;
+
+  const handleBulkStatus = useCallback(async (status: string) => {
+    if (selected.size === 0 || bulkStatusUpdating) return;
+    setBulkStatusUpdating(true);
+    try {
+      const results = await Promise.allSettled(Array.from(selected).map((id) => api.patch(`/api/shipments/${id}`, { status })));
+      const ok = results.filter((r) => r.status === 'fulfilled').length;
+      const fail = results.length - ok;
+      if (ok > 0) {
+        toast('success', 'Status updated', `${ok} shipment(s) set to ${statusLabel(status)}${fail ? `, ${fail} failed` : ''}`);
+        setSelected(new Set());
+        queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      } else {
+        toast('error', 'Update failed', 'None of the shipments could be updated');
+      }
+    } catch (e) {
+      toast('error', 'Bulk status update failed', e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setBulkStatusUpdating(false);
+    }
+  }, [selected, bulkStatusUpdating, toast, queryClient]);
+
   const [selectedBranchId, setSelectedBranchId] = useState(isStaff ? (userBranchId ?? '') : branchFilter);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const clearError = (field: string) => setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
@@ -161,6 +230,12 @@ export default function ShipmentsPage() {
       customerName: s.customerId ? (customerMap.get(s.customerId) ?? '—') : s.contactEmail || s.contactPhone || 'Self',
       billAmount: s.billAmount as string | undefined,
       createdAt: s.createdAt,
+      lastTrackedAt: s.lastTrackedAt,
+      stale: s.trackingRegistered
+        && s.status !== 'delivered'
+        && s.lastTrackedAt
+        ? (Date.now() - new Date(s.lastTrackedAt).getTime()) / 86400000 > 3
+        : false,
     }));
     const col = sortDescriptor.column as keyof typeof items[number];
     const dir = sortDescriptor.direction;
@@ -173,18 +248,65 @@ export default function ShipmentsPage() {
     return items;
   }, [shipmentRows, sortDescriptor, customerMap]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / ROWS_PER_PAGE));
+  const handleCsvExport = useCallback(() => {
+    const rows = selected.size > 0 ? paginated.filter((r) => selected.has(r.id)) : paginated;
+    if (rows.length === 0) return;
+    const esc = (v: unknown) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [
+      ['Tracking #', 'Label Code', 'Customer', 'Carrier', 'Status', 'Bill Amount', 'Created'].join(','),
+      ...rows.map((r) => [r.trackingNumber, r.labelCode ?? '', r.customerName ?? '', r.carrier ?? '', statusLabel(r.status), r.billAmount ?? '', r.createdAt].map(esc).join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shipments-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [selected, paginated]);
+
+  const escHtml = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+  const handlePrintLabels = useCallback(() => {
+    const rows = selected.size > 0 ? paginated.filter((r) => selected.has(r.id)) : paginated;
+    if (rows.length === 0) return;
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><title>Shipment Labels</title><style>
+      body{font-family:system-ui,sans-serif;margin:24px;}
+      h1{font-size:18px;margin-bottom:16px;}
+      table{width:100%;border-collapse:collapse;font-size:13px;}
+      th{text-align:left;border-bottom:2px solid #333;padding:6px 8px;}
+      td{border-bottom:1px solid #ccc;padding:8px;font-family:monospace;}
+      @media print{ h1{display:none;} }
+    </style></head><body>
+    <h1>Shipment Labels (${rows.length})</h1>
+    <table><thead><tr><th>Tracking #</th><th>Label Code</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td>${escHtml(r.trackingNumber)}</td><td>${escHtml(r.labelCode || '—')}</td></tr>`).join('')}
+    </tbody></table>
+    <script>window.onload=function(){window.print();}</script>
+    </body></html>`);
+    w.document.close();
+  }, [selected, paginated]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const start = (page - 1) * ROWS_PER_PAGE + 1;
-  const end = Math.min(page * ROWS_PER_PAGE, totalCount);
+  const start = (page - 1) * rowsPerPage + 1;
+  const end = Math.min(page * rowsPerPage, totalCount);
   const isPending = shipmentsQuery.isPending;
   const isError = shipmentsQuery.isError;
   const refetch = shipmentsQuery.refetch;
 
   function handleContextAction(key: Key, shipment: typeof paginated[number]) {
-    if (key === 'view' || key === 'edit') router.push(`/shipments/${shipment.id}`);
+    if (key === 'view' || key === 'edit') router.push(`/shipments/${shipment.trackingNumber}`);
     else if (key === 'delete') setDeleteTarget(shipment);
   }
+
+  const kpiCounts = useMemo(() => statusGroupCounts(counts), [counts]);
+  const applyStatus = (group: string) => { setStatusFilter(group); setPage(1); };
 
   return (
     <div className="space-y-6">
@@ -199,71 +321,38 @@ export default function ShipmentsPage() {
         </div>
       ) : (
       <>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Shipments</h1>
-          <p className="text-sm text-muted">Track and manage shipments</p>
-        </div>
-        <Button onPress={() => {
+      <PageHeader
+        title="Shipments"
+        subtitle="Track and manage shipments"
+        icon={<Package size={18} />}
+        action={<Button onPress={() => {
           setErrors({}); setNewTrackingNumber(''); setBillAmount(0); setCreateOpen(true); setCreateStep(1);
           setAssignerData({ customerId: null, contactEmail: '', contactPhone: '' });
           setSenderAddress({}); setRecipientAddress({});
-        }}>New Shipment</Button>
-      </div>
+        }}>New Shipment</Button>}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Total', count: totalCount, color: '#3b82f6', icon: Package, key: 'total' },
-          { label: 'In Transit', count: counts?.in_transit ?? 0, color: '#8b5cf6', icon: Truck, key: 'inTransit' },
-          { label: 'Delivered', count: counts?.delivered ?? 0, color: '#22c55e', icon: CheckCircle, key: 'delivered' },
-          { label: 'Pending', count: counts?.pending ?? 0, color: '#f59e0b', icon: Clock, key: 'pending' },
-        ].map(({ label, count, color, icon: Icon, key }) => {
-          const data = sparklines[key as keyof typeof sparklines];
-          const t = trend[key as keyof typeof trend];
-          const up = t >= 0;
-          const max = Math.max(...data) || 1;
-          const min = Math.min(...data);
-          const range = max - min || 1;
-          const w = 80; const h = 32;
-          const pts = data.map((v, i) => `${((i / (data.length - 1)) * w).toFixed(1)},${(h - ((v - min) / range) * (h - 4) - 2).toFixed(1)}`).join(' ');
-          const area = `0,${h} ${pts} ${w},${h}`;
-          return (
-            <div key={label} className="rounded-xl border border-border bg-surface hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden flex flex-col">
-              <div className="p-5 pb-3 flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">{label}</span>
-                  <Icon size={18} style={{ color }} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-4xl font-bold tracking-tight">{count}</p>
-                    <span className={`text-xs font-medium ${up ? 'text-success' : 'text-danger'}`}>
-                      {up ? '↑' : '↓'} {Math.abs(t)}%
-                    </span>
-                  </div>
-                  <div className="w-20 h-8">
-                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id={`fill-${label.replace(/\s/g, '')}`} x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-                          <stop offset="100%" stopColor={color} stopOpacity="0.03" />
-                        </linearGradient>
-                      </defs>
-                      <polygon points={area} fill={`url(#fill-${label.replace(/\s/g, '')})`} />
-                      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <KpiCard label="Total" count={kpiCounts.total ?? 0} color="#3b82f6" icon={Package} data={sparklines.total} trend={trend.total} onPress={() => applyStatus('all')} isActive={statusFilter === 'all'} />
+        <KpiCard label="In Transit" count={kpiCounts['In Transit'] ?? 0} color="#8b5cf6" icon={Truck} data={sparklines.inTransit} trend={trend.inTransit} onPress={() => applyStatus('In Transit')} isActive={statusFilter === 'In Transit'} />
+        <KpiCard label="Delivered" count={kpiCounts.Delivered ?? 0} color="#22c55e" icon={CheckCircle} data={sparklines.delivered} trend={trend.delivered} onPress={() => applyStatus('Delivered')} isActive={statusFilter === 'Delivered'} />
+        <KpiCard label="Pending" count={kpiCounts.Pending ?? 0} color="#f59e0b" icon={Clock} data={sparklines.pending} trend={trend.pending} onPress={() => applyStatus('Pending')} isActive={statusFilter === 'Pending'} />
       </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+      <div className="rounded-sm border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1"><Input id="shipment-search" variant="secondary" placeholder="Search shipments..." value={search} onChange={(e) => handleSearch(e.target.value)} fullWidth /></div>
+            <div className="flex items-center gap-2">
+              <TablePreferences
+                storageKey="shipments-table"
+                columns={SHIPMENT_COLUMNS}
+                hidden={prefs.hidden}
+                onHiddenChange={prefs.setHidden}
+                density={prefs.density}
+                onDensityChange={prefs.setDensity}
+              />
+            </div>
             <Tabs selectedKey={statusFilter} onSelectionChange={(key) => { setStatusFilter(key as string); setPage(1); }} className="sm:flex-[2] overflow-x-auto">
               <Tabs.List>
                 <Tabs.Tab id="all">All</Tabs.Tab>
@@ -276,21 +365,61 @@ export default function ShipmentsPage() {
             </Tabs>
           </div>
         </div>
-        <Table>
-          <Table.ScrollContainer>
-            <Table.Content aria-label="Shipments" className="min-w-[1050px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
+        {selected.size > 0 && (
+          <div className="px-4 py-2 border-b border-border bg-accent/[0.04] flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-medium">{selected.size} selected</span>
+            {userRole !== 'staff' && (
+              <Dropdown.Root>
+                <Dropdown.Trigger className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface px-3 h-8 text-xs font-medium text-foreground hover:bg-muted transition-colors outline-none data-[pressed]:bg-muted/60">
+                  <Tags size={14} /> Set Status <ChevronDown size={12} />
+                </Dropdown.Trigger>
+                <Dropdown.Popover placement="bottom start">
+                  <Dropdown.Menu onAction={(key) => handleBulkStatus(String(key))}>
+                    {Object.entries(STATUS_META).map(([value, meta]) => (
+                      <Dropdown.Item key={value} id={value} textValue={meta.label}>{meta.label}</Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown.Root>
+            )}
+            <Button size="sm" variant="secondary" onPress={handleCsvExport}>
+              <FileDown size={14} /> Export CSV
+            </Button>
+            <Button size="sm" variant="secondary" onPress={handlePrintLabels}>
+              <Printer size={14} /> Print Labels
+            </Button>
+            <Button size="sm" variant="danger" isPending={bulkDeleting} isDisabled={bulkDeleting} onPress={handleBulkDelete}>
+              <Trash2 size={14} /> Delete
+            </Button>
+            <Button size="sm" variant="ghost" onPress={() => setSelected(new Set())}>Clear</Button>
+          </div>
+        )}
+<Table className={`table-clickable ${densityClassName(prefs.density)}`}>
+<Table.ScrollContainer>
+            <Table.Content aria-label="Shipments" className="min-w-[1050px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/shipments/${key}`)}>
               <Table.Header>
+                <Table.Column id="select" width={40}>
+                  {() => (
+                    <input
+                      type="checkbox"
+                      aria-label="Select all"
+                      className="accent-[var(--accent)] cursor-pointer"
+                      checked={paginated.length > 0 && paginated.every((s) => selected.has(s.id))}
+                      onChange={() => toggleAll(paginated)}
+                    />
+                  )}
+                </Table.Column>
                 <Table.Column id="#" width={48}>
                   {() => <span className="text-muted text-xs">#</span>}
                 </Table.Column>
-                <Table.Column allowsSorting id="trackingNumber" isRowHeader>
-                  <span className="text-muted text-xs">Tracking #</span>
-                </Table.Column>
-                <Table.Column allowsSorting id="labelCode">Label Code</Table.Column>
-                <Table.Column allowsSorting id="customerName">Customer</Table.Column>
-                <Table.Column allowsSorting id="carrier">Carrier</Table.Column>
-                <Table.Column allowsSorting id="billAmount" width={100}>Bill</Table.Column>
-                <Table.Column allowsSorting id="status">Status</Table.Column>
+<Table.Column allowsSorting id="trackingNumber" isRowHeader>
+<span className="text-muted text-xs">Tracking #</span>
+</Table.Column>
+{prefs.isVisible('labelCode') && <Table.Column allowsSorting id="labelCode">Label Code</Table.Column>}
+{prefs.isVisible('customerName') && <Table.Column allowsSorting id="customerName">Customer</Table.Column>}
+{prefs.isVisible('carrier') && <Table.Column allowsSorting id="carrier">Carrier</Table.Column>}
+{prefs.isVisible('billAmount') && <Table.Column allowsSorting id="billAmount" width={100}>Bill</Table.Column>}
+{prefs.isVisible('status') && <Table.Column allowsSorting id="status">Status</Table.Column>}
                 <Table.Column id="actions" width={48}>
                   {() => null}
                 </Table.Column>
@@ -301,34 +430,58 @@ export default function ShipmentsPage() {
                 )}
               >
                 {paginated.map((shipment, i) => (
-                  <Table.Row key={shipment.id} id={shipment.id}>
+                  <Table.Row key={shipment.id} id={shipment.trackingNumber} className={selected.has(shipment.id) ? 'bg-accent/[0.06]' : undefined}>
+                    <Table.Cell>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${shipment.trackingNumber}`}
+                        className="accent-[var(--accent)] cursor-pointer"
+                        checked={selected.has(shipment.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => setSelected((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(shipment.id)) next.delete(shipment.id);
+                          else next.add(shipment.id);
+                          return next;
+                        })}
+                      />
+                    </Table.Cell>
                     <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
                     <Table.Cell>
                       <span className="font-mono text-xs font-medium inline-flex items-center gap-1">
                         {shipment.trackingNumber}
-                        <CopyButton text={shipment.trackingNumber} label="tracking number" />
+                        <span onClick={(e) => e.stopPropagation()}><CopyButton text={shipment.trackingNumber} label="tracking number" /></span>
                       </span>
                     </Table.Cell>
-                    <Table.Cell className="font-mono text-xs">{shipment.labelCode || '—'}</Table.Cell>
-                    <Table.Cell>{shipment.customerName || '—'}</Table.Cell>
-                    <Table.Cell>{shipment.carrier}</Table.Cell>
-                    <Table.Cell>{shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'}</Table.Cell>
-                    <Table.Cell>
-                      <Chip size="sm" variant="soft" color={(STATUS_META[shipment.status as keyof typeof STATUS_META]?.color ?? 'default') as Parameters<typeof Chip>[0]['color']}>{STATUS_META[shipment.status as keyof typeof STATUS_META]?.label ?? (shipment.status as string).replace(/_/g, ' ')}</Chip>
+                    {prefs.isVisible('labelCode') && <Table.Cell className="font-mono text-xs">{shipment.labelCode || '—'}</Table.Cell>}
+                    {prefs.isVisible('customerName') && <Table.Cell>{shipment.customerName || '—'}</Table.Cell>}
+                    {prefs.isVisible('carrier') && <Table.Cell>{shipment.carrier}</Table.Cell>}
+                    {prefs.isVisible('billAmount') && <Table.Cell>{shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'}</Table.Cell>}
+                    {prefs.isVisible('status') && (
+                      <Table.Cell>
+                      <ShipmentStatusBadge status={shipment.status} />
+                      {shipment.stale && (
+                        <span className="ml-1.5 text-xs text-danger inline-flex items-center gap-1" title={`Last tracked ${shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleDateString() : 'unknown'}`}>
+                          <Clock size={10} /> stale
+                        </span>
+                      )}
                     </Table.Cell>
+                    )}
                     <Table.Cell>
-                      <Dropdown.Root>
-                        <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                          <MoreVertical size={16} />
-                        </Dropdown.Trigger>
-                        <Dropdown.Popover placement="bottom end">
-                          <Dropdown.Menu onAction={(key) => handleContextAction(key, shipment)}>
-                            <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
-                            <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><Pencil size={16} /> Edit</span></Dropdown.Item>
-                            {userRole !== 'staff' && <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>}
-                          </Dropdown.Menu>
-                        </Dropdown.Popover>
-                      </Dropdown.Root>
+<span onClick={(e) => e.stopPropagation()}>
+                        <Dropdown.Root>
+                          <Dropdown.Trigger className="inline-flex items-center justify-center rounded-sm min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
+                            <MoreVertical size={16} />
+                          </Dropdown.Trigger>
+                          <Dropdown.Popover placement="bottom end">
+                            <Dropdown.Menu onAction={(key) => handleContextAction(key, shipment)}>
+                              <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
+                              <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><Pencil size={16} /> Edit</span></Dropdown.Item>
+                              {userRole !== 'staff' && <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>}
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
+                        </Dropdown.Root>
+                      </span>
                     </Table.Cell>
                   </Table.Row>
                 ))}
@@ -336,27 +489,43 @@ export default function ShipmentsPage() {
             </Table.Content>
           </Table.ScrollContainer>
           <Table.Footer>
-              <Pagination size="sm">
-                <Pagination.Summary>{start} to {end} of {totalCount} results</Pagination.Summary>
-                <Pagination.Content>
-                  <Pagination.Item>
-                    <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
-                      <Pagination.PreviousIcon /> Prev
-                    </Pagination.Previous>
-                  </Pagination.Item>
-                  {pages.map((p) => (
-                    <Pagination.Item key={p}>
-                      <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
-                    </Pagination.Item>
-                  ))}
-                  <Pagination.Item>
-                    <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                      Next <Pagination.NextIcon />
-                    </Pagination.Next>
-                  </Pagination.Item>
-                </Pagination.Content>
-              </Pagination>
-            </Table.Footer>
+  <div className="flex items-center justify-between w-full px-4 py-2 gap-4">
+    <div className="flex items-center gap-2 text-xs text-muted">
+      <span>Rows</span>
+      <Select selectedKey={String(rowsPerPage)} onSelectionChange={(k) => setRowsPerPage(Number(k))} variant="secondary" className="w-20" aria-label="Rows per page">
+        <Select.Trigger className="h-7 text-xs">
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {[25, 50, 100, 250].map((n) => <ListBox.Item key={n} id={String(n)} textValue={String(n)}>{n}</ListBox.Item>)}
+          </ListBox>
+        </Select.Popover>
+      </Select>
+    </div>
+    <Pagination size="sm">
+      <Pagination.Summary>{start} to {end} of {totalCount} results</Pagination.Summary>
+      <Pagination.Content>
+        <Pagination.Item>
+          <Pagination.Previous isDisabled={page === 1} onPress={() => setPage((p) => Math.max(1, p - 1))}>
+            <Pagination.PreviousIcon /> Prev
+          </Pagination.Previous>
+        </Pagination.Item>
+        {pages.map((p) => (
+          <Pagination.Item key={p}>
+            <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
+          </Pagination.Item>
+        ))}
+        <Pagination.Item>
+          <Pagination.Next isDisabled={page === totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))}>
+            Next <Pagination.NextIcon />
+          </Pagination.Next>
+        </Pagination.Item>
+      </Pagination.Content>
+    </Pagination>
+  </div>
+</Table.Footer>
         </Table>
       </div>
 
@@ -582,7 +751,7 @@ export default function ShipmentsPage() {
 
                 {createStep === 4 && (
                   <div className="pt-2">
-                    <div className="divide-y divide-border/60 rounded-xl border border-border bg-muted/5">
+                    <div className="divide-y divide-border/60 rounded-sm border border-border bg-muted/5">
                       <div className="p-4">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />

@@ -62,10 +62,10 @@ export function AboutSection(): ReactNode {
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 About Us
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-[1.15] mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.15] mb-4">
                 {config.about.headline}
               </h2>
-              <p className="text-white/85 leading-relaxed mb-8">
+              <p className="text-lg text-white/85 leading-relaxed mb-8">
                 {config.about.body}
               </p>
             </motion.div>

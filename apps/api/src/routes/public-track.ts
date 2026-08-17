@@ -17,36 +17,50 @@ import { Hono } from 'hono';
 import { withCache } from '../cache';
 import { db } from '../db';
 import { shipments, tenants, trackingEvents } from '../db/schema';
+import { globalRateLimit } from '../middleware/rate-limit';
+import type { TenantVariables } from '../middleware/tenant';
 
-const app = new Hono();
+const app = new Hono<{ Variables: TenantVariables }>();
 
-app.get('/:trackingNo', async (c) => {
-  const trackingNo = c.req.param('trackingNo');
-  if (!trackingNo || trackingNo.length > 255) {
-    return c.json({ error: 'Invalid tracking number' }, 400);
-  }
+app.get(
+  '/:trackingNo',
+  globalRateLimit({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'public-track' }),
+  async (c) => {
+    const trackingNo = c.req.param('trackingNo');
+    if (!trackingNo || trackingNo.length > 255) {
+      return c.json({ error: 'Invalid tracking number' }, 400);
+    }
 
-  const tenantSlug = c.req.query('tenant');
+    const tenantSlug = c.req.query('tenant');
+    const resolvedTenantId = (c.get('tenantId') as string | null) ?? null;
 
-  // Cache key includes trackingNo and optional tenant slug for unambiguous lookups
-  const cacheKey = `public:track:${trackingNo}:${tenantSlug ?? ''}`;
+    // Explicit ?tenant= slug wins; otherwise scope to the tenant resolved from
+    // the request domain. With neither present (e.g. localhost dev), fall back
+    // to a global lookup.
+    let tenantId: string | null = resolvedTenantId;
+    if (tenantSlug) {
+      const [tenant] = await db
+        .select({ id: tenants.id })
+        .from(tenants)
+        .where(eq(tenants.slug, tenantSlug!))
+        .limit(1);
+      if (!tenant) return c.json({ error: 'Shipment not found' }, 404);
+      tenantId = tenant.id;
+    }
 
-  const data = await withCache<unknown | null>(
-    'global', // Fixed key — not tenant-specific (trackingNo is the discriminator)
-    cacheKey,
-    async () => {
-      // Build the shipment lookup condition
-      const conditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo!)];
-      if (tenantSlug) {
-        // Scope to a specific tenant by slug — used by the white-label portals
-        const [tenant] = await db
-          .select({ id: tenants.id })
-          .from(tenants)
-          .where(eq(tenants.slug, tenantSlug!))
-          .limit(1);
-        if (!tenant) return null;
-        conditions.push(eq(shipments.tenantId, tenant.id));
-      }
+    // Cache key includes effective tenant scope so one tenant's result can
+    // never be served to another.
+    const cacheKey = `public:track:${trackingNo}:${tenantId ?? ''}`;
+
+    const data = await withCache<unknown | null>(
+      'global', // Fixed key — not tenant-specific (trackingNo is the discriminator)
+      cacheKey,
+      async () => {
+        // Build the shipment lookup condition
+        const conditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo!)];
+        if (tenantId) {
+          conditions.push(eq(shipments.tenantId, tenantId));
+        }
 
       const row = await db
         .select({

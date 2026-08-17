@@ -66,6 +66,8 @@ export function TenantFilterProvider({ children }: { children: ReactNode }) {
   // Auto-set tenant from user account for non-superadmins
   const user = session?.user as { id: string; role?: string; tenantId?: string } | undefined;
   const isSuperadmin = user?.role === 'superadmin';
+  const isTenantAdmin = user?.role === 'tenant-admin';
+  const canFilterBranches = isSuperadmin || isTenantAdmin;
 
   useEffect(() => {
     if (isSuperadmin) {
@@ -77,10 +79,18 @@ export function TenantFilterProvider({ children }: { children: ReactNode }) {
     }
   }, [isSuperadmin, user?.tenantId]);
 
+  // Branch filtering is only available to tenant-admin / superadmin. Staff are
+  // scoped to their own branch server-side, so never send X-Branch-ID for them.
   useEffect(() => {
+    if (!canFilterBranches) {
+      localStorage.removeItem(STORAGE_BRANCH);
+      setBranchFilterState('');
+      setBranchFilter(null);
+      return;
+    }
     const saved = load(STORAGE_BRANCH);
     setBranchFilter(saved || null);
-  }, []);
+  }, [canFilterBranches]);
 
   const setTenant = useCallback((id: string) => {
     save(STORAGE_TENANT, id);

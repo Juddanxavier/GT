@@ -197,6 +197,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
       admin({
         defaultRole: 'customer',
         adminRoles: ['superadmin', 'tenant-admin'],
+        impersonation: { enabled: false },
         roles: {
           superadmin: adminAc,
           'tenant-admin': adminAc,
@@ -241,7 +242,7 @@ export function createAuthConfig(deps: AuthConfigDeps): any {
     baseURL,
     session: {
       expiresIn: 60 * 60 * 24 * 7,
-      updateAge: 60 * 60 * 24, // 24h
+      updateAge: 60 * 5, // slide forward on any activity (5 min)
       cookieCache: {
         enabled: true,
         maxAge: 5 * 60, // 5 min cache — session persisted in signed cookie

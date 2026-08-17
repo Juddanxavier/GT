@@ -49,7 +49,7 @@ export function useNotifications(): ReturnType<typeof useQuery<{ data: Notificat
     queryFn: async () => {
       const res = await fetch(`${API_BASE}/api/notifications?limit=50`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load notifications');
-      return res.json();
+      return (await res.json().catch(() => ({ data: [], total: 0 }))) as { data: Notification[]; total: number };
     },
   });
 }
@@ -60,7 +60,7 @@ export function useUnreadCount(): ReturnType<typeof useQuery<{ count: number }>>
     queryFn: async () => {
       const res = await fetch(`${API_BASE}/api/notifications/unread-count`, { credentials: 'include' });
       if (!res.ok) return { count: 0 };
-      return res.json();
+      return (await res.json().catch(() => ({ count: 0 }))) as { count: number };
     },
     refetchInterval: 30_000,
   });
@@ -92,6 +92,45 @@ export function useMarkAllNotificationsRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+    },
+  });
+}
+
+export interface NotificationPrefs {
+  deliveryEmail: boolean;
+  deliveryWhatsapp: boolean;
+  exceptionEmail: boolean;
+  exceptionWhatsapp: boolean;
+  generalEmail: boolean;
+  generalWhatsapp: boolean;
+}
+
+export function useNotificationPrefs(): ReturnType<typeof useQuery<Partial<NotificationPrefs>>> {
+  return useQuery<Partial<NotificationPrefs>>({
+    queryKey: ['notification-prefs'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/notification-preferences`, { credentials: 'include' });
+      if (!res.ok) return {};
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateNotificationPrefs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (prefs: Partial<NotificationPrefs>) => {
+      const res = await fetch(`${API_BASE}/api/notification-preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(prefs),
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to update preferences');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-prefs'] });
     },
   });
 }

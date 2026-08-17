@@ -45,7 +45,7 @@ function MyInvoicesContent(): ReactNode {
         <div className="space-y-4">
           <div className="space-y-2">
             {data.data.map((inv) => (
-              <a key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center justify-between rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] transition-all">
+              <a key={inv.id} href={`/invoices/${inv.invoiceNo}`} className="flex items-center justify-between rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] transition-all">
                 <div>
                   <p className="text-sm font-mono font-bold text-foreground">{inv.invoiceNo}</p>
                   <p className="text-xs text-foreground/50 mt-0.5">{inv.trackingNo} — {new Date(inv.createdAt).toLocaleDateString()}</p>

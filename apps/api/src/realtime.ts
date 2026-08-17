@@ -109,6 +109,9 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
       socket.join(`tenant:${user.tenantId}`);
     }
 
+    // Join personal room so per-user events (notifications) reach this user
+    socket.join(`user:${user.id}`);
+
     // Staff always join their assigned branch room
     if (user.role === 'staff' && user.branchId && user.tenantId) {
       socket.join(`tenant:${user.tenantId}:branch:${user.branchId}`);
@@ -171,6 +174,12 @@ export function getIO(): SocketIOServer | null {
 export function emitToTenant(tenantId: string, event: string, data: unknown): void {
   if (!io) return;
   io.to(`tenant:${tenantId}`).emit(event, data);
+}
+
+// Helper: emit to a single user (e.g. their in-app notifications)
+export function emitToUser(userId: string, event: string, data: unknown): void {
+  if (!io) return;
+  io.to(`user:${userId}`).emit(event, data);
 }
 
 // Helper: emit to a specific branch within a tenant

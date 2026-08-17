@@ -51,6 +51,7 @@ type ShipmentBrief = {
   customerEmail: string | null;
   customerPhone: string | null;
   customerName: string | null;
+  customerUserId: string | null;
 };
 
 const COOLDOWN_SECONDS = 1800;
@@ -118,6 +119,7 @@ export async function notifyTrackingEvents(
       customerEmail,
       customerPhone,
       customerName,
+      customerUserId: ship.userId ?? null,
     };
 
     for (const event of events) {
@@ -193,5 +195,6 @@ export async function handleTrackingEvent(
     customerName: shipment.customerName ?? undefined,
     customerEmail: shipment.customerEmail ?? undefined,
     customerPhone: shipment.customerPhone ?? undefined,
+    customerUserId: shipment.customerUserId ?? undefined,
   });
 }

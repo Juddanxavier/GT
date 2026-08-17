@@ -59,7 +59,7 @@ const borders: Record<ToastType, string> = {
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}>
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-sm bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}>
       <span className="shrink-0 mt-0.5">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">{toast.title}</p>

@@ -43,17 +43,18 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
 
     if (!cacheClient) {
       const now = Date.now();
-      const entry = fallbackStore.get(identifier);
+      const fallbackKey = `${merged.keyPrefix ?? 'ratelimit'}:${method}:${path}:${identifier}`;
+      const entry = fallbackStore.get(fallbackKey);
       if (entry && entry.resetAt > now) {
         if (entry.count >= merged.maxRequests) {
           return errorResponse(c, 'RATE_LIMITED', 'Too many requests. Please try again later.', 429);
         }
         entry.count++;
       } else {
-        fallbackStore.set(identifier, { count: 1, resetAt: now + merged.windowSeconds * 1000 });
+        fallbackStore.set(fallbackKey, { count: 1, resetAt: now + merged.windowSeconds * 1000 });
       }
       c.res.headers.set('X-RateLimit-Limit', String(merged.maxRequests));
-      c.res.headers.set('X-RateLimit-Remaining', String(Math.max(0, merged.maxRequests - (fallbackStore.get(identifier)?.count ?? 1))));
+      c.res.headers.set('X-RateLimit-Remaining', String(Math.max(0, merged.maxRequests - (fallbackStore.get(fallbackKey)?.count ?? 1))));
       await next();
       return;
     }

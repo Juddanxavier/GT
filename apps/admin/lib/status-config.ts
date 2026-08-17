@@ -37,7 +37,6 @@ export const STATUS_GROUPS: Record<string, InternalStatus[]> = {
   'In Transit': ['in_transit', 'out_for_delivery', 'failed_attempt'],
   Delivered: ['delivered'],
   Exception: ['exception', 'expired'],
-  'Available for Pickup': ['available_for_pickup'],
 };
 
 export const FILTER_GROUPS = Object.keys(STATUS_GROUPS) as (keyof typeof STATUS_GROUPS)[];
@@ -49,9 +48,26 @@ export function statusGroup(status: InternalStatus): string {
   return 'Pending';
 }
 
+// KPI card counts per status group (source of truth for the dashboard cards).
+export function statusGroupCounts(counts: Record<string, number> | undefined): Record<string, number> {
+  const groupCounts: Record<string, number> = {};
+  for (const [group, statuses] of Object.entries(STATUS_GROUPS)) {
+    groupCounts[group] = statuses.reduce((sum, s) => sum + (counts?.[s] ?? 0), 0);
+  }
+  groupCounts.total = Object.values(counts ?? {}).reduce((a, b) => a + (b ?? 0), 0);
+  return groupCounts;
+}
+
 export const STATUS_META: Record<InternalStatus, { label: string; color: ChipColor }> = Object.fromEntries(
   INTERNAL_STATUSES.map((s) => [
     s,
     { label: STATUS_LABELS[s], color: STATUS_COLORS[s] },
   ]),
 ) as Record<InternalStatus, { label: string; color: ChipColor }>;
+
+export const INVOICE_STATUS_COLORS: Record<string, 'success' | 'default' | 'warning' | 'danger' | 'accent'> = {
+  paid: 'success',
+  unpaid: 'warning',
+  cancelled: 'danger',
+  refunded: 'danger',
+};

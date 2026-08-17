@@ -52,7 +52,7 @@ function LoginForm() {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger mb-6">
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger mb-6">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
           {submitError}
         </div>
@@ -66,14 +66,14 @@ function LoginForm() {
 
         <TextField fullWidth isInvalid={!!fieldErrors.email} name="email" type="email" value={email} onChange={(v) => setEmail(v)}>
           <Label>Email</Label>
-          <Input placeholder="name@example.com" autoComplete="email" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+          <Input placeholder="name@example.com" autoComplete="email" className="rounded-sm bg-surface border-border text-foreground placeholder:text-muted-light" />
           {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
         </TextField>
 
         <TextField fullWidth isInvalid={!!fieldErrors.password} name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(v) => setPassword(v)}>
           <Label>Password</Label>
           <InputGroup fullWidth>
-            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 rounded-xl" />
+            <InputGroup.Input placeholder="Enter your password" autoComplete="current-password" className="rounded-sm bg-surface border-border text-foreground placeholder:text-muted-light" />
             <InputGroup.Suffix className="pr-0">
               <Button isIconOnly aria-label={showPassword ? 'Hide password' : 'Show password'} size="sm" variant="ghost" onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -85,7 +85,7 @@ function LoginForm() {
 
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-            <input type="checkbox" defaultChecked className="rounded border-zinc-600 bg-zinc-800 accent-current" />
+            <input type="checkbox" defaultChecked className="rounded border-border bg-surface accent-accent" />
             Remember me
           </label>
           <Link href="/forgot-password" className="text-xs text-muted hover:text-foreground underline underline-offset-2 transition-colors">
@@ -93,7 +93,7 @@ function LoginForm() {
           </Link>
         </div>
 
-        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11 font-medium shadow-sm shadow-black/10">
+        <Button type="submit" fullWidth isDisabled={loading} isPending={loading} className="h-11 font-medium">
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
 

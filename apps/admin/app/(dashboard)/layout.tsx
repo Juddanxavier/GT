@@ -8,6 +8,7 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ToastProvider } from '@/components/toast';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { SearchDialog } from '@/components/search-dialog';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import {
   Avatar,
@@ -32,7 +33,6 @@ import {
   Users,
   Building2,
   Package,
-  FileText,
   Receipt,
   Moon,
   Sun,
@@ -42,78 +42,55 @@ import {
   Menu,
   User,
   UserPlus,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
-import { useTenants, useDashboardBranches } from '@/lib/queries';
-import { SearchDialog } from '@/components/search-dialog';
+import { useTheme } from '@/lib/use-theme';
+import {
+  useTenants,
+  useDashboardBranches,
+  useUnreadCount,
+  useNotifications,
+  useMarkRead,
+  useMarkAllRead,
+} from '@/lib/queries';
 import { useToast } from '@/components/toast';
 import { connectSocket } from '@/lib/socket';
 import { getUser } from '@/types/auth';
 
 const ALLOWED_ROLES = ['superadmin', 'tenant-admin', 'staff'];
 
-function getNavItems(role?: string) {
-  const items = [
-    {
-      href: '/',
-      label: 'Dashboard',
-      icon: <LayoutDashboard size={18} />,
-    },
-    {
-      href: '/customers',
-      label: 'Users',
-      icon: <Users size={18} />,
-    },
-    ...(role !== 'staff'
-      ? [
-          {
-            href: '/invitations',
-            label: 'Invitations',
-            icon: <UserPlus size={18} />,
-          },
-        ]
-      : []),
-    ...(role !== 'staff'
-      ? [
-          {
-            href: '/branches',
-            label: 'Branches',
-            icon: <Building2 size={18} />,
-          },
-        ]
-      : []),
-    {
-      href: '/shipments',
-      label: 'Shipments',
-      icon: <Package size={18} />,
-    },
-    {
-      href: '/quotations',
-      label: 'Quotations',
-      icon: <FileText size={18} />,
-    },
-    {
-      href: '/invoices',
-      label: 'Invoices',
-      icon: <Receipt size={18} />,
-    },
-    ...(role !== 'staff'
-      ? [
-          {
-            href: '/reports',
-            label: 'Reports',
-            icon: <BarChart3 size={18} />,
-          },
-        ]
-      : []),
-    {
-      href: '/audit',
-      label: 'Audit Log',
-      icon: <Activity size={18} />,
-    },
+type NavItem = { href: string; label: string; icon: ReactNode };
+
+function getNavItems(role?: string): { section: string; items: NavItem[] }[] {
+  const manage: NavItem[] = [
+    { href: '/customers', label: 'Users', icon: <Users size={18} /> },
   ];
-  return items;
+  if (role !== 'staff') {
+    manage.push({ href: '/invitations', label: 'Invitations', icon: <UserPlus size={18} /> });
+    manage.push({ href: '/branches', label: 'Branches', icon: <Building2 size={18} /> });
+  }
+  manage.push({ href: '/shipments', label: 'Shipments', icon: <Package size={18} /> });
+  manage.push({ href: '/invoices', label: 'Invoices', icon: <Receipt size={18} /> });
+
+  const insights: NavItem[] = [];
+  if (role !== 'staff') {
+    insights.push({ href: '/reports', label: 'Reports', icon: <BarChart3 size={18} /> });
+  }
+  insights.push({ href: '/audit', label: 'Audit Log', icon: <Activity size={18} /> });
+
+  const system: NavItem[] = [];
+  if (role !== 'staff') {
+    system.push({ href: '/settings', label: 'Settings', icon: <SettingsIcon size={18} /> });
+  }
+
+  return [
+    { section: 'Overview', items: [{ href: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
+    { section: 'Manage', items: manage },
+    { section: 'Insights', items: insights },
+    { section: 'System', items: system },
+  ];
 }
 
 const queryClient = new QueryClient({
@@ -199,6 +176,7 @@ function useIdleTimeout() {
     function reset() {
       clearTimeout(timer);
       timer = setTimeout(() => {
+        localStorage.removeItem('GT_QUERY_CACHE');
         authClient.signOut().then(() => router.push('/login'));
       }, SESSION_TIMEOUT_MS);
     }
@@ -240,20 +218,10 @@ function DashboardLayoutInner({
   const [confirmBranch, setConfirmBranch] = useState<{ id: string; name: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
-  const navItems = useMemo(() => getNavItems(userRole), [userRole]);
+  const navGroups = useMemo(() => getNavItems(userRole), [userRole]);
   const { toast } = useToast();
 
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-  }, []);
+  const { resolved, setTheme } = useTheme();
 
   useEffect(() => {
     return queryClient.getQueryCache().subscribe((event) => {
@@ -274,7 +242,7 @@ function DashboardLayoutInner({
         setSearchOpen(true);
       }
       if (
-        e.key === '?' &&
+        (e.key === '?' || e.key === '/') &&
         !e.metaKey &&
         !e.ctrlKey &&
         !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
@@ -293,40 +261,18 @@ function DashboardLayoutInner({
     }
   }, [isSuperadmin, tenants, tenantFilter, setTenant]);
 
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifs, setNotifs] = useState<
-    {
-      id: string;
-      type: string;
-      title: string;
-      message: string;
-      link?: string | null;
-      read: boolean;
-      createdAt: string;
-    }[]
-  >([]);
-
-  useEffect(() => {
-    if (!session) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/unread-count`, {
-      credentials: 'include',
-    })
-      .then((r) => r.json())
-      .then((d) => setUnreadCount(d.count ?? 0))
-      .catch((e) => console.error('[notifications] unread count fetch failed:', e));
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications?limit=10`, {
-      credentials: 'include',
-    })
-      .then((r) => r.json())
-      .then((d) => setNotifs(d.data ?? []))
-      .catch((e) => console.error('[notifications] fetch failed:', e));
-  }, [session]);
+  const { data: unreadData } = useUnreadCount();
+  const { data: notifData } = useNotifications({ limit: 10 });
+  const unreadCount = unreadData?.count ?? 0;
+  const notifs = notifData?.data ?? [];
+  const markRead = useMarkRead();
+  const markAllRead = useMarkAllRead();
 
   useEffect(() => {
     const tenantId = getUser(session)?.tenantId;
     if (!tenantId) return;
     const socket = connectSocket(tenantId);
-    const notifHandler = (data: { count: number }) => setUnreadCount((c) => c + data.count);
+    const notifHandler = () => queryClient.invalidateQueries({ queryKey: ['unread-count'] });
     socket.on('notification:new', notifHandler);
     // Real-time toast on tracking update
     const trackHandler = (data: { shipmentId: string; trackingNo: string; status: string }) => {
@@ -339,15 +285,15 @@ function DashboardLayoutInner({
     };
   }, [session, toast]);
 
-  function handleThemeChange(next: 'light' | 'dark') {
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+  function handleThemeChange() {
+    setTheme(resolved === 'dark' ? 'light' : 'dark');
   }
 
   function handleSignOut() {
     localStorage.removeItem('tenantFilter');
     localStorage.removeItem('branchFilter');
+    // Persisted React Query cache holds the previous tenant's data — clear it.
+    localStorage.removeItem('GT_QUERY_CACHE');
     authClient.signOut().then(() => router.push('/login'));
   }
 
@@ -377,119 +323,98 @@ function DashboardLayoutInner({
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-40 border-r border-border bg-surface flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-14' : 'w-60'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`relative fixed md:static inset-y-0 left-0 z-40 border-r bg-sidebar flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-14' : 'w-60'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ borderColor: 'var(--sidebar-border)' }}
       >
-        <div
-          className={`flex items-center h-14 border-b border-border shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-3 px-5'}`}
-        >
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0">
+        <div className={`relative flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'}`} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+          <div className="relative w-9 h-9 rounded-sm bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold shrink-0">
             GT
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate leading-tight">Gajan Traders</p>
-              <p className="text-[11px] text-muted truncate leading-tight">Admin Panel</p>
+            <div className="relative min-w-0">
+              <p className="text-sm font-semibold truncate leading-tight text-sidebar-foreground">Gajan Traders</p>
+              <p className="text-[11px] font-medium text-sidebar-muted truncate leading-tight">Admin Panel</p>
             </div>
           )}
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
-            const btn = (
-              <Button
-                key={item.href}
-                variant={isActive(item.href) ? 'tertiary' : 'ghost'}
-                className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start'} ${isActive(item.href) ? 'bg-accent/10 text-accent' : 'text-foreground'}`}
-                onPress={() => {
-                  router.push(item.href);
-                  setSidebarOpen(false);
-                }}
-              >
-                <span className={collapsed ? '' : 'mr-2'}>{item.icon}</span>
-                {!collapsed && <span>{item.label}</span>}
-              </Button>
-            );
+        <nav className="flex-1 p-2 overflow-y-auto space-y-1">
+          {navGroups.map((group) => {
+            if (group.items.length === 0) return null;
+            return (
+              <div key={group.section} className="space-y-0.5">
+                {!collapsed && (
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/60">
+                    {group.section}
+                  </p>
+                )}
+                {group.items.map((item) => {
+                  const active = isActive(item.href);
+                  const btn = (
+                    <Button
+                      key={item.href}
+                      variant="ghost"
+                      className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start px-3'} h-9 ${active ? 'bg-sidebar-active-bg text-sidebar-active-fg font-medium' : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground'} rounded-lg border border-transparent transition-all relative`}
+                      onPress={() => {
+                        router.push(item.href);
+                        setSidebarOpen(false);
+                      }}
+                    >
+                      {active && !collapsed && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-sidebar-active-fg" />
+                      )}
+                      <span className={`${collapsed ? '' : 'mr-2.5'} ${active ? 'text-sidebar-active-fg' : ''}`}>{item.icon}</span>
+                      {!collapsed && <span>{item.label}</span>}
+                    </Button>
+                  );
 
-            if (collapsed) {
-              return (
-                <Tooltip key={item.href}>
-                  <Tooltip.Trigger className="flex w-full">{btn}</Tooltip.Trigger>
-                  <Tooltip.Content placement="right">{item.label}</Tooltip.Content>
-                </Tooltip>
-              );
-            }
-            return btn;
+                  if (collapsed) {
+                    return (
+                      <Tooltip key={item.href}>
+                        <Tooltip.Trigger className="flex w-full">{btn}</Tooltip.Trigger>
+                        <Tooltip.Content placement="right">{item.label}</Tooltip.Content>
+                      </Tooltip>
+                    );
+                  }
+                  return btn;
+                })}
+              </div>
+            );
           })}
         </nav>
 
-        <div className="border-t border-border p-2 space-y-0.5">
+        <div className="p-2" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
           {collapsed ? (
-            <>
-              <Tooltip>
-                <Tooltip.Trigger className="flex w-full">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center px-0 min-w-0 text-foreground"
-                    onPress={() => setSearchOpen(true)}
-                  >
-                    <Search size={18} />
-                  </Button>
-                </Tooltip.Trigger>
-                <Tooltip.Content placement="right">Search</Tooltip.Content>
-              </Tooltip>
-              <Tooltip>
-                <Tooltip.Trigger className="flex w-full">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center px-0 min-w-0 text-foreground"
-                    onPress={() => router.push('/profile')}
-                  >
-                    <User size={18} />
-                  </Button>
-                </Tooltip.Trigger>
-                <Tooltip.Content placement="right">Profile</Tooltip.Content>
-              </Tooltip>
-
-              <Tooltip>
-                <Tooltip.Trigger className="flex w-full">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center px-0 min-w-0 text-foreground"
-                    onPress={() => {}}
-                  >
-                    <HelpCircle size={18} />
-                  </Button>
-                </Tooltip.Trigger>
-                <Tooltip.Content placement="right">Help</Tooltip.Content>
-              </Tooltip>
-            </>
+            <Tooltip>
+              <Tooltip.Trigger className="flex w-full">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center px-0 min-w-0 text-sidebar-foreground"
+                  onPress={() => router.push('/profile')}
+                >
+                  <Avatar size="sm" className="rounded-full">
+                    <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+                  </Avatar>
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content placement="right">Profile</Tooltip.Content>
+            </Tooltip>
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-foreground"
-                onPress={() => setSearchOpen(true)}
-              >
-                <Search size={18} className="mr-2" />
-                Search
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-foreground"
-                onPress={() => router.push('/profile')}
-              >
-                <User size={18} className="mr-2" />
-                Profile
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-foreground"
-                onPress={() => {}}
-              >
-                <HelpCircle size={18} className="mr-2" />
-                Help
-              </Button>
-            </>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2.5 px-2 py-1.5 h-auto text-sidebar-foreground"
+              onPress={() => router.push('/profile')}
+            >
+              <Avatar size="sm" className="rounded-full shrink-0">
+                <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
+              </Avatar>
+              <div className="text-left min-w-0">
+                <p className="text-xs font-medium truncate leading-tight text-sidebar-foreground">{session.user.name}</p>
+                <p className="text-[10px] text-sidebar-muted truncate capitalize leading-tight">
+                  {userRole.replace('-', ' ')}
+                </p>
+              </div>
+            </Button>
           )}
         </div>
       </aside>
@@ -497,7 +422,7 @@ function DashboardLayoutInner({
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-auto">
         {/* Top navbar */}
-        <header className="border-b border-border bg-surface shrink-0">
+        <header className="border-b border-border bg-surface sticky top-0 z-20 shrink-0">
           <div className="flex items-center justify-between h-14 px-4 sm:px-6">
             <div className="flex items-center gap-3">
               <Button
@@ -518,7 +443,7 @@ function DashboardLayoutInner({
               >
                 <Menu size={18} />
               </Button>
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-accent-foreground text-xs font-bold shrink-0 md:hidden">
+              <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shrink-0 md:hidden">
                 GT
               </div>
               <p className="text-sm font-semibold md:hidden">Gajan Traders</p>
@@ -574,7 +499,7 @@ function DashboardLayoutInner({
               ) : null}
               {userRole === 'tenant-admin' && (
                 <>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
                     <Building2 size={14} className="text-muted" />
                     {getUser(session)?.tenantName ?? 'Tenant'}
                   </span>
@@ -619,7 +544,7 @@ function DashboardLayoutInner({
                 </>
               )}
               {userRole === 'staff' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-muted/10 text-xs font-medium text-foreground border border-border whitespace-nowrap">
                   <Building2 size={14} className="text-muted" />
                   {getUser(session)?.tenantName ?? 'Tenant'}
                   <span className="text-muted">&rarr;</span>
@@ -629,11 +554,11 @@ function DashboardLayoutInner({
               <Button
                 size="sm"
                 variant="ghost"
-                onPress={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
+                onPress={() => handleThemeChange()}
                 aria-label="Toggle theme"
                 className="text-muted hover:text-foreground"
               >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {resolved === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </Button>
               <Dropdown>
                 <Dropdown.Trigger
@@ -653,14 +578,7 @@ function DashboardLayoutInner({
                     {unreadCount > 0 && (
                       <button
                         className="text-xs text-primary hover:underline"
-                        onClick={async () => {
-                          await fetch(
-                            `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all`,
-                            { method: 'PATCH', credentials: 'include' },
-                          );
-                          setUnreadCount(0);
-                          setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-                        }}
+                        onClick={() => markAllRead.mutate()}
                       >
                         Mark all read
                       </button>
@@ -674,16 +592,9 @@ function DashboardLayoutInner({
                         <button
                           key={n.id}
                           className={`w-full text-left px-3 py-2 text-xs border-b border-border hover:bg-muted/20 flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
-                          onClick={async () => {
+                          onClick={() => {
                             if (!n.read) {
-                              await fetch(
-                                `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${n.id}/read`,
-                                { method: 'PATCH', credentials: 'include' },
-                              );
-                              setUnreadCount((c) => Math.max(0, c - 1));
-                              setNotifs((prev) =>
-                                prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
-                              );
+                              markRead.mutate({ ids: [n.id] });
                             }
                             if (n.link) router.push(n.link);
                           }}
@@ -820,8 +731,10 @@ function DashboardLayoutInner({
 
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <main id="main-content" className="p-4 sm:p-6 lg:p-8 ">
-          <ErrorBoundary>{children}</ErrorBoundary>
+        <main id="main-content" className="p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </div>
         </main>
         <footer className="border-t border-border px-6 py-3 text-xs text-muted flex items-center justify-between shrink-0">
           <span>© {new Date().getFullYear()} Gajan Traders. All rights reserved.</span>

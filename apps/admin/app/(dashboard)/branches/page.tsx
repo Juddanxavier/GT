@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Eye, Pencil, Trash2, MoreVertical, Phone } from 'lucide-react';
+import { ChevronDown, Eye, Pencil, Trash2, MoreVertical, Phone, Building2 } from 'lucide-react';
 import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Select, Spinner, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
 import { getUser } from '@/types/auth';
 import { z } from 'zod';
@@ -12,10 +12,12 @@ import { useBranches, useCreateBranch, useDeleteBranch, useTenants, type ApiBran
 import { usePageTitle } from '@/lib/use-page-title';
 import { getCountryCode, stripDialCode } from '@/lib/country-codes';
 import { Flag } from '@/components/copy-button';
+import { PageHeader } from '@/components/page-header';
 
 interface Branch {
   id: string;
   name: string;
+  slug: string;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -102,8 +104,8 @@ export default function BranchesPage() {
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   function handleContextAction(key: Key, branch: Branch) {
-    if (key === 'view') router.push(`/branches/${branch.id}`);
-    else if (key === 'edit') router.push(`/branches/${branch.id}`);
+    if (key === 'view') router.push(`/branches/${branch.slug}`);
+    else if (key === 'edit') router.push(`/branches/${branch.slug}`);
     else if (key === 'delete') setDeleteTarget(branch);
   }
 
@@ -115,21 +117,20 @@ export default function BranchesPage() {
         </div>
       ) : (
       <>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
-          <p className="text-sm text-muted">Manage organization branches</p>
-        </div>
-        <Button onPress={() => { setNewName(''); setNewPhoneLocal(''); setNewEmail(''); setNewAddress(''); setNewTenantId(''); setFormErrors({}); setCreateOpen(true); }}>New Branch</Button>
-      </div>
+      <PageHeader
+        title="Branches"
+        subtitle="Manage organization branches"
+        icon={<Building2 size={18} />}
+        action={<Button onPress={() => { setNewName(''); setNewPhoneLocal(''); setNewEmail(''); setNewAddress(''); setNewTenantId(''); setFormErrors({}); setCreateOpen(true); }}>New Branch</Button>}
+      />
 
-      <div className="rounded-xl border border-border bg-surface shadow-surface overflow-hidden">
+      <div className="rounded-sm border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
           <Input placeholder="Search branches..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth />
         </div>
-        <Table>
+        <Table className="table-clickable">
           <Table.ScrollContainer>
-            <Table.Content aria-label="Branches" className="min-w-[650px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
+            <Table.Content aria-label="Branches" className="min-w-[650px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/branches/${key}`)}>
               <Table.Header>
                 <Table.Column id="#" width={48}>
                   {() => <span className="text-muted text-xs">#</span>}
@@ -156,25 +157,27 @@ export default function BranchesPage() {
                 )}
               >
                 {paginated.map((branch, i) => (
-                  <Table.Row key={branch.id} id={branch.id}>
+                  <Table.Row key={branch.id} id={branch.slug}>
                     <Table.Cell><span className="text-xs text-muted">{start + i}</span></Table.Cell>
                     <Table.Cell className="font-medium">{branch.name}</Table.Cell>
                     <Table.Cell>{branch.phone}</Table.Cell>
                     <Table.Cell>{branch.email}</Table.Cell>
                     <Table.Cell className="max-w-40 truncate">{branch.address}</Table.Cell>
                     <Table.Cell>
-                      <Dropdown.Root>
-                        <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                          <DotsIcon />
-                        </Dropdown.Trigger>
-                        <Dropdown.Popover placement="bottom end">
-                          <Dropdown.Menu onAction={(key) => handleContextAction(key, branch)}>
-                            <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
-                            <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
-                            <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown.Popover>
-                      </Dropdown.Root>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <Dropdown.Root>
+                          <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
+                            <DotsIcon />
+                          </Dropdown.Trigger>
+                          <Dropdown.Popover placement="bottom end">
+                            <Dropdown.Menu onAction={(key) => handleContextAction(key, branch)}>
+                              <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
+                              <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><EditIcon /> Edit</span></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
+                        </Dropdown.Root>
+                      </span>
                     </Table.Cell>
                   </Table.Row>
                 ))}
@@ -246,13 +249,13 @@ export default function BranchesPage() {
                       onSelectionChange={(k) => setNewTenantId(k as string)}
                       className="w-full"
                     >
-                      <Select.Trigger className="h-10 rounded-xl border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
+                      <Select.Trigger className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
                         <Select.Value />
                         <Select.Indicator>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                         </Select.Indicator>
                       </Select.Trigger>
-                      <Select.Popover className="min-w-[200px] rounded-xl border border-border bg-surface p-1 shadow-lg">
+                      <Select.Popover className="min-w-[200px] rounded-sm border border-border bg-surface p-1">
                         <ListBox>
                           {tenants.map((t) => (
                             <ListBox.Item key={t.id} id={t.id} className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">{t.name}</ListBox.Item>
