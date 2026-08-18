@@ -54,10 +54,10 @@ export function ServicesSection(): ReactNode {
               <span className="h-px w-6 bg-[#F94735]" />
               Services
             </span>
-            <h2 className="mt-4 text-2xl font-bold tracking-tight leading-[1.15] text-foreground sm:text-3xl lg:text-4xl">
+            <h2 className="mt-4 text-2xl font-bold tracking-tight leading-[1.15] text-foreground sm:text-3xl">
               {config.services.title}
             </h2>
-            <p className="mt-3 text-foreground/70 lg:text-lg">{config.services.subtitle}</p>
+            <p className="mt-3 text-base text-foreground/75">{config.services.subtitle}</p>
 
             <ul className="mx-auto mt-8 max-w-sm space-y-3 lg:mx-0 lg:max-w-none">
               {BENEFITS.map((benefit) => (
@@ -208,7 +208,7 @@ export function ServicesSection(): ReactNode {
                         <p className="text-base font-medium text-foreground">
                           Free Door-to-Door Pickup
                         </p>
-                        <p className="mt-0.5 text-foreground/60">
+                        <p className="mt-0.5 text-foreground/70">
                           Schedule online in under a minute.
                         </p>
                       </div>

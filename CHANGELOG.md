@@ -18,3 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Typography**: replaced the per-app display fonts (Space Grotesk / Bricolage Grotesque) with a
   single modern variable font, **Manrope**, applied across both portals; removed the unused
   external `Mazzard H` `@font-face` declarations.
+- **Typography tuning**: tuned hero and services typography size and contrast across both portals —
+  updated heading scales, line heights, and color contrast for improved readability and visual hierarchy;
+  consistent type ramp from h1 through body text with enhanced focus states on form inputs.

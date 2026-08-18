@@ -72,7 +72,7 @@ export function HeroSection(): ReactNode {
 
           <motion.h1
             variants={item}
-            className="mt-6 max-w-2xl text-[2rem] font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
+            className="mt-6 max-w-2xl text-[2rem] font-bold leading-[1.08] tracking-tight text-white sm:text-4xl lg:text-5xl"
           >
             {config.hero.headline[0]}{' '}
             <span className="text-[#F94735]">{config.hero.headline[1]}</span>
@@ -80,7 +80,7 @@ export function HeroSection(): ReactNode {
 
           <motion.p
             variants={item}
-            className="mt-5 max-w-md text-base leading-relaxed text-white/70 sm:text-lg"
+            className="mt-5 max-w-md text-base leading-relaxed text-white/75"
           >
             {config.hero.description}
           </motion.p>
@@ -111,7 +111,7 @@ export function HeroSection(): ReactNode {
               </button>
             </form>
 
-            <p className="mt-4 flex items-center gap-2 text-sm text-white/60">
+            <p className="mt-4 flex items-center gap-2 text-sm text-white/70">
               <ShieldCheck size={15} className="shrink-0 text-[#F94735]/80" />
               {config.hero.trust}
             </p>
