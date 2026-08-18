@@ -68,9 +68,9 @@ export default function TrackPage(): ReactNode {
             <p className="mt-5 text-lg text-white/90 max-w-md leading-relaxed mb-8">
               Enter your tracking number to get live status updates and delivery timeline.
             </p>
-            <form onSubmit={handleSubmit} className="flex gap-3 max-w-lg">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg">
               <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking number" className="flex-1 min-w-0 px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base sm:text-lg placeholder:text-white/70 outline-none focus:ring-2 focus:ring-[#F59E0B]/40 focus:border-[#F59E0B] transition-all" />
-              <button type="submit" className="px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#F59E0B] text-white text-base sm:text-lg font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
+              <button type="submit" className="w-full sm:w-auto justify-center px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#F59E0B] text-white text-base sm:text-lg font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
                 <Search size={18} /> Track
               </button>
             </form>
@@ -85,9 +85,9 @@ export default function TrackPage(): ReactNode {
             <aside className="space-y-6 order-last md:order-first">
               <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Track Another</h3>
-                <form onSubmit={handleSubmit} className="flex gap-2">
+                <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
                   <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking no." className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B]" />
-                  <button type="submit" className="px-3 py-2 rounded-lg bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"><Search size={16} /></button>
+                  <button type="submit" className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"><Search size={16} /></button>
                 </form>
               </div>
               <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">

@@ -56,7 +56,7 @@ export function HeroSection(): ReactNode {
 
           <form
             onSubmit={handleTrack}
-            className="mt-8 rounded-full border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm flex items-center gap-2 max-w-md"
+            className="mt-8 rounded-3xl sm:rounded-full border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-md"
           >
             <div className="flex items-center gap-2 flex-1 min-w-0 px-3 sm:px-4">
               <PackageSearch size={16} className="text-white/40 shrink-0" />
@@ -71,7 +71,7 @@ export function HeroSection(): ReactNode {
             <button
               type="submit"
               disabled={!trackingNo.trim()}
-              className="shrink-0 px-5 py-2.5 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto justify-center shrink-0 px-5 py-2.5 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
             >
               Track <ArrowRight size={14} />
             </button>
