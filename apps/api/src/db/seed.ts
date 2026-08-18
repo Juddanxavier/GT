@@ -379,6 +379,30 @@ async function seed() {
   }
   console.log(`  Created ${quoteCount} quotations with items`);
 
+  // ── Invoices ──
+  let invoiceCount = 0;
+  for (const s of allShipments) {
+    if (Math.random() > 0.6) continue;
+
+    const paid = Math.random() > 0.4;
+    const inv = {
+      tenantId: s.tenantId as string,
+      shipmentId: s.id as string,
+      userId: (s.userId as string) ?? null,
+      invoiceNo: `GT-INV-${String(invoiceCount + 1).padStart(4, '0')}`,
+      amount: (s.billAmount as string) ?? '1000.00',
+      status: paid ? 'paid' : 'unpaid',
+      notes: paid ? 'Payment received' : 'Awaiting payment',
+      branchId: (s.branchId as string) ?? null,
+      createdAt: new Date(s.createdAt as string),
+      updatedAt: new Date(s.createdAt as string),
+      paidAt: paid ? new Date(new Date(s.createdAt as string).getTime() + 86400000) : null,
+    };
+    await db.insert(invoices).values(inv);
+    invoiceCount++;
+  }
+  console.log(`  Created ${invoiceCount} invoices`);
+
   console.log('\nSeed data complete');
   process.exit(0);
 }

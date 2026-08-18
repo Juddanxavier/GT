@@ -88,7 +88,7 @@ export function ServicesSection(): ReactNode {
           )}
 
           {activeTab === 'pickup' && (
-            <div className="w-full max-w-xl rounded-2xl bg-white/90 backdrop-blur-xl border border-border p-6 shadow-lg flex items-center gap-4">
+            <div className="w-full max-w-xl rounded-2xl bg-white/90 backdrop-blur-xl border border-border p-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="w-11 h-11 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                 <Calendar size={18} className="text-[#F59E0B]" />
               </div>

@@ -215,11 +215,11 @@ export function PortalNav(): ReactNode {
 
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 top-16 z-40 bg-[#1a1a2e]/98 backdrop-blur-md animate-[fade-up_0.2s_ease-out]"
+          className="lg:hidden fixed inset-0 top-16 z-40 bg-[#1a1a2e]/98 backdrop-blur-md animate-[fade-up_0.2s_ease-out] overflow-y-auto"
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="flex flex-col items-center gap-6 pt-12 px-4"
+            className="flex flex-col items-center gap-6 pt-12 pb-16 px-4"
             onClick={(e) => e.stopPropagation()}
           >
             {dummyLinks.map((l) => (

@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -20,11 +20,17 @@ import type { AppVariables } from './types';
 const app = new Hono<{ Variables: AppVariables }>();
 
 // Resolve a route param (invoice uuid or invoice number) to the invoice's uuid.
-async function resolveInvoiceId(param: string, tenantId: string): Promise<string | null> {
+export async function resolveInvoiceId(param: string, tenantId: string): Promise<string | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param);
   const [row] = await db
     .select({ id: invoices.id })
     .from(invoices)
-    .where(and(or(eq(invoices.id, param), eq(invoices.invoiceNo, param)), eq(invoices.tenantId, tenantId)))
+    .where(
+      and(
+        isUuid ? eq(invoices.id, param) : eq(invoices.invoiceNo, param),
+        eq(invoices.tenantId, tenantId),
+      ),
+    )
     .limit(1);
   return row?.id ?? null;
 }

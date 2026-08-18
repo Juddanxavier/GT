@@ -24,10 +24,10 @@ const prohibitedItems = [
   'Weapons & Narcotics', 'Liquids & Perishables', 'Live Animals & Plants',
 ];
 
-export function LeftSidebar({ variant = 'dashboard' }: { variant?: 'dashboard' | 'public' }): ReactNode {
+export function LeftSidebar({ variant = 'dashboard', drawer = false }: { variant?: 'dashboard' | 'public'; drawer?: boolean }): ReactNode {
   const links = variant === 'public' ? publicLinks : dashboardLinks;
   return (
-    <aside className="hidden lg:block space-y-6">
+    <aside className={`${drawer ? '' : 'hidden lg:block'} space-y-6`}>
       <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
         <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">Quick Links</h3>
         <div className="space-y-1">
