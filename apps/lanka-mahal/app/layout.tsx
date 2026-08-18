@@ -1,14 +1,14 @@
-﻿import type { ReactNode } from 'react';
-import { Space_Grotesk } from 'next/font/google';
+﻿import { Manrope } from 'next/font/google';
+import type { ReactNode } from 'react';
 import './globals.css';
 
-const spaceGrotesk = Space_Grotesk({
+const manrope = Manrope({
   subsets: ['latin'],
-  variable: '--font-space-grotesk',
+  variable: '--font-manrope',
 });
 
-import { PortalNav } from '@/components/portal-nav';
 import { Footer } from '@/components/footer';
+import { PortalNav } from '@/components/portal-nav';
 import { Providers } from '@/components/providers';
 
 export const metadata = {
@@ -21,10 +21,17 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}): Promise<ReactNode> {
   return (
-    <html lang="en" className={spaceGrotesk.variable}>
-      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+    <html lang="en" className={manrope.variable}>
+      <body
+        className="bg-background text-foreground antialiased"
+        style={{ fontFamily: 'var(--font-manrope)' }}
+      >
         <Providers>
           <PortalNav />
           {children}

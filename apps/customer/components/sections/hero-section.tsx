@@ -1,12 +1,28 @@
 'use client';
 
+import { MotionConfig, motion, type Variants } from 'framer-motion';
+import { ArrowRight, ArrowUpRight, PackageSearch, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUpRight, PackageSearch } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Image from 'next/image';
 import { useTenantConfig } from '@/lib/use-tenant-config';
+
+const container: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+  },
+};
+
+const item: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+  },
+};
 
 export function HeroSection(): ReactNode {
   const router = useRouter();
@@ -21,74 +37,105 @@ export function HeroSection(): ReactNode {
   }
 
   return (
-    <section id="track" className="relative bg-[#1a1a2e] overflow-hidden min-h-screen flex items-center">
+    <section
+      id="track"
+      className="relative flex min-h-[100svh] items-center overflow-hidden bg-[#1a1a2e]"
+    >
       <div className="absolute inset-0">
         <Image
           src="/images/heroparcel.png"
           alt=""
           fill
           sizes="100vw"
-          className="object-cover hidden md:block"
+          className="object-cover"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
       </div>
 
-      <div className="relative z-10 px-8 md:px-16 lg:px-24 py-20 md:py-28">
+      <MotionConfig reducedMotion="user">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 sm:px-8 md:px-12 md:py-32 lg:px-16"
         >
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-6">
-            <span className="w-6 h-px bg-[#F94735]" />
-            {config.hero.badge}
-          </span>
+          <motion.div variants={item}>
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#F94735] sm:text-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F94735] opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F94735]" />
+              </span>
+              {config.hero.badge}
+            </span>
+          </motion.div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+          <motion.h1
+            variants={item}
+            className="mt-6 max-w-2xl text-[2rem] font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
+          >
             {config.hero.headline[0]}{' '}
             <span className="text-[#F94735]">{config.hero.headline[1]}</span>
-          </h1>
+          </motion.h1>
 
-          <p className="mt-5 text-white/70 max-w-md leading-relaxed">
-            {config.hero.description}
-          </p>
-
-          <form
-            onSubmit={handleTrack}
-            className="mt-8 rounded-3xl sm:rounded-full border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-md"
+          <motion.p
+            variants={item}
+            className="mt-5 max-w-md text-base leading-relaxed text-white/70 sm:text-lg"
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0 px-3 sm:px-4">
-              <PackageSearch size={16} className="text-white/40 shrink-0" />
-              <input
-                type="text"
-                value={trackingNo}
-                onChange={(e) => setTrackingNo(e.target.value)}
-                placeholder="Enter tracking number"
-                className="w-full bg-transparent py-2.5 text-white outline-none placeholder:text-white/40"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!trackingNo.trim()}
-              className="w-full sm:w-auto justify-center shrink-0 px-5 py-2.5 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            {config.hero.description}
+          </motion.p>
+
+          <motion.div variants={item} className="mt-8 max-w-md w-full">
+            <form
+              onSubmit={handleTrack}
+              className="flex flex-col items-stretch gap-2 rounded-3xl border border-white/15 bg-white/[0.08] p-2 backdrop-blur-md transition-colors focus-within:border-[#F94735]/60 focus-within:bg-white/[0.12] sm:flex-row sm:items-center sm:rounded-full sm:gap-1.5"
             >
-              Track <ArrowRight size={14} />
-            </button>
-          </form>
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 sm:px-4">
+                <PackageSearch size={18} className="shrink-0 text-white/50" />
+                <input
+                  type="text"
+                  value={trackingNo}
+                  onChange={(e) => setTrackingNo(e.target.value)}
+                  placeholder="Enter tracking number"
+                  aria-label="Tracking number"
+                  autoComplete="off"
+                  className="h-12 w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!trackingNo.trim()}
+                className="flex h-12 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-[#F94735] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D83220] disabled:opacity-50 sm:w-auto sm:rounded-full"
+              >
+                {config.hero.ctaTrack} <ArrowRight size={14} />
+              </button>
+            </form>
 
-          <p className="mt-3 text-white/60">{config.hero.trust}</p>
+            <p className="mt-4 flex items-center gap-2 text-sm text-white/60">
+              <ShieldCheck size={15} className="shrink-0 text-[#F94735]/80" />
+              {config.hero.trust}
+            </p>
+          </motion.div>
 
-          <div className="flex flex-wrap items-center gap-3 mt-8">
-            <a href="/register" className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors cursor-pointer">
+          <motion.div
+            variants={item}
+            className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
+          >
+            <a
+              href="/register"
+              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full bg-[#F94735] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#D83220]"
+            >
               {config.hero.ctaQuote} <ArrowUpRight size={14} />
             </a>
-            <a href="#services" className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors cursor-pointer">
+            <a
+              href="#services"
+              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.06] px-7 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
               Explore Services
             </a>
-          </div>
+          </motion.div>
         </motion.div>
-      </div>
+      </MotionConfig>
     </section>
   );
 }

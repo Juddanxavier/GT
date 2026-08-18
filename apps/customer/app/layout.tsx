@@ -1,10 +1,10 @@
+import { Manrope } from 'next/font/google';
 import type { ReactNode } from 'react';
-import { Bricolage_Grotesque } from 'next/font/google';
 import './globals.css';
 
-const bricolage = Bricolage_Grotesque({
+const manrope = Manrope({
   subsets: ['latin'],
-  variable: '--font-bricolage-grotesque',
+  variable: '--font-manrope',
 });
 
 import { GajanLayout } from '@/components/gajan/layout';
@@ -17,10 +17,17 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}): Promise<ReactNode> {
   return (
-    <html lang="en" className={bricolage.variable}>
-      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-bricolage-grotesque)' }}>
+    <html lang="en" className={manrope.variable}>
+      <body
+        className="bg-background text-foreground antialiased"
+        style={{ fontFamily: 'var(--font-manrope)' }}
+      >
         <Providers>
           <GajanLayout>{children}</GajanLayout>
         </Providers>
