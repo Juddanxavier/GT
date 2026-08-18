@@ -28,10 +28,10 @@ export function HeroSection(): ReactNode {
           alt=""
           fill
           sizes="100vw"
-          className="object-cover"
+          className="object-cover hidden md:block"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
       </div>
 
       <div className="relative z-10 px-8 md:px-16 lg:px-24 py-20 md:py-28">

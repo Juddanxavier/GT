@@ -13,8 +13,8 @@ function TrackDetailPageInner(): ReactNode {
     <div className="min-h-screen bg-white">
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
-          <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover hidden md:block" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-[#1a1a2e]/15" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
