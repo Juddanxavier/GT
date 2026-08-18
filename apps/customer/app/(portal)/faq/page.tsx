@@ -88,7 +88,7 @@ export default function FaqPage(): ReactNode {
 
   return (
     <div className="min-h-screen bg-white">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/contact.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/80 via-[#1a1a2e]/40 to-transparent" />
@@ -105,7 +105,7 @@ export default function FaqPage(): ReactNode {
         </div>
       </section>
 
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-12 md:py-16">
           <div className="grid md:grid-cols-[1fr_280px] gap-8 md:gap-12">
             <div>

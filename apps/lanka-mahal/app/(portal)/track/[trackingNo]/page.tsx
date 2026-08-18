@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
@@ -11,7 +11,7 @@ import { LeftSidebar, RightSidebar } from '@/components/sidebar';
 function TrackDetailPageInner(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />

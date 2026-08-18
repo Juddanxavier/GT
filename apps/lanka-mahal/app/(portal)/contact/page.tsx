@@ -17,7 +17,7 @@ export default function ContactPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img
             src="/images/contact.png"
@@ -49,7 +49,7 @@ export default function ContactPage(): ReactNode {
       </section>
 
       {/* Contact Info + Form */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Left */}

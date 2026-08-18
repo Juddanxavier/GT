@@ -14,7 +14,7 @@ const features = [
 
 export function InfrastructureSection(): ReactNode {
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface">
+    <section className="relative bg-surface">
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="max-w-2xl mx-auto text-center mb-14">
           <span className="inline-flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">

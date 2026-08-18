@@ -72,7 +72,7 @@ export function Footer(): ReactNode {
   }
 
   return (
-    <footer className="w-screen left-[calc(-50vw+50%)] relative bg-[#111111] text-white overflow-hidden">
+    <footer className="relative bg-[#111111] text-white overflow-hidden">
       <div className="absolute inset-0">
         <img
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1920&q=80"

@@ -24,7 +24,7 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
   return (
     <html lang="en" className={spaceGrotesk.variable}>
-      <body className="bg-background text-foreground antialiased overflow-x-hidden" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
         <Providers>
           <PortalNav />
           {children}

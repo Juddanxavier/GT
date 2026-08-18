@@ -26,7 +26,7 @@ const exceptions = [
 export default function ProhibitedPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/about.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/80 via-[#1a1a2e]/40 to-transparent" />
@@ -41,7 +41,7 @@ export default function ProhibitedPage(): ReactNode {
         </div>
       </section>
 
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-6xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
@@ -103,7 +103,7 @@ export default function ProhibitedPage(): ReactNode {
         </div>
       </section>
 
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface border-t border-border">
+      <section className="relative bg-surface border-t border-border">
         <div className="max-w-5xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F94735]/10 border border-[#F94735]/20 text-sm font-semibold text-[#F94735] mb-4">

@@ -181,7 +181,7 @@ export default function BranchesPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[520px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[520px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img
             src="/images/branchesbg.png"
@@ -222,7 +222,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* Branches */}
-      <section id="branches" className="w-screen left-[calc(-50vw+50%)] relative bg-white scroll-mt-20">
+      <section id="branches" className="relative bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="max-w-2xl mb-12">
             <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
@@ -245,7 +245,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* Services */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-gradient-to-b from-white to-[#fdf8f0]">
+      <section className="relative bg-gradient-to-b from-white to-[#fdf8f0]">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="max-w-2xl mb-12">
             <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
@@ -278,7 +278,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* FAQ */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>

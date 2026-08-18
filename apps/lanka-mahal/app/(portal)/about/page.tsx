@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import type { ReactNode } from 'react';
 import { useState, useEffect, useCallback } from 'react';
@@ -112,7 +112,7 @@ export default function AboutPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img
             src="/images/about.png"
@@ -152,7 +152,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Our Story */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="relative">
@@ -198,7 +198,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Stats */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-[#1a1a2e] border-t border-white/10 overflow-hidden">
+      <section className="relative bg-[#1a1a2e] border-t border-white/10 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/images/heroparcel.png')] bg-fixed bg-cover bg-center opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
         <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
@@ -226,7 +226,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* What We Offer */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
@@ -259,7 +259,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Journey */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-5xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
@@ -308,7 +308,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Why Businesses Trust Us */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-[#1a1a2e] overflow-hidden">
+      <section className="relative bg-[#1a1a2e] overflow-hidden">
         <div className="absolute inset-0 bg-fixed bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1400&q=80')" }} />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
         <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
@@ -353,7 +353,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Team */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface">
+      <section className="relative bg-surface">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
@@ -388,7 +388,7 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Testimonials */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface py-16 md:py-20 overflow-hidden">
+      <section className="relative bg-surface py-16 md:py-20 overflow-hidden">
         <div className="max-w-6xl mx-auto px-8 md:px-16 lg:px-24">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">

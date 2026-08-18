@@ -12,7 +12,7 @@ export function TestimonialsSectionV2(): ReactNode {
   const accentBg = isE ? 'bg-[#F94735]' : 'bg-violet-600';
 
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface py-24 overflow-hidden">
+    <section className="relative bg-surface py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
           <div className="border border-border py-1 px-4 rounded-full text-sm font-semibold tracking-wide uppercase text-foreground/60 bg-surface-secondary/50">

@@ -110,7 +110,7 @@ export default function AirFreightPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[560px] md:min-h-[640px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[560px] md:min-h-[640px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/heroparcel.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/75 to-[#1a1a2e]/30" />
@@ -145,7 +145,7 @@ export default function AirFreightPage(): ReactNode {
       </section>
 
       {/* Intro */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="max-w-3xl">
             <p className="text-lg text-foreground/90 leading-relaxed mb-8">
@@ -169,7 +169,7 @@ export default function AirFreightPage(): ReactNode {
       </section>
 
       {/* Plans */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-gradient-to-b from-white to-[#fdf8f0]">
+      <section className="relative bg-gradient-to-b from-white to-[#fdf8f0]">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
             <span className="w-6 h-px bg-[#F59E0B]" />
@@ -252,7 +252,7 @@ export default function AirFreightPage(): ReactNode {
       </section>
 
       {/* How it works */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="max-w-2xl mb-12">
             <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
@@ -286,7 +286,7 @@ export default function AirFreightPage(): ReactNode {
       </section>
 
       {/* Why us */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-[#1a1a2e] overflow-hidden">
+      <section className="relative bg-[#1a1a2e] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/images/ctaabout.png')] bg-cover bg-center opacity-10" />
         <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
@@ -333,7 +333,7 @@ export default function AirFreightPage(): ReactNode {
       </section>
 
       {/* CTA */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-8 md:p-12 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-[#F59E0B]/0 via-[#F59E0B]/10 to-[#F59E0B]/0 animate-gradient-x opacity-60" />

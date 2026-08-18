@@ -16,7 +16,7 @@ export function AboutSection(): ReactNode {
   const config = useTenantConfig();
 
   return (
-    <section id="about" className="w-screen left-[calc(-50vw+50%)] relative bg-white overflow-hidden">
+    <section id="about" className="relative bg-white overflow-hidden">
       <div className="absolute inset-0 bg-[url('/images/ctaabout.png')] bg-fixed bg-cover bg-center" />
       <div className="absolute inset-0 bg-[#1a1a2e]/90" />
       <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">

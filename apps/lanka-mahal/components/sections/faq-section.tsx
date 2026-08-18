@@ -16,7 +16,7 @@ export function FaqSection(): ReactNode {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+    <section className="relative bg-white">
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
           <div>

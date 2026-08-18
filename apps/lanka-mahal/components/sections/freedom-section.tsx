@@ -16,7 +16,7 @@ export function FreedomSection(): ReactNode {
   const config = useTenantConfig();
 
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-white overflow-hidden">
+    <section className="relative bg-white overflow-hidden">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:py-24">
         <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr] items-center gap-12 lg:gap-16">
           <div className="flex flex-col order-last lg:order-first w-full">

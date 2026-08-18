@@ -44,7 +44,7 @@ export default function BranchesPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img
             src="/images/branchesbg.png"
@@ -76,7 +76,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* Intro */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20 text-center">
           <div className="max-w-2xl mx-auto">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50 inline-block mb-6">
@@ -93,7 +93,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* Branches */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-surface">
+      <section className="relative bg-surface">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
@@ -154,7 +154,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* Services */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
@@ -186,7 +186,7 @@ export default function BranchesPage(): ReactNode {
       </section>
 
       {/* FAQ */}
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>

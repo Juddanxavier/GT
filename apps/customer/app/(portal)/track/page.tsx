@@ -50,7 +50,7 @@ export default function TrackPage(): ReactNode {
 
   return (
     <div className="min-h-screen bg-white">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-transparent" />
@@ -69,8 +69,8 @@ export default function TrackPage(): ReactNode {
               Enter your tracking number to get live status updates and delivery timeline.
             </p>
             <form onSubmit={handleSubmit} className="flex gap-3 max-w-lg">
-              <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking number" className="flex-1 px-5 py-3.5 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-lg placeholder:text-white/70 outline-none focus:ring-2 focus:ring-[#F94735]/40 focus:border-[#F94735] transition-all" />
-              <button type="submit" className="px-6 py-3.5 rounded-xl bg-[#F94735] text-white text-lg font-semibold hover:bg-[#D83220] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
+              <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking number" className="flex-1 min-w-0 px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base sm:text-lg placeholder:text-white/70 outline-none focus:ring-2 focus:ring-[#F94735]/40 focus:border-[#F94735] transition-all" />
+              <button type="submit" className="px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#F94735] text-white text-base sm:text-lg font-semibold hover:bg-[#D83220] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
                 <Search size={18} /> Track
               </button>
             </form>
@@ -79,7 +79,7 @@ export default function TrackPage(): ReactNode {
         </div>
       </section>
 
-      <div ref={resultsRef} className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+      <div ref={resultsRef} className="relative bg-white">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16">
           <div className="grid md:grid-cols-[280px_1fr] gap-8 md:gap-12">
             <aside className="space-y-6 order-last md:order-first">
@@ -172,7 +172,7 @@ export default function TrackPage(): ReactNode {
         </div>
       </div>
 
-      <section className="w-screen left-[calc(-50vw+50%)] relative bg-white border-t border-border">
+      <section className="relative bg-white border-t border-border">
         <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>

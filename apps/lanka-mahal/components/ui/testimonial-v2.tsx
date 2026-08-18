@@ -11,7 +11,7 @@ export function TestimonialsSectionV2(): ReactNode {
   const accentBg = 'bg-[#F59E0B]';
 
   return (
-    <section className="w-screen left-[calc(-50vw+50%)] relative bg-[#FAFAF7] py-24 overflow-hidden">
+    <section className="relative bg-[#FAFAF7] py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
           <div className="border border-[#F59E0B]/20 py-1 px-4 rounded-full text-sm font-semibold tracking-wide uppercase text-[#B45309] bg-[#F59E0B]/10">

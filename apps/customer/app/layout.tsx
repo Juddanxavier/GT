@@ -20,7 +20,7 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
   return (
     <html lang="en" className={bricolage.variable}>
-      <body className="bg-background text-foreground antialiased overflow-x-hidden" style={{ fontFamily: 'var(--font-bricolage-grotesque)' }}>
+      <body className="bg-background text-foreground antialiased" style={{ fontFamily: 'var(--font-bricolage-grotesque)' }}>
         <Providers>
           <GajanLayout>{children}</GajanLayout>
         </Providers>

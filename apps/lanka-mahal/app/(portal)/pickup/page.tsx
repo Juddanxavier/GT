@@ -88,8 +88,8 @@ export default function PickupPage(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-white w-screen left-[calc(-50vw+50%)] relative -mt-14">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center bg-[#1a1a2e]">
+    <div className="min-h-screen bg-white relative -mt-14">
+      <section className="relative overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/about.png" alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />

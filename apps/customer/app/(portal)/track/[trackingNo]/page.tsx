@@ -11,7 +11,7 @@ import { LeftSidebar, RightSidebar } from '@/components/sidebar';
 function TrackDetailPageInner(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
-      <section className="w-screen left-[calc(-50vw+50%)] relative overflow-hidden min-h-[300px] md:min-h-[350px] flex items-center bg-[#1a1a2e]">
+      <section className="relative overflow-hidden min-h-[300px] md:min-h-[350px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/80 via-[#1a1a2e]/40 to-transparent" />

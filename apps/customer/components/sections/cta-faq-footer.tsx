@@ -18,7 +18,7 @@ export function CTAFAQFooterSection(): ReactNode {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
 
   return (
-    <section id="contact" className="w-screen left-[calc(-50vw+50%)] relative bg-white">
+    <section id="contact" className="relative bg-white">
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 items-stretch">
           {/* CTA */}

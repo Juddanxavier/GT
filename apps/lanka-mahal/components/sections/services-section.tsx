@@ -25,7 +25,7 @@ export function ServicesSection(): ReactNode {
   }
 
   return (
-    <section id="services" className="w-screen left-[calc(-50vw+50%)] relative bg-gradient-to-br from-[#fef2f0] via-white to-[#ffe8e4] overflow-hidden">
+    <section id="services" className="relative bg-gradient-to-br from-[#fef2f0] via-white to-[#ffe8e4] overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="max-w-xl mb-10 mx-auto text-center">
           <span className="inline-flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">

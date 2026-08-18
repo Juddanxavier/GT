@@ -21,7 +21,7 @@ export function HeroSection(): ReactNode {
   }
 
   return (
-    <section id="track" className="w-screen left-[calc(-50vw+50%)] relative bg-[#1a1a2e] overflow-hidden min-h-screen flex items-center">
+    <section id="track" className="relative bg-[#1a1a2e] overflow-hidden min-h-screen flex items-center">
       <div className="absolute inset-0">
         <Image
           src="/images/heroparcel.png"
@@ -58,7 +58,7 @@ export function HeroSection(): ReactNode {
             onSubmit={handleTrack}
             className="mt-8 rounded-full border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm flex items-center gap-2 max-w-md"
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0 px-4">
+            <div className="flex items-center gap-2 flex-1 min-w-0 px-3 sm:px-4">
               <PackageSearch size={16} className="text-white/40 shrink-0" />
               <input
                 type="text"
