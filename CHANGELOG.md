@@ -21,3 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Typography tuning**: tuned hero and services typography size and contrast across both portals —
   updated heading scales, line heights, and color contrast for improved readability and visual hierarchy;
   consistent type ramp from h1 through body text with enhanced focus states on form inputs.
+- **Mobile menu redesign** (`lanka-mahal` + `customer`): redesigned the mobile navigation as a full-screen overlay —
+  persistent slide-in drawer with services dropdown, support links, branch navigation, and auth actions;
+  touch-friendly close button, reduced-motion respect, and parity with desktop menu items across both portals.
