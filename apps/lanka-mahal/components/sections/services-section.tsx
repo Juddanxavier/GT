@@ -38,11 +38,11 @@ export function ServicesSection(): ReactNode {
       <div className="relative z-10 mx-auto max-w-7xl px-5 py-16 sm:px-8 md:px-16 md:py-24 lg:px-24">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] lg:justify-start">
+            <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] lg:justify-start">
               <span className="h-px w-6 bg-[#F59E0B]" />
               Quick Services
             </span>
-            <h2 className="mt-4 text-2xl font-bold tracking-tight leading-[1.15] text-foreground sm:text-3xl">
+            <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight leading-[1.15] text-foreground">
               {config.services.title}
             </h2>
             <p className="mt-3 text-base text-foreground/75">{config.services.subtitle}</p>

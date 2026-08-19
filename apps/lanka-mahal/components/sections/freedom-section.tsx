@@ -1,15 +1,31 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { Phone, Package, Globe, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Globe, MapPin, Package, Phone } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const steps = [
-  { icon: <Phone size={18} />, title: 'Book Pickup', desc: 'Schedule your pickup easily through our app or web.' },
-  { icon: <Package size={18} />, title: 'Pack & Process', desc: 'Safe packing & handling by our experts.' },
-  { icon: <Globe size={18} />, title: 'Ship Worldwide', desc: 'Fast global courier delivery network.' },
-  { icon: <MapPin size={18} />, title: 'Deliver & Track', desc: 'Live tracking until it reaches the doorstep.' },
+  {
+    icon: <Phone size={18} />,
+    title: 'Book Pickup',
+    desc: 'Schedule your pickup easily through our app or web.',
+  },
+  {
+    icon: <Package size={18} />,
+    title: 'Pack & Process',
+    desc: 'Safe packing & handling by our experts.',
+  },
+  {
+    icon: <Globe size={18} />,
+    title: 'Ship Worldwide',
+    desc: 'Fast global courier delivery network.',
+  },
+  {
+    icon: <MapPin size={18} />,
+    title: 'Deliver & Track',
+    desc: 'Live tracking until it reaches the doorstep.',
+  },
 ];
 
 export function FreedomSection(): ReactNode {
@@ -20,11 +36,13 @@ export function FreedomSection(): ReactNode {
       <div className="mx-auto max-w-6xl px-4 py-20 sm:py-24">
         <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr] items-center gap-12 lg:gap-16">
           <div className="flex flex-col order-last lg:order-first w-full">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">How It Works</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              How It Works
+            </p>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight leading-[1.15]">
               {config.howItWorks.title}
             </h2>
-            <p className="mt-4 text-lg text-foreground/70 leading-relaxed max-w-lg mb-10">
+            <p className="mt-4 text-base text-foreground/70 leading-relaxed max-w-lg mb-10">
               {config.howItWorks.subtitle}
             </p>
 
@@ -45,10 +63,14 @@ export function FreedomSection(): ReactNode {
                     </div>
                     <div className="pt-1.5">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-[#F59E0B] tracking-wider">STEP 0{i + 1}</span>
+                        <span className="text-xs font-bold text-[#F59E0B] tracking-wider">
+                          STEP 0{i + 1}
+                        </span>
                       </div>
-                      <p className="font-semibold text-foreground text-lg">{s.title}</p>
-                      <p className="text-lg text-foreground/70 mt-0.5 leading-relaxed">{s.desc}</p>
+                      <p className="font-semibold text-foreground text-base">{s.title}</p>
+                      <p className="text-base text-foreground/70 mt-0.5 leading-relaxed">
+                        {s.desc}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
@@ -68,4 +90,3 @@ export function FreedomSection(): ReactNode {
     </section>
   );
 }
-

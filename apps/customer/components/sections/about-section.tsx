@@ -1,8 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { ArrowUpRight, Package, MapPin, Award, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ArrowUpRight, Award, MapPin, Package, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const stats = [
@@ -58,16 +58,14 @@ export function AboutSection(): ReactNode {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
                 <span className="w-6 h-px bg-[#F94735]" />
                 About Us
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-[1.15] mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.15] mb-4">
                 {config.about.headline}
               </h2>
-              <p className="text-white/85 leading-relaxed mb-8">
-                {config.about.body}
-              </p>
+              <p className="text-base text-white/85 leading-relaxed mb-8">{config.about.body}</p>
             </motion.div>
 
             {/* Stats row */}
@@ -79,7 +77,10 @@ export function AboutSection(): ReactNode {
               className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
             >
               {stats.map((s) => (
-                <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+                <div
+                  key={s.label}
+                  className="bg-white/10 border border-white/10 rounded-xl p-4 text-center backdrop-blur-sm"
+                >
                   <div className="w-8 h-8 rounded-lg bg-[#F94735]/20 text-[#F94735] flex items-center justify-center mx-auto mb-2">
                     <s.icon className="size-4" />
                   </div>
@@ -95,7 +96,10 @@ export function AboutSection(): ReactNode {
               viewport={{ once: true }}
               transition={{ delay: 0.35, duration: 0.5 }}
             >
-              <a href="/about" className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors cursor-pointer">
+              <a
+                href="/about"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors cursor-pointer"
+              >
                 {config.about.cta} <ArrowUpRight size={14} />
               </a>
             </motion.div>

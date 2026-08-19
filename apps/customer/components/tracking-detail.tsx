@@ -1,24 +1,34 @@
 'use client';
 
+import { Button, Chip, Spinner } from '@heroui/react';
+import { ArrowLeft, CheckCircle2, Clock, Copy, Link2, MapPin, PackageSearch } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Clock, PackageSearch, Link2, CheckCircle2, Copy } from 'lucide-react';
-import { Button, Chip, Spinner } from '@heroui/react';
-import { useTenantConfig } from '@/lib/use-tenant-config';
 import { authClient } from '@/lib/auth-client';
-import { useTrackShipment, useClaimShipment } from '@/lib/queries';
+import { useClaimShipment, useTrackShipment } from '@/lib/queries';
+import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending', info_received: 'Info Received', in_transit: 'In Transit',
-  out_for_delivery: 'Out for Delivery', delivered: 'Delivered',
-  delivery_failure: 'Delivery Failed', cancelled: 'Cancelled', exception: 'Exception',
+  pending: 'Pending',
+  info_received: 'Info Received',
+  in_transit: 'In Transit',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  delivery_failure: 'Delivery Failed',
+  cancelled: 'Cancelled',
+  exception: 'Exception',
 };
 
 const STATUS_COLORS: Record<string, 'warning' | 'accent' | 'success' | 'danger' | 'default'> = {
-  pending: 'warning', info_received: 'accent', in_transit: 'warning',
-  out_for_delivery: 'warning', delivered: 'success', delivery_failure: 'danger',
-  cancelled: 'default', exception: 'danger',
+  pending: 'warning',
+  info_received: 'accent',
+  in_transit: 'warning',
+  out_for_delivery: 'warning',
+  delivered: 'success',
+  delivery_failure: 'danger',
+  cancelled: 'default',
+  exception: 'danger',
 };
 
 export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode {
@@ -30,16 +40,19 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
   const [claimSuccess, setClaimSuccess] = useState('');
   const [claimError, setClaimError] = useState('');
 
-  const btnClass = config.theme === 'emerald'
-    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-    : 'bg-violet-600 hover:bg-violet-700 text-white';
+  const btnClass =
+    config.theme === 'emerald'
+      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+      : 'bg-violet-600 hover:bg-violet-700 text-white';
 
   const { data: result, isLoading: loading, error } = useTrackShipment(trackingNo);
   const claimMutation = useClaimShipment();
   const errorMessage = error instanceof Error ? error.message : '';
 
   function handleClaim() {
-    const userEmail = (session?.user as Record<string, unknown> | undefined)?.email as string | undefined;
+    const userEmail = (session?.user as Record<string, unknown> | undefined)?.email as
+      | string
+      | undefined;
     if (!userEmail) return;
     setClaimError('');
     setClaimSuccess('');
@@ -47,7 +60,9 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
       { trackingNo, email: userEmail },
       {
         onSuccess: (body) => {
-          setClaimSuccess((body?.data as { message?: string } | undefined)?.message || 'Shipment linked!');
+          setClaimSuccess(
+            (body?.data as { message?: string } | undefined)?.message || 'Shipment linked!',
+          );
         },
         onError: (err) => {
           setClaimError(err instanceof Error ? err.message : 'Failed to claim');
@@ -59,13 +74,18 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
   return (
     <div className="space-y-5">
       {!hideBack && (
-        <a href={session ? '/my-shipments' : '/'} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
+        <a
+          href={session ? '/my-shipments' : '/'}
+          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
+        >
           <ArrowLeft size={14} /> {session ? 'Back to my shipments' : 'Back to home'}
         </a>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[40vh]"><Spinner size="lg" /></div>
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <Spinner size="lg" />
+        </div>
       ) : error ? (
         <div className="text-center py-16">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-100 mb-4">
@@ -79,17 +99,30 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
           <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full ${config.theme === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'} flex items-center justify-center`}>
+                <div
+                  className={`w-10 h-10 rounded-full ${config.theme === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'} flex items-center justify-center`}
+                >
                   <PackageSearch size={18} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-mono text-base font-bold text-foreground">{result.trackingNo}</p>
-                    <button type="button" onClick={() => navigator.clipboard.writeText(result.trackingNo)} className="p-1 rounded-lg hover:bg-foreground/5 text-foreground/30 hover:text-foreground/60 transition-colors">
+                    <p className="font-mono text-base font-bold text-foreground">
+                      {result.trackingNo}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(result.trackingNo)}
+                      className="p-1 rounded-lg hover:bg-foreground/5 text-foreground/30 hover:text-foreground/60 transition-colors"
+                    >
                       <Copy size={14} />
                     </button>
                   </div>
-                  <Chip size="sm" variant="soft" color={STATUS_COLORS[result.status] ?? 'default'} className="mt-1.5">
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color={STATUS_COLORS[result.status] ?? 'default'}
+                    className="mt-1.5"
+                  >
                     {STATUS_LABELS[result.status] || result.status}
                   </Chip>
                 </div>
@@ -100,7 +133,9 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
               {(result.origin || result.destination) && (
                 <div className="flex items-center gap-2 text-muted">
                   <MapPin size={14} className="text-muted/50 shrink-0" />
-                  <span>{result.origin || '?'} → {result.destination || '?'}</span>
+                  <span>
+                    {result.origin || '?'} → {result.destination || '?'}
+                  </span>
                 </div>
               )}
               {result.lastTrackedAt && (
@@ -131,16 +166,28 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
             <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
               {session ? (
                 claimSuccess ? (
-                  <div className={`flex items-center gap-2 ${config.theme === 'emerald' ? 'text-emerald-600' : 'text-violet-600'}`}>
+                  <div
+                    className={`flex items-center gap-2 ${config.theme === 'emerald' ? 'text-emerald-600' : 'text-violet-600'}`}
+                  >
                     <CheckCircle2 size={16} /> {claimSuccess}
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
-                      <p className="text-muted mt-0.5">Link to receive updates on status changes.</p>
+                      <h2 className="text-sm font-semibold text-foreground">
+                        Is this your shipment?
+                      </h2>
+                      <p className="text-muted mt-0.5">
+                        Link to receive updates on status changes.
+                      </p>
                     </div>
-                    <Button isDisabled={claimMutation.isPending} isPending={claimMutation.isPending} onPress={handleClaim} size="sm" className={btnClass}>
+                    <Button
+                      isDisabled={claimMutation.isPending}
+                      isPending={claimMutation.isPending}
+                      onPress={handleClaim}
+                      size="sm"
+                      className={btnClass}
+                    >
                       <Link2 size={14} />
                       {claimMutation.isPending ? 'Linking...' : 'Link'}
                     </Button>
@@ -150,10 +197,15 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
+                    <h2 className="text-sm font-semibold text-foreground">
+                      Is this your shipment?
+                    </h2>
                     <p className="text-muted mt-0.5">Claim to get notified on status changes.</p>
                   </div>
-                  <a href={`/claim?trackingNo=${trackingNo}`} className={`inline-flex items-center gap-1.5 ${btnClass} px-4 py-1.5 rounded-lg text-sm font-medium transition-colors`}>
+                  <a
+                    href={`/claim?trackingNo=${trackingNo}`}
+                    className={`inline-flex items-center gap-1.5 ${btnClass} px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors`}
+                  >
                     <Link2 size={14} /> Claim
                   </a>
                 </div>
@@ -162,7 +214,9 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
           )}
 
           <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-6">Tracking History</h2>
+            <h2 className="text-xs font-bold text-muted uppercase tracking-wider mb-6">
+              Tracking History
+            </h2>
             {result.events.length === 0 ? (
               <p className="text-muted text-center py-8">No tracking events yet.</p>
             ) : (
@@ -173,9 +227,11 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
                       <div className="absolute left-[9px] top-5 bottom-0 w-0.5 bg-surface-secondary" />
                     )}
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
-                        i === 0 ? 'border-foreground bg-foreground' : 'border-border bg-surface'
-                      }`}>
+                      <div
+                        className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
+                          i === 0 ? 'border-foreground bg-foreground' : 'border-border bg-surface'
+                        }`}
+                      >
                         {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-surface" />}
                       </div>
                     </div>
@@ -184,7 +240,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
                         <p className="text-sm font-semibold text-foreground">
                           {STATUS_LABELS[event.status] || event.status}
                         </p>
-                        <span className="text-muted">
+                        <span className="text-sm text-muted">
                           {new Date(event.eventTime).toLocaleString()}
                         </span>
                       </div>

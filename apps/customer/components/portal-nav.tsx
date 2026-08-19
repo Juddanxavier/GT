@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion, type Variants } from 'framer-motion';
 import {
   ArrowRight,
   Ban,
@@ -31,7 +31,7 @@ import { useUnreadCount } from '@/lib/queries';
 import { connectSocket, disconnectSocket } from '@/lib/realtime';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
-const itemV = {
+const itemV: Variants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
 };
@@ -52,6 +52,8 @@ export function PortalNav(): ReactNode {
   const servicesRef = useRef<HTMLDivElement>(null);
   const supportRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   // Live notification updates for signed-in customers
   useEffect(() => {
@@ -84,12 +86,42 @@ export function PortalNav(): ReactNode {
 
   useEffect(() => {
     if (!mobileOpen) return;
+    const closeBtn = menuRef.current?.querySelector<HTMLButtonElement>('[data-close-menu]');
+    closeBtn?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === 'Tab' && menuRef.current) {
+        const focusables = Array.from(
+          menuRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && (active === first || !menuRef.current.contains(active))) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [mobileOpen]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setServicesOpen(false);
+        setSupportOpen(false);
+        setUserMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -141,6 +173,26 @@ export function PortalNav(): ReactNode {
 
   const badge = unreadData?.count ?? 0;
 
+  const isActive = (href: string) => {
+    const path = href.startsWith('/#') ? href.slice(0, href.indexOf('#')) || '/' : href;
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  };
+  const servicesActive = isActive('/air-freight') || isActive('/ocean-freight');
+  const supportActive = [
+    '/faq',
+    '/prohibited',
+    '/pickup',
+    '/volumetric-calculator',
+    '/currency-converter',
+  ].some(isActive);
+
+  const navLinkCls = (href: string) =>
+    `text-base font-semibold transition-colors ${isActive(href) ? 'text-[#F94735]' : tc.link}`;
+
+  const navRowCls = (href: string) =>
+    `group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold transition-colors ${isActive(href) ? 'text-[#F94735]' : 'text-white/90 hover:text-white'}`;
+
   return (
     <header
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${navBg}`}
@@ -155,10 +207,14 @@ export function PortalNav(): ReactNode {
         </a>
 
         <div className="hidden lg:flex items-center gap-6">
-          <a href="/" className={`text-base font-semibold ${tc.link} transition-colors`}>
+          <a href="/" aria-current={isActive('/') ? 'page' : undefined} className={navLinkCls('/')}>
             Home
           </a>
-          <a href="/about" className={`text-base font-semibold ${tc.link} transition-colors`}>
+          <a
+            href="/about"
+            aria-current={isActive('/about') ? 'page' : undefined}
+            className={navLinkCls('/about')}
+          >
             About
           </a>
           {/* biome-ignore lint/a11y/noStaticElementInteractions: hover dropdown needs mouse handlers on the wrapper */}
@@ -167,10 +223,15 @@ export function PortalNav(): ReactNode {
             className="relative"
             onMouseEnter={() => setServicesOpen(true)}
             onMouseLeave={() => setServicesOpen(false)}
+            onFocus={() => setServicesOpen(true)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setServicesOpen(false);
+            }}
           >
             <button
               type="button"
-              className={`flex items-center gap-1 text-base font-semibold ${tc.link} transition-colors cursor-pointer`}
+              aria-expanded={servicesOpen}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? 'text-[#F94735]' : tc.link}`}
             >
               Services{' '}
               <ChevronDown
@@ -180,7 +241,7 @@ export function PortalNav(): ReactNode {
             </button>
             {servicesOpen && (
               <div className="absolute top-full left-0 pt-2 w-48">
-                <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                <div className="rounded-sm bg-[#111111] border border-white/10 overflow-hidden">
                   <a
                     href="/air-freight"
                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -203,10 +264,15 @@ export function PortalNav(): ReactNode {
             className="relative"
             onMouseEnter={() => setSupportOpen(true)}
             onMouseLeave={() => setSupportOpen(false)}
+            onFocus={() => setSupportOpen(true)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setSupportOpen(false);
+            }}
           >
             <button
               type="button"
-              className={`flex items-center gap-1 text-base font-semibold ${tc.link} transition-colors cursor-pointer`}
+              aria-expanded={supportOpen}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? 'text-[#F94735]' : tc.link}`}
             >
               Support{' '}
               <ChevronDown
@@ -216,7 +282,7 @@ export function PortalNav(): ReactNode {
             </button>
             {supportOpen && (
               <div className="absolute top-full left-0 pt-2 w-56">
-                <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                <div className="rounded-sm bg-[#111111] border border-white/10 overflow-hidden">
                   <a
                     href="/faq"
                     className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -251,13 +317,25 @@ export function PortalNav(): ReactNode {
               </div>
             )}
           </div>
-          <a href="/branches" className={`text-base font-semibold ${tc.link} transition-colors`}>
+          <a
+            href="/branches"
+            aria-current={isActive('/branches') ? 'page' : undefined}
+            className={navLinkCls('/branches')}
+          >
             Branches
           </a>
-          <a href="/#track" className={`text-base font-semibold ${tc.link} transition-colors`}>
+          <a
+            href="/#track"
+            aria-current={isActive('/#track') ? 'page' : undefined}
+            className={navLinkCls('/#track')}
+          >
             Track
           </a>
-          <a href="/contact" className={`text-base font-semibold ${tc.link} transition-colors`}>
+          <a
+            href="/contact"
+            aria-current={isActive('/contact') ? 'page' : undefined}
+            className={navLinkCls('/contact')}
+          >
             Contact
           </a>
         </div>
@@ -268,6 +346,8 @@ export function PortalNav(): ReactNode {
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
+                onFocus={() => setUserMenuOpen(true)}
+                aria-expanded={userMenuOpen}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${lightNav ? 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70 hover:text-foreground' : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white'}`}
               >
                 <User size={16} />
@@ -286,7 +366,7 @@ export function PortalNav(): ReactNode {
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2 w-56">
-                  <div className="rounded-xl bg-[#111111] border border-white/10 shadow-xl overflow-hidden">
+                  <div className="rounded-sm bg-[#111111] border border-white/10 overflow-hidden">
                     <div className="px-4 py-3 border-b border-white/10">
                       <div className="text-sm font-medium text-white">
                         {(session.user as Record<string, unknown>).name as string}
@@ -368,7 +448,7 @@ export function PortalNav(): ReactNode {
               </a>
               <a
                 href="/register"
-                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#F94735] hover:bg-[#D83220] transition-all"
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#F94735] hover:bg-[#D83220] transition-all active:scale-[0.98]"
               >
                 <UserPlus size={15} />
                 <span className="hidden sm:inline">Register</span>
@@ -378,20 +458,25 @@ export function PortalNav(): ReactNode {
         </nav>
 
         <button
+          ref={hamburgerRef}
           type="button"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className={`lg:hidden p-2 rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors`}
+          onClick={() => {
+            const next = !mobileOpen;
+            setMobileOpen(next);
+            if (!next) hamburgerRef.current?.focus();
+          }}
+          className={`lg:hidden p-2 rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors active:scale-90`}
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
-
       {mobileOpen && (
         <AnimatePresence mode="wait">
           <MotionConfig reducedMotion="user">
             <motion.div
               key="mobile-menu"
+              ref={menuRef}
               className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#111111]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -406,8 +491,9 @@ export function PortalNav(): ReactNode {
                 </a>
                 <button
                   type="button"
+                  data-close-menu
                   onClick={() => setMobileOpen(false)}
-                  className="p-2 rounded-sm text-white hover:bg-white/10 transition-colors"
+                  className="p-2 rounded-sm text-white hover:bg-white/10 transition-colors active:scale-90"
                   aria-label="Close menu"
                 >
                   <X size={24} />
@@ -425,8 +511,9 @@ export function PortalNav(): ReactNode {
                   <motion.a
                     href="/"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={isActive('/') ? 'page' : undefined}
                     variants={itemV}
-                    className="group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className={navRowCls('/')}
                   >
                     Home
                     <ArrowRight
@@ -437,8 +524,9 @@ export function PortalNav(): ReactNode {
                   <motion.a
                     href="/about"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={isActive('/about') ? 'page' : undefined}
                     variants={itemV}
-                    className="group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className={navRowCls('/about')}
                   >
                     About
                     <ArrowRight
@@ -451,7 +539,7 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                       aria-expanded={mobileServicesOpen}
-                      className="flex w-full items-center justify-between py-4 text-left text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${servicesActive ? 'text-[#F94735]' : 'text-white/90 hover:text-white'}`}
                     >
                       Services
                       <ChevronDown
@@ -494,7 +582,7 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileSupportOpen(!mobileSupportOpen)}
                       aria-expanded={mobileSupportOpen}
-                      className="flex w-full items-center justify-between py-4 text-left text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${supportActive ? 'text-[#F94735]' : 'text-white/90 hover:text-white'}`}
                     >
                       Support
                       <ChevronDown
@@ -556,8 +644,9 @@ export function PortalNav(): ReactNode {
                   <motion.a
                     href="/branches"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={isActive('/branches') ? 'page' : undefined}
                     variants={itemV}
-                    className="group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className={navRowCls('/branches')}
                   >
                     Branches
                     <ArrowRight
@@ -569,8 +658,9 @@ export function PortalNav(): ReactNode {
                   <motion.a
                     href="/#track"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={isActive('/#track') ? 'page' : undefined}
                     variants={itemV}
-                    className="group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className={navRowCls('/#track')}
                   >
                     Track
                     <ArrowRight
@@ -581,8 +671,9 @@ export function PortalNav(): ReactNode {
                   <motion.a
                     href="/contact"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={isActive('/contact') ? 'page' : undefined}
                     variants={itemV}
-                    className="group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className={navRowCls('/contact')}
                   >
                     Contact
                     <ArrowRight
@@ -648,14 +739,14 @@ export function PortalNav(): ReactNode {
                       <a
                         href="/login"
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-sm border border-white/20 px-4 py-3.5 text-base font-semibold text-white/90 hover:border-white/40 hover:text-white transition-colors"
+                        className="flex items-center justify-center gap-2 rounded-sm border border-white/20 px-4 py-3.5 text-base font-semibold text-white/90 hover:border-white/40 hover:text-white transition-colors active:scale-[0.98]"
                       >
                         <LogIn size={18} /> Sign in
                       </a>
                       <a
                         href="/register"
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-sm bg-[#F94735] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#D83220] transition-colors"
+                        className="flex items-center justify-center gap-2 rounded-sm bg-[#F94735] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#D83220] transition-colors active:scale-[0.98]"
                       >
                         <UserPlus size={18} /> Register
                       </a>

@@ -17,7 +17,6 @@ export interface TenantCopy {
     headline: string[];
     description: string;
     ctaTrack: string;
-    ctaQuote: string;
     trust: string;
   };
   howItWorks: {
@@ -63,7 +62,6 @@ export const tenantConfig: TenantCopy = {
     description:
       'Gajan Traders ships parcels from India to 200+ countries with door-to-door pickup, real-time tracking, and customs clearance support.',
     ctaTrack: 'Track Your Shipment',
-    ctaQuote: 'Get a Quote',
     trust: 'Serving exporters, students & NRIs across India since 2010.',
   },
   howItWorks: {

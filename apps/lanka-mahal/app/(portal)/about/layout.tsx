@@ -1,0 +1,12 @@
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+
+export const metadata: Metadata = {
+  title: 'About Us',
+  description:
+    'Lanka Mahal is a trusted Sri Lankan courier delivering to 220+ countries since 2010 — with secure handling, on-time delivery and human support.',
+};
+
+export default function AboutLayout({ children }: { children: ReactNode }): ReactNode {
+  return <>{children}</>;
+}

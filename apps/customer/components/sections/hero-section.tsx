@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionConfig, motion, type Variants } from 'framer-motion';
-import { ArrowRight, ArrowUpRight, PackageSearch, ShieldCheck } from 'lucide-react';
+import { ArrowRight, PackageSearch, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -61,7 +61,7 @@ export function HeroSection(): ReactNode {
           className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 sm:px-8 md:px-12 md:py-32 lg:px-16"
         >
           <motion.div variants={item}>
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#F94735] sm:text-sm">
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#F94735]">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F94735] opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F94735]" />
@@ -72,7 +72,7 @@ export function HeroSection(): ReactNode {
 
           <motion.h1
             variants={item}
-            className="mt-6 max-w-2xl text-[2rem] font-bold leading-[1.08] tracking-tight text-white sm:text-4xl lg:text-5xl"
+            className="mt-6 max-w-2xl text-3xl font-bold leading-[1.08] tracking-tight text-white sm:text-4xl"
           >
             {config.hero.headline[0]}{' '}
             <span className="text-[#F94735]">{config.hero.headline[1]}</span>
@@ -121,12 +121,6 @@ export function HeroSection(): ReactNode {
             variants={item}
             className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
           >
-            <a
-              href="/register"
-              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full bg-[#F94735] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#D83220]"
-            >
-              {config.hero.ctaQuote} <ArrowUpRight size={14} />
-            </a>
             <a
               href="#services"
               className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.06] px-7 text-sm font-semibold text-white transition-colors hover:bg-white/10"

@@ -1,8 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { ArrowUpRight, Package, MapPin, Award, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ArrowUpRight, Award, MapPin, Package, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const stats = [
@@ -58,16 +58,14 @@ export function AboutSection(): ReactNode {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 About Us
               </span>
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.15] mb-4">
                 {config.about.headline}
               </h2>
-              <p className="text-lg text-white/85 leading-relaxed mb-8">
-                {config.about.body}
-              </p>
+              <p className="text-base text-white/85 leading-relaxed mb-8">{config.about.body}</p>
             </motion.div>
 
             {/* Stats row */}
@@ -79,7 +77,10 @@ export function AboutSection(): ReactNode {
               className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
             >
               {stats.map((s) => (
-                <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+                <div
+                  key={s.label}
+                  className="bg-white/10 border border-white/10 rounded-xl p-4 text-center backdrop-blur-sm"
+                >
                   <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/20 text-[#F59E0B] flex items-center justify-center mx-auto mb-2">
                     <s.icon className="size-4" />
                   </div>
@@ -95,7 +96,10 @@ export function AboutSection(): ReactNode {
               viewport={{ once: true }}
               transition={{ delay: 0.35, duration: 0.5 }}
             >
-              <a href="/about" className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors cursor-pointer">
+              <a
+                href="/about"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"
+              >
                 {config.about.cta} <ArrowUpRight size={14} />
               </a>
             </motion.div>
@@ -105,4 +109,3 @@ export function AboutSection(): ReactNode {
     </section>
   );
 }
-

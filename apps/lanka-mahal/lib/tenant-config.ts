@@ -17,7 +17,6 @@ export interface TenantCopy {
     headline: string[];
     description: string;
     ctaTrack: string;
-    ctaQuote: string;
     trust: string;
   };
   howItWorks: {
@@ -63,7 +62,6 @@ export const tenantConfig: TenantCopy = {
     description:
       'Lanka Mahal ships parcels from Sri Lanka to 200+ countries with door-to-door pickup, real-time tracking, and customs clearance support.',
     ctaTrack: 'Track Your Shipment',
-    ctaQuote: 'Get a Quote',
     trust: 'Serving exporters, students & Sri Lankans abroad since 2015.',
   },
   howItWorks: {

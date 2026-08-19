@@ -1,8 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 export function TestimonialsSectionV2(): ReactNode {
@@ -14,7 +14,7 @@ export function TestimonialsSectionV2(): ReactNode {
     <section className="relative bg-[#FAFAF7] py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
-          <div className="border border-[#F59E0B]/20 py-1 px-4 rounded-full text-sm font-semibold tracking-wide uppercase text-[#B45309] bg-[#F59E0B]/10">
+          <div className="border border-[#F59E0B]/20 py-1 px-4 rounded-full text-xs font-semibold tracking-wide uppercase text-[#B45309] bg-[#F59E0B]/10">
             Testimonials
           </div>
           <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -43,11 +43,15 @@ export function TestimonialsSectionV2(): ReactNode {
               </div>
               <p className="text-foreground text-base leading-relaxed mb-6">{t.text}</p>
               <div className="flex items-center gap-3 pt-5 border-t border-border/60">
-                <div className={`w-10 h-10 rounded-full ${accentBg} flex items-center justify-center text-base font-semibold text-white`}>
+                <div
+                  className={`w-10 h-10 rounded-full ${accentBg} flex items-center justify-center text-base font-semibold text-white`}
+                >
                   {t.name.charAt(0)}
                 </div>
                 <div>
-                  <cite className="font-semibold not-italic text-foreground text-base">{t.name}</cite>
+                  <cite className="font-semibold not-italic text-foreground text-base">
+                    {t.name}
+                  </cite>
                   <span className="text-base text-foreground/60 block">{t.role}</span>
                 </div>
               </div>
@@ -58,4 +62,3 @@ export function TestimonialsSectionV2(): ReactNode {
     </section>
   );
 }
-
