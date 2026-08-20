@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   keywords: [
     'Lanka Mahal',
     'international courier Sri Lanka',
-    'ship from Sri Lanka',
-    'ship to Europe',
+    'parcel from Sri Lanka',
+    'parcels to Europe',
     'courier to Europe',
     'parcel delivery',
     'air freight Sri Lanka',
     'ocean freight',
     'courier service Colombo',
-    'track shipment',
+    'track parcel',
     'doorstep pickup',
   ],
   openGraph: {

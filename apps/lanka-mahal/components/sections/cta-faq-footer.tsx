@@ -34,10 +34,10 @@ export function CTAFAQFooterSection(): ReactNode {
 
   return (
     <section id="contact" className="relative bg-white">
-      <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-        <div className="grid md:grid-cols-2 gap-12 items-stretch">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-stretch">
           {/* CTA */}
-          <div className="relative rounded-2xl overflow-hidden p-10 md:p-12 text-center flex flex-col items-center justify-center h-full">
+          <div className="relative rounded-sm overflow-hidden p-8 sm:p-10 md:p-12 text-center flex flex-col items-center justify-center h-full">
             <div className="absolute inset-0 cta-gradient-bg" />
             <div className="absolute inset-0 bg-gradient-to-br from-[#F59E0B]/20 to-transparent" />
             <div className="relative z-10">
@@ -47,7 +47,7 @@ export function CTAFAQFooterSection(): ReactNode {
               <p className="text-base text-white/80 mb-8 max-w-sm">{config.cta.subtitle}</p>
               <a
                 href="/register"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-[#F59E0B] text-sm font-semibold hover:bg-white/90 transition-all cursor-pointer shadow-lg"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto h-11 px-8 rounded-sm bg-white text-[#F59E0B] text-sm font-semibold hover:bg-white/90 transition-all cursor-pointer"
               >
                 {config.cta.button} <ArrowRight size={14} />
               </a>

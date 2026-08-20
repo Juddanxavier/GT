@@ -22,14 +22,14 @@ export const metadata: Metadata = {
   keywords: [
     'Gajan Traders',
     'international courier India',
-    'ship from India',
-    'ship to Europe',
+    'parcel from India',
+    'parcels to Europe',
     'courier to Europe',
     'parcel delivery',
     'air freight India',
     'ocean freight',
     'courier service Mumbai',
-    'track shipment',
+    'track parcel',
     'doorstep pickup',
   ],
   openGraph: {

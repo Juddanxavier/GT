@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Contact Us',
   description:
-    'Contact Gajan Traders for shipping enquiries, doorstep pickup and support. Call, email or visit our branches across India — Mon to Sat, 9 AM to 9 PM.',
+    'Contact Gajan Traders for parcel enquiries, doorstep pickup and support. Call, email or visit our branches across India — Mon to Sat, 9 AM to 9 PM.',
 };
 
 export default function ContactLayout({ children }: { children: ReactNode }): ReactNode {

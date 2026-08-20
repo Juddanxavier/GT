@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions',
   description:
-    'Answers to common Lanka Mahal shipping questions — how to send a parcel, delivery times, costs, customs, shipping to Europe and more.',
+    'Answers to common Lanka Mahal parcel questions — how to send a parcel, delivery times, costs, customs, parcels to Europe and more.',
 };
 
 export default function FaqLayout({ children }: { children: ReactNode }): ReactNode {
