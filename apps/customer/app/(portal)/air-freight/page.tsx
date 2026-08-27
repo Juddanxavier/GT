@@ -1,8 +1,21 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Rocket, Wallet, Globe, Truck, Shield, Clock, MapPin, Headphones, PackageSearch, ArrowRight, CheckCircle, FileText, MessageSquare, Building2, HelpCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Globe,
+  Headphones,
+  PackageSearch,
+  Rocket,
+  Shield,
+  Truck,
+  Wallet,
+  Zap,
+} from 'lucide-react';
+import Image from 'next/image';
+import type { ReactNode } from 'react';
 import { FaqSection } from '@/components/sections/faq-section';
 
 const plans = [
@@ -14,8 +27,8 @@ const plans = [
     bestFor: 'Urgent documents, gifts, time-sensitive shipments',
     benefit: 'Direct air routing — fastest international delivery',
     color: 'text-orange-600',
-    bg: 'bg-orange-50 border-orange-200',
-    tagColor: 'bg-orange-500',
+    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+    tagColor: 'bg-[#F94735]',
   },
   {
     icon: Rocket,
@@ -25,8 +38,8 @@ const plans = [
     bestFor: 'NRI care packages, regular personal parcels',
     benefit: 'Reliable delivery at affordable rates',
     color: 'text-blue-600',
-    bg: 'bg-blue-50 border-blue-200',
-    tagColor: 'bg-blue-500',
+    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+    tagColor: 'bg-[#F94735]',
   },
   {
     icon: Globe,
@@ -36,8 +49,8 @@ const plans = [
     bestFor: 'Shipments to EMEA and Asian corridors',
     benefit: 'Region-specific routing, better rates',
     color: 'text-purple-600',
-    bg: 'bg-purple-50 border-purple-200',
-    tagColor: 'bg-purple-500',
+    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+    tagColor: 'bg-[#F94735]',
   },
   {
     icon: Wallet,
@@ -47,8 +60,8 @@ const plans = [
     bestFor: 'Students, first-time shippers, bulk parcels',
     benefit: 'Lowest international courier charges',
     color: 'text-emerald-600',
-    bg: 'bg-emerald-50 border-emerald-200',
-    tagColor: 'bg-emerald-500',
+    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+    tagColor: 'bg-[#F94735]',
   },
   {
     icon: Truck,
@@ -58,23 +71,58 @@ const plans = [
     bestFor: 'Non-urgent parcels, bulk shipments, cost-conscious shippers',
     benefit: 'Most affordable option with full tracking',
     color: 'text-teal-600',
-    bg: 'bg-teal-50 border-teal-200',
-    tagColor: 'bg-teal-500',
+    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+    tagColor: 'bg-[#F94735]',
   },
 ];
 
 const strengths = [
-  { icon: Plane, title: 'Daily air uplift operations', desc: 'Your parcel moves every day — no waiting, no backlogs. Daily flights mean faster shipping.' },
-  { icon: Globe, title: '220+ global destinations', desc: 'Fast international shipping to major destinations worldwide with smooth, reliable express coverage.' },
-  { icon: PackageSearch, title: 'Real-time tracking', desc: 'Track your express delivery live — from pickup to doorstep with updates at every stage.' },
-  { icon: Truck, title: 'Doorstep pickup', desc: 'Book a convenient pickup from your home or office — or drop off at the nearest branch.' },
-  { icon: Headphones, title: '24/7 customer support', desc: 'Get help whenever you need it. Our support team is available around the clock.' },
-  { icon: Shield, title: 'Secure packing support', desc: 'Trained professionals carefully pack fragile, valuable, and important shipments.' },
+  {
+    icon: Plane,
+    title: 'Daily air uplift operations',
+    desc: 'Your parcel moves every day — no waiting, no backlogs. Daily flights mean faster shipping.',
+  },
+  {
+    icon: Globe,
+    title: '220+ global destinations',
+    desc: 'Fast international shipping to major destinations worldwide with smooth, reliable express coverage.',
+  },
+  {
+    icon: PackageSearch,
+    title: 'Real-time tracking',
+    desc: 'Track your express delivery live — from pickup to doorstep with updates at every stage.',
+  },
+  {
+    icon: Truck,
+    title: 'Doorstep pickup',
+    desc: 'Book a convenient pickup from your home or office — or drop off at the nearest branch.',
+  },
+  {
+    icon: Headphones,
+    title: '24/7 customer support',
+    desc: 'Get help whenever you need it. Our support team is available around the clock.',
+  },
+  {
+    icon: Shield,
+    title: 'Secure packing support',
+    desc: 'Trained professionals carefully pack fragile, valuable, and important shipments.',
+  },
 ];
 
 function Plane(props: { size?: number; className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className} width={props.size ?? 24} height={props.size ?? 24}>
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={props.className}
+      width={props.size ?? 24}
+      height={props.size ?? 24}
+    >
       <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8l-8.2-1.8L3 8l5.5 3.5L6 16l1.5 1.5L12 18l2.5 4.5 2-1.5L17.8 19.2z" />
     </svg>
   );
@@ -85,28 +133,34 @@ export default function AirFreightPage(): ReactNode {
     <div className="min-h-screen bg-white">
       <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
-          <img src="/images/heroparcel.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/80 via-[#1a1a2e]/40 to-transparent" />
+          <Image src="/images/heroparcel.webp" alt="" fill sizes="100vw" className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-3">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-3">
             <span className="w-6 h-px bg-[#F94735]" />
             Air Freight
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Air Freight Services</h1>
-          <p className="text-lg text-white/90 max-w-xl mt-2">
-            Fast air freight shipping to 200+ countries with daily uplift operations and delivery in 3–15 days.
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+            Air Freight Services
+          </h1>
+          <p className="text-base text-white/75 max-w-md mt-4">
+            Fast air freight shipping to 200+ countries with daily uplift operations and delivery in
+            3–15 days.
           </p>
         </div>
       </section>
 
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div>
             <div className="space-y-14">
               <div>
                 <p className="text-lg text-foreground/90 leading-relaxed mb-8">
-                  Fast international shipping to <strong>200+ countries</strong>. With daily air uplift operations, multiple pickup locations, and delivery to major destinations in just <strong>3–5 days</strong>, shipping overseas has never been simpler or more reliable.
+                  Fast international shipping to <strong>200+ countries</strong>. With daily air
+                  uplift operations, multiple pickup locations, and delivery to major destinations
+                  in just <strong>3–5 days</strong>, shipping overseas has never been simpler or
+                  more reliable.
                 </p>
 
                 <div className="flex flex-wrap gap-3">
@@ -116,7 +170,10 @@ export default function AirFreightPage(): ReactNode {
                     { icon: Globe, label: 'Customs handled end-to-end' },
                     { icon: Clock, label: '4.8★ rated on Google' },
                   ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 border border-border text-sm font-medium text-foreground/80">
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 border border-border text-sm font-medium text-foreground/80"
+                    >
                       <item.icon size={14} className="text-[#F94735]" />
                       {item.label}
                     </div>
@@ -125,15 +182,17 @@ export default function AirFreightPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
                   <span className="w-6 h-px bg-[#F94735]" />
                   Our Plans
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                  Choose the shipping speed <span className="text-[#F94735]">that fits your needs</span>
+                  Choose the shipping speed{' '}
+                  <span className="text-[#F94735]">that fits your needs</span>
                 </h2>
                 <p className="text-lg text-foreground/85 mb-8">
-                  From urgent international shipments to budget-friendly parcel delivery, every plan includes real-time tracking, secure handling, doorstep pickup, and 24/7 support.
+                  From urgent international shipments to budget-friendly parcel delivery, every plan
+                  includes real-time tracking, secure handling, doorstep pickup, and 24/7 support.
                 </p>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -146,23 +205,36 @@ export default function AirFreightPage(): ReactNode {
                       transition={{ delay: i * 0.08, duration: 0.4 }}
                       className={`rounded-2xl border p-5 flex flex-col ${plan.bg}`}
                     >
-                      <div className={`w-10 h-10 rounded-xl ${plan.bg} flex items-center justify-center mb-3 ${plan.color}`}>
+                      <div
+                        className="w-10 h-10 rounded-xl bg-[#F94735]/10 flex items-center justify-center mb-3 text-[#F94735]"
+                      >
                         <plan.icon size={20} />
                       </div>
-                      <span className={`text-xs font-bold uppercase tracking-wider text-white px-2 py-0.5 rounded-full ${plan.tagColor} w-fit mb-2`}>{plan.tag}</span>
+                      <span
+                        className={`text-xs font-bold uppercase tracking-wider text-white px-2 py-0.5 rounded-full ${plan.tagColor} w-fit mb-2`}
+                      >
+                        {plan.tag}
+                      </span>
                       <h3 className="text-base font-bold text-foreground mb-1.5">{plan.title}</h3>
                       <p className=" text-foreground/85 leading-relaxed mb-3 flex-1">{plan.desc}</p>
                       <div className="space-y-1.5 mb-3">
                         <div className="flex items-start gap-1.5 text-xs text-foreground/80">
                           <CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" />
-                          <span><strong>Best for:</strong> {plan.bestFor}</span>
+                          <span>
+                            <strong>Best for:</strong> {plan.bestFor}
+                          </span>
                         </div>
                         <div className="flex items-start gap-1.5 text-xs text-foreground/80">
                           <CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" />
-                          <span><strong>Benefit:</strong> {plan.benefit}</span>
+                          <span>
+                            <strong>Benefit:</strong> {plan.benefit}
+                          </span>
                         </div>
                       </div>
-                      <a href="/quote" className="mt-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F94735] text-white text-xs font-bold hover:bg-[#D83220] transition-colors w-fit">
+                      <a
+                        href="/quote"
+                        className="mt-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F94735] text-white text-xs font-bold hover:bg-[#D83220] transition-colors w-fit"
+                      >
                         Check Price <ArrowRight size={12} />
                       </a>
                     </motion.div>
@@ -171,12 +243,13 @@ export default function AirFreightPage(): ReactNode {
               </div>
 
               <div className="bg-surface/50 rounded-3xl p-8 md:p-10 border border-border">
-                <span className="inline-flex items-center gap-2 text-base font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
                   <span className="w-6 h-px bg-[#F94735]" />
                   Why Gajan Traders
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
-                  Why thousands choose us for <span className="text-[#F94735]">express delivery</span>
+                  Why thousands choose us for{' '}
+                  <span className="text-[#F94735]">express delivery</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {strengths.map((s, i) => (
@@ -198,23 +271,37 @@ export default function AirFreightPage(): ReactNode {
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-8 md:p-12 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#F94735]/0 via-[#F94735]/10 to-[#F94735]/0 animate-gradient-x opacity-60" />
+              <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center">
+                <div className="absolute inset-0 bg-[#1a1a2e]" />
+                <div className="cta-orb cta-orb-1" />
+                <div className="cta-orb cta-orb-2" />
+                <div className="cta-orb cta-orb-3" />
                 <div className="relative z-10">
                   <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">
-                    Ship Faster. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F94735] via-orange-400 to-[#F94735] animate-gradient-x bg-[length:200%_auto]">Ship Smarter.</span>
+                    Ship Faster.{' '}
+                    <span className="text-[#F94735]">Ship Smarter.</span>
                   </h2>
-                  <p className="text-lg text-white/85 max-w-lg mx-auto mb-8">
-                    Get an instant quote, find a branch, or schedule a pickup — whatever works for you.
+                  <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
+                    Get an instant quote, find a branch, or schedule a pickup — whatever works for
+                    you.
                   </p>
                   <div className="flex flex-wrap justify-center gap-3">
-                    <a href="/quote" className="px-6 py-3 rounded-xl bg-[#F94735] text-white text-base font-semibold hover:bg-[#D83220] transition-colors inline-flex items-center gap-2">
+                    <a
+                      href="/quote"
+                      className="px-6 py-3 rounded-xl bg-white text-[#F94735] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                    >
                       Check Price <ArrowRight size={16} />
                     </a>
-                    <a href="/pickup" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                    <a
+                      href="/pickup"
+                      className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2"
+                    >
                       Schedule Pickup
                     </a>
-                    <a href="/branches" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                    <a
+                      href="/branches"
+                      className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2"
+                    >
                       Find a Branch
                     </a>
                   </div>
@@ -222,16 +309,48 @@ export default function AirFreightPage(): ReactNode {
               </div>
 
               <style>{`
-                @keyframes gradient-x {
-                  0%, 100% { background-position: 0% 50%; }
-                  50% { background-position: 100% 50%; }
+                .cta-orb {
+                  position: absolute;
+                  border-radius: 50%;
+                  filter: blur(80px);
+                  opacity: 0.5;
+                  will-change: transform;
                 }
-                .animate-gradient-x {
-                  animation: gradient-x 4s ease infinite;
+                .cta-orb-1 {
+                  width: 300px; height: 300px;
+                  background: #F94735;
+                  top: -40px; left: -60px;
+                  animation: orbFloat1 8s ease-in-out infinite;
+                }
+                .cta-orb-2 {
+                  width: 200px; height: 200px;
+                  background: #FFB347;
+                  bottom: -30px; right: -20px;
+                  animation: orbFloat2 10s ease-in-out infinite;
+                }
+                .cta-orb-3 {
+                  width: 160px; height: 160px;
+                  background: #F94735;
+                  top: 50%; left: 55%;
+                  opacity: 0.25;
+                  animation: orbFloat3 12s ease-in-out infinite;
+                }
+                @keyframes orbFloat1 {
+                  0%, 100% { transform: translate(0, 0) scale(1); }
+                  33% { transform: translate(60px, 40px) scale(1.1); }
+                  66% { transform: translate(-20px, 70px) scale(0.95); }
+                }
+                @keyframes orbFloat2 {
+                  0%, 100% { transform: translate(0, 0) scale(1); }
+                  33% { transform: translate(-50px, -30px) scale(1.15); }
+                  66% { transform: translate(30px, -60px) scale(0.9); }
+                }
+                @keyframes orbFloat3 {
+                  0%, 100% { transform: translate(0, 0) scale(1); }
+                  50% { transform: translate(-40px, 30px) scale(1.2); }
                 }
               `}</style>
             </div>
-
           </div>
         </div>
       </section>

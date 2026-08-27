@@ -4,7 +4,6 @@ interface AuthLayoutProps {
   config: {
     name: string;
     shortName: string;
-    theme: string;
   };
   title: string;
   subtitle: string;
@@ -14,9 +13,9 @@ interface AuthLayoutProps {
 export function AuthLayout({ config, title, subtitle, children }: AuthLayoutProps): ReactNode {
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4 py-24">
-      <div className="w-full max-w-md animate-[fade-up_0.4s_ease-out]">
+      <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <span className="text-2xl font-bold tracking-tight text-[#F94735]">{config.shortName}</span>
+          <div className="text-2xl font-bold tracking-tight text-[#F94735]">{config.shortName}</div>
         </div>
 
         <div className="border border-border bg-white rounded-2xl shadow-sm p-8 space-y-6">

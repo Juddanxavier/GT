@@ -1,14 +1,14 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { z } from 'zod';
-import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Spinner } from '@heroui/react';
+import { CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { z } from 'zod';
+import { AuthLayout } from '@/components/auth-layout';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { authClient } from '@/lib/auth-client';
-import { AuthLayout } from '@/components/auth-layout';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const resetSchema = z
@@ -47,10 +47,15 @@ function ResetPasswordForm(): ReactNode {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError('');
-    if (!token) { setSubmitError('Invalid reset link'); return; }
+    if (!token) {
+      setSubmitError('Invalid reset link');
+      return;
+    }
     const result = resetSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
-      setFieldErrors(Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])));
+      setFieldErrors(
+        Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])),
+      );
       return;
     }
     setFieldErrors({});
@@ -89,7 +94,10 @@ function ResetPasswordForm(): ReactNode {
             <CheckCircle2 size={32} className="text-green-600" />
           </div>
           <p className="text-foreground">Redirecting you to sign in...</p>
-          <a href="/login" className="inline-flex items-center gap-1.5 font-medium text-[#F94735] hover:text-[#e03e2d] transition-colors">
+          <a
+            href="/login"
+            className="inline-flex items-center gap-1.5 font-medium text-[#F94735] hover:text-[#e03e2d] transition-colors"
+          >
             Go to sign in
           </a>
         </div>
@@ -101,19 +109,37 @@ function ResetPasswordForm(): ReactNode {
     <AuthLayout config={config} title="Set new password" subtitle="Enter your new password below">
       {submitError && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
+          <svg
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="shrink-0"
+          >
+            <circle cx="8" cy="8" r="7" />
+            <path d="M8 5v3M8 10.5v.5" />
+          </svg>
           {submitError}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">New Password</label>
+          <label htmlFor="reset-password" className="font-medium text-foreground/80">
+            New Password
+          </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
+              id="reset-password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((p) => ({ ...p, password: '' }));
+              }}
               placeholder="Enter new password"
               autoComplete="new-password"
               className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
@@ -131,12 +157,18 @@ function ResetPasswordForm(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Confirm Password</label>
+          <label htmlFor="reset-confirm" className="font-medium text-foreground/80">
+            Confirm Password
+          </label>
           <div className="relative">
             <input
               type={showConfirm ? 'text' : 'password'}
+              id="reset-confirm"
               value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((p) => ({ ...p, confirmPassword: '' })); }}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+              }}
               placeholder="Re-enter new password"
               autoComplete="new-password"
               className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.confirmPassword ? 'border-red-400' : 'border-border'}`}
@@ -150,7 +182,9 @@ function ResetPasswordForm(): ReactNode {
               {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {fieldErrors.confirmPassword && <p className="text-xs text-red-500">{fieldErrors.confirmPassword}</p>}
+          {fieldErrors.confirmPassword && (
+            <p className="text-xs text-red-500">{fieldErrors.confirmPassword}</p>
+          )}
         </div>
 
         <button
@@ -168,7 +202,13 @@ function ResetPasswordForm(): ReactNode {
 export default function ResetPasswordPage(): ReactNode {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><Spinner size="lg" /></div>}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-background">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
         <ResetPasswordForm />
       </Suspense>
     </ErrorBoundary>

@@ -7,15 +7,12 @@ import { useTenantConfig } from '@/lib/use-tenant-config';
 
 export function TestimonialsSectionV2(): ReactNode {
   const config = useTenantConfig();
-  const isE = config.theme === 'emerald';
-
-  const accentBg = isE ? 'bg-[#F94735]' : 'bg-violet-600';
 
   return (
-    <section className="relative bg-surface py-24 overflow-hidden">
+    <section className="relative bg-[#FAFAF7] py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
-          <div className="border border-border py-1 px-4 rounded-full text-xs font-semibold tracking-wide uppercase text-foreground/60 bg-surface-secondary/50">
+          <div className="border border-[#F94735]/20 py-1 px-4 rounded-full text-xs font-semibold tracking-wide uppercase text-[#C22B18] bg-[#F94735]/10">
             Testimonials
           </div>
           <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -39,14 +36,13 @@ export function TestimonialsSectionV2(): ReactNode {
             >
               <div className="flex gap-1 mb-5">
                 {Array.from({ length: 5 }).map((_, si) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: fixed star row
                   <Star key={si} size={14} className="fill-amber-400 text-amber-400" />
                 ))}
               </div>
               <p className="text-foreground text-base leading-relaxed mb-6">{t.text}</p>
               <div className="flex items-center gap-3 pt-5 border-t border-border/60">
-                <div
-                  className={`w-10 h-10 rounded-full ${accentBg} flex items-center justify-center text-base font-semibold text-white`}
-                >
+                <div className="w-10 h-10 rounded-full bg-[#F94735] flex items-center justify-center text-base font-semibold text-white">
                   {t.name.charAt(0)}
                 </div>
                 <div>

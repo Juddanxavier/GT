@@ -1,13 +1,13 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { z } from 'zod';
-import { ErrorBoundary } from '@/components/error-boundary';
 import { Eye, EyeOff } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import { AuthLayout } from '@/components/auth-layout';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { authClient } from '@/lib/auth-client';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const registerSchema = z.object({
@@ -37,7 +37,9 @@ function RegisterForm(): ReactNode {
     if (honeypot) return;
     const result = registerSchema.safeParse({ name, email, password });
     if (!result.success) {
-      setFieldErrors(Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])));
+      setFieldErrors(
+        Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])),
+      );
       return;
     }
     setFieldErrors({});
@@ -51,16 +53,29 @@ function RegisterForm(): ReactNode {
           'x-tenant-slug': 'gajan-traders',
         },
         credentials: 'include',
-        body: JSON.stringify({ email: result.data.email, password: result.data.password, name: result.data.name }),
+        body: JSON.stringify({
+          email: result.data.email,
+          password: result.data.password,
+          name: result.data.name,
+        }),
       });
       const body = await res.json();
       if (!res.ok) {
         const err = body.error;
-        setSubmitError(typeof err === 'string' ? err : typeof err === 'object' && err && 'message' in err ? (err as { message: string }).message : 'Registration failed');
+        setSubmitError(
+          typeof err === 'string'
+            ? err
+            : typeof err === 'object' && err && 'message' in err
+              ? (err as { message: string }).message
+              : 'Registration failed',
+        );
         setLoading(false);
         return;
       }
-      const { error: signInError } = await authClient.signIn.email({ email: result.data.email, password: result.data.password });
+      const { error: signInError } = await authClient.signIn.email({
+        email: result.data.email,
+        password: result.data.password,
+      });
       if (signInError) {
         setSubmitError('Account created but sign-in failed. Please log in.');
         setLoading(false);
@@ -73,10 +88,26 @@ function RegisterForm(): ReactNode {
   }
 
   return (
-    <AuthLayout config={config} title="Create your account" subtitle="Start tracking your shipments">
+    <AuthLayout
+      config={config}
+      title="Create your account"
+      subtitle="Start tracking your shipments"
+    >
       {submitError && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
+          <svg
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="shrink-0"
+          >
+            <circle cx="8" cy="8" r="7" />
+            <path d="M8 5v3M8 10.5v.5" />
+          </svg>
           {submitError}
         </div>
       )}
@@ -84,12 +115,23 @@ function RegisterForm(): ReactNode {
       <form className="space-y-5">
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
-          <input id="hp-field" name="hp_verify" type="text" tabIndex={-1} autoComplete="new-password" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+          <input
+            id="hp-field"
+            name="hp_verify"
+            type="text"
+            tabIndex={-1}
+            autoComplete="new-password"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Full Name</label>
+          <label htmlFor="reg-name" className="font-medium text-foreground/80">
+            Full Name
+          </label>
           <input
+            id="reg-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -101,8 +143,11 @@ function RegisterForm(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Email</label>
+          <label htmlFor="reg-email" className="font-medium text-foreground/80">
+            Email
+          </label>
           <input
+            id="reg-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -114,9 +159,12 @@ function RegisterForm(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Password</label>
+          <label htmlFor="reg-password" className="font-medium text-foreground/80">
+            Password
+          </label>
           <div className="relative">
             <input
+              id="reg-password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -147,14 +195,22 @@ function RegisterForm(): ReactNode {
 
         <p className="text-center text-foreground/60">
           Already have an account?{' '}
-          <a href="/login" className="font-semibold text-[#F94735] hover:text-[#e03e2d] underline underline-offset-2 transition-colors">
+          <a
+            href="/login"
+            className="font-semibold text-[#F94735] hover:text-[#e03e2d] underline underline-offset-2 transition-colors"
+          >
             Sign in
           </a>
         </p>
 
         <p className="text-center text-foreground/50">
           By creating an account, you agree to our{' '}
-          <a href="/terms" className="text-foreground/60 hover:text-[#F94735] underline underline-offset-2 transition-colors">Terms of Service</a>
+          <a
+            href="/terms"
+            className="text-foreground/60 hover:text-[#F94735] underline underline-offset-2 transition-colors"
+          >
+            Terms of Service
+          </a>
         </p>
       </form>
     </AuthLayout>
@@ -175,5 +231,9 @@ function RegisterPageGuard(): ReactNode {
 }
 
 export default function RegisterPage(): ReactNode {
-  return <ErrorBoundary><RegisterPageGuard /></ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      <RegisterPageGuard />
+    </ErrorBoundary>
+  );
 }

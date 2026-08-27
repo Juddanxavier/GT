@@ -24,19 +24,19 @@ export default function ContactPage(): ReactNode {
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Contact Us
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white max-w-2xl">
               Get in touch
               <br />
               <span className="text-[#F59E0B]">with our team.</span>
@@ -50,11 +50,11 @@ export default function ContactPage(): ReactNode {
 
       {/* Contact Info + Form */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Left */}
             <div>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Reach Us
               </span>
@@ -77,7 +77,7 @@ export default function ContactPage(): ReactNode {
                 ))}
                 <a
                   href="/branches"
-                  className="rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/20 p-5 hover:bg-[#F59E0B]/10 transition-colors group"
+                  className="rounded-full bg-[#F59E0B]/5 border border-[#F59E0B]/20 p-5 hover:bg-[#F59E0B]/10 transition-colors group"
                 >
                   <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3">
                     <Building2 className="size-4" />
@@ -145,7 +145,7 @@ export default function ContactPage(): ReactNode {
 
                 <button
                   type="submit"
-                  className="w-full px-6 py-3.5 rounded-xl bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full px-6 py-3.5 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   Send Message <Send size={16} />
                 </button>

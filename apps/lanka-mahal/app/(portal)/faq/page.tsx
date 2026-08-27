@@ -91,22 +91,22 @@ export default function FaqPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/support.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             FAQ
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Frequently Asked Questions</h1>
-          <p className="text-lg text-white/90 max-w-lg mt-2">
+          <p className="text-base text-white/75 max-w-md mt-4">
             Find answers to common questions about shipping, tracking, services, and billing.
           </p>
         </div>
       </section>
 
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-12 md:py-16">
           <div className="grid md:grid-cols-[1fr_280px] gap-8 md:gap-12">
             <div>
               <div className="relative mb-10">

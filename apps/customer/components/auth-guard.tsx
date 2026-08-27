@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { type ReactNode, useEffect } from 'react';
 import { authClient } from '@/lib/auth-client';
 
 export function AuthGuard({ children }: { children: ReactNode }): ReactNode {

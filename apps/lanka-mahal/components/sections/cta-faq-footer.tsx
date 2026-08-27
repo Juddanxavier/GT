@@ -34,33 +34,33 @@ export function CTAFAQFooterSection(): ReactNode {
 
   return (
     <section id="contact" className="relative bg-white">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-20">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-stretch">
-          {/* CTA */}
-          <div className="relative rounded-sm overflow-hidden p-8 sm:p-10 md:p-12 text-center flex flex-col items-center justify-center h-full">
-            <div className="absolute inset-0 cta-gradient-bg" />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#F59E0B]/20 to-transparent" />
+      <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:px-16 md:py-20 lg:px-24">
+        <div className="grid items-stretch gap-8 md:grid-cols-2 md:gap-12">
+          <div className="relative overflow-hidden rounded-2xl p-8 text-center flex flex-col items-center justify-center h-full sm:p-10 md:p-12">
+            <div className="absolute inset-0 bg-[#1a1a2e]" />
+            <div className="cta-orb cta-orb-1" />
+            <div className="cta-orb cta-orb-2" />
+            <div className="cta-orb cta-orb-3" />
             <div className="relative z-10">
-              <h2 className="text-2xl md:text-3xl font-bold text-white leading-[1.15] tracking-tight mb-3">
+              <h2 className="mb-3 text-2xl font-bold leading-[1.15] tracking-tight text-white md:text-3xl">
                 {config.cta.headline}
               </h2>
-              <p className="text-base text-white/80 mb-8 max-w-sm">{config.cta.subtitle}</p>
+              <p className="mb-8 max-w-sm text-base text-white/80">{config.cta.subtitle}</p>
               <a
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto h-11 px-8 rounded-sm bg-white text-[#F59E0B] text-sm font-semibold hover:bg-white/90 transition-all cursor-pointer"
+                className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-semibold text-[#F59E0B] transition-all hover:bg-white/90 sm:w-auto"
               >
                 {config.cta.button} <ArrowRight size={14} />
               </a>
             </div>
           </div>
 
-          {/* FAQ */}
           <div>
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
-              <span className="w-6 h-px bg-[#F59E0B]" />
+            <span className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B]">
+              <span className="h-px w-6 bg-[#F59E0B]" />
               FAQ
             </span>
-            <h3 className="text-xl font-bold text-foreground mb-6">Common questions</h3>
+            <h3 className="mb-6 text-xl font-bold text-foreground">Common questions</h3>
 
             <div className="space-y-0 border-t border-border">
               {faqData.map((faq, i) => (
@@ -68,18 +68,18 @@ export function CTAFAQFooterSection(): ReactNode {
                   <button
                     type="button"
                     onClick={() => setActiveIndex(activeIndex === i ? null : i)}
-                    className="w-full flex items-center justify-between py-4 text-left cursor-pointer"
+                    className="flex w-full cursor-pointer items-center justify-between py-4 text-left"
                   >
-                    <span className="text-base font-medium text-foreground pr-4">{faq.q}</span>
+                    <span className="pr-4 text-base font-medium text-foreground">{faq.q}</span>
                     <ChevronDown
                       size={14}
-                      className={`text-foreground/40 shrink-0 transition-transform duration-200 ${activeIndex === i ? 'rotate-180' : ''}`}
+                      className={`shrink-0 text-foreground/40 transition-transform duration-200 ${activeIndex === i ? 'rotate-180' : ''}`}
                     />
                   </button>
                   <div
                     className={`overflow-hidden transition-all duration-200 ${activeIndex === i ? 'max-h-40 pb-4' : 'max-h-0'}`}
                   >
-                    <p className="text-base text-foreground/90 leading-relaxed">{faq.a}</p>
+                    <p className="text-base leading-relaxed text-foreground/90">{faq.a}</p>
                   </div>
                 </div>
               ))}
@@ -89,15 +89,45 @@ export function CTAFAQFooterSection(): ReactNode {
       </div>
 
       <style>{`
-        .cta-gradient-bg {
-          background: linear-gradient(135deg, #F59E0B, #D97706, #F59E0B, #FF6B4A, #F59E0B);
-          background-size: 300% 300%;
-          animation: gradientShift 6s ease infinite;
+        .cta-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.5;
+          will-change: transform;
         }
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+        .cta-orb-1 {
+          width: 300px; height: 300px;
+          background: #F59E0B;
+          top: -40px; left: -60px;
+          animation: orbFloat1 8s ease-in-out infinite;
+        }
+        .cta-orb-2 {
+          width: 200px; height: 200px;
+          background: #FBBF24;
+          bottom: -30px; right: -20px;
+          animation: orbFloat2 10s ease-in-out infinite;
+        }
+        .cta-orb-3 {
+          width: 160px; height: 160px;
+          background: #F59E0B;
+          top: 50%; left: 55%;
+          opacity: 0.25;
+          animation: orbFloat3 12s ease-in-out infinite;
+        }
+        @keyframes orbFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(60px, 40px) scale(1.1); }
+          66% { transform: translate(-20px, 70px) scale(0.95); }
+        }
+        @keyframes orbFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-50px, -30px) scale(1.15); }
+          66% { transform: translate(30px, -60px) scale(0.9); }
+        }
+        @keyframes orbFloat3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-40px, 30px) scale(1.2); }
         }
       `}</style>
     </section>

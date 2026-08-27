@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionConfig, motion, type Variants } from 'framer-motion';
-import { ArrowRight, PackageSearch, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Send, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -10,31 +10,17 @@ import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const container: Variants = {
   hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
-  },
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
 };
 
 const item: Variants = {
   hidden: { opacity: 0, y: 16 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
-  },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } },
 };
 
 export function HeroSection(): ReactNode {
   const router = useRouter();
   const config = useTenantConfig();
-  const [trackingNo, setTrackingNo] = useState('');
-
-  function handleTrack(e: React.FormEvent) {
-    e.preventDefault();
-    const value = trackingNo.trim();
-    if (!value) return;
-    router.push(`/track/${encodeURIComponent(value)}`);
-  }
 
   return (
     <section
@@ -43,7 +29,7 @@ export function HeroSection(): ReactNode {
     >
       <div className="absolute inset-0">
         <Image
-          src="/images/heroparcel.png"
+          src="/images/hero-bg.webp"
           alt=""
           fill
           sizes="100vw"
@@ -72,9 +58,10 @@ export function HeroSection(): ReactNode {
 
           <motion.h1
             variants={item}
-            className="mt-6 max-w-2xl text-3xl font-bold leading-[1.08] tracking-tight text-white sm:text-4xl"
+            className="mt-6 max-w-lg text-3xl font-bold leading-[1.08] tracking-tight text-white sm:text-4xl"
           >
-            {config.hero.headline[0]}{' '}
+            {config.hero.headline[0]}
+            <br />
             <span className="text-[#F94735]">{config.hero.headline[1]}</span>
           </motion.h1>
 
@@ -85,49 +72,26 @@ export function HeroSection(): ReactNode {
             {config.hero.description}
           </motion.p>
 
-          <motion.div variants={item} className="mt-8 max-w-md w-full">
-            <form
-              onSubmit={handleTrack}
-              className="flex flex-col items-stretch gap-2 rounded-3xl border border-white/15 bg-white/[0.08] p-2 backdrop-blur-md transition-colors focus-within:border-[#F94735]/60 focus-within:bg-white/[0.12] sm:flex-row sm:items-center sm:rounded-full sm:gap-1.5"
+          <motion.div variants={item} className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <a
+              href="/pickup"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#F94735] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#D83220]"
             >
-              <div className="flex min-w-0 flex-1 items-center gap-3 px-3 sm:px-4">
-                <PackageSearch size={18} className="shrink-0 text-white/50" />
-                <input
-                  type="text"
-                  value={trackingNo}
-                  onChange={(e) => setTrackingNo(e.target.value)}
-                  placeholder="Enter tracking number"
-                  aria-label="Tracking number"
-                  autoComplete="off"
-                  className="h-12 w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!trackingNo.trim()}
-                className="flex h-12 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-[#F94735] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D83220] disabled:opacity-50 sm:w-auto sm:rounded-full"
-              >
-                {config.hero.ctaTrack} <ArrowRight size={14} />
-              </button>
-            </form>
-
-            <p className="mt-4 flex items-center gap-2 text-sm text-white/70">
-              <ShieldCheck size={15} className="shrink-0 text-[#F94735]/80" />
-              {config.hero.trust}
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={item}
-            className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
-          >
+              <Send size={16} />
+              {config.hero.ctaTrack}
+            </a>
             <a
               href="#services"
               className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.06] px-7 text-sm font-semibold text-white transition-colors hover:bg-white/10"
             >
-              Explore Services
+              Track a Shipment <ArrowRight size={14} />
             </a>
           </motion.div>
+
+          <motion.p variants={item} className="mt-6 flex items-center gap-2 text-sm text-white/70">
+            <ShieldCheck size={15} className="shrink-0 text-[#F94735]/80" />
+            {config.hero.trust}
+          </motion.p>
         </motion.div>
       </MotionConfig>
     </section>

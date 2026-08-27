@@ -30,10 +30,10 @@ const plans = [
     benefit: 'Reliable delivery at affordable rates',
     featured: false,
     color: {
-      chip: 'bg-emerald-100 text-emerald-600',
-      tag: 'text-emerald-600',
-      check: 'text-emerald-500',
-      btn: 'bg-emerald-600 hover:bg-emerald-700',
+      chip: 'bg-[#F59E0B]/10 text-[#F59E0B]',
+      tag: 'text-[#F59E0B]',
+      check: 'text-[#F59E0B]',
+      btn: 'bg-[#F59E0B] hover:bg-[#D97706]',
     },
   },
   {
@@ -45,10 +45,10 @@ const plans = [
     benefit: 'Region-specific routing, better rates',
     featured: false,
     color: {
-      chip: 'bg-sky-100 text-sky-600',
-      tag: 'text-sky-600',
-      check: 'text-sky-500',
-      btn: 'bg-sky-600 hover:bg-sky-700',
+      chip: 'bg-[#F59E0B]/10 text-[#F59E0B]',
+      tag: 'text-[#F59E0B]',
+      check: 'text-[#F59E0B]',
+      btn: 'bg-[#F59E0B] hover:bg-[#D97706]',
     },
   },
   {
@@ -60,10 +60,10 @@ const plans = [
     benefit: 'Lowest international courier charges',
     featured: false,
     color: {
-      chip: 'bg-violet-100 text-violet-600',
-      tag: 'text-violet-600',
-      check: 'text-violet-500',
-      btn: 'bg-violet-600 hover:bg-violet-700',
+      chip: 'bg-[#F59E0B]/10 text-[#F59E0B]',
+      tag: 'text-[#F59E0B]',
+      check: 'text-[#F59E0B]',
+      btn: 'bg-[#F59E0B] hover:bg-[#D97706]',
     },
   },
   {
@@ -75,10 +75,10 @@ const plans = [
     benefit: 'Most affordable option with full tracking',
     featured: false,
     color: {
-      chip: 'bg-rose-100 text-rose-600',
-      tag: 'text-rose-600',
-      check: 'text-rose-500',
-      btn: 'bg-rose-600 hover:bg-rose-700',
+      chip: 'bg-[#F59E0B]/10 text-[#F59E0B]',
+      tag: 'text-[#F59E0B]',
+      check: 'text-[#F59E0B]',
+      btn: 'bg-[#F59E0B] hover:bg-[#D97706]',
     },
   },
 ];
@@ -113,20 +113,20 @@ export default function AirFreightPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[560px] md:min-h-[640px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/heroparcel.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/75 to-[#1a1a2e]/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full py-20">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full py-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-2xl"
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Air Freight
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white">
               Air freight, <span className="text-[#F59E0B]">done right.</span>
             </h1>
             <p className="mt-5 text-lg text-white/80 max-w-xl leading-relaxed">
@@ -146,7 +146,7 @@ export default function AirFreightPage(): ReactNode {
 
       {/* Intro */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="max-w-3xl">
             <p className="text-lg text-foreground/90 leading-relaxed mb-8">
               Fast international shipping to <strong>200+ countries</strong>. With daily air uplift operations, multiple pickup locations, and delivery to major destinations in just <strong>3–5 days</strong>, shipping overseas has never been simpler or more reliable.
@@ -170,8 +170,8 @@ export default function AirFreightPage(): ReactNode {
 
       {/* Plans */}
       <section className="relative bg-gradient-to-b from-white to-[#fdf8f0]">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Our Plans
           </span>
@@ -253,9 +253,9 @@ export default function AirFreightPage(): ReactNode {
 
       {/* How it works */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="max-w-2xl mb-12">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               How It Works
             </span>
@@ -288,8 +288,8 @@ export default function AirFreightPage(): ReactNode {
       {/* Why us */}
       <section className="relative bg-[#1a1a2e] overflow-hidden">
         <div className="absolute inset-0 bg-[url('/images/ctaabout.png')] bg-cover bg-center opacity-10" />
-        <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Why Lanka Mahal
           </span>
@@ -334,39 +334,30 @@ export default function AirFreightPage(): ReactNode {
 
       {/* CTA */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-8 md:p-12 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F59E0B]/0 via-[#F59E0B]/10 to-[#F59E0B]/0 animate-gradient-x opacity-60" />
+            <div className="absolute -top-20 -left-20 w-60 h-60 bg-[#F59E0B]/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[#FBBF24]/15 rounded-full blur-3xl" />
             <div className="relative z-10">
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">
-                Ship Faster. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F59E0B] via-orange-400 to-[#F59E0B] animate-gradient-x bg-[length:200%_auto]">Ship Smarter.</span>
+                Ship Faster. <span className="text-[#F59E0B]">Ship Smarter.</span>
               </h2>
               <p className="text-lg text-white/85 max-w-lg mx-auto mb-8">
                 Get an instant quote, find a branch, or schedule a pickup - whatever works for you.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
-                <a href="/quote" className="px-6 py-3 rounded-xl bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors inline-flex items-center gap-2">
+                <a href="/quote" className="px-6 py-3 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors inline-flex items-center gap-2">
                   Check Price <ArrowRight size={16} />
                 </a>
-                <a href="/pickup" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                <a href="/pickup" className="px-6 py-3 rounded-full border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
                   Schedule Pickup
                 </a>
-                <a href="/branches" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                <a href="/branches" className="px-6 py-3 rounded-full border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
                   Find a Branch
                 </a>
               </div>
             </div>
           </div>
-
-          <style>{`
-            @keyframes gradient-x {
-              0%, 100% { background-position: 0% 50%; }
-              50% { background-position: 100% 50%; }
-            }
-            .animate-gradient-x {
-              animation: gradient-x 4s ease infinite;
-            }
-          `}</style>
         </div>
       </section>
 

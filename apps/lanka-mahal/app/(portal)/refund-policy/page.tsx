@@ -8,14 +8,14 @@ export default function RefundPolicyPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/contact.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Refund &amp; Shipping Policy</h1>
-          <p className="text-lg text-white/90 max-w-lg mt-2">Last updated: July 2026</p>
+          <p className="text-base text-white/75 max-w-md mt-4">Last updated: July 2026</p>
         </div>
       </section>
-      <section className="max-w-4xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20 space-y-8 text-lg text-foreground leading-relaxed">
+      <section className="max-w-4xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24 space-y-8 text-lg text-foreground leading-relaxed">
         <h2 className="text-2xl font-bold text-foreground">Shipping Policy</h2>
         <p>We process shipments within 24 hours of booking. Delivery timelines vary by service type and destination. Express air shipments typically arrive in 3–15 days, while ocean freight takes 3–30 days depending on the route.</p>
 

@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Award, MapPin, Package, Users } from 'lucide-react';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const stats = [
   { icon: Package, value: '10K+', label: 'Parcels Delivered' },
-  { icon: MapPin, value: '220+', label: 'Countries Served' },
+  { icon: MapPin, value: '200+', label: 'Countries Served' },
   { icon: Users, value: '5K+', label: 'Happy Customers' },
   { icon: Award, value: '98%', label: 'On-Time Rate' },
 ];
@@ -16,41 +17,42 @@ export function AboutSection(): ReactNode {
   const config = useTenantConfig();
 
   return (
-    <section id="about" className="relative bg-white overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/images/ctaabout.png')] bg-fixed bg-cover bg-center" />
-      <div className="absolute inset-0 bg-[#1a1a2e]/90" />
-      <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left: Image collage */}
+    <section id="about" className="relative overflow-hidden bg-white">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent" />
+      <div className="absolute inset-x-0 top-1 h-24 bg-gradient-to-b from-[#F59E0B]/[0.03] to-transparent" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-5 py-16 sm:px-8 md:px-16 md:py-24 lg:px-24">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="relative">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, x: -24 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="relative h-72 md:h-96 rounded-2xl overflow-hidden"
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="relative h-72 overflow-hidden rounded-2xl md:h-96"
             >
-              <img
-                src="https://images.unsplash.com/photo-1580674285054-bed31e145f59?w=800&q=80"
+              <Image
+                src="/images/about.webp"
                 alt=""
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="absolute -bottom-6 -right-6 bg-[#F59E0B] rounded-2xl p-5 md:p-6 shadow-xl hidden md:block"
+              transition={{ delay: 0.25, duration: 0.5 }}
+              className="absolute -right-4 -bottom-6 hidden rounded-2xl bg-[#F59E0B] p-5 shadow-xl md:block md:p-6"
             >
-              <p className="text-3xl md:text-4xl font-bold text-white">10+</p>
-              <p className="text-white/80 mt-1">Years of Excellence</p>
+              <p className="text-3xl font-bold text-white md:text-4xl">10+</p>
+              <p className="mt-1 text-white/80">Years of Excellence</p>
             </motion.div>
           </div>
 
-          {/* Right: Content */}
           <div className="flex flex-col">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -58,34 +60,35 @@ export function AboutSection(): ReactNode {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
-                <span className="w-6 h-px bg-[#F59E0B]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B]">
+                <span className="h-px w-6 bg-[#F59E0B]" />
                 About Us
               </span>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.15] mb-4">
+              <h2 className="mt-4 text-2xl font-bold leading-[1.15] tracking-tight text-foreground md:text-3xl">
                 {config.about.headline}
               </h2>
-              <p className="text-base text-white/85 leading-relaxed mb-8">{config.about.body}</p>
+              <p className="mt-4 text-base leading-relaxed text-foreground/70">
+                {config.about.body}
+              </p>
             </motion.div>
 
-            {/* Stats row */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+              className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
             >
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="bg-white/10 border border-white/10 rounded-xl p-4 text-center backdrop-blur-sm"
+                  className="rounded-xl border border-border/50 bg-white p-4 text-center shadow-sm"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/20 text-[#F59E0B] flex items-center justify-center mx-auto mb-2">
+                  <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-[#F59E0B]/10 text-[#F59E0B]">
                     <s.icon className="size-4" />
                   </div>
-                  <p className="text-lg font-bold text-white">{s.value}</p>
-                  <p className="text-xs text-white/80 mt-0.5">{s.label}</p>
+                  <p className="text-lg font-bold text-foreground">{s.value}</p>
+                  <p className="mt-0.5 text-xs text-foreground/60">{s.label}</p>
                 </div>
               ))}
             </motion.div>
@@ -95,10 +98,11 @@ export function AboutSection(): ReactNode {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.35, duration: 0.5 }}
+              className="mt-8"
             >
               <a
                 href="/about"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#F59E0B] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#D97706]"
               >
                 {config.about.cta} <ArrowUpRight size={14} />
               </a>

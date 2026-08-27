@@ -77,29 +77,29 @@ export default function OceanFreightPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/heroparcel.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Ocean Freight
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Ocean Freight Services</h1>
-          <p className="text-lg text-white/90 max-w-xl mt-2">
+          <p className="text-base text-white/75 max-w-md mt-4">
             Affordable LCL & FCL shipping from Sri Lanka to Canada, UK, Singapore, and Malaysia.
           </p>
         </div>
       </section>
 
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="max-w-5xl mx-auto space-y-14">
             <div>
               <p className="text-lg text-foreground leading-relaxed mb-10">
                 Shipping large or heavy cargo internationally doesn't have to be complicated or expensive. Ocean freight is the smartest way to move bulk goods across borders. We take care of everything from Sri Lanka's ports to doorsteps across <strong>Canada, UK, Singapore, and Malaysia</strong>.
               </p>
 
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Routes & Transit
               </span>
@@ -139,7 +139,7 @@ export default function OceanFreightPage(): ReactNode {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Container Solutions
               </span>
@@ -241,19 +241,20 @@ export default function OceanFreightPage(): ReactNode {
             </div>
 
             <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-8 md:p-12 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#F59E0B]/0 via-[#F59E0B]/10 to-[#F59E0B]/0 animate-gradient-x opacity-60" />
+              <div className="absolute -top-20 -left-20 w-60 h-60 bg-[#F59E0B]/20 rounded-full blur-3xl" />
+              <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-[#FBBF24]/15 rounded-full blur-3xl" />
               <div className="relative z-10">
                 <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">
-                  Ready to ship <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F59E0B] via-orange-400 to-[#F59E0B] animate-gradient-x bg-[length:200%_auto]">by ocean?</span>
+                  Ready to ship <span className="text-[#F59E0B]">by ocean?</span>
                 </h2>
                 <p className="text-lg text-white/85 max-w-lg mx-auto mb-8">
                   Get an instant quote or speak to our freight experts to plan your next shipment.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <a href="/quote" className="px-6 py-3 rounded-xl bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors inline-flex items-center gap-2">
+                  <a href="/quote" className="px-6 py-3 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors inline-flex items-center gap-2">
                     Get a Quote <ArrowRight size={16} />
                   </a>
-                  <a href="/contact" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                  <a href="/contact" className="px-6 py-3 rounded-full border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
                     Speak to an Expert
                   </a>
                 </div>
@@ -265,16 +266,6 @@ export default function OceanFreightPage(): ReactNode {
       </section>
 
       <FaqSection />
-
-      <style>{`
-        @keyframes gradient-x {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient-x {
-          animation: gradient-x 4s ease infinite;
-        }
-      `}</style>
     </div>
   );
 }

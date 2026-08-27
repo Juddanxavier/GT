@@ -2,7 +2,7 @@
   "name": "gt",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --concurrency=4",
     "predev": "powershell -NoProfile -File scripts/kill-ports.ps1",
     "dev": "turbo run dev",
     "lint": "biome check .",

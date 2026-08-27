@@ -196,7 +196,7 @@ export function PortalNav(): ReactNode {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${navBg}`}
+      className={`fixed top-9 left-0 w-full z-50 transition-all duration-300 ${navBg}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
         <a href="/" className="flex items-center gap-2 ml-2">

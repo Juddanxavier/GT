@@ -119,19 +119,19 @@ export default function AboutPage(): ReactNode {
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               About Us
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white max-w-2xl">
               Connecting Sri Lanka
               <br />
               <span className="text-[#F59E0B]">to the world.</span>
@@ -153,7 +153,7 @@ export default function AboutPage(): ReactNode {
 
       {/* Our Story */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="relative">
               <motion.div
@@ -178,7 +178,7 @@ export default function AboutPage(): ReactNode {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Our Story
                 </span>
@@ -201,7 +201,7 @@ export default function AboutPage(): ReactNode {
       <section className="relative bg-[#1a1a2e] border-t border-white/10 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/images/heroparcel.png')] bg-fixed bg-cover bg-center opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
-        <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {[
               { value: '220+', label: 'Countries Served' },
@@ -227,7 +227,7 @@ export default function AboutPage(): ReactNode {
 
       {/* What We Offer */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               What We Offer
@@ -260,7 +260,7 @@ export default function AboutPage(): ReactNode {
 
       {/* Journey */}
       <section className="relative bg-white">
-        <div className="max-w-5xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Our Journey
@@ -311,10 +311,10 @@ export default function AboutPage(): ReactNode {
       <section className="relative bg-[#1a1a2e] overflow-hidden">
         <div className="absolute inset-0 bg-fixed bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1400&q=80')" }} />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
-        <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 Our Edge
               </span>
@@ -354,7 +354,7 @@ export default function AboutPage(): ReactNode {
 
       {/* Team */}
       <section className="relative bg-surface">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Our Team
@@ -388,8 +388,8 @@ export default function AboutPage(): ReactNode {
       </section>
 
       {/* Testimonials */}
-      <section className="relative bg-surface py-16 md:py-20 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-8 md:px-16 lg:px-24">
+      <section className="relative bg-surface py-16 md:py-24 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Testimonials

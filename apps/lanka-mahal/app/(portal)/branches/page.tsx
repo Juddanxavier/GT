@@ -188,20 +188,20 @@ export default function BranchesPage(): ReactNode {
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/75 to-[#1a1a2e]/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full py-20">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full py-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-2xl"
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Our Branches
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white">
               Find us in <span className="text-[#F59E0B]">8 locations</span>
               <br />
               across Sri Lanka.
@@ -223,9 +223,9 @@ export default function BranchesPage(): ReactNode {
 
       {/* Branches */}
       <section id="branches" className="relative bg-white scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="max-w-2xl mb-12">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Locations
             </span>
@@ -246,9 +246,9 @@ export default function BranchesPage(): ReactNode {
 
       {/* Services */}
       <section className="relative bg-gradient-to-b from-white to-[#fdf8f0]">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="max-w-2xl mb-12">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Branch Services
             </span>
@@ -279,10 +279,10 @@ export default function BranchesPage(): ReactNode {
 
       {/* FAQ */}
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 FAQ
               </span>

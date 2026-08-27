@@ -13,6 +13,7 @@ import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://gajantraders.com'),
+  manifest: '/manifest.json',
   title: {
     template: '%s — Gajan Traders',
     default: 'Gajan Traders — International Courier',
@@ -39,14 +40,19 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'Gajan Traders',
-    images: [{ url: '/images/hero.png' }],
+    images: [{ url: '/images/hero.webp' }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Gajan Traders',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Gajan Traders — International Courier',
     description:
       'Express air freight and ocean freight from India to Europe and 200+ destinations, with doorstep pickup and real-time tracking.',
-    images: ['/images/hero.png'],
+    images: ['/images/hero.webp'],
   },
 };
 

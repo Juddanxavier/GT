@@ -53,15 +53,15 @@ export default function TrackPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover hidden md:block" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20 w-full">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20 w-full">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-6">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Track Shipment
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] text-white max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white max-w-2xl">
               Track your shipment<br />
               <span className="text-[#F59E0B]">in real time.</span>
             </h1>
@@ -70,7 +70,7 @@ export default function TrackPage(): ReactNode {
             </p>
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg">
               <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking number" className="flex-1 min-w-0 px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base sm:text-lg placeholder:text-white/70 outline-none focus:ring-2 focus:ring-[#F59E0B]/40 focus:border-[#F59E0B] transition-all" />
-              <button type="submit" className="w-full sm:w-auto justify-center px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-[#F59E0B] text-white text-base sm:text-lg font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
+              <button type="submit" className="w-full sm:w-auto justify-center px-5 py-3 sm:px-6 sm:py-3.5 rounded-full bg-[#F59E0B] text-white text-base sm:text-lg font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer shrink-0">
                 <Search size={18} /> Track
               </button>
             </form>
@@ -80,26 +80,26 @@ export default function TrackPage(): ReactNode {
       </section>
 
       <div ref={resultsRef} className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16">
           <div className="grid md:grid-cols-[280px_1fr] gap-8 md:gap-12">
             <aside className="space-y-6 order-last md:order-first">
               <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Track Another</h3>
                 <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
                   <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Enter tracking no." className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B]" />
-                  <button type="submit" className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"><Search size={16} /></button>
+                  <button type="submit" className="w-full sm:w-auto justify-center px-3 py-2 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer"><Search size={16} /></button>
                 </form>
               </div>
               <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Quick Links</h3>
                 <div className="space-y-1">
-                  <a href="/quote" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#8B5CF6]" /> Get a Quote</a>
-                  <a href="/contact" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#10B981]" /> Contact Support</a>
+                  <a href="/quote" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#F59E0B]/70" /> Get a Quote</a>
+                  <a href="/contact" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#F59E0B]/70" /> Contact Support</a>
                   <a href="/branches" className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"><span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Our Branches</a>
                 </div>
               </div>
               <div className="rounded-2xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
-                <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
+                <div className="w-10 h-10 rounded-full bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
                 <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
                 <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Mon–Sat, 9 AM – 9 PM.</p>
                 <a href="tel:+919876543210" className="text-sm font-semibold text-[#F59E0B] hover:underline">+91 98765 43210</a>
@@ -173,10 +173,10 @@ export default function TrackPage(): ReactNode {
       </div>
 
       <section className="relative bg-white border-t border-border">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                 <span className="w-6 h-px bg-[#F59E0B]" />
                 FAQ
               </span>

@@ -29,20 +29,20 @@ export default function ProhibitedPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/about.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Restricted Items
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Prohibited Items</h1>
-          <p className="text-lg text-white/90 max-w-lg mt-2">Certain items cannot be shipped for safety, legal, or regulatory reasons.</p>
+          <p className="text-base text-white/75 max-w-md mt-4">Certain items cannot be shipped for safety, legal, or regulatory reasons.</p>
         </div>
       </section>
 
       <section className="relative bg-white">
-        <div className="max-w-6xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Quick overview <span className="text-[#F59E0B]">by category</span>
@@ -104,7 +104,7 @@ export default function ProhibitedPage(): ReactNode {
       </section>
 
       <section className="relative bg-surface border-t border-border">
-        <div className="max-w-5xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-sm font-semibold text-[#F59E0B] mb-4">
               <AlertTriangle size={14} />

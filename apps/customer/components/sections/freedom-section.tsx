@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Globe, MapPin, Package, Phone } from 'lucide-react';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
@@ -49,13 +50,13 @@ export function FreedomSection(): ReactNode {
             <div className="relative">
               <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-[#F94735]/20" />
               <div className="flex flex-col gap-8">
-                {steps.map((s, i) => (
+                {steps.map((s) => (
                   <motion.div
-                    key={i}
+                    key={s.title}
                     initial={{ opacity: 0, x: -16 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.15, duration: 0.4 }}
+                    transition={{ delay: steps.indexOf(s) * 0.15, duration: 0.4 }}
                     className="relative flex gap-6"
                   >
                     <div className="relative z-10 flex items-center justify-center w-11 h-11 rounded-full bg-[#F94735] text-white shrink-0 shadow-md">
@@ -64,7 +65,7 @@ export function FreedomSection(): ReactNode {
                     <div className="pt-1.5">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-bold text-[#F94735] tracking-wider">
-                          STEP 0{i + 1}
+                          STEP 0{steps.indexOf(s) + 1}
                         </span>
                       </div>
                       <p className="font-semibold text-foreground text-base">{s.title}</p>
@@ -79,9 +80,11 @@ export function FreedomSection(): ReactNode {
           </div>
 
           <div className="flex items-center justify-center order-first lg:order-last">
-            <img
-              src="/images/gtman.png"
+            <Image
+              src="/images/cta.webp"
               alt=""
+              width={1024}
+              height={1536}
               className="w-full max-w-[clamp(320px,40vw,600px)] h-auto object-contain"
             />
           </div>

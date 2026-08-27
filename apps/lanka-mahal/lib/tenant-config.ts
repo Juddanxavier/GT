@@ -60,7 +60,7 @@ export const tenantConfig: TenantCopy = {
     badge: 'International Courier Services — Sri Lanka',
     headline: ['Ship from Sri Lanka', 'to Anywhere in the World'],
     description:
-      'Lanka Mahal ships parcels from Sri Lanka to 200+ countries with door-to-door pickup, real-time tracking, and customs clearance support.',
+      'Lanka Mahal ships parcels from Sri Lanka to 200+ countries with pickup within 3 km of our offices, real-time tracking, and customs clearance support.',
     ctaTrack: 'Track Your Shipment',
     trust: 'Serving exporters, students & Sri Lankans abroad since 2015.',
   },
@@ -70,11 +70,11 @@ export const tenantConfig: TenantCopy = {
   },
   services: {
     title: 'Quick Services',
-    subtitle: 'Track your shipment or schedule a pickup in under a minute.',
+    subtitle: 'Track your shipment or schedule a pickup near you.',
   },
   about: {
     headline: 'Your trusted logistics partner, delivering across 200+ countries.',
-    body: 'From door-to-door pickup to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
+    body: 'From doorstep pickup near our offices to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
     cta: 'Learn About Us',
   },
   cta: {

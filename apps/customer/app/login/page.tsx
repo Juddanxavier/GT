@@ -1,13 +1,13 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { z } from 'zod';
-import { ErrorBoundary } from '@/components/error-boundary';
 import { Eye, EyeOff } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import { AuthLayout } from '@/components/auth-layout';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { authClient } from '@/lib/auth-client';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const loginSchema = z.object({
@@ -31,7 +31,8 @@ function LoginForm(): ReactNode {
   function friendlyError(msg: string): string {
     if (!msg) return 'Something went wrong. Try again.';
     if (msg.includes('Too many requests')) return 'Too many attempts. Please wait a moment.';
-    if (msg.includes('Invalid email or password')) return 'The email or password you entered is incorrect.';
+    if (msg.includes('Invalid email or password'))
+      return 'The email or password you entered is incorrect.';
     return msg;
   }
 
@@ -41,7 +42,9 @@ function LoginForm(): ReactNode {
     if (honeypot) return;
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
-      setFieldErrors(Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])));
+      setFieldErrors(
+        Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])),
+      );
       return;
     }
     setFieldErrors({});
@@ -61,7 +64,19 @@ function LoginForm(): ReactNode {
     <AuthLayout config={config} title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
+          <svg
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="shrink-0"
+          >
+            <circle cx="8" cy="8" r="7" />
+            <path d="M8 5v3M8 10.5v.5" />
+          </svg>
           {submitError}
         </div>
       )}
@@ -69,13 +84,24 @@ function LoginForm(): ReactNode {
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
-          <input id="hp-field" name="hp_verify" type="text" tabIndex={-1} autoComplete="new-password" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+          <input
+            id="hp-field"
+            name="hp_verify"
+            type="text"
+            tabIndex={-1}
+            autoComplete="new-password"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Email</label>
+          <label htmlFor="login-email" className="font-medium text-foreground/80">
+            Email
+          </label>
           <input
             type="email"
+            id="login-email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
@@ -86,10 +112,13 @@ function LoginForm(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Password</label>
+          <label htmlFor="login-password" className="font-medium text-foreground/80">
+            Password
+          </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
+              id="login-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
@@ -110,10 +139,18 @@ function LoginForm(): ReactNode {
 
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-foreground/60 cursor-pointer select-none">
-            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="rounded border-border accent-[#F94735]" />
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="rounded border-border accent-[#F94735]"
+            />
             Remember me
           </label>
-          <a href="/forgot-password" className="text-foreground/60 hover:text-[#F94735] underline underline-offset-2 transition-colors">
+          <a
+            href="/forgot-password"
+            className="text-foreground/60 hover:text-[#F94735] underline underline-offset-2 transition-colors"
+          >
             Forgot password?
           </a>
         </div>
@@ -128,7 +165,10 @@ function LoginForm(): ReactNode {
 
         <p className="text-center text-foreground/60">
           No account?{' '}
-          <a href="/register" className="font-semibold text-[#F94735] hover:text-[#e03e2d] underline underline-offset-2 transition-colors">
+          <a
+            href="/register"
+            className="font-semibold text-[#F94735] hover:text-[#e03e2d] underline underline-offset-2 transition-colors"
+          >
             Create one
           </a>
         </p>
@@ -151,5 +191,9 @@ function LoginPageGuard(): ReactNode {
 }
 
 export default function LoginPage(): ReactNode {
-  return <ErrorBoundary><LoginPageGuard /></ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      <LoginPageGuard />
+    </ErrorBoundary>
+  );
 }

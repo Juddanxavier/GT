@@ -1,17 +1,26 @@
-export type TenantTheme = 'emerald';
-
 export interface TenantCopy {
   name: string;
   shortName: string;
   title: string;
   tagline: string;
-  theme: TenantTheme;
   originCountry: string;
   originBlurb: string;
   region: string;
   stats: {
     countries: string;
   };
+  contact: {
+    phone: string;
+    phoneHref: string;
+    email: string;
+    city: string;
+  };
+  offices: Array<{
+    name: string;
+    address: string;
+    hours: string;
+    phones: string;
+  }>;
   hero: {
     badge: string;
     headline: string[];
@@ -42,6 +51,22 @@ export interface TenantCopy {
     role: string;
     text: string;
   }>;
+  currency: {
+    code: string;
+    symbol: string;
+    locale: string;
+  };
+  phone: {
+    prefix: string;
+    countryCode: string;
+    digits: number;
+    placeholder: string;
+  };
+  postalCode: {
+    label: string;
+    pattern: RegExp;
+    digits: number;
+  };
 }
 
 export const tenantConfig: TenantCopy = {
@@ -49,20 +74,39 @@ export const tenantConfig: TenantCopy = {
   shortName: 'GT',
   title: 'Gajan Traders — International Courier',
   tagline: 'Fast, Secure & Worldwide Delivery',
-  theme: 'emerald',
   originCountry: 'India',
   originBlurb: "India's trusted international courier",
   region: 'South Asia',
   stats: {
     countries: '220+',
   },
+  contact: {
+    phone: '+91 98765 43210',
+    phoneHref: 'tel:+919876543210',
+    email: 'support@gajantraders.com',
+    city: 'Mumbai, India',
+  },
+  offices: [
+    {
+      name: 'Head Office',
+      address: '137/70, L.D.G Road, Little Mount, Saidapet, Chennai - 600 015',
+      hours: 'Mon–Sat, 9 AM – 9 PM',
+      phones: '7200158309 / 90033 67790',
+    },
+    {
+      name: 'Annai Eximm Branch',
+      address: '104/246, Adam Sahib Street, Royapuram, Chennai - 600 013',
+      hours: 'Mon–Sat, 9 AM – 8 PM',
+      phones: '7708152719 / 95008 11847',
+    },
+  ],
   hero: {
-    badge: 'International Courier Services',
-    headline: ['Fast, Secure &', 'Worldwide Delivery'],
+    badge: 'Global Shipping Made Simple',
+    headline: ['Send your parcel anywhere', 'in the world'],
     description:
-      'Gajan Traders ships parcels from India to 200+ countries with door-to-door pickup, real-time tracking, and customs clearance support.',
-    ctaTrack: 'Track Your Shipment',
-    trust: 'Serving exporters, students & NRIs across India since 2010.',
+      'Pickup within 3 km of our offices, real-time tracking, and customs clearance for shipments from India to 220+ destinations. Ship with confidence.',
+    ctaTrack: 'Send a Parcel',
+    trust: 'Trusted by exporters, students & NRIs since 2016',
   },
   howItWorks: {
     title: 'How to Send a Parcel Abroad in 4 Simple Steps',
@@ -70,11 +114,11 @@ export const tenantConfig: TenantCopy = {
   },
   services: {
     title: 'Quick Services',
-    subtitle: 'Track, quote, or schedule a pickup in under a minute.',
+    subtitle: 'Track, quote, or schedule a pickup near you.',
   },
   about: {
     headline: 'Your trusted logistics partner, delivering across 200+ countries.',
-    body: 'From door-to-door pickup to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
+    body: 'From doorstep pickup near our offices to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
     cta: 'Learn About Us',
   },
   cta: {
@@ -129,4 +173,20 @@ export const tenantConfig: TenantCopy = {
       text: 'Fragile items like electronics need careful handling. Gajan Traders double-boxes everything and nothing has arrived broken yet.',
     },
   ],
+  currency: {
+    code: 'INR',
+    symbol: '₹',
+    locale: 'en-IN',
+  },
+  phone: {
+    prefix: '+91',
+    countryCode: '91',
+    digits: 10,
+    placeholder: '+91 9876543210',
+  },
+  postalCode: {
+    label: 'PIN Code',
+    pattern: /^\d{6}$/,
+    digits: 6,
+  },
 };

@@ -9,6 +9,7 @@ const manrope = Manrope({
 });
 
 import { Footer } from '@/components/footer';
+import { MarqueeBar } from '@/components/marquee-bar';
 import { PortalNav } from '@/components/portal-nav';
 import { Providers } from '@/components/providers';
 
@@ -66,6 +67,7 @@ export default async function RootLayout({
         style={{ fontFamily: 'var(--font-manrope)' }}
       >
         <Providers>
+          <MarqueeBar />
           <PortalNav />
           {children}
           <Footer />

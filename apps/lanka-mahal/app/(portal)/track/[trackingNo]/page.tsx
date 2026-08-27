@@ -14,16 +14,16 @@ function TrackDetailPageInner(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover hidden md:block" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
               <span className="w-6 h-px bg-[#F59E0B]" />
               Tracking
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Track Your Shipment</h1>
-            <p className="text-lg text-white/90 max-w-lg mt-2">Real-time updates for your shipment from pickup to delivery.</p>
+            <p className="text-base text-white/75 max-w-md mt-4">Real-time updates for your shipment from pickup to delivery.</p>
           </motion.div>
         </div>
       </section>

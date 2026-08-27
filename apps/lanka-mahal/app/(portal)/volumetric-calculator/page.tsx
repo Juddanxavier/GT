@@ -37,20 +37,20 @@ export default function VolumetricCalculatorPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <img src="/images/about.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e] via-[#1a1a2e]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
         </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
             <span className="w-6 h-px bg-[#F59E0B]" />
             Useful Tools
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Volumetric Calculator</h1>
-          <p className="text-lg text-white/90 max-w-lg mt-2">Calculate dimensional weight for your shipments using IATA standards.</p>
+          <p className="text-base text-white/75 max-w-md mt-4">Calculate dimensional weight for your shipments using IATA standards.</p>
         </div>
       </section>
 
       <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid md:grid-cols-[1fr_280px] gap-8 md:gap-12">
             <div className="space-y-12">
               <div>
@@ -87,7 +87,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                     ))}
                   </div>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={calculate} className="px-6 py-3 rounded-xl bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer">
+                    <button type="button" onClick={calculate} className="px-6 py-3 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors flex items-center gap-2 cursor-pointer">
                       <Weight size={16} /> Calculate
                     </button>
                     <button type="button" onClick={clearAll} className="px-5 py-3 rounded-xl border border-border text-foreground/85 text-base font-semibold hover:text-foreground hover:bg-surface/50 transition-colors flex items-center gap-2 cursor-pointer">
@@ -135,7 +135,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   What is Volumetric Weight?
                 </span>
@@ -148,7 +148,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   How to Calculate
                 </span>
@@ -176,7 +176,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                     Volumetric Weight (kg) = (Length &times; Width &times; Height) &divide; 5000
                   </p>
                 </div>
-                <div className="rounded-2xl bg-amber-50 border border-amber-200 p-6">
+                <div className="rounded-2xl bg-[#F59E0B]/5 border border-[#F59E0B]/20 p-6">
                   <p className="text-base font-semibold text-amber-800 mb-1">Example:</p>
                   <p className="text-lg text-amber-700 font-mono">50 &times; 40 &times; 30 &divide; 5000 = <strong>12 kg</strong></p>
                   <p className="text-base text-amber-600/70 mt-2">
@@ -186,7 +186,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Chargeable Weight
                 </span>
@@ -197,11 +197,11 @@ export default function VolumetricCalculatorPage(): ReactNode {
                   The <strong>Chargeable Weight</strong> is whichever is greater:
                 </p>
                 <div className="flex flex-wrap gap-4 mb-6">
-                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+                  <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20">
                     <Scale size={18} className="text-[#F59E0B]" />
                     <span className="text-base font-medium text-[#B45309]">Actual Weight</span>
                   </div>
-                  <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+                  <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20">
                     <Package size={18} className="text-[#F59E0B]" />
                     <span className="text-base font-medium text-[#B45309]">Volumetric Weight</span>
                   </div>
@@ -233,7 +233,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   How to Measure
                 </span>
@@ -257,7 +257,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Why Volumetric Weight?
                 </span>
@@ -281,7 +281,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
                   <span className="w-6 h-px bg-[#F59E0B]" />
                   Tips
                 </span>
@@ -315,7 +315,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                   <a href="/branches" className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#F59E0B] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F59E0B]/5"><Building2 size={16} className="shrink-0" /> Our Branches</a>
                 </div>
               </div>
-              <div className="rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
+              <div className="rounded-full bg-[#F59E0B]/5 border border-[#F59E0B]/10 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-3"><HelpCircle size={18} /></div>
                 <h3 className="text-base font-bold text-foreground mb-1">Need help?</h3>
                 <p className="text-sm text-foreground/80 leading-relaxed mb-3">Our support team is available Mon–Sat, 9 AM – 9 PM.</p>

@@ -4,9 +4,9 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { PublicLanding } from '@/components/public-landing';
 
 export const metadata: Metadata = {
-  title: 'Parcels to Europe & Worldwide from India',
+  title: 'Track Your Parcel — Live Shipment Status',
   description:
-    'Send parcels to Europe and 200+ destinations worldwide with Gajan Traders. Express air freight, ocean freight, doorstep pickup and real-time tracking.',
+    'Track your Gajan Traders shipment in real time. Enter your tracking number for instant updates on parcels from India to 220+ countries worldwide.',
 };
 
 export default function HomePage(): ReactNode {

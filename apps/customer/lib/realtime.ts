@@ -1,7 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 import { getQueryClient } from '@/lib/query-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 let socket: Socket | null = null;
 
@@ -21,9 +22,12 @@ export function connectSocket(tenantId: string): Socket {
   });
 
   // ponytail: customer toast UI not implemented yet — events are logged to console
-  socket.on('tracking:updated', (data: { shipmentId: string; trackingNo: string; status: string }) => {
-    console.log('[realtime] tracking:updated', data);
-  });
+  socket.on(
+    'tracking:updated',
+    (data: { shipmentId: string; trackingNo: string; status: string }) => {
+      console.log('[realtime] tracking:updated', data);
+    },
+  );
 
   // In-app notifications: refresh bell badge + list live
   socket.on('notification:new', () => {

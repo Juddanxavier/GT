@@ -41,7 +41,6 @@ export function InfrastructureSection(): ReactNode {
             seamlessly.
           </p>
         </div>
-
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f) => (
             <div

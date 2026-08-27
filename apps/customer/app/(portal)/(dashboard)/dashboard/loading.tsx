@@ -12,10 +12,14 @@ export default function DashboardLoading(): ReactNode {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6"><div className="h-20" /></div>
+          <div key={i} className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6">
+            <div className="h-20" />
+          </div>
         ))}
       </div>
-      <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6"><div className="h-48" /></div>
+      <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6">
+        <div className="h-48" />
+      </div>
     </div>
   );
 }

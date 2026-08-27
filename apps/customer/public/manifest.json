@@ -1,0 +1,19 @@
+{
+  "name": "Gajan Traders",
+  "short_name": "GT",
+  "description": "Track and manage your international shipments with Gajan Traders",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#F94735",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/hero.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "logistics"]
+}
