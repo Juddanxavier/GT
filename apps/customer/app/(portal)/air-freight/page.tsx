@@ -26,9 +26,7 @@ const plans = [
     desc: 'Our fastest express service for time-sensitive shipments. Direct flight operations from major airports deliver your parcel worldwide with the shortest possible transit time.',
     bestFor: 'Urgent documents, gifts, time-sensitive shipments',
     benefit: 'Direct air routing — fastest international delivery',
-    color: 'text-orange-600',
-    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
-    tagColor: 'bg-[#F94735]',
+    accent: '#F94735',
   },
   {
     icon: Rocket,
@@ -37,9 +35,7 @@ const plans = [
     desc: 'A reliable express option for everyday shipments — consistent worldwide delivery without the premium price tag of urgent services.',
     bestFor: 'NRI care packages, regular personal parcels',
     benefit: 'Reliable delivery at affordable rates',
-    color: 'text-blue-600',
-    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
-    tagColor: 'bg-[#F94735]',
+    accent: '#3B82F6',
   },
   {
     icon: Globe,
@@ -48,9 +44,7 @@ const plans = [
     desc: 'A region-focused express service for shipments to the Middle East, Africa, Europe, and Asia — with lane-optimised routing for better cost and reliable delivery.',
     bestFor: 'Shipments to EMEA and Asian corridors',
     benefit: 'Region-specific routing, better rates',
-    color: 'text-purple-600',
-    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
-    tagColor: 'bg-[#F94735]',
+    accent: '#8B5CF6',
   },
   {
     icon: Wallet,
@@ -59,9 +53,7 @@ const plans = [
     desc: 'Low-cost express delivery for everyday parcels, student shipments, and personal packages — fast shipping at the most affordable rates.',
     bestFor: 'Students, first-time shippers, bulk parcels',
     benefit: 'Lowest international courier charges',
-    color: 'text-emerald-600',
-    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
-    tagColor: 'bg-[#F94735]',
+    accent: '#10B981',
   },
   {
     icon: Truck,
@@ -70,9 +62,7 @@ const plans = [
     desc: 'Budget-friendly shipping for non-urgent parcels. Reliable delivery with full tracking at the most economical rates.',
     bestFor: 'Non-urgent parcels, bulk shipments, cost-conscious shippers',
     benefit: 'Most affordable option with full tracking',
-    color: 'text-teal-600',
-    bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
-    tagColor: 'bg-[#F94735]',
+    accent: '#F59E0B',
   },
 ];
 
@@ -195,7 +185,7 @@ export default function AirFreightPage(): ReactNode {
                   includes real-time tracking, secure handling, doorstep pickup, and 24/7 support.
                 </p>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {plans.map((plan, i) => (
                     <motion.div
                       key={plan.title}
@@ -203,29 +193,31 @@ export default function AirFreightPage(): ReactNode {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: i * 0.08, duration: 0.4 }}
-                      className={`rounded-2xl border p-5 flex flex-col ${plan.bg}`}
+                      className="rounded-2xl border border-border/50 bg-white p-6 flex flex-col"
                     >
                       <div
-                        className="w-10 h-10 rounded-xl bg-[#F94735]/10 flex items-center justify-center mb-3 text-[#F94735]"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                        style={{ backgroundColor: `${plan.accent}15`, color: plan.accent }}
                       >
                         <plan.icon size={20} />
                       </div>
                       <span
-                        className={`text-xs font-bold uppercase tracking-wider text-white px-2 py-0.5 rounded-full ${plan.tagColor} w-fit mb-2`}
+                        className="text-xs font-bold uppercase tracking-wider text-white px-2.5 py-1 rounded-full w-fit mb-3"
+                        style={{ backgroundColor: plan.accent }}
                       >
                         {plan.tag}
                       </span>
                       <h3 className="text-base font-bold text-foreground mb-1.5">{plan.title}</h3>
-                      <p className=" text-foreground/85 leading-relaxed mb-3 flex-1">{plan.desc}</p>
-                      <div className="space-y-1.5 mb-3">
-                        <div className="flex items-start gap-1.5 text-xs text-foreground/80">
-                          <CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" />
+                      <p className="text-sm text-foreground/75 leading-relaxed mb-4 flex-1">{plan.desc}</p>
+                      <div className="space-y-1.5 mb-4">
+                        <div className="flex items-start gap-1.5 text-xs text-foreground/70">
+                          <CheckCircle size={12} className="shrink-0 mt-0.5" style={{ color: plan.accent }} />
                           <span>
                             <strong>Best for:</strong> {plan.bestFor}
                           </span>
                         </div>
-                        <div className="flex items-start gap-1.5 text-xs text-foreground/80">
-                          <CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-1.5 text-xs text-foreground/70">
+                          <CheckCircle size={12} className="shrink-0 mt-0.5" style={{ color: plan.accent }} />
                           <span>
                             <strong>Benefit:</strong> {plan.benefit}
                           </span>
@@ -233,7 +225,8 @@ export default function AirFreightPage(): ReactNode {
                       </div>
                       <a
                         href="/quote"
-                        className="mt-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F94735] text-white text-xs font-bold hover:bg-[#D83220] transition-colors w-fit"
+                        className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-bold transition-colors w-fit hover:opacity-90"
+                        style={{ backgroundColor: plan.accent }}
                       >
                         Check Price <ArrowRight size={12} />
                       </a>

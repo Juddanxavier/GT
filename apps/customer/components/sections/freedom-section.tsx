@@ -9,8 +9,8 @@ import { useTenantConfig } from '@/lib/use-tenant-config';
 const steps = [
   {
     icon: <Phone size={18} />,
-    title: 'Book Pickup',
-    desc: 'Schedule your pickup easily through our app or web.',
+    title: 'Book',
+    desc: 'Call us or walk in — book your pickup by phone or in person.',
   },
   {
     icon: <Package size={18} />,
@@ -81,7 +81,7 @@ export function FreedomSection(): ReactNode {
 
           <div className="flex items-center justify-center order-first lg:order-last">
             <Image
-              src="/images/cta.webp"
+              src="/images/gtman.webp"
               alt=""
               width={1024}
               height={1536}

@@ -27,14 +27,12 @@ const branches = [
     phone: ['7200158309', '90033 67790'],
     landline: '044-22201719',
     hours: 'Mon–Sat, 9 AM – 9 PM',
-    image: '/images/story.webp',
   },
   {
     name: 'Annai Eximm — Branch Office',
     address: ['C/o No:104/246, Adam Sahib Street,', 'Royapuram,', 'Chennai — 600 013.'],
     phone: ['7708152719', '95008 11847'],
     hours: 'Mon–Sat, 9 AM – 8 PM',
-    image: '/images/containers.webp',
   },
 ];
 
@@ -158,15 +156,6 @@ export default function BranchesPage(): ReactNode {
                 transition={{ delay: i * 0.1, duration: 0.4 }}
                 className="rounded-2xl overflow-hidden border border-border bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
               >
-                <div className="h-56 overflow-hidden relative">
-                  <Image
-                    src={b.image}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover"
-                  />
-                </div>
                 <div className="p-7">
                   <div className="w-11 h-11 rounded-xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mb-4">
                     <Building2 className="size-5" />
@@ -209,6 +198,14 @@ export default function BranchesPage(): ReactNode {
                     <Clock size={15} className="text-[#F94735] shrink-0" />
                     <span className="text-lg text-foreground/90">{b.hours}</span>
                   </div>
+
+                  <a
+                    href={`tel:${b.phone[0]}`}
+                    className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#F94735] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D83220]"
+                  >
+                    <Phone size={14} />
+                    Call Branch
+                  </a>
                 </div>
               </motion.div>
             ))}
