@@ -12,11 +12,11 @@ export function TestimonialsSectionV2(): ReactNode {
     <section className="relative bg-[#FAFAF7] py-24 overflow-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-16">
-          <div className="border border-[#F94735]/20 py-1 px-4 rounded-full text-xs font-semibold tracking-wide uppercase text-[#C22B18] bg-[#F94735]/10">
+          <div className="border border-[#E8621A]/20 py-1 px-4 rounded-full text-xs font-semibold tracking-wide uppercase text-[#B8441A] bg-[#E8621A]/10">
             Testimonials
           </div>
           <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-            What <span className="text-[#F94735]">our users say</span>
+            What <span className="text-[#E8621A]">our users say</span>
           </h2>
           <p className="mt-5 text-foreground/70 text-base leading-relaxed max-w-sm">
             Trusted by thousands of shippers worldwide.
@@ -42,7 +42,7 @@ export function TestimonialsSectionV2(): ReactNode {
               </div>
               <p className="text-foreground text-base leading-relaxed mb-6">{t.text}</p>
               <div className="flex items-center gap-3 pt-5 border-t border-border/60">
-                <div className="w-10 h-10 rounded-full bg-[#F94735] flex items-center justify-center text-base font-semibold text-white">
+                <div className="w-10 h-10 rounded-full bg-[#E8621A] flex items-center justify-center text-base font-semibold text-white">
                   {t.name.charAt(0)}
                 </div>
                 <div>

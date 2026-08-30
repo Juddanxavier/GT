@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { motion } from 'framer-motion';
 import { Globe, MapPin, Package, Phone } from 'lucide-react';
@@ -37,7 +37,7 @@ export function FreedomSection(): ReactNode {
       <div className="mx-auto max-w-6xl px-4 py-20 sm:py-24">
         <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr] items-center gap-12 lg:gap-16">
           <div className="flex flex-col order-last lg:order-first w-full">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-4">
               How It Works
             </p>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight leading-[1.15]">
@@ -48,7 +48,7 @@ export function FreedomSection(): ReactNode {
             </p>
 
             <div className="relative">
-              <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-[#F94735]/20" />
+              <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-[#E8621A]/20" />
               <div className="flex flex-col gap-8">
                 {steps.map((s) => (
                   <motion.div
@@ -59,12 +59,12 @@ export function FreedomSection(): ReactNode {
                     transition={{ delay: steps.indexOf(s) * 0.15, duration: 0.4 }}
                     className="relative flex gap-6"
                   >
-                    <div className="relative z-10 flex items-center justify-center w-11 h-11 rounded-full bg-[#F94735] text-white shrink-0 shadow-md">
+                    <div className="relative z-10 flex items-center justify-center w-11 h-11 rounded-full bg-[#E8621A] text-white shrink-0 shadow-md">
                       {s.icon}
                     </div>
                     <div className="pt-1.5">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-[#F94735] tracking-wider">
+                        <span className="text-xs font-bold text-[#E8621A] tracking-wider">
                           STEP 0{steps.indexOf(s) + 1}
                         </span>
                       </div>

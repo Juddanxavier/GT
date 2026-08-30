@@ -13,13 +13,13 @@ const MESSAGES = [
 export function MarqueeBar(): ReactNode {
   const content = MESSAGES.map((m, i) => (
     <span key={i} className="mx-8 inline-flex shrink-0 items-center gap-2 text-xs font-medium tracking-wide text-white">
-      <span className="h-1 w-1 rounded-full bg-[#F94735]" />
+      <span className="h-1 w-1 rounded-full bg-[#E8621A]" />
       {m}
     </span>
   ));
 
   return (
-    <div className="fixed top-0 left-0 z-[60] w-full h-9 flex items-center overflow-hidden bg-[#1a1a2e]/95 backdrop-blur-md">
+    <div className="fixed top-0 left-0 z-[60] w-full h-9 flex items-center overflow-hidden bg-[#1a1a2e]/95 backdrop-blur-md border-t-4 border-[#E8621A]">
       <div className="marquee-track flex whitespace-nowrap">
         {content}
         {content}

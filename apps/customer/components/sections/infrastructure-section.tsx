@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Clock, Globe, Headphones, Scan, Shield, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -29,12 +29,12 @@ export function InfrastructureSection(): ReactNode {
     <section className="relative bg-surface">
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="max-w-2xl mx-auto text-center mb-14">
-          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-            <span className="w-6 h-px bg-[#F94735]" />
+          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-4">
+            <span className="w-6 h-px bg-[#E8621A]" />
             Why Choose Us
           </span>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15]">
-            The foundation for <span className="text-[#F94735]">reliable shipping.</span>
+            The foundation for <span className="text-[#E8621A]">reliable shipping.</span>
           </h2>
           <p className="mt-4 text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
             We combine technology, infrastructure, and expertise to move parcels across borders
@@ -47,7 +47,7 @@ export function InfrastructureSection(): ReactNode {
               key={f.title}
               className="rounded-2xl bg-white border border-border p-7 hover:shadow-md transition-shadow"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mb-5">
+              <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-5">
                 <f.icon className="size-5" />
               </div>
               <h3 className="text-base font-semibold text-foreground mb-1.5">{f.title}</h3>

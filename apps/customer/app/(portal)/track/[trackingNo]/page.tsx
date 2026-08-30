@@ -21,7 +21,8 @@ function TrackDetailPageInner(): ReactNode {
             sizes="100vw"
             className="object-cover hidden md:block"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
         <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
           <motion.div
@@ -33,10 +34,10 @@ function TrackDetailPageInner(): ReactNode {
               <span className="w-6 h-px bg-[#F94735]" />
               Tracking
             </span>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
               Track Your Shipment
             </h1>
-            <p className="text-base text-white/75 max-w-md mt-4">
+            <p className="text-base text-white/65 max-w-md mt-4">
               Real-time updates for your shipment from pickup to delivery.
             </p>
           </motion.div>

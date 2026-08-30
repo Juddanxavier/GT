@@ -22,10 +22,10 @@ export default function NotFound(): ReactNode {
       </div>
 
       <div className="relative z-10 text-center px-6 py-24">
-        <div className="w-16 h-16 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mx-auto mb-8">
+        <div className="w-16 h-16 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-8">
           <PackageSearch size={30} />
         </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#F94735] mb-4">404</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#E8621A] mb-4">404</p>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white max-w-lg mx-auto leading-[1.15]">
           This page seems to have lost its way.
         </h1>
@@ -36,7 +36,7 @@ export default function NotFound(): ReactNode {
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <a
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F94735] hover:bg-[#D83220] text-white text-sm font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] hover:bg-[#C45016] text-white text-sm font-semibold transition-colors"
           >
             <ArrowLeft size={14} /> Back to Home
           </a>

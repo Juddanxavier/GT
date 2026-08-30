@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, Chip, Pagination, Skeleton } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
@@ -82,7 +82,7 @@ function MyInvoicesContent(): ReactNode {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
           <Receipt size={24} />
         </div>
         <div>
@@ -98,7 +98,7 @@ function MyInvoicesContent(): ReactNode {
             size="sm"
             variant={statusFilter === f.key ? 'primary' : 'ghost'}
             onPress={() => handleStatusFilter(f.key)}
-            className={statusFilter === f.key ? 'bg-[#F94735] text-white' : ''}
+            className={statusFilter === f.key ? 'bg-[#E8621A] text-white' : ''}
           >
             {f.label}
           </Button>

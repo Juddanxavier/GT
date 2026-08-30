@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, Input, InputGroup, Label, TextField } from '@heroui/react';
 import {
@@ -154,7 +154,7 @@ function ProfilePageContent(): ReactNode {
   return (
     <div className="max-w-lg mx-auto space-y-8">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
           <User size={24} />
         </div>
         <div>
@@ -164,7 +164,7 @@ function ProfilePageContent(): ReactNode {
       </div>
 
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F94735]/10 text-[#F94735] mb-4 shadow-sm">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#E8621A]/10 text-[#E8621A] mb-4 shadow-sm">
           <User size={30} />
         </div>
         <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
@@ -206,14 +206,14 @@ function ProfilePageContent(): ReactNode {
 
         <div className="border-t border-foreground/5 px-6 py-4 space-y-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <Building2 size={14} className="text-[#F94735]" />
+            <Building2 size={14} className="text-[#E8621A]" />
             <span className="font-semibold text-foreground">Branch &amp; Address</span>
           </div>
 
           <select
             value={branchId}
             onChange={(e) => setBranchId(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10 bg-white text-sm"
+            className="w-full px-4 py-2.5 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10 bg-white text-sm"
           >
             <option value="">Select your nearest branch</option>
             {branches.map((b) => (
@@ -229,7 +229,7 @@ function ProfilePageContent(): ReactNode {
               value={street}
               onChange={(e) => setStreet(e.target.value)}
               placeholder="Street / Area"
-              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10 bg-white text-sm"
+              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10 bg-white text-sm"
             />
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -237,14 +237,14 @@ function ProfilePageContent(): ReactNode {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="City"
-                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10 bg-white text-sm"
+                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10 bg-white text-sm"
               />
               <input
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 placeholder="State"
-                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10 bg-white text-sm"
+                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10 bg-white text-sm"
               />
             </div>
             <input
@@ -252,7 +252,7 @@ function ProfilePageContent(): ReactNode {
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
               placeholder={config.postalCode.label}
-              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10 bg-white text-sm"
+              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10 bg-white text-sm"
             />
           </div>
         </div>
@@ -323,7 +323,7 @@ function ProfilePageContent(): ReactNode {
             type="submit"
             isDisabled={savePending || !hasChanges}
             isPending={savePending}
-            className="bg-[#F94735] text-white px-6"
+            className="bg-[#E8621A] text-white px-6"
           >
             Save Changes
           </Button>

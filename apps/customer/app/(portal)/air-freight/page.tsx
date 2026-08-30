@@ -26,7 +26,7 @@ const plans = [
     desc: 'Our fastest express service for time-sensitive shipments. Direct flight operations from major airports deliver your parcel worldwide with the shortest possible transit time.',
     bestFor: 'Urgent documents, gifts, time-sensitive shipments',
     benefit: 'Direct air routing — fastest international delivery',
-    accent: '#F94735',
+    accent: '#E8621A',
   },
   {
     icon: Rocket,
@@ -124,17 +124,18 @@ export default function AirFreightPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <Image src="/images/heroparcel.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
         <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-3">
-            <span className="w-6 h-px bg-[#F94735]" />
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+            <span className="w-6 h-px bg-[#E8621A]" />
             Air Freight
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
             Air Freight Services
           </h1>
-          <p className="text-base text-white/75 max-w-md mt-4">
+          <p className="text-base text-white/65 max-w-md mt-4">
             Fast air freight shipping to 200+ countries with daily uplift operations and delivery in
             3–15 days.
           </p>
@@ -164,7 +165,7 @@ export default function AirFreightPage(): ReactNode {
                       key={item.label}
                       className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 border border-border text-sm font-medium text-foreground/80"
                     >
-                      <item.icon size={14} className="text-[#F94735]" />
+                      <item.icon size={14} className="text-[#E8621A]" />
                       {item.label}
                     </div>
                   ))}
@@ -172,13 +173,13 @@ export default function AirFreightPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                  <span className="w-6 h-px bg-[#F94735]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                  <span className="w-6 h-px bg-[#E8621A]" />
                   Our Plans
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
                   Choose the shipping speed{' '}
-                  <span className="text-[#F94735]">that fits your needs</span>
+                  <span className="text-[#E8621A]">that fits your needs</span>
                 </h2>
                 <p className="text-lg text-foreground/85 mb-8">
                   From urgent international shipments to budget-friendly parcel delivery, every plan
@@ -236,13 +237,13 @@ export default function AirFreightPage(): ReactNode {
               </div>
 
               <div className="bg-surface/50 rounded-3xl p-8 md:p-10 border border-border">
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                  <span className="w-6 h-px bg-[#F94735]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                  <span className="w-6 h-px bg-[#E8621A]" />
                   Why Gajan Traders
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
                   Why thousands choose us for{' '}
-                  <span className="text-[#F94735]">express delivery</span>
+                  <span className="text-[#E8621A]">express delivery</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {strengths.map((s, i) => (
@@ -254,7 +255,7 @@ export default function AirFreightPage(): ReactNode {
                       transition={{ delay: i * 0.05, duration: 0.3 }}
                       className="rounded-2xl bg-white border border-border p-5"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
                         <s.icon size={20} />
                       </div>
                       <h3 className="text-base font-bold text-foreground mb-1.5">{s.title}</h3>
@@ -270,9 +271,9 @@ export default function AirFreightPage(): ReactNode {
                 <div className="cta-orb cta-orb-2" />
                 <div className="cta-orb cta-orb-3" />
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
                     Ship Faster.{' '}
-                    <span className="text-[#F94735]">Ship Smarter.</span>
+                    <span className="text-[#E8621A]">Ship Smarter.</span>
                   </h2>
                   <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
                     Get an instant quote, find a branch, or schedule a pickup — whatever works for
@@ -281,7 +282,7 @@ export default function AirFreightPage(): ReactNode {
                   <div className="flex flex-wrap justify-center gap-3">
                     <a
                       href="/quote"
-                      className="px-6 py-3 rounded-xl bg-white text-[#F94735] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                      className="px-6 py-3 rounded-xl bg-white text-[#E8621A] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
                     >
                       Check Price <ArrowRight size={16} />
                     </a>
@@ -311,7 +312,7 @@ export default function AirFreightPage(): ReactNode {
                 }
                 .cta-orb-1 {
                   width: 300px; height: 300px;
-                  background: #F94735;
+                  background: #E8621A;
                   top: -40px; left: -60px;
                   animation: orbFloat1 8s ease-in-out infinite;
                 }
@@ -323,7 +324,7 @@ export default function AirFreightPage(): ReactNode {
                 }
                 .cta-orb-3 {
                   width: 160px; height: 160px;
-                  background: #F94735;
+                  background: #E8621A;
                   top: 50%; left: 55%;
                   opacity: 0.25;
                   animation: orbFloat3 12s ease-in-out infinite;

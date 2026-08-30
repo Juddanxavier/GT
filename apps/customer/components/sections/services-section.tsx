@@ -73,8 +73,8 @@ export function ServicesSection(): ReactNode {
     >
       <div className="relative z-10 mx-auto max-w-7xl px-5 py-16 sm:px-8 md:px-16 md:py-24 lg:px-24">
         <div className="mb-10 text-center">
-          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735]">
-            <span className="h-px w-6 bg-[#F94735]" />
+          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
+            <span className="h-px w-6 bg-[#E8621A]" />
             Quick Services
           </span>
           <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -98,8 +98,8 @@ export function ServicesSection(): ReactNode {
                 className={`${tile.span} group relative flex flex-col justify-between rounded-2xl border border-border/60 ${isTrack ? 'bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,rgba(249,71,53,0.03)_10px,rgba(249,71,53,0.03)_20px)]' : 'bg-white'} p-6 transition-shadow hover:shadow-lg ${isTrack ? 'md:p-8' : ''}`}
               >
                 <div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F94735]/10 transition-colors group-hover:bg-[#F94735]/20">
-                    <Icon size={20} className="text-[#F94735]" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8621A]/10 transition-colors group-hover:bg-[#E8621A]/20">
+                    <Icon size={20} className="text-[#E8621A]" />
                   </span>
                   <h3 className="mt-4 text-base font-semibold text-foreground">{tile.title}</h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-foreground/60">
@@ -116,12 +116,12 @@ export function ServicesSection(): ReactNode {
                         onChange={(e) => setTrackingNo(e.target.value)}
                         placeholder="Enter tracking number"
                         aria-label="Tracking number"
-                        className="h-11 w-full flex-1 rounded-xl border border-border bg-white px-4 text-sm text-foreground outline-none placeholder:text-foreground/30 focus:border-[#F94735] focus:ring-2 focus:ring-[#F94735]/20"
+                        className="h-11 w-full flex-1 rounded-xl border border-border bg-white px-4 text-sm text-foreground outline-none placeholder:text-foreground/30 focus:border-[#E8621A] focus:ring-2 focus:ring-[#E8621A]/20"
                       />
                       <button
                         type="submit"
                         disabled={!trackingNo.trim()}
-                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#F94735] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D83220] disabled:opacity-50 sm:w-auto"
+                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#E8621A] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C45016] disabled:opacity-50 sm:w-auto"
                       >
                         Track <ArrowRight size={14} />
                       </button>
@@ -132,7 +132,7 @@ export function ServicesSection(): ReactNode {
                 {!isTrack && (tile as { href?: string }).href && (
                   <a
                     href={(tile as { href?: string }).href}
-                    className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-[#F94735] transition-colors hover:text-[#D83220]"
+                    className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-[#E8621A] transition-colors hover:text-[#C45016]"
                   >
                     Get started <ArrowRight size={13} />
                   </a>

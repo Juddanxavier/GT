@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, Skeleton } from '@heroui/react';
 import { Bell, Check, CheckCheck, Mail, MessageCircle } from 'lucide-react';
@@ -99,7 +99,7 @@ function NotificationsPageContent(): ReactNode {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
             <Bell size={24} />
           </div>
           <div>
@@ -157,7 +157,7 @@ function NotificationsPageContent(): ReactNode {
               }`}
             >
               <div
-                className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-[#F94735]'}`}
+                className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-[#E8621A]'}`}
               />
               <div className="flex-1 min-w-0">
                 <p className={`${n.read ? 'text-foreground/50' : 'text-foreground font-medium'}`}>

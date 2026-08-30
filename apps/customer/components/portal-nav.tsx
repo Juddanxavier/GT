@@ -152,7 +152,8 @@ export function PortalNav(): ReactNode {
       pathname === '/profile' ||
       pathname === '/onboarding');
   const lightNav = isAuthPage || isDashboardPage;
-  const tc = lightNav
+  const isLight = lightNav || (!lightNav && scrolled);
+  const tc = isLight
     ? {
         link: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
         muted: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
@@ -170,7 +171,7 @@ export function PortalNav(): ReactNode {
     ? 'bg-white border-border'
     : !scrolled
       ? 'bg-transparent border-transparent'
-      : 'bg-[#1a1a2e]/95 backdrop-blur-md border-white/10';
+      : 'bg-white/95 backdrop-blur-md border-border shadow-sm';
 
   const badge = unreadData?.count ?? 0;
 
@@ -189,10 +190,10 @@ export function PortalNav(): ReactNode {
   ].some(isActive);
 
   const navLinkCls = (href: string) =>
-    `text-base font-semibold transition-colors ${isActive(href) ? `text-[#F94735]` : tc.link}`;
+    `text-base font-semibold transition-colors ${isActive(href) ? `text-[#E8621A]` : tc.link}`;
 
   const navRowCls = (href: string) =>
-    `group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold transition-colors ${isActive(href) ? `text-[#F94735]` : 'text-white/90 hover:text-white'}`;
+    `group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold transition-colors ${isActive(href) ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`;
 
   return (
     <header
@@ -230,7 +231,7 @@ export function PortalNav(): ReactNode {
             <button
               type="button"
               aria-expanded={servicesOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-[#F94735]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-[#E8621A]` : tc.link}`}
             >
               Services{' '}
               <ChevronDown
@@ -240,18 +241,18 @@ export function PortalNav(): ReactNode {
             </button>
             {servicesOpen && (
               <div className="absolute top-full left-0 pt-2 w-48">
-                <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
                   <a
                     href="/air-freight"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Plane size={16} className={`text-[#F94735]`} /> Air Freight
+                    <Plane size={16} className={`text-[#E8621A]`} /> Air Freight
                   </a>
                   <a
                     href="/ocean-freight"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ship size={16} className={`text-[#F94735]`} /> Ocean Freight
+                    <Ship size={16} className={`text-[#E8621A]`} /> Ocean Freight
                   </a>
                 </div>
               </div>
@@ -271,7 +272,7 @@ export function PortalNav(): ReactNode {
             <button
               type="button"
               aria-expanded={supportOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-[#F94735]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-[#E8621A]` : tc.link}`}
             >
               Support{' '}
               <ChevronDown
@@ -281,36 +282,36 @@ export function PortalNav(): ReactNode {
             </button>
             {supportOpen && (
               <div className="absolute top-full left-0 pt-2 w-56">
-                <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
                   <a
                     href="/faq"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <HelpCircle size={16} className={`text-[#F94735]`} /> FAQ
+                    <HelpCircle size={16} className={`text-[#E8621A]`} /> FAQ
                   </a>
                   <a
                     href="/prohibited"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ban size={16} className={`text-[#F94735]`} /> Prohibited Items
+                    <Ban size={16} className={`text-[#E8621A]`} /> Prohibited Items
                   </a>
                   <a
                     href="/pickup"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Calendar size={16} className={`text-[#F94735]`} /> Pickup
+                    <Calendar size={16} className={`text-[#E8621A]`} /> Pickup
                   </a>
                   <a
                     href="/volumetric-calculator"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ruler size={16} className={`text-[#F94735]`} /> Volumetric Calculator
+                    <Ruler size={16} className={`text-[#E8621A]`} /> Volumetric Calculator
                   </a>
                   <a
                     href="/currency-converter"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Globe size={16} className={`text-[#F94735]`} /> Currency Converter
+                    <Globe size={16} className={`text-[#E8621A]`} /> Currency Converter
                   </a>
                 </div>
               </div>
@@ -324,9 +325,9 @@ export function PortalNav(): ReactNode {
             Branches
           </a>
           <a
-            href="/#track"
-            aria-current={isActive('/#track') ? 'page' : undefined}
-            className={navLinkCls('/#track')}
+            href="/track"
+            aria-current={isActive('/track') ? 'page' : undefined}
+            className={navLinkCls('/track')}
           >
             Track
           </a>
@@ -347,7 +348,7 @@ export function PortalNav(): ReactNode {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 onFocus={() => setUserMenuOpen(true)}
                 aria-expanded={userMenuOpen}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${lightNav ? 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70 hover:text-foreground' : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${lightNav || scrolled ? 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70 hover:text-foreground' : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white'}`}
               >
                 <User size={16} />
                 <span className="text-sm font-medium max-w-[100px] truncate hidden sm:inline">
@@ -358,73 +359,73 @@ export function PortalNav(): ReactNode {
                   className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
                 />
                 {badge > 0 && (
-                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F94735] px-1 text-[9px] font-bold text-white leading-none">
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E8621A] px-1 text-[9px] font-bold text-white leading-none">
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2 w-56">
-                  <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <div className="text-sm font-medium text-white">{user?.name}</div>
-                      <div className="text-xs text-white/60">{user?.email}</div>
+                  <div className={`rounded-sm ${lightNav || scrolled ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
+                    <div className={`px-4 py-3 border-b ${lightNav || scrolled ? 'border-border' : 'border-white/10'}`}>
+                      <div className={`text-sm font-medium ${lightNav || scrolled ? 'text-foreground' : 'text-white'}`}>{user?.name}</div>
+                      <div className={`text-xs ${lightNav || scrolled ? 'text-foreground/60' : 'text-white/60'}`}>{user?.email}</div>
                     </div>
                     <a
                       href="/dashboard"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <LayoutDashboard size={16} className={`text-[#F94735]`} /> Dashboard
+                      <LayoutDashboard size={16} className={`text-[#E8621A]`} /> Dashboard
                     </a>
                     <a
                       href="/my-shipments"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Package size={16} className={`text-[#F94735]`} /> My Shipments
+                      <Package size={16} className={`text-[#E8621A]`} /> My Shipments
                     </a>
                     <a
                       href="/my-invoices"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Receipt size={16} className={`text-[#F94735]`} /> Invoices
+                      <Receipt size={16} className={`text-[#E8621A]`} /> Invoices
                     </a>
                     <a
                       href="/track"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Search size={16} className={`text-[#F94735]`} /> Track
+                      <Search size={16} className={`text-[#E8621A]`} /> Track
                     </a>
                     <a
                       href="/pickup"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Calendar size={16} className={`text-[#F94735]`} /> Schedule Pickup
+                      <Calendar size={16} className={`text-[#E8621A]`} /> Schedule Pickup
                     </a>
                     <a
                       href="/notifications"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Bell size={16} className={`text-[#F94735]`} /> Notifications
+                      <Bell size={16} className={`text-[#E8621A]`} /> Notifications
                       {badge > 0 && (
-                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F94735] px-1 text-[9px] font-bold text-white leading-none">
+                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E8621A] px-1 text-[9px] font-bold text-white leading-none">
                           {badge > 9 ? '9+' : badge}
                         </span>
                       )}
                     </a>
                     <a
                       href="/profile"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <User size={16} className={`text-[#F94735]`} /> Profile
+                      <User size={16} className={`text-[#E8621A]`} /> Profile
                     </a>
-                    <div className="border-t border-white/10" />
+                    <div className={`border-t ${isLight ? 'border-border' : 'border-white/10'}`} />
                     <button
                       type="button"
                       onClick={async () => {
                         await authClient.signOut();
                         router.push('/');
                       }}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors w-full text-left"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/60 hover:text-foreground hover:bg-foreground/5' : 'text-white/60 hover:text-white hover:bg-white/10'} transition-colors w-full text-left`}
                     >
                       <LogOut size={16} /> Sign out
                     </button>
@@ -443,7 +444,7 @@ export function PortalNav(): ReactNode {
               </a>
               <a
                 href="/register"
-                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#F94735] hover:bg-[#D83220] transition-all active:scale-[0.98]`}
+                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#E8621A] hover:bg-[#C45016] transition-all active:scale-[0.98]`}
               >
                 <UserPlus size={15} />
                 <span className="hidden sm:inline">Register</span>
@@ -513,7 +514,7 @@ export function PortalNav(): ReactNode {
                     Home
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F94735] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -526,7 +527,7 @@ export function PortalNav(): ReactNode {
                     About
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F94735] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.div variants={itemV} className="border-b border-white/10">
@@ -534,12 +535,12 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                       aria-expanded={mobileServicesOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${servicesActive ? `text-[#F94735]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${servicesActive ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`}
                     >
                       Services
                       <ChevronDown
                         size={22}
-                        className={`text-[#F94735] transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
+                        className={`text-[#E8621A] transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -558,14 +559,14 @@ export function PortalNav(): ReactNode {
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Plane size={18} className={`text-[#F94735]`} /> Air Freight
+                              <Plane size={18} className={`text-[#E8621A]`} /> Air Freight
                             </a>
                             <a
                               href="/ocean-freight"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ship size={18} className={`text-[#F94735]`} /> Ocean Freight
+                              <Ship size={18} className={`text-[#E8621A]`} /> Ocean Freight
                             </a>
                           </div>
                         </motion.div>
@@ -577,12 +578,12 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileSupportOpen(!mobileSupportOpen)}
                       aria-expanded={mobileSupportOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${supportActive ? `text-[#F94735]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${supportActive ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`}
                     >
                       Support
                       <ChevronDown
                         size={22}
-                        className={`text-[#F94735] transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
+                        className={`text-[#E8621A] transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -601,35 +602,35 @@ export function PortalNav(): ReactNode {
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <HelpCircle size={18} className={`text-[#F94735]`} /> FAQ
+                              <HelpCircle size={18} className={`text-[#E8621A]`} /> FAQ
                             </a>
                             <a
                               href="/prohibited"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ban size={18} className={`text-[#F94735]`} /> Prohibited Items
+                              <Ban size={18} className={`text-[#E8621A]`} /> Prohibited Items
                             </a>
                             <a
                               href="/pickup"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Calendar size={18} className={`text-[#F94735]`} /> Pickup
+                              <Calendar size={18} className={`text-[#E8621A]`} /> Pickup
                             </a>
                             <a
                               href="/volumetric-calculator"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ruler size={18} className={`text-[#F94735]`} /> Volumetric Calculator
+                              <Ruler size={18} className={`text-[#E8621A]`} /> Volumetric Calculator
                             </a>
                             <a
                               href="/currency-converter"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Globe size={18} className={`text-[#F94735]`} /> Currency Converter
+                              <Globe size={18} className={`text-[#E8621A]`} /> Currency Converter
                             </a>
                           </div>
                         </motion.div>
@@ -646,21 +647,20 @@ export function PortalNav(): ReactNode {
                     Branches
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F94735] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
-                  {/* biome-ignore lint/a11y/useValidAnchor: real navigation link to the track section on the home page */}
                   <motion.a
-                    href="/#track"
+                    href="/track"
                     onClick={() => setMobileOpen(false)}
-                    aria-current={isActive('/#track') ? 'page' : undefined}
+                    aria-current={isActive('/track') ? 'page' : undefined}
                     variants={itemV}
-                    className={navRowCls('/#track')}
+                    className={navRowCls('/track')}
                   >
                     Track
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F94735] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -673,7 +673,7 @@ export function PortalNav(): ReactNode {
                     Contact
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F94735] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                 </div>
@@ -688,35 +688,35 @@ export function PortalNav(): ReactNode {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Dashboard <ArrowRight size={18} className={`text-[#F94735]`} />
+                        Dashboard <ArrowRight size={18} className={`text-[#E8621A]`} />
                       </a>
                       <a
                         href="/my-shipments"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        My Shipments <ArrowRight size={18} className={`text-[#F94735]`} />
+                        My Shipments <ArrowRight size={18} className={`text-[#E8621A]`} />
                       </a>
                       <a
                         href="/my-invoices"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Invoices <ArrowRight size={18} className={`text-[#F94735]`} />
+                        Invoices <ArrowRight size={18} className={`text-[#E8621A]`} />
                       </a>
                       <a
                         href="/track"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Track <ArrowRight size={18} className={`text-[#F94735]`} />
+                        Track <ArrowRight size={18} className={`text-[#E8621A]`} />
                       </a>
                       <a
                         href="/profile"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Profile <ArrowRight size={18} className={`text-[#F94735]`} />
+                        Profile <ArrowRight size={18} className={`text-[#E8621A]`} />
                       </a>
                       <button
                         type="button"
@@ -741,7 +741,7 @@ export function PortalNav(): ReactNode {
                       <a
                         href="/register"
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center justify-center gap-2 rounded-sm bg-[#F94735] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#D83220] transition-colors active:scale-[0.98]`}
+                        className={`flex items-center justify-center gap-2 rounded-sm bg-[#E8621A] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#C45016] transition-colors active:scale-[0.98]`}
                       >
                         <UserPlus size={18} /> Register
                       </a>

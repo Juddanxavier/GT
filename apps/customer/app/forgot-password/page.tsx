@@ -62,7 +62,7 @@ function ForgotPasswordForm(): ReactNode {
           </p>
           <a
             href="/login"
-            className="inline-flex items-center gap-1.5 font-medium text-[#F94735] hover:text-[#e03e2d] transition-colors"
+            className="inline-flex items-center gap-1.5 font-medium text-[#E8621A] hover:text-[#C45016] transition-colors"
           >
             <ArrowLeft size={14} /> Back to sign in
           </a>
@@ -111,7 +111,7 @@ function ForgotPasswordForm(): ReactNode {
             }}
             placeholder="name@example.com"
             autoComplete="email"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldError ? 'border-red-400' : 'border-border'}`}
+            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldError ? 'border-red-400' : 'border-border'}`}
           />
           {fieldError && <p className="text-xs text-red-500">{fieldError}</p>}
         </div>
@@ -119,7 +119,7 @@ function ForgotPasswordForm(): ReactNode {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#F94735] hover:bg-[#e03e2d] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+          className="w-full bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
         >
           {loading ? 'Sending...' : 'Send reset link'}
         </button>
@@ -127,7 +127,7 @@ function ForgotPasswordForm(): ReactNode {
         <p className="text-center">
           <a
             href="/login"
-            className="inline-flex items-center gap-1.5 font-medium text-[#F94735] hover:text-[#e03e2d] transition-colors"
+            className="inline-flex items-center gap-1.5 font-medium text-[#E8621A] hover:text-[#C45016] transition-colors"
           >
             <ArrowLeft size={14} /> Back to sign in
           </a>

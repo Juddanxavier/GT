@@ -177,17 +177,18 @@ export default function FaqPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <Image src="/images/contact.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
         <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-3">
-            <span className="w-6 h-px bg-[#F94735]" />
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+            <span className="w-6 h-px bg-[#E8621A]" />
             FAQ
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
             Frequently Asked Questions
           </h1>
-          <p className="text-base text-white/75 max-w-md mt-4">
+          <p className="text-base text-white/65 max-w-md mt-4">
             Find answers to common questions about shipping, tracking, services, and billing.
           </p>
         </div>
@@ -206,7 +207,7 @@ export default function FaqPage(): ReactNode {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search FAQs..."
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-border text-lg text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#F94735]/20 focus:border-[#F94735] transition-all"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-border text-lg text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
                 />
               </div>
 
@@ -239,7 +240,7 @@ export default function FaqPage(): ReactNode {
                             className="w-full flex items-center justify-between p-5 text-left cursor-pointer"
                           >
                             <div>
-                              <span className="text-xs font-bold uppercase tracking-wider text-[#F94735]">
+                              <span className="text-xs font-bold uppercase tracking-wider text-[#E8621A]">
                                 {item.category}
                               </span>
                               <span className="text-lg font-medium text-foreground block mt-0.5">
@@ -265,7 +266,7 @@ export default function FaqPage(): ReactNode {
                   <button
                     type="button"
                     onClick={() => setSearch('')}
-                    className="text-sm font-semibold text-[#F94735] hover:underline cursor-pointer"
+                    className="text-sm font-semibold text-[#E8621A] hover:underline cursor-pointer"
                   >
                     Clear search & browse all FAQs
                   </button>
@@ -344,7 +345,7 @@ export default function FaqPage(): ReactNode {
                           .getElementById(`cat-${cat.label}`)
                           ?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-base text-foreground hover:text-[#F94735] hover:bg-[#F94735]/5 transition-colors cursor-pointer"
+                      className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-base text-foreground hover:text-[#E8621A] hover:bg-[#E8621A]/5 transition-colors cursor-pointer"
                     >
                       <span>{cat.icon}</span>
                       <span>{cat.label}</span>
@@ -360,26 +361,26 @@ export default function FaqPage(): ReactNode {
                 <div className="space-y-2">
                   <a
                     href="/quote"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#F94735] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F94735]/5"
+                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
                   >
                     <FileText size={16} className="shrink-0" /> Get a Quote
                   </a>
                   <a
                     href="/contact"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#F94735] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F94735]/5"
+                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
                   >
                     <MessageSquare size={16} className="shrink-0" /> Contact Support
                   </a>
                   <a
                     href="/branches"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#F94735] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#F94735]/5"
+                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
                   >
                     <Building2 size={16} className="shrink-0" /> Our Branches
                   </a>
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-[#F94735]/5 p-5">
-                <HelpCircle size={28} className="text-[#F94735] mb-3" />
+              <div className="rounded-xl border border-border bg-[#E8621A]/5 p-5">
+                <HelpCircle size={28} className="text-[#E8621A] mb-3" />
                 <h3 className="text-base font-bold text-foreground mb-1">Still have questions?</h3>
                 <p className="text-sm text-foreground leading-relaxed mb-4">
                   Can&apos;t find what you&apos;re looking for? Reach out to our support team 24/7.
@@ -387,7 +388,7 @@ export default function FaqPage(): ReactNode {
                 <div className="space-y-2">
                   <Link
                     href="/contact"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-[#F94735] text-white text-sm font-semibold hover:bg-[#D83220] transition-colors"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors"
                   >
                     Contact Support <ArrowUpRight size={14} />
                   </Link>

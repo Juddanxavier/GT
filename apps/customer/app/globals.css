@@ -150,7 +150,7 @@ body {
 .default,
 [data-theme="light"],
 [data-theme="default"] {
-  --accent: oklch(64.00% 0.22 29);
+  --accent: oklch(66% 0.19 50);
   --accent-foreground: oklch(98% 0 0);
   --background: oklch(97% 0 0);
   --border: oklch(90% 0 0);

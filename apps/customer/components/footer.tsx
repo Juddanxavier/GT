@@ -94,7 +94,7 @@ export function Footer(): ReactNode {
           <div className='absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/80 to-[#1a1a2e]/70' />
           <div className='absolute inset-0 flex flex-col items-center justify-center text-center px-6'>
             <h2 className='text-2xl md:text-3xl font-bold tracking-tight mb-3 drop-shadow-lg'>
-              Ship <span className='text-[#F94735]'>Without Borders</span>
+              Ship <span className='text-[#E8621A]'>Without Borders</span>
             </h2>
             <p className='text-base text-white/80 max-w-xl mb-6 drop-shadow'>
               From India to 200+ countries — fast, secure, and tracked every
@@ -104,7 +104,7 @@ export function Footer(): ReactNode {
             <div className='flex gap-4'>
               <a
                 href='/register'
-                className='px-6 py-3 rounded-full bg-[#F94735] hover:bg-[#D83220] text-white text-base font-semibold transition-colors'>
+                className='px-6 py-3 rounded-full bg-[#E8621A] hover:bg-[#C45016] text-white text-base font-semibold transition-colors'>
                 Get Started
               </a>
               <a
@@ -124,8 +124,8 @@ export function Footer(): ReactNode {
                 <div
                   key={t.label}
                   className='flex items-center gap-3 justify-center lg:justify-start'>
-                  <div className='w-10 h-10 rounded-lg bg-[#F94735]/10 flex items-center justify-center shrink-0'>
-                    <t.icon className='size-5 text-[#F94735]' />
+                  <div className='w-10 h-10 rounded-lg bg-[#E8621A]/10 flex items-center justify-center shrink-0'>
+                    <t.icon className='size-5 text-[#E8621A]' />
                   </div>
                   <span className='text-white/85 font-medium'>{t.label}</span>
                 </div>
@@ -149,22 +149,22 @@ export function Footer(): ReactNode {
               </p>
               <div className='space-y-3 text-white/80'>
                 <div className='flex items-center gap-2.5'>
-                  <MapPin size={14} className='text-[#F94735] shrink-0' />
+                  <MapPin size={14} className='text-[#E8621A] shrink-0' />
                   <span>{config.contact.city}</span>
                 </div>
                 <div className='flex items-center gap-2.5'>
-                  <Phone size={14} className='text-[#F94735] shrink-0' />
+                  <Phone size={14} className='text-[#E8621A] shrink-0' />
                   <a
                     href={config.contact.phoneHref}
-                    className='hover:text-[#F94735] transition-colors'>
+                    className='hover:text-[#E8621A] transition-colors'>
                     {config.contact.phone}
                   </a>
                 </div>
                 <div className='flex items-center gap-2.5'>
-                  <Mail size={14} className='text-[#F94735] shrink-0' />
+                  <Mail size={14} className='text-[#E8621A] shrink-0' />
                   <a
                     href={`mailto:${config.contact.email}`}
-                    className='hover:text-[#F94735] transition-colors'>
+                    className='hover:text-[#E8621A] transition-colors'>
                     {config.contact.email}
                   </a>
                 </div>
@@ -182,7 +182,7 @@ export function Footer(): ReactNode {
                     <li key={link.label}>
                       <a
                         href={link.href}
-                        className='hover:text-[#F94735] transition-colors'>
+                        className='hover:text-[#E8621A] transition-colors'>
                         {link.label}
                       </a>
                     </li>

@@ -109,7 +109,7 @@ function OnboardingPageContent(): ReactNode {
   if (loading || sessionLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-[#F94735] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-[#E8621A] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -147,13 +147,13 @@ function OnboardingPageContent(): ReactNode {
             htmlFor="ob-branch"
             className="font-medium text-foreground/80 flex items-center gap-1.5"
           >
-            <Building2 size={14} className="text-[#F94735]" /> Nearest Branch
+            <Building2 size={14} className="text-[#E8621A]" /> Nearest Branch
           </label>
           <select
             id="ob-branch"
             value={branchId}
             onChange={(e) => setBranchId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+            className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
           >
             <option value="">Select your nearest branch</option>
             {validBranches.map((b) => (
@@ -169,7 +169,7 @@ function OnboardingPageContent(): ReactNode {
             htmlFor="ob-phone"
             className="font-medium text-foreground/80 flex items-center gap-1.5"
           >
-            <Phone size={14} className="text-[#F94735]" /> Phone Number
+            <Phone size={14} className="text-[#E8621A]" /> Phone Number
           </label>
           <input
             id="ob-phone"
@@ -177,7 +177,7 @@ function OnboardingPageContent(): ReactNode {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder={config.phone.placeholder}
-            className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+            className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
           />
           <p className="text-xs text-foreground/40">
             Enter your {config.phone.digits}-digit number — {config.phone.prefix} is already added
@@ -187,7 +187,7 @@ function OnboardingPageContent(): ReactNode {
 
         <div className="border-t border-foreground/5 pt-6">
           <div className="flex items-center gap-1.5 mb-4">
-            <MapPin size={14} className="text-[#F94735]" />
+            <MapPin size={14} className="text-[#E8621A]" />
             <span className="font-semibold text-foreground/80">Address</span>
           </div>
           <div className="space-y-3">
@@ -196,7 +196,7 @@ function OnboardingPageContent(): ReactNode {
               value={street}
               onChange={(e) => setStreet(e.target.value)}
               placeholder="Street / Area"
-              className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+              className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
             />
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -204,14 +204,14 @@ function OnboardingPageContent(): ReactNode {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="City"
-                className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+                className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
               />
               <input
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 placeholder="State"
-                className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+                className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
               />
             </div>
             <input
@@ -219,7 +219,7 @@ function OnboardingPageContent(): ReactNode {
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
               placeholder={config.postalCode.label}
-              className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 border border-foreground/10"
+              className="w-full px-4 py-2.5 bg-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.04)] rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 border border-foreground/10"
             />
           </div>
         </div>
@@ -227,7 +227,7 @@ function OnboardingPageContent(): ReactNode {
         <button
           type="submit"
           disabled={saving || !branchId}
-          className="w-full bg-[#F94735] hover:bg-[#e03e2d] disabled:opacity-50 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+          className="w-full bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-50 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
         >
           {saving ? 'Saving...' : 'Complete setup'}
         </button>

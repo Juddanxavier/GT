@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -48,7 +48,7 @@ export function CTAFAQFooterSection(): ReactNode {
               <p className="mb-8 max-w-sm text-base text-white/80">{config.cta.subtitle}</p>
               <a
                 href="/register"
-                className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-semibold text-[#F94735] transition-all hover:bg-white/90 sm:w-auto"
+                className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-semibold text-[#E8621A] transition-all hover:bg-white/90 sm:w-auto"
               >
                 {config.cta.button} <ArrowRight size={14} />
               </a>
@@ -56,8 +56,8 @@ export function CTAFAQFooterSection(): ReactNode {
           </div>
 
           <div>
-            <span className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735]">
-              <span className="h-px w-6 bg-[#F94735]" />
+            <span className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
+              <span className="h-px w-6 bg-[#E8621A]" />
               FAQ
             </span>
             <h3 className="mb-6 text-xl font-bold text-foreground">Common questions</h3>
@@ -98,7 +98,7 @@ export function CTAFAQFooterSection(): ReactNode {
         }
         .cta-orb-1 {
           width: 300px; height: 300px;
-          background: #F94735;
+          background: #E8621A;
           top: -40px; left: -60px;
           animation: orbFloat1 8s ease-in-out infinite;
         }
@@ -110,7 +110,7 @@ export function CTAFAQFooterSection(): ReactNode {
         }
         .cta-orb-3 {
           width: 160px; height: 160px;
-          background: #F94735;
+          background: #E8621A;
           top: 50%; left: 55%;
           opacity: 0.25;
           animation: orbFloat3 12s ease-in-out infinite;

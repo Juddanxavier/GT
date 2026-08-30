@@ -23,8 +23,8 @@ const routes = [
     transit: '25–30 days',
     via: 'JNPT (Mumbai) → Colombo → Halifax/Vancouver',
     desc: 'Reliable ocean freight from India to Canadian ports with full customs support.',
-    color: 'from-[#F94735]/10 to-white border-[#F94735]/20',
-    flagBg: 'bg-[#F94735]/5',
+    color: 'from-[#E8621A]/10 to-white border-[#E8621A]/20',
+    flagBg: 'bg-[#E8621A]/5',
   },
   {
     flag: '🇬🇧',
@@ -33,8 +33,8 @@ const routes = [
     transit: '22–28 days',
     via: 'JNPT (Mumbai) → Suez → Felixstowe',
     desc: 'Regular LCL and FCL services to UK ports with door delivery options.',
-    color: 'from-[#F94735]/10 to-white border-[#F94735]/20',
-    flagBg: 'bg-[#F94735]/5',
+    color: 'from-[#E8621A]/10 to-white border-[#E8621A]/20',
+    flagBg: 'bg-[#E8621A]/5',
   },
   {
     flag: '🇸🇬',
@@ -43,8 +43,8 @@ const routes = [
     transit: '10–14 days',
     via: 'Chennai / JNPT → Singapore',
     desc: 'Fast ocean freight to Singapore with frequent weekly sailings.',
-    color: 'from-[#F94735]/10 to-white border-[#F94735]/20',
-    flagBg: 'bg-[#F94735]/5',
+    color: 'from-[#E8621A]/10 to-white border-[#E8621A]/20',
+    flagBg: 'bg-[#E8621A]/5',
   },
   {
     flag: '🇲🇾',
@@ -53,8 +53,8 @@ const routes = [
     transit: '12–16 days',
     via: 'Chennai / JNPT → Port Klang',
     desc: 'Cost-effective ocean shipping to Malaysia for commercial and personal cargo.',
-    color: 'from-[#F94735]/10 to-white border-[#F94735]/20',
-    flagBg: 'bg-[#F94735]/5',
+    color: 'from-[#E8621A]/10 to-white border-[#E8621A]/20',
+    flagBg: 'bg-[#E8621A]/5',
   },
   {
     flag: '🇱🇰',
@@ -63,8 +63,8 @@ const routes = [
     transit: '3–5 days',
     via: 'Chennai / Tuticorin → Colombo',
     desc: 'Short-sea freight to Sri Lanka with the fastest transit from Indian ports.',
-    color: 'from-[#F94735]/10 to-white border-[#F94735]/20',
-    flagBg: 'bg-[#F94735]/5',
+    color: 'from-[#E8621A]/10 to-white border-[#E8621A]/20',
+    flagBg: 'bg-[#E8621A]/5',
   },
 ];
 
@@ -115,17 +115,18 @@ export default function OceanFreightPage(): ReactNode {
       <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <Image src="/images/heroparcel.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
         <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-3">
-            <span className="w-6 h-px bg-[#F94735]" />
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+            <span className="w-6 h-px bg-[#E8621A]" />
             Ocean Freight
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
             Ocean Freight Services
           </h1>
-          <p className="text-base text-white/75 max-w-md mt-4">
+          <p className="text-base text-white/65 max-w-md mt-4">
             Affordable LCL & FCL shipping from India to Canada, UK, Singapore, Malaysia, and Sri
             Lanka.
           </p>
@@ -143,12 +144,12 @@ export default function OceanFreightPage(): ReactNode {
                 <strong>Canada, UK, Singapore, Malaysia, and Sri Lanka</strong>.
               </p>
 
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                <span className="w-6 h-px bg-[#F94735]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                <span className="w-6 h-px bg-[#E8621A]" />
                 Routes & Transit
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
-                Our ocean freight <span className="text-[#F94735]">routes</span>
+                Our ocean freight <span className="text-[#E8621A]">routes</span>
               </h2>
 
               <div className="space-y-4">
@@ -170,17 +171,17 @@ export default function OceanFreightPage(): ReactNode {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1">
                           <h3 className="text-xl font-bold text-foreground">{r.country}</h3>
-                          <span className="text-sm font-semibold text-[#F94735] bg-[#F94735]/10 px-3 py-0.5 rounded-full">
+                          <span className="text-sm font-semibold text-[#E8621A] bg-[#E8621A]/10 px-3 py-0.5 rounded-full">
                             {r.transit}
                           </span>
                         </div>
                         <p className=" text-foreground leading-relaxed mb-2">{r.desc}</p>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-foreground">
                           <span className="flex items-center gap-1.5">
-                            <MapPin size={14} className="text-[#F94735]" /> {r.port}
+                            <MapPin size={14} className="text-[#E8621A]" /> {r.port}
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <Ship size={14} className="text-[#F94735]" /> {r.via}
+                            <Ship size={14} className="text-[#E8621A]" /> {r.via}
                           </span>
                         </div>
                       </div>
@@ -191,12 +192,12 @@ export default function OceanFreightPage(): ReactNode {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                <span className="w-6 h-px bg-[#F94735]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                <span className="w-6 h-px bg-[#E8621A]" />
                 Container Solutions
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                LCL & FCL <span className="text-[#F94735]">container options</span>
+                LCL & FCL <span className="text-[#E8621A]">container options</span>
               </h2>
               <p className="text-lg text-foreground mb-8">
                 Whether you're sending a few packages or a full container load, we'll find the right
@@ -216,7 +217,7 @@ export default function OceanFreightPage(): ReactNode {
                     ],
                     best: 'Small businesses, product samples, personal exports',
                      color: 'text-blue-600',
-                     bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+                     bg: 'bg-[#E8621A]/5 border border-[#E8621A]/20',
                    },
                    {
                      title: 'Full Container Load (FCL)',
@@ -229,7 +230,7 @@ export default function OceanFreightPage(): ReactNode {
                      ],
                      best: 'Bulk cargo, machinery, retail inventory, commercial exports',
                      color: 'text-emerald-600',
-                     bg: 'bg-[#F94735]/5 border border-[#F94735]/20',
+                     bg: 'bg-[#E8621A]/5 border border-[#E8621A]/20',
                   },
                 ].map((option, i) => (
                   <motion.div
@@ -300,7 +301,7 @@ export default function OceanFreightPage(): ReactNode {
                   transition={{ delay: i * 0.05, duration: 0.3 }}
                   className="rounded-xl border border-border bg-white p-5 text-center"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mx-auto mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-3">
                     <f.icon size={20} />
                   </div>
                   <h3 className="text-base font-bold text-foreground mb-1">{f.title}</h3>
@@ -315,9 +316,9 @@ export default function OceanFreightPage(): ReactNode {
               <div className="cta-orb cta-orb-2" />
               <div className="cta-orb cta-orb-3" />
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
                   Ready to ship{' '}
-                  <span className="text-[#F94735]">by ocean?</span>
+                  <span className="text-[#E8621A]">by ocean?</span>
                 </h2>
                 <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
                   Get an instant quote or speak to our freight experts to plan your next shipment.
@@ -325,7 +326,7 @@ export default function OceanFreightPage(): ReactNode {
                 <div className="flex flex-wrap justify-center gap-3">
                   <a
                     href="/quote"
-                    className="px-6 py-3 rounded-xl bg-white text-[#F94735] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl bg-white text-[#E8621A] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
                   >
                     Get a Quote <ArrowRight size={16} />
                   </a>
@@ -354,7 +355,7 @@ export default function OceanFreightPage(): ReactNode {
         }
         .cta-orb-1 {
           width: 300px; height: 300px;
-          background: #F94735;
+          background: #E8621A;
           top: -40px; left: -60px;
           animation: orbFloat1 8s ease-in-out infinite;
         }
@@ -366,7 +367,7 @@ export default function OceanFreightPage(): ReactNode {
         }
         .cta-orb-3 {
           width: 160px; height: 160px;
-          background: #F94735;
+          background: #E8621A;
           top: 50%; left: 55%;
           opacity: 0.25;
           animation: orbFloat3 12s ease-in-out infinite;

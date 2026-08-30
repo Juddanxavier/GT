@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Award, MapPin, Package, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -19,7 +19,7 @@ export function ParallaxStatsSection(): ReactNode {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-4">
                 <s.icon className="size-6" />
               </div>
               <p className="text-3xl md:text-4xl font-bold text-white mb-1">{s.value}</p>

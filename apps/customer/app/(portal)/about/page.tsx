@@ -1,38 +1,69 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowUpRight, Clock, Globe, MapPin, Package, Phone, Shield, Star, Truck, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Globe,
+  Headphones,
+  MapPin,
+  Package,
+  Phone,
+  Shield,
+  Star,
+  Truck,
+  Users,
+} from 'lucide-react';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { FaqSection } from '@/components/sections/faq-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
-const values = [
+const walkInSteps = [
   {
-    number: '01',
-    icon: Globe,
-    title: 'Global Reach',
-    desc: 'Delivering to 220+ countries through airline contracts and local delivery partners.',
-  },
-  {
-    number: '02',
-    icon: Shield,
-    title: 'Insured & Secure',
-    desc: 'Every parcel is insured in transit. Fragile items double-packed at our branches.',
-  },
-  {
-    number: '03',
-    icon: Clock,
-    title: 'On-Time Delivery',
-    desc: '99.8% on-time rate across all international routes — year after year.',
-  },
-  {
-    number: '04',
+    step: '01',
     icon: Users,
-    title: 'Walk-In Support',
-    desc: 'Visit either Chennai branch or call us. Real people, same team, every time.',
+    title: 'Walk In',
+    desc: 'Bring your parcel to either Chennai branch. No appointment, no forms to fill beforehand.',
   },
+  {
+    step: '02',
+    icon: Package,
+    title: 'We Pack & Insure',
+    desc: 'Our team packs it right in front of you. Fragile items get double-boxed. Transit insurance included.',
+  },
+  {
+    step: '03',
+    icon: Shield,
+    title: 'Customs & Clearance',
+    desc: 'All documentation and customs handling done in-house. You just drop off.',
+  },
+  {
+    step: '04',
+    icon: Globe,
+    title: 'Delivered Worldwide',
+    desc: 'Your parcel reaches 220+ countries. Track it in real time or get updates on WhatsApp.',
+  },
+];
+
+const journeyCards = [
+  { year: '2015', title: 'First Office', desc: 'A single room in Saidapet, Chennai. One phone line, one promise — international shipping made personal.' },
+  { year: '2018', title: 'Royapuram Branch', desc: 'North Chennai got its own branch. Same standard, same hands-on care, closer to more customers.' },
+  { year: '2020', title: 'We Kept Shipping', desc: 'While the world shut down, we showed up. No missed deadlines, no lost parcels — when it mattered most.' },
+  { year: '2022', title: '2,500 Parcels/Month', desc: 'From one room to shipping 2,500 parcels every month. Families, students, exporters — one roof, one standard.' },
+  { year: '2024', title: 'Real-Time Tracking', desc: 'Live tracking and WhatsApp updates launched. The service stayed personal, the visibility went global.' },
+  { year: 'Today', title: 'Still Growing', desc: 'Two branches, 220+ countries, and the same promise: walk in with a parcel, we handle the rest.' },
+];
+
+const whyUsItems = [
+  { icon: Shield, text: 'In-branch packing — fragile items double-boxed before your eyes' },
+  { icon: CheckCircle, text: 'Transit insurance included on every shipment' },
+  { icon: Users, text: 'Walk-in service — same team, same faces, every visit' },
+  { icon: Package, text: 'Customs documentation and clearance handled in-house' },
+  { icon: Headphones, text: 'WhatsApp and phone support — real people, not chatbots' },
+  { icon: CheckCircle, text: 'No hidden charges — the quoted price is what you pay' },
 ];
 
 const testimonials = [
@@ -47,9 +78,9 @@ const testimonials = [
     role: 'Garment Exporter',
   },
   {
-    text: 'I was nervous shipping my mother\'s medicines to Dubai. The team at Royapuram branch explained every step. Parcel reached in 3 days, still cold-packed.',
+    text: "I was nervous shipping my mother's medicines to Dubai. The team at Royapuram branch explained every step. Parcel reached in 3 days, still cold-packed.",
     name: 'Farhan K.',
-    role: 'Student\'s Parent',
+    role: "Student's Parent",
   },
   {
     text: 'Affordable rates, no hidden charges, and I can track my shipment on WhatsApp. Best courier service in Chennai for international parcels.',
@@ -68,7 +99,7 @@ const testimonials = [
   },
 ];
 
-function Carousel3Col(): ReactNode {
+function TestimonialSlider(): ReactNode {
   const totalSlides = Math.ceil(testimonials.length / 3);
   const [slide, setSlide] = useState(0);
 
@@ -107,16 +138,16 @@ function Carousel3Col(): ReactNode {
                       <Star key={si2} size={14} className="fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <p className="text-foreground text-lg leading-relaxed mb-6">{t.text}</p>
-                  <div className="flex items-center gap-3 pt-5 border-t border-border/60">
-                    <div className="w-10 h-10 rounded-full bg-[#F94735] flex items-center justify-center text-base font-semibold text-white">
+                  <p className="text-foreground text-base leading-relaxed mb-6">{t.text}</p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-border/60">
+                    <div className="w-9 h-9 rounded-full bg-[#E8621A] flex items-center justify-center text-sm font-semibold text-white">
                       {t.name.charAt(0)}
                     </div>
                     <div>
-                      <cite className="font-semibold not-italic text-foreground text-base">
+                      <cite className="font-semibold not-italic text-foreground text-sm">
                         {t.name}
                       </cite>
-                      <span className="text-base text-foreground/85 block">{t.role}</span>
+                      <span className="text-sm text-foreground/70 block">{t.role}</span>
                     </div>
                   </div>
                 </div>
@@ -133,7 +164,7 @@ function Carousel3Col(): ReactNode {
             type="button"
             onClick={() => setSlide(i)}
             className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-              i === slide ? 'bg-[#F94735] w-6' : 'bg-foreground/20'
+              i === slide ? 'bg-[#E8621A] w-6' : 'bg-foreground/20'
             }`}
           />
         ))}
@@ -147,37 +178,50 @@ export default function AboutPage(): ReactNode {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero */}
+      {/* Hero — Full-width image */}
       <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <Image src="/images/about.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20">
+        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-28 md:pt-32 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-6">
-              <span className="w-6 h-px bg-[#F94735]" />
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+              <span className="w-6 h-px bg-[#E8621A]" />
               About Us
             </span>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white max-w-2xl">
-              A real courier service,
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
+              Your trusted logistics partner,
               <br />
-              <span className="text-[#F94735]">not a software platform.</span>
+              <span className="text-[#E8621A]">delivering across 200+ countries.</span>
             </h1>
-            <p className="mt-5 text-base text-white/75 max-w-md leading-relaxed">
-              Two branches in Chennai, real staff, real handshakes. Walk in with a parcel, we handle
-              the rest — packing, customs, delivery to 220+ countries.
+            <p className="mt-5 text-base text-white/65 max-w-lg leading-relaxed">
+              From doorstep pickup near our offices to real-time tracking and on-time delivery,
+              we help businesses and individuals ship with confidence worldwide.
             </p>
+            <div className="flex flex-wrap items-center gap-6 mt-8">
+              {[
+                { value: '220+', label: 'Countries' },
+                { value: '1 Lakh+', label: 'Parcels Delivered' },
+                { value: '99.8%', label: 'On-Time' },
+              ].map((s) => (
+                <div key={s.label}>
+                  <p className="text-2xl font-bold text-white">{s.value}</p>
+                  <p className="text-xs text-white/60 uppercase tracking-wider">{s.label}</p>
+                </div>
+              ))}
+            </div>
             <div className="flex flex-wrap items-center gap-3 mt-8">
               <a
                 href="/register"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#F94735] text-white text-base font-semibold hover:bg-[#D83220] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
               >
-                Get Started <ArrowUpRight size={14} />
+                Get Started <ArrowRight size={14} />
               </a>
               <a
                 href="/track"
@@ -190,141 +234,189 @@ export default function AboutPage(): ReactNode {
         </div>
       </section>
 
-      {/* Our Story */}
-      <section className="relative bg-white">
+      {/* Our Story — Editorial full-width */}
+      <section className="bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="relative">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="relative h-72 md:h-96 rounded-2xl overflow-hidden"
-              >
-                <Image
-                  src="/images/story.webp"
-                  alt=""
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              </motion.div>
-            </div>
-            <div className="flex flex-col">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                  <span className="w-6 h-px bg-[#F94735]" />
-                  Our Story
-                </span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-                  Not a platform.{' '}
-                  <span className="text-[#F94735]">A family-run courier you can walk into.</span>
-                </h2>
-                <p className="text-lg text-foreground/90 leading-relaxed mb-6">
-                  {config.name} started in 2016 from a single office in Chennai. We are not a tech
-                  company or a marketplace — we are a physical courier service with real branches,
-                  real staff, and real handshakes.
-                </p>
-                <p className="text-lg text-foreground/90 leading-relaxed mb-8">
-                  Families walk in with parcels for their children abroad. Exporters drop off samples
-                  for overseas buyers. Students send documents and medicines. We pack it, insure it,
-                  clear customs, and track it — from our counter to their doorstep in 220+ countries.
-                </p>
-              </motion.div>
-            </div>
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-6">
+                What began as a single office in Saidapet
+                <br className="hidden md:block" />
+                <span className="text-[#E8621A]"> has grown into two branches serving all of Chennai.</span>
+              </h2>
+              <p className="text-lg text-foreground/70 leading-relaxed mb-4">
+                Gajan Traders is one of Chennai&apos;s most trusted international courier services,
+                built to help families, students, and businesses send parcels, documents, and
+                essentials overseas with ease and confidence.
+              </p>
+              <p className="text-lg text-foreground/70 leading-relaxed">
+                We believe shipping is more than moving parcels — it&apos;s about delivering memories
+                and keeping people connected across distances. Every shipment is handled with care,
+                attention, and a commitment to making international delivery stress-free.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="relative bg-[#1a1a2e] border-t border-white/10 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/images/heroparcel.webp')] bg-fixed bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-            {[
-              { value: '220+', label: 'Countries Served' },
-              { value: '2', label: 'Branches in Chennai' },
-              { value: '10+', label: 'Years of Trust' },
-              { value: '99.8%', label: 'On-Time Rate' },
-            ].map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="text-center"
-              >
-                <p className="text-3xl md:text-4xl font-bold text-white mb-1">{s.value}</p>
-                <p className=" text-white/85">{s.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What We Offer */}
-      <section className="relative bg-white">
+      {/* Walk-In Process — Horizontal steps */}
+      <section className="bg-[#fafafa]">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
-            <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
-              What We Offer
-            </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Built for reliability, <span className="text-[#F94735]">designed for trust.</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              What happens when you <span className="text-[#E8621A]">walk in.</span>
             </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {values.map((v, i) => (
+            <p className="mt-3 text-base text-foreground/60 max-w-md mx-auto">
+              No appointments, no online forms. Just walk in with your parcel.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {walkInSteps.map((s, i) => (
               <motion.div
-                key={v.title}
-                initial={{ opacity: 0, y: 16 }}
+                key={s.step}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="text-center"
+                className="relative bg-white rounded-2xl p-6 shadow-sm border border-border/40"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mx-auto mb-5">
-                  <v.icon className="size-6" />
-                </div>
-                <span className="text-xs font-bold text-[#F94735] tracking-wider block mb-2">
-                  {v.number}
+                <span className="text-4xl font-black text-[#E8621A]/10 absolute top-4 right-4">
+                  {s.step}
                 </span>
-                <h3 className="text-lg font-semibold text-foreground mb-1.5">{v.title}</h3>
-                <p className="text-lg text-foreground/90 leading-relaxed max-w-xs mx-auto">
-                  {v.desc}
-                </p>
+                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-4">
+                  <s.icon className="size-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-1.5">{s.title}</h3>
+                <p className="text-sm text-foreground/60 leading-relaxed">{s.desc}</p>
+                {i < walkInSteps.length - 1 && (
+                  <ArrowRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 text-foreground/20 size-5 z-10" />
+                )}
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Our Journey — 2x3 grid of cards */}
+      <section className="bg-white">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
+              <span className="h-px w-6 bg-[#E8621A]" />
+              Our Journey
+              <span className="h-px w-6 bg-[#E8621A]" />
+            </span>
+            <h2 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              How Gajan Traders <span className="text-[#E8621A]">grew.</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {journeyCards.map((m, i) => (
+              <motion.div
+                key={m.year}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06, duration: 0.4 }}
+                className="rounded-2xl border border-border/50 p-6 hover:border-[#E8621A]/30 transition-colors"
+              >
+                <span className="text-sm font-bold text-[#E8621A] tracking-wider">{m.year}</span>
+                <h3 className="text-lg font-semibold text-foreground mt-2">{m.title}</h3>
+                <p className="text-sm text-foreground/60 leading-relaxed mt-1.5">{m.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Us — Checklist style */}
+      <section className="bg-[#1a1a2e]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                <span className="w-6 h-px bg-[#E8621A]" />
+                Why Gajan Traders
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
+                We pack it, insure it,
+                <br />
+                <span className="text-[#E8621A]">clear customs, and deliver.</span>
+              </h2>
+              <p className="text-base text-white/70 leading-relaxed max-w-sm">
+                No middlemen, no runaround. Walk in or call — everything is handled under one roof.
+              </p>
+            </motion.div>
+
+            <div className="space-y-4">
+              {whyUsItems.map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: 16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06, duration: 0.4 }}
+                  className="flex items-start gap-4 bg-white/5 rounded-xl p-4 backdrop-blur-sm border border-white/5"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center shrink-0 mt-0.5">
+                    <item.icon className="size-4" />
+                  </div>
+                  <p className="text-sm text-white/85 leading-relaxed">{item.text}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Our Branches */}
-      <section className="relative bg-surface">
+      <section className="bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-14">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735]">
-              <span className="h-px w-6 bg-[#F94735]" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
+              <span className="h-px w-6 bg-[#E8621A]" />
               Our Branches
+              <span className="h-px w-6 bg-[#E8621A]" />
             </span>
             <h2 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Walk in <span className="text-[#F94735]">any time.</span>
+              Walk in <span className="text-[#E8621A]">any time.</span>
             </h2>
-            <p className="mt-3 text-base text-foreground/70 max-w-md">
+            <p className="mt-3 text-base text-foreground/60 max-w-md mx-auto">
               Two branches in Chennai. Walk in with your parcel, walk out with a tracking number.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {config.offices.map((office, i) => (
               <motion.div
                 key={office.name}
@@ -332,26 +424,26 @@ export default function AboutPage(): ReactNode {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-2xl border border-border/50 bg-white p-8 shadow-sm"
+                className="rounded-2xl border border-border/50 bg-[#fafafa] p-8"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F94735]/10 text-[#F94735] mb-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8621A]/10 text-[#E8621A] mb-5">
                   <MapPin size={20} />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">{office.name}</h3>
-                <p className="mt-2 text-base text-foreground/70 leading-relaxed">{office.address}</p>
-                <div className="mt-4 flex flex-col gap-2 text-sm text-foreground/80">
+                <p className="mt-2 text-sm text-foreground/60 leading-relaxed">{office.address}</p>
+                <div className="mt-4 flex flex-col gap-2 text-sm text-foreground/70">
                   <span className="flex items-center gap-2">
-                    <Clock size={14} className="shrink-0 text-[#F94735]" />
+                    <Clock size={14} className="shrink-0 text-[#E8621A]" />
                     {office.hours}
                   </span>
                   <span className="flex items-center gap-2">
-                    <Phone size={14} className="shrink-0 text-[#F94735]" />
+                    <Phone size={14} className="shrink-0 text-[#E8621A]" />
                     {office.phones}
                   </span>
                 </div>
                 <a
                   href={`tel:${office.phones.split('/')[0].trim().replace(/\s/g, '')}`}
-                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#F94735] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D83220]"
+                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#E8621A] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C45016]"
                 >
                   <Phone size={14} />
                   Call Branch
@@ -362,86 +454,22 @@ export default function AboutPage(): ReactNode {
         </div>
       </section>
 
-      {/* Why Businesses Trust Us */}
-      <section className="relative bg-[#1a1a2e] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-fixed bg-cover bg-center"
-          style={{
-            backgroundImage: "url('/images/cargo-bg.webp')",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/60 to-[#1a1a2e]/90" />
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
-            <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                <span className="w-6 h-px bg-[#F94735]" />
-                Our Edge
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-[1.15] mb-4">
-                Why Chennai <span className="text-[#F94735]">trusts us.</span>
-              </h2>
-              <p className="text-lg text-white/85 leading-relaxed max-w-md">
-                Two branches. One standard. Walk in or call — we pack, insure, clear customs, and
-                deliver. No middlemen, no runaround.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                {
-                  icon: Truck,
-                  title: 'Direct Airline Contracts',
-                  desc: 'No middlemen. We contract directly with airlines for faster, cheaper delivery.',
-                },
-                {
-                  icon: Shield,
-                  title: 'In-Branch Packing',
-                  desc: 'Fragile items double-packed on the spot. Transit insurance included.',
-                },
-                {
-                  icon: Users,
-                  title: 'Walk-In Service',
-                  desc: 'Visit Saidapet or Royapuram. Same team, same faces, every visit.',
-                },
-                {
-                  icon: Package,
-                  title: 'Customs Handled',
-                  desc: 'We handle documentation and clearance in-house. You just drop off.',
-                },
-              ].map((e, i) => (
-                <motion.div
-                  key={e.title}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.4 }}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mb-3">
-                    <e.icon className="size-4" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-0.5">{e.title}</h3>
-                  <p className="text-lg text-white/85 leading-relaxed">{e.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Testimonials */}
-      <section className="relative bg-surface py-16 md:py-24 overflow-hidden">
+      <section className="bg-[#fafafa] py-16 md:py-24 overflow-hidden">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24">
-          <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
-            <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
-              Testimonials
-            </div>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              What <span className="text-[#F94735]">our users say</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              What <span className="text-[#E8621A]">our customers say</span>
             </h2>
-          </div>
+          </motion.div>
 
-          <Carousel3Col />
+          <TestimonialSlider />
         </div>
       </section>
 

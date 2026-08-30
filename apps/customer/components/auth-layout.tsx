@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 
 interface AuthLayoutProps {
   config: {
@@ -15,7 +15,7 @@ export function AuthLayout({ config, title, subtitle, children }: AuthLayoutProp
     <div className="flex items-center justify-center min-h-[80vh] px-4 py-24">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="text-2xl font-bold tracking-tight text-[#F94735]">{config.shortName}</div>
+          <div className="text-2xl font-bold tracking-tight text-[#E8621A]">{config.shortName}</div>
         </div>
 
         <div className="border border-border bg-white rounded-2xl shadow-sm p-8 space-y-6">

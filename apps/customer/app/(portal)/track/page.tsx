@@ -3,12 +3,13 @@
 import { Chip, Spinner } from '@heroui/react';
 import { motion } from 'framer-motion';
 import {
-  ArrowUpRight,
+  ArrowRight,
   ChevronDown,
   Clock,
   HelpCircle,
   MapPin,
   PackageSearch,
+  Phone,
   Search,
   Truck,
 } from 'lucide-react';
@@ -45,58 +46,73 @@ export default function TrackPage(): ReactNode {
 
   return (
     <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      {/* Hero with centered search */}
+      <section className="relative overflow-hidden min-h-[480px] md:min-h-[560px] flex items-center bg-[#1a1a2e]">
         <div className="absolute inset-0">
           <Image
             src="/images/trackbg.webp"
             alt=""
             fill
             sizes="100vw"
-            className="object-cover hidden md:block"
+            className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/50 to-[#1a1a2e]/15" />
+          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
+          
         </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 pt-24 md:pt-28 pb-20 w-full">
+        <div className="relative z-10 w-full px-5 sm:px-8 md:px-16 lg:px-24 pt-28 md:pt-32 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-2xl text-left"
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-6">
-              <span className="w-6 h-px bg-[#F94735]" />
-              Track Shipment
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.08] text-white max-w-2xl">
-              Track your shipment
-              <br />
-              <span className="text-[#F94735]">in real time.</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 mb-6">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-medium text-white/80">Live Tracking</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
+              Where&apos;s your parcel?{' '}
+              <span className="text-[#E8621A]">Let&apos;s find out.</span>
             </h1>
-            <p className="mt-5 text-base text-white/75 max-w-md leading-relaxed mb-8">
-              Enter your tracking number to get live status updates and delivery timeline.
+            <p className="mt-4 text-base text-white/65 max-w-md leading-relaxed">
+              Enter your tracking number for real-time status updates from pickup to doorstep.
             </p>
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg">
-              <input
-                value={trackingNo}
-                onChange={(e) => setTrackingNo(e.target.value)}
-                placeholder="Enter tracking number"
-                className="flex-1 min-w-0 px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base sm:text-lg placeholder:text-white/70 outline-none focus:ring-2 focus:ring-[#F94735]/40 focus:border-[#F94735] transition-all"
-              />
+            <form
+              onSubmit={handleSubmit}
+              className="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg"
+            >
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+                />
+                <input
+                  value={trackingNo}
+                  onChange={(e) => setTrackingNo(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-white/15 bg-white/[0.07] backdrop-blur-sm text-white text-base placeholder:text-white/40 outline-none focus:ring-2 focus:ring-[#E8621A]/40 focus:border-[#E8621A]/50 transition-all"
+                />
+              </div>
               <button
                 type="submit"
-                className="w-full sm:w-auto justify-center px-5 py-3 sm:px-6 sm:py-3.5 rounded-full bg-[#F94735] text-white text-base sm:text-lg font-semibold hover:bg-[#D83220] transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+                className="w-full sm:w-auto justify-center px-7 py-3.5 rounded-xl bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors flex items-center gap-2 cursor-pointer shrink-0"
               >
-                <Search size={18} /> Track
+                Track <ArrowRight size={16} />
               </button>
             </form>
+            <p className="mt-4 text-xs text-white/40">
+              Your tracking number was given to you at the branch or sent via SMS/WhatsApp.
+            </p>
           </motion.div>
         </div>
       </section>
 
+      {/* Results */}
       <div ref={resultsRef} className="relative bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16">
           <div className="grid md:grid-cols-[280px_1fr] gap-8 md:gap-12">
-            <aside className="space-y-6 order-last md:order-first">
-              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+            <aside className="space-y-5 order-last md:order-first">
+              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-sm">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">
                   Track Another
                 </h3>
@@ -104,201 +120,297 @@ export default function TrackPage(): ReactNode {
                   <input
                     value={trackingNo}
                     onChange={(e) => setTrackingNo(e.target.value)}
-                    placeholder="Enter tracking no."
-                    className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#F94735]/20 focus:border-[#F94735]"
+                    placeholder="Tracking no."
+                    className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A]"
                   />
                   <button
                     type="submit"
-                    className="w-full sm:w-auto justify-center px-3 py-2 rounded-full bg-[#F94735] text-white text-base font-semibold hover:bg-[#D83220] transition-colors cursor-pointer"
+                    className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
                   >
                     <Search size={16} />
                   </button>
                 </form>
               </div>
-              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
+              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-sm">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">
                   Quick Links
                 </h3>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <a
                     href="/contact"
-                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"
+                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-2 h-2 rounded-full bg-[#F94735]" /> Get a Quote
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]" /> Get a Quote
                   </a>
                   <a
                     href="/contact"
-                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"
+                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-2 h-2 rounded-full bg-[#F94735]/70" /> Contact Support
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]/70" /> Contact Support
                   </a>
                   <a
                     href="/branches"
-                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-foreground/[0.03]"
+                    className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-2 h-2 rounded-full bg-[#F94735]" /> Our Branches
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]" /> Our Branches
                   </a>
                 </div>
               </div>
-              <div className="rounded-2xl bg-[#F94735]/5 border border-[#F94735]/10 p-5">
-                <div className="w-10 h-10 rounded-lg bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mb-3">
+              <div className="rounded-2xl bg-[#E8621A]/5 border border-[#E8621A]/10 p-5">
+                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
                   <HelpCircle size={18} />
                 </div>
                 <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed mb-3">
+                <p className="text-sm text-foreground/70 leading-relaxed mb-3">
                   Our support team is available Mon–Sat, 9 AM – 9 PM.
                 </p>
                 <a
                   href={config.contact.phoneHref}
-                  className="text-sm font-semibold text-[#F94735] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E8621A] hover:underline"
                 >
+                  <Phone size={13} />
                   {config.contact.phone}
                 </a>
               </div>
             </aside>
+
             <div>
               {loading ? (
                 <div className="flex items-center justify-center min-h-[40vh]">
                   <Spinner size="lg" />
                 </div>
               ) : searchQuery && searchError ? (
-                <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-100 mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-20"
+                >
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-50 border border-red-100 mb-5">
                     <PackageSearch size={28} className="text-red-400" />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">Shipment not found</h2>
-                  <p className="text-lg text-foreground/80">{searchError}</p>
-                </div>
+                  <p className="text-base text-foreground/60 max-w-sm mx-auto">{searchError}</p>
+                  <p className="text-sm text-foreground/40 mt-3">
+                    Double-check the tracking number or contact support.
+                  </p>
+                </motion.div>
               ) : searchQuery && result ? (
-                <div className="space-y-8">
-                  <div className="flex items-start gap-5">
-                    <div className="w-14 h-14 rounded-full bg-[#F94735]/10 text-[#F94735] flex items-center justify-center shrink-0">
-                      <PackageSearch size={26} />
-                    </div>
-                    <div>
-                      <p className="font-mono text-xl font-bold text-foreground">
-                        {result.trackingNo}
-                      </p>
-                      <Chip
-                        size="md"
-                        variant="soft"
-                        color={STATUS_COLORS[result.status] ?? 'default'}
-                        className="mt-1.5"
-                      >
-                        {STATUS_LABELS[result.status] || result.status}
-                      </Chip>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-foreground/80">
-                        {result.carrier && (
-                          <span>
-                            <Truck size={15} className="inline mr-1.5" />
-                            {result.carrier}
-                          </span>
-                        )}
-                        {(result.origin || result.destination) && (
-                          <span>
-                            <MapPin size={15} className="inline mr-1.5" />
-                            {result.origin || '?'} → {result.destination || '?'}
-                          </span>
-                        )}
-                        {result.lastTrackedAt && (
-                          <span>
-                            <Clock size={15} className="inline mr-1.5" />
-                            Last updated {new Date(result.lastTrackedAt).toLocaleDateString()}
-                          </span>
-                        )}
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-8"
+                >
+                  <div className="rounded-2xl border border-foreground/5 bg-[#fafafa] p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center shrink-0">
+                        <PackageSearch size={22} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-lg font-bold text-foreground">
+                          {result.trackingNo}
+                        </p>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={STATUS_COLORS[result.status] ?? 'default'}
+                          className="mt-1.5"
+                        >
+                          {STATUS_LABELS[result.status] || result.status}
+                        </Chip>
+                        <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-foreground/70">
+                          {result.carrier && (
+                            <span className="flex items-center gap-1.5">
+                              <Truck size={14} className="text-[#E8621A]" />
+                              {result.carrier}
+                            </span>
+                          )}
+                          {(result.origin || result.destination) && (
+                            <span className="flex items-center gap-1.5">
+                              <MapPin size={14} className="text-[#E8621A]" />
+                              {result.origin || '?'} → {result.destination || '?'}
+                            </span>
+                          )}
+                          {result.lastTrackedAt && (
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={14} className="text-[#E8621A]" />
+                              {new Date(result.lastTrackedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="relative">
+                  <div className="relative pl-6">
                     {result.events.length === 0 ? (
-                      <p className="text-foreground/80 text-center py-8">No tracking events yet.</p>
+                      <p className="text-foreground/60 text-center py-12">
+                        No tracking events yet. Check back shortly.
+                      </p>
                     ) : (
                       result.events.map((event, i) => (
                         <div
                           key={`${event.eventTime}-${event.description ?? ''}`}
-                          className="flex gap-5 pb-8 relative last:pb-0"
+                          className="relative pb-8 last:pb-0"
                         >
                           {i < result.events.length - 1 && (
-                            <div className="absolute left-[12px] top-7 bottom-0 w-0.5 bg-border" />
+                            <div className="absolute left-[-20px] top-4 bottom-0 w-px bg-border" />
                           )}
-                          <div className="flex flex-col items-center shrink-0">
-                            <div
-                              className={`w-[24px] h-[24px] rounded-full border-2 flex items-center justify-center ${i === 0 ? 'border-[#F94735] bg-[#F94735]' : 'border-border bg-white'}`}
-                            >
-                              {i === 0 && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                            </div>
+                          <div
+                            className={`absolute left-[-24px] top-1 w-[10px] h-[10px] rounded-full border-2 ${
+                              i === 0
+                                ? 'border-[#E8621A] bg-[#E8621A]'
+                                : 'border-border bg-white'
+                            }`}
+                          >
+                            {i === 0 && (
+                              <div className="absolute inset-[2px] rounded-full bg-white" />
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0 -mt-0.5">
+                          <div>
                             <div className="flex items-center gap-3 flex-wrap">
                               <p
-                                className={`text-lg font-semibold ${i === 0 ? 'text-foreground' : 'text-foreground/90'}`}
+                                className={`text-base font-semibold ${i === 0 ? 'text-foreground' : 'text-foreground/80'}`}
                               >
                                 {STATUS_LABELS[event.status] || event.status}
                               </p>
-                              <span className="text-foreground/70">
+                              <span className="text-sm text-foreground/50">
                                 {new Date(event.eventTime).toLocaleString()}
                               </span>
                             </div>
                             {event.description && (
-                              <p className="text-foreground/80 mt-1">{event.description}</p>
+                              <p className="text-sm text-foreground/70 mt-0.5">
+                                {event.description}
+                              </p>
                             )}
                             {event.location && (
-                              <p className="text-foreground/70 mt-0.5">{event.location}</p>
+                              <p className="text-xs text-foreground/50 mt-0.5">
+                                {event.location}
+                              </p>
                             )}
                           </div>
                         </div>
                       ))
                     )}
                   </div>
-                </div>
+                </motion.div>
               ) : searchQuery ? null : (
-                <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-foreground/5 border border-border mb-4">
-                    <PackageSearch size={28} className="text-foreground/60" />
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-20"
+                >
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-foreground/[0.03] border border-border mb-5">
+                    <PackageSearch size={28} className="text-foreground/30" />
                   </div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    Enter a tracking number
+                  <h2 className="text-xl font-bold text-foreground mb-2">
+                    Enter a tracking number to get started
                   </h2>
-                  <p className="text-lg text-foreground/80">
-                    Use the search box above to track your shipment.
+                  <p className="text-base text-foreground/50 max-w-sm mx-auto">
+                    Your tracking number was given to you at the branch or sent via SMS/WhatsApp.
                   </p>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <section className="relative bg-white border-t border-border">
+      {/* How Tracking Works */}
+      <section className="bg-[#fafafa]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              How tracking <span className="text-[#E8621A]">works.</span>
+            </h2>
+            <p className="mt-3 text-base text-foreground/60 max-w-md mx-auto">
+              From drop-off to delivery, your parcel is tracked at every step.
+            </p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                step: '01',
+                icon: PackageSearch,
+                title: 'Drop Off',
+                desc: 'Bring your parcel to either Chennai branch and get a tracking number instantly.',
+              },
+              {
+                step: '02',
+                icon: Truck,
+                title: 'In Transit',
+                desc: 'Your parcel is scanned at each checkpoint — origin, transit hubs, and customs.',
+              },
+              {
+                step: '03',
+                icon: MapPin,
+                title: 'Out for Delivery',
+                desc: 'Once it reaches the destination country, local delivery takes over with live updates.',
+              },
+              {
+                step: '04',
+                icon: Clock,
+                title: 'Delivered',
+                desc: 'You get a confirmation with timestamp. Track the full journey anytime right here.',
+              },
+            ].map((s, i) => (
+              <motion.div
+                key={s.step}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.4 }}
+                className="relative bg-white rounded-2xl p-6 shadow-sm border border-border/40"
+              >
+                <span className="text-3xl font-black text-[#E8621A]/10 absolute top-4 right-4">
+                  {s.step}
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-4">
+                  <s.icon className="size-5" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">{s.title}</h3>
+                <p className="text-sm text-foreground/60 leading-relaxed">{s.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-                <span className="w-6 h-px bg-[#F94735]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
+                <span className="w-6 h-px bg-[#E8621A]" />
                 FAQ
               </span>
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-                Tracking <span className="text-[#F94735]">FAQs</span>
+                Tracking <span className="text-[#E8621A]">FAQs</span>
               </h2>
-              <p className="text-lg text-foreground/90 leading-relaxed mb-6">
+              <p className="text-base text-foreground/70 leading-relaxed mb-6">
                 Common questions about tracking shipments with Gajan Traders.
               </p>
-              <p className="text-lg text-foreground/80 leading-relaxed mb-10">
+              <p className="text-base text-foreground/60 leading-relaxed mb-10">
                 Can&apos;t find your answer? Contact our support team.
               </p>
               <div className="border-t border-border pt-8">
-                <h3 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                <h3 className="text-xl font-bold tracking-tight text-foreground mb-2">
                   Still need help?
                 </h3>
-                <p className="text-lg text-foreground/90 mb-6">
+                <p className="text-base text-foreground/70 mb-6">
                   Get in touch for personalised support.
                 </p>
                 <a
                   href="/contact"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F94735] text-white text-base font-semibold hover:bg-[#D83220] transition-colors cursor-pointer w-fit"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
                 >
-                  Contact Support <ArrowUpRight size={16} />
+                  Contact Support <ArrowRight size={14} />
                 </a>
               </div>
             </div>
@@ -337,16 +449,16 @@ export default function TrackPage(): ReactNode {
                       onClick={() => setOpenFaq(faqOpen ? null : f.q)}
                       className="w-full flex items-center justify-between py-4 text-left cursor-pointer"
                     >
-                      <span className="text-lg font-medium text-foreground pr-4">{f.q}</span>
+                      <span className="text-base font-medium text-foreground pr-4">{f.q}</span>
                       <ChevronDown
                         size={16}
-                        className={`text-foreground/70 shrink-0 transition-transform duration-200 ${faqOpen ? 'rotate-180' : ''}`}
+                        className={`text-foreground/50 shrink-0 transition-transform duration-200 ${faqOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <div
                       className={`overflow-hidden transition-all duration-200 ${faqOpen ? 'max-h-40 pb-4' : 'max-h-0'}`}
                     >
-                      <p className="text-lg text-foreground/90 leading-relaxed">{f.a}</p>
+                      <p className="text-sm text-foreground/70 leading-relaxed">{f.a}</p>
                     </div>
                   </div>
                 );

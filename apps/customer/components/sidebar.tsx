@@ -18,7 +18,7 @@ import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const publicLinks = [
-  { icon: Search, label: 'Track', href: '/track', color: '#F94735' },
+  { icon: Search, label: 'Track', href: '/track', color: '#E8621A' },
   { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#F97316' },
   { icon: FileText, label: 'Get a Quote', href: '/contact', color: '#8B5CF6' },
   { icon: HelpCircle, label: 'FAQ', href: '/faq', color: '#3B82F6' },
@@ -26,11 +26,11 @@ const publicLinks = [
 ];
 
 const dashboardLinks = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', color: '#F94735' },
-  { icon: Search, label: 'Track', href: '/track', color: '#F94735' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', color: '#E8621A' },
+  { icon: Search, label: 'Track', href: '/track', color: '#E8621A' },
   { icon: Package, label: 'My Shipments', href: '/my-shipments', color: '#3B82F6' },
   { icon: FileText, label: 'Invoices', href: '/my-invoices', color: '#10B981' },
-  { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#F94735' },
+  { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#E8621A' },
 ];
 
 const prohibitedItems = [
@@ -67,7 +67,7 @@ export function LeftSidebar({
               aria-current={isActive(l.href) ? 'page' : undefined}
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group cursor-pointer ${
                 isActive(l.href)
-                  ? 'bg-[#F94735]/10 text-[#D83220] font-semibold'
+                  ? 'bg-[#E8621A]/10 text-[#C45016] font-semibold'
                   : 'text-foreground/60 hover:text-foreground hover:bg-foreground/[0.03]'
               }`}
             >
@@ -80,15 +80,15 @@ export function LeftSidebar({
           ))}
         </div>
       </div>
-      <div className="rounded-2xl bg-[#F94735]/5 p-5 text-center">
-        <div className="w-11 h-11 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center mx-auto mb-3">
+      <div className="rounded-2xl bg-[#E8621A]/5 p-5 text-center">
+        <div className="w-11 h-11 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-3">
           <HelpCircle size={20} />
         </div>
         <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
         <p className="text-xs text-foreground/60 leading-relaxed mb-3">Mon–Sat, 9 AM – 9 PM</p>
         <a
           href={config.contact.phoneHref}
-          className="text-sm font-semibold text-[#F94735] hover:text-[#D83220] transition-colors bg-white px-4 py-2 rounded-xl shadow-sm inline-block"
+          className="text-sm font-semibold text-[#E8621A] hover:text-[#C45016] transition-colors bg-white px-4 py-2 rounded-xl shadow-sm inline-block"
         >
           {config.contact.phone}
         </a>
@@ -103,7 +103,7 @@ export function RightSidebar(): ReactNode {
     <aside className="hidden lg:block space-y-6 sticky top-24">
       <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
         <div className="flex items-center gap-2 mb-4">
-          <MapPin size={14} className="text-[#F94735]" />
+          <MapPin size={14} className="text-[#E8621A]" />
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
             Our Offices
           </h3>
@@ -113,15 +113,15 @@ export function RightSidebar(): ReactNode {
             <div key={office.name} className="p-3 rounded-xl bg-foreground/[0.02] space-y-2">
               <p className="text-sm font-semibold text-foreground">{office.name}</p>
               <div className="flex items-start gap-2 text-xs text-foreground/60">
-                <MapPin size={12} className="shrink-0 mt-0.5 text-[#F94735]" />
+                <MapPin size={12} className="shrink-0 mt-0.5 text-[#E8621A]" />
                 <span>{office.address}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-foreground/60">
-                <Clock size={12} className="shrink-0 text-[#F94735]" />
+                <Clock size={12} className="shrink-0 text-[#E8621A]" />
                 <span>{office.hours}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-foreground/60">
-                <Phone size={12} className="shrink-0 text-[#F94735]" />
+                <Phone size={12} className="shrink-0 text-[#E8621A]" />
                 <span>{office.phones}</span>
               </div>
             </div>
@@ -136,7 +136,7 @@ export function RightSidebar(): ReactNode {
       </div>
       <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Ban size={14} className="text-[#F94735]" />
+          <Ban size={14} className="text-[#E8621A]" />
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
             Prohibited Items
           </h3>
@@ -151,7 +151,7 @@ export function RightSidebar(): ReactNode {
         </ul>
         <a
           href="/prohibited"
-          className="mt-3 flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-[#F94735]/5 text-[#F94735] text-sm font-semibold hover:bg-[#F94735]/10 transition-colors cursor-pointer"
+          className="mt-3 flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-[#E8621A]/5 text-[#E8621A] text-sm font-semibold hover:bg-[#E8621A]/10 transition-colors cursor-pointer"
         >
           View Full List <ArrowUpRight size={13} />
         </a>

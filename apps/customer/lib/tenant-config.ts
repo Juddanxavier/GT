@@ -117,8 +117,8 @@ export const tenantConfig: TenantCopy = {
     subtitle: 'Track, quote, or schedule a pickup near you.',
   },
   about: {
-    headline: 'Your trusted logistics partner, delivering across 200+ countries.',
-    body: 'From doorstep pickup near our offices to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
+    headline: 'A real courier service, not a software platform.',
+    body: 'Two branches in Chennai, real staff, real handshakes. Walk in with a parcel — we handle the rest: packing, customs, and delivery to 220+ countries. From doorstep pickup near our offices to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
     cta: 'Learn About Us',
   },
   cta: {

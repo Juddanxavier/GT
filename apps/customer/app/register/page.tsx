@@ -137,7 +137,7 @@ function RegisterForm(): ReactNode {
             onChange={(e) => setName(e.target.value)}
             placeholder="Your full name"
             autoComplete="name"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.name ? 'border-red-400' : 'border-border'}`}
+            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldErrors.name ? 'border-red-400' : 'border-border'}`}
           />
           {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
         </div>
@@ -153,7 +153,7 @@ function RegisterForm(): ReactNode {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
             autoComplete="email"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.email ? 'border-red-400' : 'border-border'}`}
+            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldErrors.email ? 'border-red-400' : 'border-border'}`}
           />
           {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
         </div>
@@ -170,7 +170,7 @@ function RegisterForm(): ReactNode {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Create a password (min. 8 characters)"
               autoComplete="new-password"
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F94735]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
+              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
             />
             <button
               type="button"
@@ -188,7 +188,7 @@ function RegisterForm(): ReactNode {
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-[#F94735] hover:bg-[#e03e2d] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+          className="w-full bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
         >
           {loading ? 'Creating account...' : 'Create account'}
         </button>
@@ -197,7 +197,7 @@ function RegisterForm(): ReactNode {
           Already have an account?{' '}
           <a
             href="/login"
-            className="font-semibold text-[#F94735] hover:text-[#e03e2d] underline underline-offset-2 transition-colors"
+            className="font-semibold text-[#E8621A] hover:text-[#C45016] underline underline-offset-2 transition-colors"
           >
             Sign in
           </a>
@@ -207,7 +207,7 @@ function RegisterForm(): ReactNode {
           By creating an account, you agree to our{' '}
           <a
             href="/terms"
-            className="text-foreground/60 hover:text-[#F94735] underline underline-offset-2 transition-colors"
+            className="text-foreground/60 hover:text-[#E8621A] underline underline-offset-2 transition-colors"
           >
             Terms of Service
           </a>

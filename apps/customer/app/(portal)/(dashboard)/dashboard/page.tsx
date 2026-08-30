@@ -70,10 +70,10 @@ function DashboardSection(): ReactNode {
   if (!dash) return null;
 
   const kpiCards = [
-    { icon: Package, label: 'Total Shipments', value: dash.kpis.total, color: '#F94735' },
+    { icon: Package, label: 'Total Shipments', value: dash.kpis.total, color: '#E8621A' },
     { icon: TrendingUp, label: 'In Transit', value: dash.kpis.inTransit, color: '#3B82F6' },
     { icon: CheckCircle, label: 'Delivered', value: dash.kpis.delivered, color: '#10B981' },
-    { icon: AlertTriangle, label: 'Exceptions', value: dash.kpis.exception, color: '#F94735' },
+    { icon: AlertTriangle, label: 'Exceptions', value: dash.kpis.exception, color: '#E8621A' },
   ];
 
   return (
@@ -109,7 +109,7 @@ function DashboardSection(): ReactNode {
             label: 'Track Shipment',
             href: '/track',
             desc: 'Real-time tracking',
-            color: '#F94735',
+            color: '#E8621A',
           },
           {
             icon: FileText,
@@ -141,7 +141,7 @@ function DashboardSection(): ReactNode {
               <p className="text-base font-bold text-foreground">{a.label}</p>
               <p className="text-foreground/50">{a.desc}</p>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center group-hover:bg-[#F94735]/10 group-hover:text-[#F94735] transition-all">
+            <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center group-hover:bg-[#E8621A]/10 group-hover:text-[#E8621A] transition-all">
               <ChevronRight size={16} />
             </div>
           </a>
@@ -211,7 +211,7 @@ function DashboardSection(): ReactNode {
                   </span>
                   <ChevronRight
                     size={14}
-                    className="text-foreground/20 group-hover:text-[#F94735] group-hover:translate-x-0.5 transition-all"
+                    className="text-foreground/20 group-hover:text-[#E8621A] group-hover:translate-x-0.5 transition-all"
                   />
                 </div>
               </a>
@@ -220,7 +220,7 @@ function DashboardSection(): ReactNode {
           <div className="px-6 py-4 border-t border-foreground/5">
             <a
               href="/my-shipments"
-              className="inline-flex items-center gap-1.5 font-semibold text-[#F94735] hover:text-[#D83220] transition-colors"
+              className="inline-flex items-center gap-1.5 font-semibold text-[#E8621A] hover:text-[#C45016] transition-colors"
             >
               View all shipments <ArrowRight size={14} />
             </a>
@@ -263,14 +263,14 @@ function DashboardContent(): ReactNode {
   return (
     <div className="space-y-8">
       <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 sm:p-8">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#F94735]/20 blur-3xl" />
-        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#F94735]/10 blur-3xl" />
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#E8621A]/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#E8621A]/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#F94735] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-[#E8621A] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-sm">
             {initials}
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-1">
               Customer Portal
             </p>
             <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, Chip, Pagination, Skeleton, Spinner } from '@heroui/react';
 import {
@@ -20,10 +20,10 @@ import { STATUS_COLORS, STATUS_LABELS } from '@/lib/status';
 import { useCustomerSession } from '@/lib/use-customer-session';
 
 const STATUS_HEX: Record<string, string> = {
-  pending: '#F94735',
+  pending: '#E8621A',
   info_received: '#3B82F6',
-  in_transit: '#F94735',
-  out_for_delivery: '#F94735',
+  in_transit: '#E8621A',
+  out_for_delivery: '#E8621A',
   delivered: '#10B981',
   delivery_failure: '#EF4444',
   cancelled: '#6B7280',
@@ -107,7 +107,7 @@ export function MyShipmentsClient(): ReactNode {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#F94735]/10 text-[#F94735] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
           <Box size={24} />
         </div>
         <div>
@@ -117,11 +117,11 @@ export function MyShipmentsClient(): ReactNode {
       </div>
 
       <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 sm:p-8 border border-foreground/5">
-        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#F94735]/20 blur-3xl" />
-        <div className="absolute -bottom-24 -left-10 w-56 h-56 rounded-full bg-[#F94735]/10 blur-3xl" />
+        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#E8621A]/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 w-56 h-56 rounded-full bg-[#E8621A]/10 blur-3xl" />
         <div className="relative">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-1 flex items-center gap-2">
-            <span className="w-6 h-px bg-[#F94735]" /> Track by number
+            <span className="w-6 h-px bg-[#E8621A]" /> Track by number
           </h2>
           <p className="text-sm text-white/60 mb-4">
             Enter a tracking number to look up a shipment instantly.
@@ -136,13 +136,13 @@ export function MyShipmentsClient(): ReactNode {
                 setClaimError('');
               }}
               placeholder="Enter tracking number"
-              className="flex-1 px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base placeholder:text-white/60 outline-none focus:ring-2 focus:ring-[#F94735]/40 focus:border-[#F94735] transition-all"
+              className="flex-1 px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white text-base placeholder:text-white/60 outline-none focus:ring-2 focus:ring-[#E8621A]/40 focus:border-[#E8621A] transition-all"
             />
             <Button
               type="submit"
               isDisabled={searching || !trackingSearch.trim()}
               isPending={searching}
-              className="w-full sm:w-auto bg-[#F94735] text-white"
+              className="w-full sm:w-auto bg-[#E8621A] text-white"
             >
               {searching ? 'Searching...' : 'Track'}
             </Button>
@@ -181,7 +181,7 @@ export function MyShipmentsClient(): ReactNode {
                   </Button>
                   <a
                     href={`/my-shipments/${searchResult.trackingNo}`}
-                    className="font-medium text-[#F94735] hover:underline inline-flex items-center gap-1"
+                    className="font-medium text-[#E8621A] hover:underline inline-flex items-center gap-1"
                   >
                     Details <ExternalLink size={14} />
                   </a>
@@ -230,7 +230,7 @@ export function MyShipmentsClient(): ReactNode {
               size="sm"
               variant={statusFilter === s ? 'primary' : 'ghost'}
               onPress={() => handleStatusFilter(s)}
-              className={statusFilter === s ? 'bg-[#F94735] text-white' : ''}
+              className={statusFilter === s ? 'bg-[#E8621A] text-white' : ''}
             >
               {s ? STATUS_LABELS[s] || s : 'All'}
             </Button>
@@ -264,8 +264,8 @@ export function MyShipmentsClient(): ReactNode {
           </div>
         ) : shipments.length === 0 ? (
           <div className="rounded-2xl bg-white p-12 text-center border border-foreground/5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#F94735]/5 mb-4">
-              <Package size={28} className="text-[#F94735]/40" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#E8621A]/5 mb-4">
+              <Package size={28} className="text-[#E8621A]/40" />
             </div>
             <h2 className="text-lg font-semibold text-foreground mb-1">No shipments yet</h2>
             <p className="text-foreground/50 max-w-sm mx-auto">
@@ -285,8 +285,8 @@ export function MyShipmentsClient(): ReactNode {
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{
-                        backgroundColor: `${STATUS_HEX[shipment.status] ?? '#F94735'}15`,
-                        color: STATUS_HEX[shipment.status] ?? '#F94735',
+                        backgroundColor: `${STATUS_HEX[shipment.status] ?? '#E8621A'}15`,
+                        color: STATUS_HEX[shipment.status] ?? '#E8621A',
                       }}
                     >
                       <Package size={18} />

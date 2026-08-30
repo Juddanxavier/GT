@@ -35,12 +35,12 @@ export function FaqSection(): ReactNode {
       <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
           <div>
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F94735] mb-4">
-              <span className="w-6 h-px bg-[#F94735]" />
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-4">
+              <span className="w-6 h-px bg-[#E8621A]" />
               FAQ
             </span>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-              Frequently Asked <span className="text-[#F94735]">Questions</span>
+              Frequently Asked <span className="text-[#E8621A]">Questions</span>
             </h2>
             <p className="text-base text-foreground/90 leading-relaxed mb-6">
               Common questions about our services.
@@ -57,7 +57,7 @@ export function FaqSection(): ReactNode {
               </p>
               <a
                 href="/contact"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F94735] text-white text-base font-semibold hover:bg-[#D83220] transition-colors cursor-pointer w-fit"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors cursor-pointer w-fit"
               >
                 Contact Support <ArrowUpRight size={16} />
               </a>
