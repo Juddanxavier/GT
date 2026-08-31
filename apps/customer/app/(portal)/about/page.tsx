@@ -442,7 +442,7 @@ export default function AboutPage(): ReactNode {
                   </span>
                 </div>
                 <a
-                  href={`tel:${office.phones.split('/')[0].trim().replace(/\s/g, '')}`}
+                  href={`tel:${office.phones.split('/')[0]?.trim().replace(/\s/g, '') ?? ''}`}
                   className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#E8621A] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C45016]"
                 >
                   <Phone size={14} />
