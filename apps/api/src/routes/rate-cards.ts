@@ -18,40 +18,45 @@ app.get(
   '/',
   requireRole('superadmin', 'tenant-admin'),
   async (c) => {
-    const scope = getQueryScope(c);
-    if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+    try {
+      const scope = getQueryScope(c);
+      if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
-    const offset = (page - 1) * limit;
-    const search = c.req.query('search');
-    const activeOnly = c.req.query('active') === 'true';
+      const page = Math.max(parseInt(c.req.query('page') ?? '1', 10) || 1, 1);
+      const limit = Math.min(Math.max(parseInt(c.req.query('limit') ?? '50', 10) || 50, 1), 200);
+      const offset = (page - 1) * limit;
+      const search = c.req.query('search');
+      const activeOnly = c.req.query('active') === 'true';
 
-    if (search && search.length > 100) return c.json({ error: 'Search query too long' }, 400);
+      if (search && search.length > 100) return c.json({ error: 'Search query too long' }, 400);
 
-    const conditions: ReturnType<typeof eq>[] = [eq(rateCards.tenantId, scope.tenantId)];
-    if (search) {
-      conditions.push(ilike(rateCards.destinationCountry, `%${search}%`));
+      const conditions: ReturnType<typeof eq>[] = [eq(rateCards.tenantId, scope.tenantId)];
+      if (search) {
+        conditions.push(ilike(rateCards.destinationCountry, `%${search}%`));
+      }
+      if (activeOnly) {
+        conditions.push(eq(rateCards.isActive, true));
+      }
+
+      const [countRow] = await db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(rateCards)
+        .where(and(...conditions) as SQL | undefined);
+      const total = countRow?.count ?? 0;
+
+      const rows = await db
+        .select()
+        .from(rateCards)
+        .where(and(...conditions) as SQL | undefined)
+        .orderBy(rateCards.destinationCountry)
+        .limit(limit)
+        .offset(offset);
+
+      return c.json({ data: rows, total, page, limit });
+    } catch (err) {
+      console.error('[rate-cards] GET / error:', err);
+      throw err;
     }
-    if (activeOnly) {
-      conditions.push(eq(rateCards.isActive, true));
-    }
-
-    const [countRow] = await db
-      .select({ count: sql<number>`COUNT(*)::int` })
-      .from(rateCards)
-      .where(and(...conditions) as SQL | undefined);
-    const total = countRow?.count ?? 0;
-
-    const rows = await db
-      .select()
-      .from(rateCards)
-      .where(and(...conditions) as SQL | undefined)
-      .orderBy(rateCards.destinationCountry)
-      .limit(limit)
-      .offset(offset);
-
-    return c.json({ data: rows, total, page, limit });
   },
 );
 
