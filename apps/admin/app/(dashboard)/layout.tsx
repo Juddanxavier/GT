@@ -43,6 +43,7 @@ import {
   User,
   UserPlus,
   Settings as SettingsIcon,
+  DollarSign,
 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import { TenantFilterProvider, useTenantFilter } from '@/lib/tenant-filter-context';
@@ -73,6 +74,9 @@ function getNavItems(role?: string): { section: string; items: NavItem[] }[] {
   }
   manage.push({ href: '/shipments', label: 'Shipments', icon: <Package size={18} /> });
   manage.push({ href: '/invoices', label: 'Invoices', icon: <Receipt size={18} /> });
+  if (role !== 'staff') {
+    manage.push({ href: '/rate-cards', label: 'Rate Cards', icon: <DollarSign size={18} /> });
+  }
 
   const insights: NavItem[] = [];
   if (role !== 'staff') {

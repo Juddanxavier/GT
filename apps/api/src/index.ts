@@ -594,6 +594,7 @@ import type { LoggerVariables } from './logger';
 import { childLogger, logger } from './logger';
 import auditLogsRoute from './routes/audit-logs';
 import branches from './routes/branches';
+import checkPrice from './routes/check-price';
 import claimShipment from './routes/claim-shipment';
 import customers from './routes/customers';
 import dashboard from './routes/dashboard';
@@ -605,6 +606,7 @@ import notificationsRoute from './routes/notifications';
 import onboard from './routes/onboard';
 import publicTrack from './routes/public-track';
 import quotations from './routes/quotations';
+import rateCards from './routes/rate-cards';
 import reports from './routes/reports';
 import searchRoute from './routes/search';
 import settingsRoute from './routes/settings';
@@ -653,8 +655,10 @@ app.get('/api/diagnostics/email', sessionMiddleware, (c) => {
 });
 
 app.route('/api/branches', branches);
+app.route('/api/check-price', checkPrice);
 app.route('/api/customers', customers);
 app.route('/api/quotations', quotations);
+app.route('/api/rate-cards', rateCards);
 app.route('/api/shipments', shipments);
 app.route('/api/tenants', tenants);
 app.route('/api/users', users);

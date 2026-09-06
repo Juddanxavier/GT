@@ -14,7 +14,6 @@ import {
   LogOut,
   Menu,
   Package,
-  Plane,
   Receipt,
   Ruler,
   Search,
@@ -22,6 +21,8 @@ import {
   User,
   UserPlus,
   X,
+  DollarSign,
+  Plane,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -187,6 +188,7 @@ export function PortalNav(): ReactNode {
     '/pickup',
     '/volumetric-calculator',
     '/currency-converter',
+    '/check-price',
   ].some(isActive);
 
   const navLinkCls = (href: string) =>
@@ -312,6 +314,12 @@ export function PortalNav(): ReactNode {
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
                     <Globe size={16} className={`text-[#E8621A]`} /> Currency Converter
+                  </a>
+                  <a
+                    href="/check-price"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
+                  >
+                    <DollarSign size={16} className={`text-[#E8621A]`} /> Check Price
                   </a>
                 </div>
               </div>
@@ -631,6 +639,13 @@ export function PortalNav(): ReactNode {
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
                               <Globe size={18} className={`text-[#E8621A]`} /> Currency Converter
+                            </a>
+                            <a
+                              href="/check-price"
+                              onClick={() => setMobileOpen(false)}
+                              className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                            >
+                              <DollarSign size={18} className={`text-[#E8621A]`} /> Check Price
                             </a>
                           </div>
                         </motion.div>

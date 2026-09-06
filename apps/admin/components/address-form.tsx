@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Input } from '@heroui/react';
-import { getData } from 'country-list';
+import { COUNTRIES } from '@/lib/countries';
 
 export interface AddressData {
   name?: string;
@@ -23,7 +23,7 @@ interface AddressFormProps {
   showCountry?: boolean;
 }
 
-const ALL_COUNTRIES = getData().slice().sort((a, b) => a.name.localeCompare(b.name));
+const ALL_COUNTRIES = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
 
 function Field({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-1.5">{children}</div>;

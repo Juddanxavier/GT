@@ -34,7 +34,10 @@ export type AuditEvent =
   | 'INVITATION_CANCELLED'
   | 'NOTIFICATION_SENT'
   | 'NOTIFICATION_READ'
-  | 'ARCHIVE_RUN';
+  | 'ARCHIVE_RUN'
+  | 'RATE_CARD_CREATED'
+  | 'RATE_CARD_UPDATED'
+  | 'RATE_CARD_DELETED';
 
 export async function logAudit(
   event: AuditEvent,

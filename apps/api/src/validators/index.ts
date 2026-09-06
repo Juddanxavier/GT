@@ -166,3 +166,27 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email(),
   redirectTo: z.string().optional(),
 });
+
+export const createRateCardSchema = z.object({
+  destinationCountry: z.string().min(1).max(100).transform(stripHtml),
+  currency: z.string().length(3).transform(stripHtml).optional(),
+  rates: z.array(z.object({
+    serviceType: z.string().min(1).max(50).transform(stripHtml),
+    weightFrom: numericString,
+    weightTo: numericString,
+    rate: numericString,
+  })).min(1),
+});
+
+export const updateRateCardSchema = z.object({
+  destinationCountry: z.string().min(1).max(100).transform(stripHtml).optional(),
+  currency: z.string().length(3).transform(stripHtml).optional(),
+  isActive: z.boolean().optional(),
+  rates: z.array(z.object({
+    serviceType: z.string().min(1).max(50).transform(stripHtml),
+    weightFrom: numericString,
+    weightTo: numericString,
+    rate: numericString,
+  })).min(1).optional(),
+});
+

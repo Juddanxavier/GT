@@ -428,4 +428,47 @@ export const notifications = pgTable(
   }),
 );
 
+// ── Rate Cards & Shipping Rates ──
+
+export const rateCards = pgTable(
+  'rate_card',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    destinationCountry: varchar('destination_country', { length: 100 }).notNull(),
+    currency: varchar('currency', { length: 3 }).default('INR'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    rateCardTenantIdx: index('rate_card_tenant_idx').on(table.tenantId),
+    rateCardCountryIdx: index('rate_card_country_idx').on(table.destinationCountry),
+    rateCardActiveIdx: index('rate_card_active_idx').on(table.isActive),
+  }),
+);
+
+export const shippingRates = pgTable(
+  'shipping_rate',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    rateCardId: uuid('rate_card_id')
+      .notNull()
+      .references(() => rateCards.id, { onDelete: 'cascade' }),
+    packageType: varchar('package_type', { length: 50 }).notNull(),
+    serviceType: varchar('service_type', { length: 50 }).notNull(),
+    weightFrom: numeric('weight_from', { precision: 10, scale: 2 }).notNull(),
+    weightTo: numeric('weight_to', { precision: 10, scale: 2 }).notNull(),
+    rate: numeric('rate', { precision: 12, scale: 2 }).notNull(),
+  },
+  (table) => ({
+    shippingRateCardIdx: index('shipping_rate_card_idx').on(table.rateCardId),
+    shippingRatePackageIdx: index('shipping_rate_package_idx').on(table.packageType),
+    shippingRateServiceIdx: index('shipping_rate_service_idx').on(table.serviceType),
+  }),
+);
+
 

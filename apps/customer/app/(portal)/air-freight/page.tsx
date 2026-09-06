@@ -225,7 +225,7 @@ export default function AirFreightPage(): ReactNode {
                         </div>
                       </div>
                       <a
-                        href="/quote"
+                        href="/check-price"
                         className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-bold transition-colors w-fit hover:opacity-90"
                         style={{ backgroundColor: plan.accent }}
                       >
@@ -281,7 +281,7 @@ export default function AirFreightPage(): ReactNode {
                   </p>
                   <div className="flex flex-wrap justify-center gap-3">
                     <a
-                      href="/quote"
+                      href="/check-price"
                       className="px-6 py-3 rounded-xl bg-white text-[#E8621A] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
                     >
                       Check Price <ArrowRight size={16} />
