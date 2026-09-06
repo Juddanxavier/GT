@@ -12,7 +12,7 @@ if (!connectionString) {
 
 const client = postgres(connectionString, {
   max: Number(process.env.DB_POOL_MAX) || 20,
-  ssl: process.env.DB_SSL === 'require' ? 'require' : false,
+  ssl: process.env.DB_SSL === 'require' || connectionString.includes('sslmode=require') ? 'require' : false,
   connect_timeout: 10,   // seconds
   idle_timeout: 30,          // seconds
   onnotice: () => {},
