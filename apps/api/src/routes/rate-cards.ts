@@ -56,8 +56,11 @@ app.get(
     } catch (err) {
       console.error('[rate-cards] GET / error:', err);
       const msg = err instanceof Error ? err.message : String(err);
+      const code = (err as any)?.code;
+      const detail = (err as any)?.detail;
+      const severity = (err as any)?.severity;
       const stack = err instanceof Error ? err.stack : undefined;
-      return c.json({ error: { message: msg, stack } }, 500);
+      return c.json({ error: { message: msg, code, detail, severity, stack } }, 500);
     }
   },
 );
