@@ -55,12 +55,14 @@ app.get(
       return c.json({ data: rows, total, page, limit });
     } catch (err) {
       console.error('[rate-cards] GET / error:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      const code = (err as any)?.code;
-      const detail = (err as any)?.detail;
-      const severity = (err as any)?.severity;
-      const stack = err instanceof Error ? err.stack : undefined;
-      return c.json({ error: { message: msg, code, detail, severity, stack } }, 500);
+      const serializable: Record<string, unknown> = {};
+      if (err && typeof err === 'object') {
+        for (const key of Object.getOwnPropertyNames(err)) {
+          try { serializable[key] = (err as any)[key]; } catch {}
+        }
+      }
+      serializable['_str'] = String(err);
+      return c.json({ error: serializable }, 500);
     }
   },
 );
