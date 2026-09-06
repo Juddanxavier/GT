@@ -55,7 +55,9 @@ app.get(
       return c.json({ data: rows, total, page, limit });
     } catch (err) {
       console.error('[rate-cards] GET / error:', err);
-      throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      return c.json({ error: { message: msg, stack } }, 500);
     }
   },
 );
