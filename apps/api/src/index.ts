@@ -627,7 +627,10 @@ app.onError((err, c) => {
   Sentry.captureException(err, {
     contexts: { request: { request_id: requestId } },
   });
-  return errorResponse(c, 'INTERNAL_ERROR', 'Internal server error', 500);
+  const detail = err instanceof Error ? err.message : String(err);
+  const cause = (err as any)?.cause instanceof Error ? (err as any).cause.message : undefined;
+  const msg = process.env.NODE_ENV === 'production' ? `Internal server error: ${detail}${cause ? ` — ${cause}` : ''}` : 'Internal server error';
+  return errorResponse(c, 'INTERNAL_ERROR', msg, 500);
 });
 
 // Email diagnostics (requires authentication)
