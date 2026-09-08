@@ -38,7 +38,7 @@ const itemV: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
 };
 
-export function PortalNav(): ReactNode {
+export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
   const config = useTenantConfig();
@@ -199,7 +199,7 @@ export function PortalNav(): ReactNode {
 
   return (
     <header
-      className={`fixed top-9 left-0 w-full z-50 transition-all duration-300 ${navBg}`}
+      className={`fixed left-0 w-full z-50 transition-all duration-300 ${hasMarquee ? 'top-10' : 'top-0'} ${navBg}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
         <a href="/" className="flex items-center gap-2 ml-2">

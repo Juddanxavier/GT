@@ -18,7 +18,7 @@ import type { ReactNode } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const publicLinks = [
-  { icon: Search, label: 'Track', href: '/track', color: '#E8621A' },
+  { icon: Search, label: 'Track', href: '/track', color: '#e8621a' },
   { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#F97316' },
   { icon: FileText, label: 'Get a Quote', href: '/contact', color: '#8B5CF6' },
   { icon: HelpCircle, label: 'FAQ', href: '/faq', color: '#3B82F6' },
@@ -26,11 +26,11 @@ const publicLinks = [
 ];
 
 const dashboardLinks = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', color: '#E8621A' },
-  { icon: Search, label: 'Track', href: '/track', color: '#E8621A' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', color: '#e8621a' },
+  { icon: Search, label: 'Track', href: '/track', color: '#e8621a' },
   { icon: Package, label: 'My Shipments', href: '/my-shipments', color: '#3B82F6' },
   { icon: FileText, label: 'Invoices', href: '/my-invoices', color: '#10B981' },
-  { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#E8621A' },
+  { icon: Calendar, label: 'Schedule Pickup', href: '/pickup', color: '#e8621a' },
 ];
 
 const prohibitedItems = [
@@ -55,8 +55,8 @@ export function LeftSidebar({
   const isActive = (href: string): boolean => pathname === href || pathname.startsWith(`${href}/`);
   return (
     <aside className={`${drawer ? '' : 'hidden lg:block'} space-y-6`}>
-      <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
-        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">
+      <div className="premium-card p-5">
+        <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-foreground">
           Quick Links
         </h3>
         <div className="space-y-1">
@@ -65,14 +65,14 @@ export function LeftSidebar({
               key={l.label}
               href={l.href}
               aria-current={isActive(l.href) ? 'page' : undefined}
-              className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group cursor-pointer ${
+              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 isActive(l.href)
-                  ? 'bg-[#E8621A]/10 text-[#C45016] font-semibold'
-                  : 'text-foreground/60 hover:text-foreground hover:bg-foreground/[0.03]'
+                  ? 'bg-brand-accent/10 font-semibold text-brand-accent-hover'
+                  : 'text-foreground/60 hover:bg-foreground/[0.03] hover:text-foreground'
               }`}
             >
               <div
-                className={`w-2 h-2 rounded-full transition-all ${isActive(l.href) ? 'scale-110' : ''}`}
+                className={`h-2 w-2 rounded-full transition-all ${isActive(l.href) ? 'scale-110' : ''}`}
                 style={{ backgroundColor: l.color }}
               />
               {l.label}
@@ -80,15 +80,15 @@ export function LeftSidebar({
           ))}
         </div>
       </div>
-      <div className="rounded-2xl bg-[#E8621A]/5 p-5 text-center">
-        <div className="w-11 h-11 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-3">
+      <div className="rounded-2xl bg-brand-accent/5 p-5 text-center">
+        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-accent/10 text-brand-accent">
           <HelpCircle size={20} />
         </div>
-        <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
-        <p className="text-xs text-foreground/60 leading-relaxed mb-3">Mon–Sat, 9 AM – 9 PM</p>
+        <h3 className="mb-1 text-sm font-bold text-foreground">Need help?</h3>
+        <p className="mb-3 text-xs leading-relaxed text-foreground/60">Mon–Sat, 9 AM – 9 PM</p>
         <a
           href={config.contact.phoneHref}
-          className="text-sm font-semibold text-[#E8621A] hover:text-[#C45016] transition-colors bg-white px-4 py-2 rounded-xl shadow-sm inline-block"
+          className="inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-accent shadow-sm transition-colors hover:text-brand-accent-hover"
         >
           {config.contact.phone}
         </a>
@@ -100,28 +100,28 @@ export function LeftSidebar({
 export function RightSidebar(): ReactNode {
   const config = useTenantConfig();
   return (
-    <aside className="hidden lg:block space-y-6 sticky top-24">
-      <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <MapPin size={14} className="text-[#E8621A]" />
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+    <aside className="sticky top-24 hidden space-y-6 lg:block">
+      <div className="premium-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <MapPin size={14} className="text-brand-accent" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Our Offices
           </h3>
         </div>
         <div className="space-y-3">
           {config.offices.map((office) => (
-            <div key={office.name} className="p-3 rounded-xl bg-foreground/[0.02] space-y-2">
+            <div key={office.name} className="space-y-2 rounded-xl bg-foreground/[0.02] p-3">
               <p className="text-sm font-semibold text-foreground">{office.name}</p>
               <div className="flex items-start gap-2 text-xs text-foreground/60">
-                <MapPin size={12} className="shrink-0 mt-0.5 text-[#E8621A]" />
+                <MapPin size={12} className="mt-0.5 shrink-0 text-brand-accent" />
                 <span>{office.address}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-foreground/60">
-                <Clock size={12} className="shrink-0 text-[#E8621A]" />
+                <Clock size={12} className="shrink-0 text-brand-accent" />
                 <span>{office.hours}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-foreground/60">
-                <Phone size={12} className="shrink-0 text-[#E8621A]" />
+                <Phone size={12} className="shrink-0 text-brand-accent" />
                 <span>{office.phones}</span>
               </div>
             </div>
@@ -129,29 +129,29 @@ export function RightSidebar(): ReactNode {
         </div>
         <a
           href="/branches"
-          className="mt-3 flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-foreground/[0.03] text-foreground/70 text-sm font-semibold hover:bg-foreground/[0.06] transition-colors cursor-pointer"
+          className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-foreground/[0.03] px-4 py-2 text-sm font-semibold text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
         >
           View All Branches <ArrowUpRight size={13} />
         </a>
       </div>
-      <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Ban size={14} className="text-[#E8621A]" />
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+      <div className="premium-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Ban size={14} className="text-brand-accent" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Prohibited Items
           </h3>
         </div>
         <ul className="space-y-1.5">
           {prohibitedItems.map((item) => (
             <li key={item} className="flex items-center gap-2 px-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+              <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
               <span className="text-sm text-foreground/60">{item}</span>
             </li>
           ))}
         </ul>
         <a
           href="/prohibited"
-          className="mt-3 flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-[#E8621A]/5 text-[#E8621A] text-sm font-semibold hover:bg-[#E8621A]/10 transition-colors cursor-pointer"
+          className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-brand-accent/5 px-4 py-2 text-sm font-semibold text-brand-accent transition-colors hover:bg-brand-accent/10"
         >
           View Full List <ArrowUpRight size={13} />
         </a>

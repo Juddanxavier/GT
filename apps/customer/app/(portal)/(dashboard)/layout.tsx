@@ -25,14 +25,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }): 
 
   return (
     <AuthGuard>
-      <div className="px-4 sm:px-6 lg:px-8 pt-20 pb-12 bg-[#FAFAF7] min-h-screen">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-[220px_1fr_260px] gap-6">
+      <div className="min-h-screen bg-brand-cream px-4 pb-12 pt-20 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[220px_1fr_260px]">
           <div className="lg:hidden">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Open menu"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-foreground/5 text-sm font-semibold text-foreground shadow-sm cursor-pointer"
+              className="premium-card inline-flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground"
             >
               <Menu size={16} /> Menu
             </button>
@@ -48,11 +48,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }): 
             <button
               type="button"
               aria-label="Close menu"
-              className="absolute inset-0 bg-[#1a1a2e]/50 backdrop-blur-sm cursor-default"
+              className="absolute inset-0 cursor-default bg-brand-navy/50 backdrop-blur-sm"
               onClick={() => setDrawerOpen(false)}
             />
-            <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-[#FAFAF7] shadow-2xl overflow-y-auto">
-              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] overflow-y-auto bg-brand-cream shadow-2xl">
+              <div className="flex items-center justify-between px-4 pb-2 pt-4">
                 <span className="text-sm font-bold uppercase tracking-wider text-foreground/60">
                   Menu
                 </span>
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }): 
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   aria-label="Close menu"
-                  className="p-2 rounded-lg text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
+                  className="cursor-pointer rounded-lg p-2 text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
                 >
                   <X size={20} />
                 </button>

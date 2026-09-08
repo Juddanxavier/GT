@@ -82,7 +82,7 @@ function DashboardSection(): ReactNode {
         {kpiCards.map((k) => (
           <div
             key={k.label}
-            className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 relative overflow-hidden"
+            className="premium-card premium-card-hover p-6 relative overflow-hidden"
           >
             <div className="flex items-center gap-3">
               <div
@@ -129,7 +129,7 @@ function DashboardSection(): ReactNode {
           <a
             key={a.label}
             href={a.href}
-            className="group flex items-center gap-4 rounded-2xl bg-white p-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_0_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300"
+            className="premium-card premium-card-hover group flex items-center gap-4 p-5 transition-all duration-300"
           >
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300"
@@ -141,7 +141,7 @@ function DashboardSection(): ReactNode {
               <p className="text-base font-bold text-foreground">{a.label}</p>
               <p className="text-foreground/50">{a.desc}</p>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center group-hover:bg-[#E8621A]/10 group-hover:text-[#E8621A] transition-all">
+            <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center group-hover:bg-brand-accent/10 group-hover:text-brand-accent transition-all">
               <ChevronRight size={16} />
             </div>
           </a>
@@ -149,7 +149,7 @@ function DashboardSection(): ReactNode {
       </div>
 
       {dash.recent.length > 0 && (
-        <div className="rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="premium-card overflow-hidden">
           <div className="px-6 py-4 border-b border-foreground/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Box size={16} className="text-foreground/40" />
@@ -211,7 +211,7 @@ function DashboardSection(): ReactNode {
                   </span>
                   <ChevronRight
                     size={14}
-                    className="text-foreground/20 group-hover:text-[#E8621A] group-hover:translate-x-0.5 transition-all"
+                    className="text-foreground/20 group-hover:text-brand-accent group-hover:translate-x-0.5 transition-all"
                   />
                 </div>
               </a>
@@ -220,7 +220,7 @@ function DashboardSection(): ReactNode {
           <div className="px-6 py-4 border-t border-foreground/5">
             <a
               href="/my-shipments"
-              className="inline-flex items-center gap-1.5 font-semibold text-[#E8621A] hover:text-[#C45016] transition-colors"
+              className="inline-flex items-center gap-1.5 font-semibold text-brand-accent hover:text-brand-accent-hover transition-colors"
             >
               View all shipments <ArrowRight size={14} />
             </a>
@@ -262,15 +262,15 @@ function DashboardContent(): ReactNode {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-3xl bg-[#1a1a2e] p-6 sm:p-8">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#E8621A]/20 blur-3xl" />
-        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#E8621A]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl bg-brand-navy p-6 sm:p-8">
+        <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-brand-accent/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-brand-accent/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#E8621A] text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-sm">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-accent text-xl font-bold text-white shadow-sm">
             {initials}
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-1">
               Customer Portal
             </p>
             <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">

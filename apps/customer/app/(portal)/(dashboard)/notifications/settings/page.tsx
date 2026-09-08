@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Button, Switch } from '@heroui/react';
 import { Bell, Mail, MessageSquare } from 'lucide-react';
@@ -51,7 +51,7 @@ export default function CustomerNotificationSettingsPage(): ReactNode {
   if (loading)
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-6 h-6 border-2 border-[#E8621A] border-t-transparent rounded-full" />
+        <div className="animate-spin w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full" />
       </div>
     );
 
@@ -68,7 +68,7 @@ export default function CustomerNotificationSettingsPage(): ReactNode {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
           <Bell size={24} />
         </div>
         <div>
@@ -82,7 +82,7 @@ export default function CustomerNotificationSettingsPage(): ReactNode {
       {categories.map((cat) => (
         <div
           key={cat.key}
-          className="rounded-xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.06)] p-6 space-y-4"
+          className="premium-card space-y-4 p-6"
         >
           <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
             {cat.label}
@@ -116,7 +116,7 @@ export default function CustomerNotificationSettingsPage(): ReactNode {
       ))}
 
       <div className="flex justify-end pt-2">
-        <Button onPress={save} isPending={saving} className="bg-[#E8621A] text-white">
+        <Button onPress={save} isPending={saving} className="bg-brand-accent text-white">
           Save Preferences
         </Button>
       </div>

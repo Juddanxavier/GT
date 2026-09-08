@@ -20,7 +20,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
   const [claimSuccess, setClaimSuccess] = useState('');
   const [claimError, setClaimError] = useState('');
 
-  const btnClass = 'bg-[#E8621A] hover:bg-[#C45016] text-white';
+  const btnClass = 'bg-brand-accent hover:bg-brand-accent-hover text-white';
 
   const { data: result, isLoading: loading, error } = useTrackShipment(trackingNo);
   const claimMutation = useClaimShipment();
@@ -73,7 +73,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
           <div className={cardClass}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
                   <PackageSearch size={18} />
                 </div>
                 <div>
@@ -104,7 +104,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {(result.origin || result.destination) && (
                 <div className="flex items-center gap-2 text-foreground/60">
-                  <MapPin size={14} className="text-[#E8621A]/60 shrink-0" />
+                  <MapPin size={14} className="text-brand-accent/60 shrink-0" />
                   <span>
                     {result.origin || '?'} → {result.destination || '?'}
                   </span>
@@ -112,7 +112,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
               )}
               {result.lastTrackedAt && (
                 <div className="flex items-center gap-2 text-foreground/60">
-                  <Clock size={14} className="text-[#E8621A]/60 shrink-0" />
+                  <Clock size={14} className="text-brand-accent/60 shrink-0" />
                   <span>Last updated {new Date(result.lastTrackedAt).toLocaleDateString()}</span>
                 </div>
               )}
@@ -187,7 +187,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
 
           <div className={cardClass}>
             <div className="flex items-center gap-2 mb-6">
-              <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="w-6 h-px bg-brand-accent" />
               <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Tracking History
               </h2>
@@ -208,7 +208,7 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
                       <div
                         className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
                           i === 0
-                            ? 'border-[#E8621A] bg-[#E8621A]'
+                            ? 'border-brand-accent bg-brand-accent'
                             : 'border-foreground/10 bg-white'
                         }`}
                       >

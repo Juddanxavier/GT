@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Button, Chip, Pagination, Skeleton } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +25,7 @@ function InvoiceSkeleton(): ReactNode {
         <div
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
           key={i}
-          className="flex items-center justify-between rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4"
+          className="flex items-center justify-between rounded-2xl premium-card p-4"
         >
           <div className="space-y-2">
             <Skeleton className="h-4 w-28 rounded" />
@@ -82,7 +82,7 @@ function MyInvoicesContent(): ReactNode {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-accent/10 text-brand-accent">
           <Receipt size={24} />
         </div>
         <div>
@@ -98,7 +98,7 @@ function MyInvoicesContent(): ReactNode {
             size="sm"
             variant={statusFilter === f.key ? 'primary' : 'ghost'}
             onPress={() => handleStatusFilter(f.key)}
-            className={statusFilter === f.key ? 'bg-[#E8621A] text-white' : ''}
+            className={statusFilter === f.key ? 'bg-brand-accent text-white' : ''}
           >
             {f.label}
           </Button>
@@ -123,7 +123,7 @@ function MyInvoicesContent(): ReactNode {
               <a
                 key={inv.id}
                 href={`/invoices/${inv.invoiceNo}`}
-                className="flex items-center justify-between rounded-2xl bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-4 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.08)] transition-all"
+                className="premium-card premium-card-hover flex items-center justify-between p-4 transition-all"
               >
                 <div>
                   <p className="text-sm font-mono font-bold text-foreground">{inv.invoiceNo}</p>

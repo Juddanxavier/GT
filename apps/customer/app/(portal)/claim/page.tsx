@@ -2,10 +2,11 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle, RefreshCw, Truck } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 
 type Step = 'enter-tracking' | 'verify-otp' | 'success';
 
@@ -110,31 +111,18 @@ export default function ClaimShipmentPage(): ReactNode {
   };
 
   return (
-    <div className="min-h-screen bg-white relative -mt-14">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/about.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Claim Shipment
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Claim Your Shipment
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Link a tracking number to your account with a quick email verification.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/about.webp"
+        eyebrow="Claim Shipment"
+        title="Claim Your Shipment"
+        subtitle="Link a tracking number to your account with a quick email verification."
+      />
 
-      <div className="mx-auto max-w-xl px-5 sm:px-8 py-10">
+      <div className="mx-auto max-w-xl px-5 py-10 sm:px-8">
         {step === 'success' ? (
           <div className="rounded-2xl border border-border bg-surface p-8 text-center">
-            <CheckCircle size={48} className="mx-auto text-[#E8621A]" />
+            <CheckCircle size={48} className="mx-auto text-brand-accent" />
             <h2 className="text-xl font-semibold mt-4">Shipment Claimed!</h2>
             <p className="text-sm text-foreground/70 mt-2">
               Tracking {trackingNo} has been added to your shipments.
@@ -154,7 +142,7 @@ export default function ClaimShipmentPage(): ReactNode {
             <div className="flex gap-3 justify-center mt-6">
               <Link
                 href="/my-shipments"
-                className="inline-flex items-center gap-2 rounded-full bg-[#E8621A] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C45016]"
+                className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-accent-hover"
               >
                 <Truck size={16} /> View My Shipments
               </Link>
@@ -172,8 +160,8 @@ export default function ClaimShipmentPage(): ReactNode {
               <span
                 className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                   step === 'enter-tracking'
-                    ? 'bg-[#E8621A] text-white'
-                    : 'bg-[#E8621A]/10 text-[#E8621A]'
+                    ? 'bg-brand-accent text-white'
+                    : 'bg-brand-accent/10 text-brand-accent'
                 }`}
               >
                 {step !== 'enter-tracking' ? '✓' : '1'}
@@ -185,7 +173,7 @@ export default function ClaimShipmentPage(): ReactNode {
               <span
                 className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                   step === 'verify-otp'
-                    ? 'bg-[#E8621A] text-white'
+                    ? 'bg-brand-accent text-white'
                     : 'bg-surface-secondary text-foreground/50'
                 }`}
               >
@@ -221,7 +209,7 @@ export default function ClaimShipmentPage(): ReactNode {
                           value={trackingNo}
                           onChange={(e) => setTrackingNo(e.target.value)}
                           required
-                          className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                          className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                         />
                       </div>
                     </>
@@ -244,7 +232,7 @@ export default function ClaimShipmentPage(): ReactNode {
                           onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                           required
                           maxLength={6}
-                          className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                          className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                         />
                       </div>
                       <div className="flex items-center gap-2">
@@ -272,7 +260,7 @@ export default function ClaimShipmentPage(): ReactNode {
                     </>
                   )}
 
-                  {error && <p className="text-sm text-[#C45016]">{error}</p>}
+                  {error && <p className="text-sm text-brand-accent-hover">{error}</p>}
 
                   <button
                     type="submit"
@@ -281,7 +269,7 @@ export default function ClaimShipmentPage(): ReactNode {
                       verifyClaim.isPending ||
                       (step === 'enter-tracking' ? !trackingNo : otp.length !== 6)
                     }
-                    className="w-full rounded-full px-6 py-2.5 text-base font-medium text-white bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-50 transition-colors"
+                    className="w-full rounded-full px-6 py-2.5 text-base font-medium text-white bg-brand-accent hover:bg-brand-accent-hover disabled:opacity-50 transition-colors"
                   >
                     {(initiateClaim.isPending || verifyClaim.isPending) ? 'Please wait…' : step === 'enter-tracking' ? 'Send OTP' : 'Verify & Claim'}
                   </button>
@@ -291,6 +279,6 @@ export default function ClaimShipmentPage(): ReactNode {
           </>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

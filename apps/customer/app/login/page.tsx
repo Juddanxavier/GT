@@ -106,7 +106,7 @@ function LoginForm(): ReactNode {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
             autoComplete="email"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldErrors.email ? 'border-red-400' : 'border-border'}`}
+            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all ${fieldErrors.email ? 'border-red-400' : 'border-border'}`}
           />
           {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
         </div>
@@ -123,7 +123,7 @@ function LoginForm(): ReactNode {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               autoComplete="current-password"
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#E8621A]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
+              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
             />
             <button
               type="button"
@@ -143,13 +143,13 @@ function LoginForm(): ReactNode {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="rounded border-border accent-[#E8621A]"
+              className="rounded border-border accent-brand-accent"
             />
             Remember me
           </label>
           <a
             href="/forgot-password"
-            className="text-foreground/60 hover:text-[#E8621A] underline underline-offset-2 transition-colors"
+            className="text-foreground/60 hover:text-brand-accent underline underline-offset-2 transition-colors"
           >
             Forgot password?
           </a>
@@ -158,7 +158,7 @@ function LoginForm(): ReactNode {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+          className="w-full bg-brand-accent hover:bg-brand-accent-hover disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
@@ -167,7 +167,7 @@ function LoginForm(): ReactNode {
           No account?{' '}
           <a
             href="/register"
-            className="font-semibold text-[#E8621A] hover:text-[#C45016] underline underline-offset-2 transition-colors"
+            className="font-semibold text-brand-accent hover:text-brand-accent-hover underline underline-offset-2 transition-colors"
           >
             Create one
           </a>

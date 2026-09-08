@@ -13,9 +13,10 @@ import {
   Search,
   Truck,
 } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageSection, PageShell } from '@/components/page/page-section';
 import { useTrackShipment } from '@/lib/queries';
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/status';
 import { useTenantConfig } from '@/lib/use-tenant-config';
@@ -45,75 +46,46 @@ export default function TrackPage(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero with centered search */}
-      <section className="relative overflow-hidden min-h-[480px] md:min-h-[560px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image
-            src="/images/trackbg.webp"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
-        </div>
-        <div className="relative z-10 w-full px-5 sm:px-8 md:px-16 lg:px-24 pt-28 md:pt-32 pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-2xl text-left"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 mb-6">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium text-white/80">Live Tracking</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-              Where&apos;s your parcel?{' '}
-              <span className="text-[#E8621A]">Let&apos;s find out.</span>
-            </h1>
-            <p className="mt-4 text-base text-white/65 max-w-md leading-relaxed">
-              Enter your tracking number for real-time status updates from pickup to doorstep.
-            </p>
-            <form
-              onSubmit={handleSubmit}
-              className="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg"
-            >
-              <div className="relative flex-1">
-                <Search
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
-                />
-                <input
-                  value={trackingNo}
-                  onChange={(e) => setTrackingNo(e.target.value)}
-                  placeholder="Enter tracking number"
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-white/15 bg-white/[0.07] backdrop-blur-sm text-white text-base placeholder:text-white/40 outline-none focus:ring-2 focus:ring-[#E8621A]/40 focus:border-[#E8621A]/50 transition-all"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full sm:w-auto justify-center px-7 py-3.5 rounded-xl bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors flex items-center gap-2 cursor-pointer shrink-0"
-              >
-                Track <ArrowRight size={16} />
-              </button>
-            </form>
-            <p className="mt-4 text-xs text-white/40">
-              Your tracking number was given to you at the branch or sent via SMS/WhatsApp.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/trackbg.webp"
+        eyebrow="Live Tracking"
+        title={
+          <>
+            Where&apos;s your parcel? <span className="text-brand-accent">Let&apos;s find out.</span>
+          </>
+        }
+        subtitle="Enter your tracking number for real-time status updates from pickup to doorstep."
+        tall
+      >
+        <form onSubmit={handleSubmit} className="flex max-w-lg flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+            />
+            <input
+              value={trackingNo}
+              onChange={(e) => setTrackingNo(e.target.value)}
+              placeholder="Enter tracking number"
+              className="w-full rounded-xl border border-white/15 bg-white/[0.07] py-3.5 pl-11 pr-4 text-base text-white backdrop-blur-sm outline-none transition-all placeholder:text-white/40 focus:border-brand-accent/50 focus:ring-2 focus:ring-brand-accent/40"
+            />
+          </div>
+          <button type="submit" className="premium-btn flex shrink-0 cursor-pointer items-center justify-center gap-2 sm:w-auto">
+            Track <ArrowRight size={16} />
+          </button>
+        </form>
+        <p className="mt-4 text-xs text-white/40">
+          Your tracking number was given to you at the branch or sent via SMS/WhatsApp.
+        </p>
+      </PageHero>
 
-      {/* Results */}
-      <div ref={resultsRef} className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16">
+      <div ref={resultsRef}>
+        <PageSection>
           <div className="grid md:grid-cols-[280px_1fr] gap-8 md:gap-12">
             <aside className="space-y-5 order-last md:order-first">
-              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-sm">
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">
+              <div className="premium-card p-5">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-foreground">
                   Track Another
                 </h3>
                 <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
@@ -121,18 +93,18 @@ export default function TrackPage(): ReactNode {
                     value={trackingNo}
                     onChange={(e) => setTrackingNo(e.target.value)}
                     placeholder="Tracking no."
-                    className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A]"
+                    className="flex-1 px-3 py-2 rounded-lg border border-foreground/10 text-base text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent"
                   />
                   <button
                     type="submit"
-                    className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
+                    className="w-full sm:w-auto justify-center px-3 py-2 rounded-lg bg-brand-accent text-white text-base font-semibold hover:bg-brand-accent-hover transition-colors cursor-pointer"
                   >
                     <Search size={16} />
                   </button>
                 </form>
               </div>
-              <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-sm">
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">
+              <div className="premium-card p-5">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-foreground">
                   Quick Links
                 </h3>
                 <div className="space-y-0.5">
@@ -140,24 +112,24 @@ export default function TrackPage(): ReactNode {
                     href="/contact"
                     className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]" /> Get a Quote
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" /> Get a Quote
                   </a>
                   <a
                     href="/contact"
                     className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]/70" /> Contact Support
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent/70" /> Contact Support
                   </a>
                   <a
                     href="/branches"
                     className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors px-2 py-2 rounded-lg hover:bg-foreground/[0.03]"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8621A]" /> Our Branches
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" /> Our Branches
                   </a>
                 </div>
               </div>
-              <div className="rounded-2xl bg-[#E8621A]/5 border border-[#E8621A]/10 p-5">
-                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
+              <div className="rounded-2xl bg-brand-accent/5 border border-brand-accent/10 p-5">
+                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                   <HelpCircle size={18} />
                 </div>
                 <h3 className="text-sm font-bold text-foreground mb-1">Need help?</h3>
@@ -166,7 +138,7 @@ export default function TrackPage(): ReactNode {
                 </p>
                 <a
                   href={config.contact.phoneHref}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E8621A] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-accent hover:underline"
                 >
                   <Phone size={13} />
                   {config.contact.phone}
@@ -200,9 +172,9 @@ export default function TrackPage(): ReactNode {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-8"
                 >
-                  <div className="rounded-2xl border border-foreground/5 bg-[#fafafa] p-6">
+                  <div className="rounded-2xl border border-foreground/5 bg-brand-cream p-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center shrink-0">
                         <PackageSearch size={22} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -220,19 +192,19 @@ export default function TrackPage(): ReactNode {
                         <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-foreground/70">
                           {result.carrier && (
                             <span className="flex items-center gap-1.5">
-                              <Truck size={14} className="text-[#E8621A]" />
+                              <Truck size={14} className="text-brand-accent" />
                               {result.carrier}
                             </span>
                           )}
                           {(result.origin || result.destination) && (
                             <span className="flex items-center gap-1.5">
-                              <MapPin size={14} className="text-[#E8621A]" />
+                              <MapPin size={14} className="text-brand-accent" />
                               {result.origin || '?'} → {result.destination || '?'}
                             </span>
                           )}
                           {result.lastTrackedAt && (
                             <span className="flex items-center gap-1.5">
-                              <Clock size={14} className="text-[#E8621A]" />
+                              <Clock size={14} className="text-brand-accent" />
                               {new Date(result.lastTrackedAt).toLocaleDateString()}
                             </span>
                           )}
@@ -258,7 +230,7 @@ export default function TrackPage(): ReactNode {
                           <div
                             className={`absolute left-[-24px] top-1 w-[10px] h-[10px] rounded-full border-2 ${
                               i === 0
-                                ? 'border-[#E8621A] bg-[#E8621A]'
+                                ? 'border-brand-accent bg-brand-accent'
                                 : 'border-border bg-white'
                             }`}
                           >
@@ -312,12 +284,10 @@ export default function TrackPage(): ReactNode {
               )}
             </div>
           </div>
-        </div>
+        </PageSection>
       </div>
 
-      {/* How Tracking Works */}
-      <section className="bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection cream>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -326,7 +296,7 @@ export default function TrackPage(): ReactNode {
             className="text-center mb-14"
           >
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-              How tracking <span className="text-[#E8621A]">works.</span>
+              How tracking <span className="text-brand-accent">works.</span>
             </h2>
             <p className="mt-3 text-base text-foreground/60 max-w-md mx-auto">
               From drop-off to delivery, your parcel is tracked at every step.
@@ -365,12 +335,12 @@ export default function TrackPage(): ReactNode {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="relative bg-white rounded-2xl p-6 shadow-sm border border-border/40"
+                className="premium-card premium-card-hover relative p-6"
               >
-                <span className="text-3xl font-black text-[#E8621A]/10 absolute top-4 right-4">
+                <span className="text-3xl font-black text-brand-accent/10 absolute top-4 right-4">
                   {s.step}
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-4">
+                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-4">
                   <s.icon className="size-5" />
                 </div>
                 <h3 className="text-base font-semibold text-foreground mb-1">{s.title}</h3>
@@ -378,20 +348,17 @@ export default function TrackPage(): ReactNode {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+      </PageSection>
 
-      {/* FAQ */}
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 FAQ
               </span>
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-                Tracking <span className="text-[#E8621A]">FAQs</span>
+                Tracking <span className="text-brand-accent">FAQs</span>
               </h2>
               <p className="text-base text-foreground/70 leading-relaxed mb-6">
                 Common questions about tracking shipments with Gajan Traders.
@@ -408,7 +375,7 @@ export default function TrackPage(): ReactNode {
                 </p>
                 <a
                   href="/contact"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-accent text-white text-sm font-semibold hover:bg-brand-accent-hover transition-colors cursor-pointer"
                 >
                   Contact Support <ArrowRight size={14} />
                 </a>
@@ -465,8 +432,7 @@ export default function TrackPage(): ReactNode {
               })}
             </div>
           </div>
-        </div>
-      </section>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 }

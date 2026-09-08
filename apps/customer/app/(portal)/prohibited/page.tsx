@@ -2,8 +2,9 @@
 
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowUpRight, FileText, HelpCircle, Shield } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 import { FaqSection } from '@/components/sections/faq-section';
 
 const items = [
@@ -55,7 +56,7 @@ const items = [
     desc: 'Hazardous or dangerous goods are not allowed.',
     reason: 'Pose safety risks — leakage, fire, or explosion during transport.',
     example: 'Aerosols, batteries, flammables, corrosives',
-    color: 'from-[#E8621A]/10 to-[#E8621A]/5 border-[#E8621A]/20 text-[#B8441A]',
+    color: 'from-brand-accent/10 to-brand-accent/5 border-brand-accent/20 text-[#B8441A]',
   },
   {
     icon: (
@@ -291,32 +292,19 @@ const exceptions = [
 
 export default function ProhibitedPage(): ReactNode {
   return (
-    <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/about.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Restricted Items
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Prohibited Items
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Certain items cannot be shipped for safety, legal, or regulatory reasons.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/about.webp"
+        eyebrow="Restricted Items"
+        title="Prohibited Items"
+        subtitle="Certain items cannot be shipped for safety, legal, or regulatory reasons."
+      />
 
       <section className="relative bg-white">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Quick overview <span className="text-[#E8621A]">by category</span>
+              Quick overview <span className="text-brand-accent">by category</span>
             </h2>
             <p className="text-lg text-foreground/90 mt-3 max-w-xl">
               Browse the categories below, then check the reference table for full details.
@@ -391,12 +379,12 @@ export default function ProhibitedPage(): ReactNode {
       <section className="relative bg-surface border-t border-border">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
           <div className="flex flex-col items-center text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E8621A]/10 border border-[#E8621A]/20 text-sm font-semibold text-[#E8621A] mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-sm font-semibold text-brand-accent mb-4">
               <AlertTriangle size={14} />
               Need an exception?
             </div>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Special arrangements <span className="text-[#E8621A]">may be possible</span>
+              Special arrangements <span className="text-brand-accent">may be possible</span>
             </h2>
             <p className="text-lg text-foreground/90 mt-3 max-w-xl">
               Some restricted items can be shipped with proper documentation, permits, or
@@ -414,7 +402,7 @@ export default function ProhibitedPage(): ReactNode {
                 transition={{ delay: i * 0.1, duration: 0.4 }}
                 className="rounded-2xl bg-white border border-border p-6 text-center shadow-sm"
               >
-                <div className="w-12 h-12 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto mb-4">
                   <e.icon className="size-6" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-1.5">{e.title}</h3>
@@ -426,7 +414,7 @@ export default function ProhibitedPage(): ReactNode {
           <div className="text-center">
             <a
               href="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] text-white text-base font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-accent text-white text-base font-semibold hover:bg-brand-accent-hover transition-colors cursor-pointer"
             >
               Contact Support <ArrowUpRight size={16} />
             </a>
@@ -435,6 +423,6 @@ export default function ProhibitedPage(): ReactNode {
       </section>
 
       <FaqSection />
-    </div>
+    </PageShell>
   );
 }

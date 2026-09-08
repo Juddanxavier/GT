@@ -1,24 +1,37 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   ArrowUpRight,
   Building2,
-  ChevronDown,
+  ChevronRight,
+  ClipboardList,
   FileText,
   HelpCircle,
   MessageSquare,
+  Package,
+  Receipt,
   Search,
+  Ship,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { FaqAccordion } from '@/components/faq-accordion';
+import { PageHero } from '@/components/page/page-hero';
+import { PageSection, PageShell } from '@/components/page/page-section';
+import { SectionIntro } from '@/components/sections/section-intro';
 
-const categories = [
+interface FaqCategory {
+  label: string;
+  icon: LucideIcon;
+  items: { q: string; a: string }[];
+}
+
+const categories: FaqCategory[] = [
   {
     label: 'General',
-    icon: '📋',
+    icon: ClipboardList,
     items: [
       {
         q: 'What is Gajan Traders?',
@@ -40,7 +53,7 @@ const categories = [
   },
   {
     label: 'Shipping',
-    icon: '📦',
+    icon: Package,
     items: [
       {
         q: 'How do I ship a parcel?',
@@ -70,7 +83,7 @@ const categories = [
   },
   {
     label: 'Tracking',
-    icon: '🔍',
+    icon: Search,
     items: [
       {
         q: 'How do I track my shipment?',
@@ -96,7 +109,7 @@ const categories = [
   },
   {
     label: 'Services',
-    icon: '🚚',
+    icon: Ship,
     items: [
       {
         q: 'What is volumetric weight and how is it calculated?',
@@ -126,11 +139,11 @@ const categories = [
   },
   {
     label: 'Billing',
-    icon: '💰',
+    icon: Receipt,
     items: [
       {
         q: 'How do I get a shipping quote?',
-        a: 'Use the Get a Quote page to fill in your shipment details. Our team will respond with a competitive rate within 24 hours. You can also use our Volumetric Calculator to estimate dimensional weight beforehand.',
+        a: 'Use the Check Price page to fill in your shipment details. Our team will respond with a competitive rate within 24 hours. You can also use our Volumetric Calculator to estimate dimensional weight beforehand.',
       },
       {
         q: 'What payment methods do you accept?',
@@ -155,255 +168,243 @@ const categories = [
 export default function FaqPage(): ReactNode {
   const [openFaqs, setOpenFaqs] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   function toggle(key: string) {
     setOpenFaqs((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const allQuestions = categories.flatMap((cat) =>
-    cat.items.map((item) => ({ ...item, category: cat.label })),
+  const allQuestions = useMemo(
+    () =>
+      categories.flatMap((cat) =>
+        cat.items.map((item) => ({ ...item, category: cat.label })),
+      ),
+    [],
   );
 
-  const filtered = search.trim()
+  const searchTerm = search.trim().toLowerCase();
+  const searchResults = searchTerm
     ? allQuestions.filter(
         (item) =>
-          item.q.toLowerCase().includes(search.toLowerCase()) ||
-          item.a.toLowerCase().includes(search.toLowerCase()),
+          item.q.toLowerCase().includes(searchTerm) ||
+          item.a.toLowerCase().includes(searchTerm),
       )
     : null;
 
+  const visibleCategories = activeCategory
+    ? categories.filter((c) => c.label === activeCategory)
+    : categories;
+
   return (
-    <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/contact.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
+    <PageShell>
+      <PageHero
+        image="/images/contact.webp"
+        eyebrow="Help Center"
+        title={
+          <>
+            Frequently asked
+            <br />
+            <span className="text-brand-accent">questions.</span>
+          </>
+        }
+        subtitle="Answers on shipping, tracking, services, and billing — or reach our team anytime."
+        tall
+      >
+        <div className="relative mt-2 max-w-xl">
+          <Search
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+          />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setActiveCategory(null);
+            }}
+            placeholder="Search questions..."
+            className="w-full rounded-xl border border-white/15 bg-white/10 py-3.5 pl-11 pr-4 text-base text-white backdrop-blur-sm outline-none transition-all placeholder:text-white/40 focus:border-brand-accent/50 focus:ring-2 focus:ring-brand-accent/40"
+          />
         </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            FAQ
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Find answers to common questions about shipping, tracking, services, and billing.
-          </p>
-        </div>
-      </section>
+      </PageHero>
 
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div className="grid md:grid-cols-[1fr_280px] gap-8 md:gap-12">
-            <div>
-              <div className="relative mb-10">
-                <Search
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground"
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search FAQs..."
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-border text-lg text-foreground placeholder:text-foreground/40 outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
-                />
-              </div>
-
-              {filtered ? (
-                <div className="space-y-4">
-                  <p className="text-foreground mb-4">
-                    {filtered.length} result{filtered.length !== 1 ? 's' : ''} for &quot;{search}
-                    &quot;
-                  </p>
-                  {filtered.length === 0 ? (
-                    <div className="text-center py-16">
-                      <HelpCircle size={48} className="mx-auto text-foreground/30 mb-4" />
-                      <h2 className="text-2xl font-bold text-foreground mb-2">No results found</h2>
-                      <p className="text-lg text-foreground">
-                        Try a different search term or browse the categories below.
-                      </p>
-                    </div>
-                  ) : (
-                    filtered.map((item) => {
-                      const key = `search-${item.q}`;
-                      const isOpen = openFaqs[key];
-                      return (
-                        <div
-                          key={key}
-                          className="rounded-2xl border border-border bg-white overflow-hidden"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => toggle(key)}
-                            className="w-full flex items-center justify-between p-5 text-left cursor-pointer"
-                          >
-                            <div>
-                              <span className="text-xs font-bold uppercase tracking-wider text-[#E8621A]">
-                                {item.category}
-                              </span>
-                              <span className="text-lg font-medium text-foreground block mt-0.5">
-                                {item.q}
-                              </span>
-                            </div>
-                            <ChevronDown
-                              size={18}
-                              className={`text-foreground shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                            />
-                          </button>
-                          <div
-                            className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-40' : 'max-h-0'}`}
-                          >
-                            <div className="px-5 pb-5">
-                              <p className="text-lg text-foreground leading-relaxed">{item.a}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+      <PageSection>
+        <div className="grid gap-10 lg:grid-cols-[1fr_280px] lg:gap-12">
+          <div className="min-w-0">
+            {!searchResults && (
+              <div className="mb-8 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory(null)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    activeCategory === null
+                      ? 'bg-brand-accent text-white'
+                      : 'bg-brand-cream text-foreground/70 hover:bg-brand-accent/10 hover:text-brand-accent'
+                  }`}
+                >
+                  All topics
+                </button>
+                {categories.map((cat) => (
                   <button
+                    key={cat.label}
                     type="button"
-                    onClick={() => setSearch('')}
-                    className="text-sm font-semibold text-[#E8621A] hover:underline cursor-pointer"
+                    onClick={() => setActiveCategory(cat.label)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      activeCategory === cat.label
+                        ? 'bg-brand-accent text-white'
+                        : 'bg-brand-cream text-foreground/70 hover:bg-brand-accent/10 hover:text-brand-accent'
+                    }`}
                   >
-                    Clear search & browse all FAQs
+                    <cat.icon size={14} />
+                    {cat.label}
                   </button>
-                </div>
-              ) : (
-                <div className="space-y-12">
-                  {categories.map((cat, ci) => (
-                    <motion.div
-                      key={cat.label}
-                      initial={{ opacity: 0, y: 12 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: ci * 0.05, duration: 0.3 }}
+                ))}
+              </div>
+            )}
+
+            {searchResults ? (
+              <div>
+                <SectionIntro
+                  eyebrow="Search"
+                  title={`${searchResults.length} result${searchResults.length !== 1 ? 's' : ''}`}
+                  subtitle={search ? `Showing matches for "${search.trim()}"` : undefined}
+                  className="mb-8"
+                />
+                {searchResults.length === 0 ? (
+                  <div className="premium-card py-16 text-center">
+                    <HelpCircle size={40} className="mx-auto mb-4 text-brand-accent/40" />
+                    <h2 className="text-xl font-semibold text-foreground">No results found</h2>
+                    <p className="mt-2 text-muted">
+                      Try a different search term or browse by category.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="mt-6 text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
                     >
-                      <div
-                        id={`cat-${cat.label}`}
-                        className="flex items-center gap-3 mb-5 scroll-mt-24"
-                      >
-                        <span className="text-2xl">{cat.icon}</span>
-                        <h2 className="text-2xl font-bold text-foreground">{cat.label}</h2>
+                      Clear search
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <FaqAccordion
+                      items={searchResults}
+                      openKeys={openFaqs}
+                      onToggle={toggle}
+                      keyPrefix="search-"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="mt-6 text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
+                    >
+                      Clear search & browse all FAQs
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-14">
+                {visibleCategories.map((cat) => (
+                  <div key={cat.label} id={`cat-${cat.label}`} className="scroll-mt-28">
+                    <div className="mb-6 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-accent/10 text-brand-accent">
+                        <cat.icon size={20} />
                       </div>
-                      <div className="space-y-3">
-                        {cat.items.map((item) => {
-                          const key = `${cat.label}-${item.q}`;
-                          const isOpen = openFaqs[key];
-                          return (
-                            <div
-                              key={key}
-                              className="rounded-2xl border border-border bg-white overflow-hidden"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => toggle(key)}
-                                className="w-full flex items-center justify-between p-5 text-left cursor-pointer"
-                              >
-                                <span className="text-lg font-medium text-foreground pr-4">
-                                  {item.q}
-                                </span>
-                                <ChevronDown
-                                  size={18}
-                                  className={`text-foreground shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                />
-                              </button>
-                              <div
-                                className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-40' : 'max-h-0'}`}
-                              >
-                                <div className="px-5 pb-5">
-                                  <p className="text-lg text-foreground leading-relaxed">
-                                    {item.a}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div>
+                        <h2 className="text-xl font-semibold text-foreground">{cat.label}</h2>
+                        <p className="text-sm text-muted">{cat.items.length} questions</p>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                    </div>
+                    <FaqAccordion
+                      items={cat.items}
+                      openKeys={openFaqs}
+                      onToggle={toggle}
+                      keyPrefix={`${cat.label}-`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <aside className="space-y-5 lg:sticky lg:top-28 lg:self-start">
+            <div className="premium-card p-5">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-foreground">
+                Jump to topic
+              </h3>
+              <div className="space-y-0.5">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.label}
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setActiveCategory(cat.label);
+                      document
+                        .getElementById(`cat-${cat.label}`)
+                        ?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors ${
+                      activeCategory === cat.label
+                        ? 'bg-brand-accent/10 font-semibold text-brand-accent'
+                        : 'text-foreground/70 hover:bg-brand-cream hover:text-foreground'
+                    }`}
+                  >
+                    <cat.icon size={15} className="shrink-0" />
+                    <span className="flex-1">{cat.label}</span>
+                    <span className="text-xs text-muted">{cat.items.length}</span>
+                    <ChevronRight size={14} className="text-muted" />
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <aside className="space-y-6">
-              <div className="rounded-xl border border-border bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
-                  Categories
-                </h3>
-                <div className="space-y-1">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.label}
-                      type="button"
-                      onClick={() => {
-                        setSearch('');
-                        document
-                          .getElementById(`cat-${cat.label}`)
-                          ?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-base text-foreground hover:text-[#E8621A] hover:bg-[#E8621A]/5 transition-colors cursor-pointer"
-                    >
-                      <span>{cat.icon}</span>
-                      <span>{cat.label}</span>
-                      <span className="ml-auto text-sm text-foreground/60">{cat.items.length}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
-                  Quick Links
-                </h3>
-                <div className="space-y-2">
+            <div className="premium-card p-5">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-foreground">
+                Quick links
+              </h3>
+              <div className="space-y-1">
+                {[
+                  { href: '/check-price', icon: FileText, label: 'Check Price' },
+                  { href: '/contact', icon: MessageSquare, label: 'Contact Support' },
+                  { href: '/branches', icon: Building2, label: 'Our Branches' },
+                ].map((link) => (
                   <a
-                    href="/quote"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground/70 transition-colors hover:bg-brand-cream hover:text-brand-accent"
                   >
-                    <FileText size={16} className="shrink-0" /> Get a Quote
+                    <link.icon size={15} />
+                    {link.label}
                   </a>
-                  <a
-                    href="/contact"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
-                  >
-                    <MessageSquare size={16} className="shrink-0" /> Contact Support
-                  </a>
-                  <a
-                    href="/branches"
-                    className="flex items-center gap-3 text-base text-foreground hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
-                  >
-                    <Building2 size={16} className="shrink-0" /> Our Branches
-                  </a>
-                </div>
+                ))}
               </div>
-              <div className="rounded-xl border border-border bg-[#E8621A]/5 p-5">
-                <HelpCircle size={28} className="text-[#E8621A] mb-3" />
-                <h3 className="text-base font-bold text-foreground mb-1">Still have questions?</h3>
-                <p className="text-sm text-foreground leading-relaxed mb-4">
-                  Can&apos;t find what you&apos;re looking for? Reach out to our support team 24/7.
-                </p>
-                <div className="space-y-2">
-                  <Link
-                    href="/contact"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors"
-                  >
-                    Contact Support <ArrowUpRight size={14} />
-                  </Link>
-                  <Link
-                    href="/track"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-border text-foreground text-sm font-semibold hover:bg-surface transition-colors"
-                  >
-                    Track Shipment
-                  </Link>
-                </div>
+            </div>
+
+            <div className="rounded-2xl bg-brand-accent/5 p-5 ring-1 ring-brand-accent/10">
+              <HelpCircle size={24} className="mb-3 text-brand-accent" />
+              <h3 className="text-base font-semibold text-foreground">Still have questions?</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted">
+                Our support team is available Mon–Sat, 9 AM – 9 PM.
+              </p>
+              <div className="mt-4 space-y-2">
+                <Link
+                  href="/contact"
+                  className="premium-btn flex w-full items-center justify-center gap-2 text-sm"
+                >
+                  Contact Support <ArrowUpRight size={14} />
+                </Link>
+                <Link
+                  href="/track"
+                  className="premium-btn-ghost flex w-full items-center justify-center gap-2 border-border text-sm text-foreground"
+                >
+                  Track Shipment
+                </Link>
               </div>
-            </aside>
-          </div>
+            </div>
+          </aside>
         </div>
-      </section>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 }

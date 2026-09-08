@@ -20,9 +20,10 @@ import {
   Truck,
   Zap,
 } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -146,27 +147,19 @@ export default function CheckPricePage(): ReactNode {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero */}
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/about.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Shipping Rates
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            International Courier<br />
-            <span className="text-[#E8621A]">Service Rates</span>
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Get transparent courier charges for documents, parcels, and cargo to 200+ countries — with doorstep pickup, live tracking, and no hidden fees.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/about.webp"
+        eyebrow="Shipping Rates"
+        title={
+          <>
+            International Courier
+            <br />
+            <span className="text-brand-accent">Service Rates</span>
+          </>
+        }
+        subtitle="Get transparent courier charges for documents, parcels, and cargo to 200+ countries — with doorstep pickup, live tracking, and no hidden fees."
+      />
 
       {/* Main Content */}
       <section className="relative bg-white">
@@ -200,12 +193,12 @@ export default function CheckPricePage(): ReactNode {
 
             {/* Calculator */}
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 Shipping Calculator
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                Check rates for <span className="text-[#E8621A]">any destination</span>
+                Check rates for <span className="text-brand-accent">any destination</span>
               </h2>
               <p className="text-lg text-foreground/85 mb-8">
                 Enter your destination, shipment type, and weight to see instant rates.
@@ -215,7 +208,7 @@ export default function CheckPricePage(): ReactNode {
                 <div className="space-y-4">
                   {/* Row 1: Destination */}
                   <div className="flex flex-col gap-1.5">
-                    <Label>Destination Country <span className="text-[#E8621A]">*</span></Label>
+                    <Label>Destination Country <span className="text-brand-accent">*</span></Label>
                      <div className="relative">
                        <input
                          type="text"
@@ -224,7 +217,7 @@ export default function CheckPricePage(): ReactNode {
                           onChange={(e) => { setCountryInput(e.target.value); setSelectedCountry(''); }}
                          onFocus={() => setCountryOpen(true)}
                          onBlur={() => setTimeout(() => setCountryOpen(false), 150)}
-                         className={`h-12 w-full px-4 rounded-xl bg-white outline-none transition-all ${countryErr ? 'border border-red-400 ring-2 ring-red-200' : 'border border-foreground/10 focus:border-[#E8621A] focus:ring-2 focus:ring-[#E8621A]/20'}`}
+                         className={`h-12 w-full px-4 rounded-xl bg-white outline-none transition-all ${countryErr ? 'border border-red-400 ring-2 ring-red-200' : 'border border-foreground/10 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20'}`}
                        />
                        {countryOpen && allCountries.filter((c) => c.toLowerCase().includes(countryInput.toLowerCase())).length > 0 && (
                          <div className="absolute z-50 mt-1 w-full rounded-xl border border-foreground/10 bg-white p-1 max-h-56 overflow-y-auto shadow-xl">
@@ -233,7 +226,7 @@ export default function CheckPricePage(): ReactNode {
                                key={name}
                                type="button"
                                onMouseDown={(e) => { e.preventDefault(); setCountryInput(name); setSelectedCountry(name); setCountryOpen(false); }}
-                               className={`w-full px-4 py-2.5 text-sm text-left rounded-lg cursor-pointer transition-colors ${selectedCountry === name ? 'bg-[#E8621A]/10 text-[#E8621A] font-medium' : 'text-foreground/70 hover:bg-[#E8621A]/5'}`}
+                               className={`w-full px-4 py-2.5 text-sm text-left rounded-lg cursor-pointer transition-colors ${selectedCountry === name ? 'bg-brand-accent/10 text-brand-accent font-medium' : 'text-foreground/70 hover:bg-brand-accent/5'}`}
                              >
                                {name}
                              </button>
@@ -269,7 +262,7 @@ export default function CheckPricePage(): ReactNode {
                     type="button"
                     onPress={handleCheckPrice}
                     isDisabled={!selectedCountry || loading || cooldown}
-                    className="w-full h-12 rounded-xl bg-[#E8621A] text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#C45016] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-12 rounded-xl bg-brand-accent text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-brand-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
@@ -283,8 +276,8 @@ export default function CheckPricePage(): ReactNode {
 
             {/* Results */}
             {error && (
-              <div className="rounded-2xl bg-[#1a1a2e] p-8 md:p-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-[#E8621A]/15 text-[#E8621A] flex items-center justify-center mx-auto mb-5">
+              <div className="rounded-2xl bg-brand-navy p-8 md:p-10 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-brand-accent/15 text-brand-accent flex items-center justify-center mx-auto mb-5">
                   <Globe size={24} />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Rates not available yet</h3>
@@ -294,7 +287,7 @@ export default function CheckPricePage(): ReactNode {
                 <div className="flex flex-wrap justify-center gap-3">
                   <a
                     href={config.contact.phoneHref}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-accent text-white text-sm font-semibold hover:bg-brand-accent-hover transition-colors"
                   >
                     <Phone size={14} />
                     {config.contact.phone}
@@ -312,12 +305,12 @@ export default function CheckPricePage(): ReactNode {
 
             {priceData && !loading && (
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                  <span className="w-6 h-px bg-[#E8621A]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                  <span className="w-6 h-px bg-brand-accent" />
                   Rates
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                  Shipping to <span className="text-[#E8621A]">{priceData.destinationCountry}</span>
+                  Shipping to <span className="text-brand-accent">{priceData.destinationCountry}</span>
                 </h2>
                 <p className="text-sm text-foreground/50 mb-8">Last updated: {new Date(priceData.updatedAt).toLocaleDateString()}</p>
 
@@ -364,13 +357,13 @@ export default function CheckPricePage(): ReactNode {
                             </div>
                             <div>
                               <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Total</p>
-                              <p className="text-lg font-bold text-[#E8621A]">{currencySymbol}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                              <p className="text-lg font-bold text-brand-accent">{currencySymbol}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                             </div>
                           </div>
                           <div className="mt-4 flex justify-end">
                             <a
                               href={`/contact?service=${encodeURIComponent(meta?.label ?? svcType)}&country=${encodeURIComponent(priceData.destinationCountry)}&weight=${weightNum}`}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#E8621A] text-white text-xs font-semibold hover:bg-[#C45016] transition-colors whitespace-nowrap"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-accent text-white text-xs font-semibold hover:bg-brand-accent-hover transition-colors whitespace-nowrap"
                             >
                               Book Now
                             </a>
@@ -396,12 +389,12 @@ export default function CheckPricePage(): ReactNode {
 
             {/* What Factors Affect */}
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 Pricing Factors
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                What affects <span className="text-[#E8621A]">courier charges?</span>
+                What affects <span className="text-brand-accent">courier charges?</span>
               </h2>
               <p className="text-lg text-foreground/85 mb-8">
                 Several factors determine your international shipping cost. Here's what to keep in mind.
@@ -417,7 +410,7 @@ export default function CheckPricePage(): ReactNode {
                     transition={{ delay: i * 0.08, duration: 0.4 }}
                     className="rounded-2xl bg-[#fafafa] p-6"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                       <f.icon size={20} />
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-1.5">{f.title}</h3>
@@ -429,12 +422,12 @@ export default function CheckPricePage(): ReactNode {
 
             {/* Why Gajan Traders */}
             <div className="bg-surface/50 rounded-3xl p-8 md:p-10">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 Why {config.shortName}
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-8">
-                Why thousands choose us for <span className="text-[#E8621A]">express delivery</span>
+                Why thousands choose us for <span className="text-brand-accent">express delivery</span>
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {strengths.map((s, i) => (
@@ -458,14 +451,14 @@ export default function CheckPricePage(): ReactNode {
 
             {/* CTA */}
             <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center">
-              <div className="absolute inset-0 bg-[#1a1a2e]" />
+              <div className="absolute inset-0 bg-brand-navy" />
               <div className="cta-orb cta-orb-1" />
               <div className="cta-orb cta-orb-2" />
               <div className="cta-orb cta-orb-3" />
               <div className="relative z-10">
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
                   Ship Faster.{' '}
-                  <span className="text-[#E8621A]">Ship Smarter.</span>
+                  <span className="text-brand-accent">Ship Smarter.</span>
                 </h2>
                 <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
                   Get an instant quote, find a branch, or schedule a pickup — whatever works for you.
@@ -473,7 +466,7 @@ export default function CheckPricePage(): ReactNode {
                 <div className="flex flex-wrap justify-center gap-3">
                   <a
                     href="/check-price"
-                    className="px-6 py-3 rounded-xl bg-white text-[#E8621A] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl bg-white text-brand-accent text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
                   >
                     Check Price <ArrowRight size={16} />
                   </a>
@@ -538,13 +531,13 @@ export default function CheckPricePage(): ReactNode {
 
             {/* FAQ */}
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
-                <span className="h-px w-6 bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent">
+                <span className="h-px w-6 bg-brand-accent" />
                 FAQ
-                <span className="h-px w-6 bg-[#E8621A]" />
+                <span className="h-px w-6 bg-brand-accent" />
               </span>
               <h2 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-8">
-                Common <span className="text-[#E8621A]">questions.</span>
+                Common <span className="text-brand-accent">questions.</span>
               </h2>
 
               <div className="space-y-3">
@@ -578,9 +571,9 @@ export default function CheckPricePage(): ReactNode {
                 ))}
               </div>
 
-              <div className="mt-8 rounded-2xl bg-[#E8621A]/5 p-6">
+              <div className="mt-8 rounded-2xl bg-brand-accent/5 p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center shrink-0">
                     <HelpCircle size={18} />
                   </div>
                   <div>
@@ -590,7 +583,7 @@ export default function CheckPricePage(): ReactNode {
                     </p>
                     <a
                       href={config.contact.phoneHref}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E8621A] hover:underline"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-accent hover:underline"
                     >
                       <Phone size={13} />
                       {config.contact.phone}
@@ -603,6 +596,6 @@ export default function CheckPricePage(): ReactNode {
           </div>
         </div>
       </section>
-    </div>
+    </PageShell>
   );
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Button, Skeleton } from '@heroui/react';
 import { Bell, Check, CheckCheck, Mail, MessageCircle } from 'lucide-react';
@@ -35,7 +35,7 @@ function PrefsSection(): ReactNode {
   };
 
   return (
-    <div className="rounded-2xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] p-5 space-y-4">
+    <div className="rounded-2xl premium-card p-5 space-y-4">
       <div className="flex items-center gap-2">
         <Bell size={16} className="text-[#F59E0B]" />
         <h2 className="text-sm font-bold text-foreground">Notification Preferences</h2>
@@ -99,7 +99,7 @@ function NotificationsPageContent(): ReactNode {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
             <Bell size={24} />
           </div>
           <div>
@@ -150,14 +150,12 @@ function NotificationsPageContent(): ReactNode {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`rounded-xl bg-white p-5 flex items-start gap-3 transition-all ${
-                n.read
-                  ? 'shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]'
-                  : 'shadow-[0_1px_3px_0_rgba(249,71,53,0.12)]'
+              className={`premium-card flex items-start gap-3 p-5 transition-all ${
+                n.read ? '' : 'ring-1 ring-brand-accent/15'
               }`}
             >
               <div
-                className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-[#E8621A]'}`}
+                className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-brand-accent'}`}
               />
               <div className="flex-1 min-w-0">
                 <p className={`${n.read ? 'text-foreground/50' : 'text-foreground font-medium'}`}>

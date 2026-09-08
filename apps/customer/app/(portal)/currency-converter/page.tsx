@@ -8,9 +8,10 @@ import {
   MessageSquare,
   RefreshCcw,
 } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 import { FaqSection } from '@/components/sections/faq-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
@@ -91,32 +92,13 @@ export default function CurrencyConverterPage(): ReactNode {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image
-            src="/images/currencyhero.webp"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Useful Tools
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Currency Converter
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Convert currencies using real-time exchange rates.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/currencyhero.webp"
+        eyebrow="Useful Tools"
+        title="Currency Converter"
+        subtitle="Convert currencies using real-time exchange rates."
+      />
 
       <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
@@ -145,7 +127,7 @@ export default function CurrencyConverterPage(): ReactNode {
                         min="0"
                         step="any"
                         placeholder="Enter amount"
-                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground placeholder:text-foreground/80 outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground placeholder:text-foreground/80 outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                       />
                     </div>
                     <div>
@@ -159,7 +141,7 @@ export default function CurrencyConverterPage(): ReactNode {
                         id="cc-from"
                         value={from}
                         onChange={(e) => setFrom(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all bg-white appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all bg-white appearance-none cursor-pointer"
                       >
                         {currencies.map((c) => (
                           <option key={c.code} value={c.code}>
@@ -186,7 +168,7 @@ export default function CurrencyConverterPage(): ReactNode {
                         id="cc-to"
                         value={to}
                         onChange={(e) => setTo(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all bg-white appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 rounded-xl border border-border text-lg text-foreground outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all bg-white appearance-none cursor-pointer"
                       >
                         {currencies.map((c) => (
                           <option key={c.code} value={c.code}>
@@ -253,12 +235,12 @@ export default function CurrencyConverterPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                  <span className="w-6 h-px bg-[#E8621A]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                  <span className="w-6 h-px bg-brand-accent" />
                   Popular Pairs
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-                  Popular <span className="text-[#E8621A]">currency pairs</span>
+                  Popular <span className="text-brand-accent">currency pairs</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {popularPairs.map((pair) => {
@@ -271,7 +253,7 @@ export default function CurrencyConverterPage(): ReactNode {
                           setFrom(pair.from);
                           setTo(pair.to);
                         }}
-                        className="flex items-center justify-between px-5 py-4 rounded-xl border border-border bg-white hover:border-[#E8621A]/30 hover:shadow-sm transition-all cursor-pointer text-left"
+                        className="flex items-center justify-between px-5 py-4 rounded-xl border border-border bg-white hover:border-brand-accent/30 hover:shadow-sm transition-all cursor-pointer text-left"
                       >
                         <div>
                           <p className="text-base font-bold text-foreground">
@@ -293,12 +275,12 @@ export default function CurrencyConverterPage(): ReactNode {
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                  <span className="w-6 h-px bg-[#E8621A]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                  <span className="w-6 h-px bg-brand-accent" />
                   All Rates
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-                  Exchange rates <span className="text-[#E8621A]">for {from}</span>
+                  Exchange rates <span className="text-brand-accent">for {from}</span>
                 </h2>
                 {loading ? (
                   <div className="rounded-2xl border border-border p-8 text-center text-foreground/80 animate-pulse">
@@ -363,32 +345,32 @@ export default function CurrencyConverterPage(): ReactNode {
                 <div className="space-y-2">
                   <a
                     href="/quote"
-                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
+                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-brand-accent transition-colors px-2 py-1.5 rounded-lg hover:bg-brand-accent/5"
                   >
                     <FileText size={16} className="shrink-0" /> Get a Quote
                   </a>
                   <a
                     href="/pickup"
-                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
+                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-brand-accent transition-colors px-2 py-1.5 rounded-lg hover:bg-brand-accent/5"
                   >
                     <FileText size={16} className="shrink-0" /> Schedule Pickup
                   </a>
                   <a
                     href="/contact"
-                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
+                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-brand-accent transition-colors px-2 py-1.5 rounded-lg hover:bg-brand-accent/5"
                   >
                     <MessageSquare size={16} className="shrink-0" /> Contact Support
                   </a>
                   <a
                     href="/branches"
-                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-[#E8621A] transition-colors px-2 py-1.5 rounded-lg hover:bg-[#E8621A]/5"
+                    className="flex items-center gap-3 text-base text-foreground/85 hover:text-brand-accent transition-colors px-2 py-1.5 rounded-lg hover:bg-brand-accent/5"
                   >
                     <Building2 size={16} className="shrink-0" /> Our Branches
                   </a>
                 </div>
               </div>
-              <div className="rounded-xl bg-[#E8621A]/5 border border-[#E8621A]/10 p-5">
-                <div className="w-10 h-10 rounded-lg bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
+              <div className="rounded-xl bg-brand-accent/5 border border-brand-accent/10 p-5">
+                <div className="w-10 h-10 rounded-lg bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                   <HelpCircle size={18} />
                 </div>
                 <h3 className="text-base font-bold text-foreground mb-1">Need help?</h3>
@@ -397,7 +379,7 @@ export default function CurrencyConverterPage(): ReactNode {
                 </p>
                 <a
                   href={config.contact.phoneHref}
-                  className="text-sm font-semibold text-[#E8621A] hover:underline"
+                  className="text-sm font-semibold text-brand-accent hover:underline"
                 >
                   {config.contact.phone}
                 </a>
@@ -408,6 +390,6 @@ export default function CurrencyConverterPage(): ReactNode {
       </section>
 
       <FaqSection />
-    </div>
+    </PageShell>
   );
 }

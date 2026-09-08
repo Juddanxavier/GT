@@ -19,9 +19,10 @@ import {
   Truck,
   Zap,
 } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -130,26 +131,19 @@ export default function RateCardsPage(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/about.webp" alt="Shipping rate cards" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Rate Cards
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Shipping rates by<br />
-            <span className="text-[#E8621A]">destination country</span>
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            Select a destination to view per-kg courier charges across all service tiers — express, economy, and ocean freight.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/about.webp"
+        eyebrow="Rate Cards"
+        title={
+          <>
+            Shipping rates by
+            <br />
+            <span className="text-brand-accent">destination country</span>
+          </>
+        }
+        subtitle="Select a destination to view per-kg courier charges across all service tiers — express, economy, and ocean freight."
+      />
 
       <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
@@ -167,7 +161,7 @@ export default function RateCardsPage(): ReactNode {
                   { icon: Clock, label: 'Live rate updates' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2 px-4 py-2 rounded-full bg-foreground/[0.04] border border-foreground/10 text-sm font-medium text-foreground/70">
-                    <item.icon size={14} className="text-[#E8621A]" />
+                    <item.icon size={14} className="text-brand-accent" />
                     {item.label}
                   </div>
                 ))}
@@ -175,12 +169,12 @@ export default function RateCardsPage(): ReactNode {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 Select Destination
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                Choose a <span className="text-[#E8621A]">destination country</span>
+                Choose a <span className="text-brand-accent">destination country</span>
               </h2>
               <p className="text-lg text-foreground/85 mb-8">
                 Only countries with active rate cards are shown. Can&apos;t find yours? Contact us for a custom quote.
@@ -190,7 +184,7 @@ export default function RateCardsPage(): ReactNode {
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="rate-country" className="text-sm font-semibold text-foreground/80">
-                      Destination Country <span className="text-[#E8621A]">*</span>
+                      Destination Country <span className="text-brand-accent">*</span>
                     </label>
                     <div className="relative">
                       <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/30 pointer-events-none" />
@@ -199,7 +193,7 @@ export default function RateCardsPage(): ReactNode {
                         value={selectedCountry}
                         onChange={(e) => { setSelectedCountry(e.target.value); if (e.target.value) fetchPrice(e.target.value); }}
                         disabled={countriesLoading}
-                        className="h-12 w-full pl-11 pr-10 rounded-xl bg-white outline-none transition-all border border-foreground/10 focus:border-[#E8621A] focus:ring-2 focus:ring-[#E8621A]/20 disabled:opacity-50 appearance-none cursor-pointer text-base text-foreground"
+                        className="h-12 w-full pl-11 pr-10 rounded-xl bg-white outline-none transition-all border border-foreground/10 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 disabled:opacity-50 appearance-none cursor-pointer text-base text-foreground"
                       >
                         <option value="">{countriesLoading ? 'Loading countries...' : 'Select destination country'}</option>
                         {availableCountries.map((name) => (
@@ -212,7 +206,7 @@ export default function RateCardsPage(): ReactNode {
 
                   {loading && (
                     <div className="flex items-center justify-center py-8">
-                      <span className="animate-spin rounded-full h-6 w-6 border-2 border-[#E8621A] border-t-transparent" />
+                      <span className="animate-spin rounded-full h-6 w-6 border-2 border-brand-accent border-t-transparent" />
                     </div>
                   )}
                 </div>
@@ -220,8 +214,8 @@ export default function RateCardsPage(): ReactNode {
             </div>
 
             {error && !loading && (
-              <div className="rounded-2xl bg-[#1a1a2e] p-8 md:p-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-[#E8621A]/15 text-[#E8621A] flex items-center justify-center mx-auto mb-5">
+              <div className="rounded-2xl bg-brand-navy p-8 md:p-10 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-brand-accent/15 text-brand-accent flex items-center justify-center mx-auto mb-5">
                   <Globe size={24} />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Rates not available yet</h3>
@@ -229,7 +223,7 @@ export default function RateCardsPage(): ReactNode {
                   We don&apos;t have live rates for <strong className="text-white/80">{selectedCountry}</strong> at the moment. Our team can provide a custom quote.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <a href={config.contact.phoneHref} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors">
+                  <a href={config.contact.phoneHref} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-accent text-white text-sm font-semibold hover:bg-brand-accent-hover transition-colors">
                     <Phone size={14} />
                     {config.contact.phone}
                   </a>
@@ -243,12 +237,12 @@ export default function RateCardsPage(): ReactNode {
 
             {priceData && !loading && (
               <div>
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                  <span className="w-6 h-px bg-[#E8621A]" />
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                  <span className="w-6 h-px bg-brand-accent" />
                   Rate Card
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                  Shipping to <span className="text-[#E8621A]">{priceData.destinationCountry}</span>
+                  Shipping to <span className="text-brand-accent">{priceData.destinationCountry}</span>
                 </h2>
                 <p className="text-sm text-foreground/50 mb-6">Last updated: {new Date(priceData.updatedAt).toLocaleDateString()}</p>
 
@@ -264,7 +258,7 @@ export default function RateCardsPage(): ReactNode {
                           key={t.key}
                           type="button"
                           onClick={() => setServiceType(t.key as typeof serviceType)}
-                          className={`flex-1 text-xs font-semibold uppercase tracking-wide transition-colors ${validService === t.key ? 'bg-[#E8621A] text-white' : 'bg-white text-foreground/50 hover:bg-foreground/[0.02]'}`}
+                          className={`flex-1 text-xs font-semibold uppercase tracking-wide transition-colors ${validService === t.key ? 'bg-brand-accent text-white' : 'bg-white text-foreground/50 hover:bg-foreground/[0.02]'}`}
                         >
                           {t.label}
                         </button>
@@ -326,12 +320,12 @@ export default function RateCardsPage(): ReactNode {
             )}
 
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-                <span className="w-6 h-px bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
+                <span className="w-6 h-px bg-brand-accent" />
                 Pricing Factors
               </span>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-[1.15] mb-2">
-                What affects <span className="text-[#E8621A]">courier charges?</span>
+                What affects <span className="text-brand-accent">courier charges?</span>
               </h2>
               <p className="text-lg text-foreground/85 mb-8">
                 Several factors determine your international shipping cost.
@@ -347,7 +341,7 @@ export default function RateCardsPage(): ReactNode {
                     transition={{ delay: i * 0.08, duration: 0.4 }}
                     className="rounded-2xl bg-[#fafafa] p-6"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                       <f.icon size={20} />
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-1.5">{f.title}</h3>
@@ -358,17 +352,17 @@ export default function RateCardsPage(): ReactNode {
             </div>
 
             <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center">
-              <div className="absolute inset-0 bg-[#1a1a2e]" />
+              <div className="absolute inset-0 bg-brand-navy" />
               <div className="relative z-10">
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
                   Ship Faster.{' '}
-                  <span className="text-[#E8621A]">Ship Smarter.</span>
+                  <span className="text-brand-accent">Ship Smarter.</span>
                 </h2>
                 <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
                   Get an instant quote, find a branch, or schedule a pickup — whatever works for you.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <a href="/check-price" className="px-6 py-3 rounded-xl bg-white text-[#E8621A] text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2">
+                  <a href="/check-price" className="px-6 py-3 rounded-xl bg-white text-brand-accent text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2">
                     Check Price <ArrowRight size={16} />
                   </a>
                   <a href="/pickup" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
@@ -379,13 +373,13 @@ export default function RateCardsPage(): ReactNode {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A]">
-                <span className="h-px w-6 bg-[#E8621A]" />
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent">
+                <span className="h-px w-6 bg-brand-accent" />
                 FAQ
-                <span className="h-px w-6 bg-[#E8621A]" />
+                <span className="h-px w-6 bg-brand-accent" />
               </span>
               <h2 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-8">
-                Common <span className="text-[#E8621A]">questions.</span>
+                Common <span className="text-brand-accent">questions.</span>
               </h2>
 
               <div className="space-y-3">
@@ -419,9 +413,9 @@ export default function RateCardsPage(): ReactNode {
                 ))}
               </div>
 
-              <div className="mt-8 rounded-2xl bg-[#E8621A]/5 p-6">
+              <div className="mt-8 rounded-2xl bg-brand-accent/5 p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center shrink-0">
                     <HelpCircle size={18} />
                   </div>
                   <div>
@@ -429,7 +423,7 @@ export default function RateCardsPage(): ReactNode {
                     <p className="text-sm text-foreground/70 leading-relaxed mb-3">
                       Our support team is available Mon–Sat, 9 AM – 9 PM.
                     </p>
-                    <a href={config.contact.phoneHref} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E8621A] hover:underline">
+                    <a href={config.contact.phoneHref} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-accent hover:underline">
                       <Phone size={13} />
                       {config.contact.phone}
                     </a>
@@ -441,6 +435,6 @@ export default function RateCardsPage(): ReactNode {
           </div>
         </div>
       </section>
-    </div>
+    </PageShell>
   );
 }

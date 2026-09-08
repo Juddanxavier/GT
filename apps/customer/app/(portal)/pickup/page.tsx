@@ -1,9 +1,10 @@
 'use client';
 
 import { Calendar, FileText, Home, Package, Search } from 'lucide-react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { PageHero } from '@/components/page/page-hero';
+import { PageShell } from '@/components/page/page-section';
 import { FaqSection } from '@/components/sections/faq-section';
 import type { Branch } from '@/lib/types';
 import { useTenantConfig } from '@/lib/use-tenant-config';
@@ -67,8 +68,8 @@ const PROHIBITED_ITEMS = [
     ),
     label: 'Hazardous',
     desc: 'Hazardous or dangerous goods are not allowed.',
-    bg: 'from-[#E8621A]/10 to-[#E8621A]/5',
-    border: 'border-[#E8621A]/20',
+    bg: 'from-brand-accent/10 to-brand-accent/5',
+    border: 'border-brand-accent/20',
   },
   {
     icon: (
@@ -347,26 +348,13 @@ export default function PickupPage(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-white relative -mt-14">
-      <section className="relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <Image src="/images/about.webp" alt="" fill sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[#1a1a2e]/70" />
-          
-        </div>
-        <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-6">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Schedule Pickup
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white">
-            Book a Door-to-Door Pickup
-          </h1>
-          <p className="text-base text-white/65 max-w-md mt-4">
-            We&apos;ll pick up your shipment from your doorstep. Fast, reliable, and fully tracked.
-          </p>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image="/images/heroparcel.webp"
+        eyebrow="Schedule Pickup"
+        title="Book a Door-to-Door Pickup"
+        subtitle="We'll pick up your shipment from your doorstep. Fast, reliable, and fully tracked."
+      />
       <div className="mx-auto max-w-7xl flex justify-center">
         {/* Left sidebar */}
         <aside className="hidden lg:block w-56 shrink-0 border-r border-border min-h-screen pt-28 px-4">
@@ -377,7 +365,7 @@ export default function PickupPage(): ReactNode {
                 href={link.href}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-base font-medium transition-all ${
                   link.href === '/pickup'
-                    ? 'bg-[#E8621A]/5 text-[#C45016]'
+                    ? 'bg-brand-accent/5 text-brand-accent-hover'
                     : 'text-foreground/70 hover:bg-surface'
                 }`}
               >
@@ -392,10 +380,10 @@ export default function PickupPage(): ReactNode {
         <div className="flex-1 px-8 py-8 pt-28 max-w-2xl">
           {submitted ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-[#E8621A]/10 flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 rounded-full bg-brand-accent/10 flex items-center justify-center mx-auto">
                 <svg
                   aria-hidden="true"
-                  className="w-8 h-8 text-[#E8621A]"
+                  className="w-8 h-8 text-brand-accent"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -437,7 +425,7 @@ export default function PickupPage(): ReactNode {
                     terms: false,
                   });
                 }}
-                className="mt-8 text-base text-[#E8621A] hover:text-[#E8621A] font-medium"
+                className="mt-8 text-base text-brand-accent hover:text-brand-accent font-medium"
               >
                 Request another pickup
               </button>
@@ -454,9 +442,9 @@ export default function PickupPage(): ReactNode {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-base font-medium transition-colors ${
                         step === s
-                          ? 'bg-[#E8621A] text-white'
+                          ? 'bg-brand-accent text-white'
                           : step > s
-                            ? 'bg-[#E8621A]/10 text-[#E8621A]'
+                            ? 'bg-brand-accent/10 text-brand-accent'
                             : 'bg-surface-secondary text-gray-400'
                       }`}
                     >
@@ -534,7 +522,7 @@ export default function PickupPage(): ReactNode {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-[#E8621A] hover:bg-[#C45016] transition-colors"
+                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-brand-accent hover:bg-brand-accent-hover transition-colors"
                     >
                       Next – Package Details
                     </button>
@@ -555,7 +543,7 @@ export default function PickupPage(): ReactNode {
                           onClick={() => update('packageType', pt.id)}
                           className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-sm transition-all ${
                             form.packageType === pt.id
-                              ? 'border-[#E8621A] bg-[#E8621A]/5 text-[#C45016] font-medium'
+                              ? 'border-brand-accent bg-brand-accent/5 text-brand-accent-hover font-medium'
                               : 'border-border text-foreground/70 hover:border-border'
                           }`}
                         >
@@ -586,21 +574,21 @@ export default function PickupPage(): ReactNode {
                         placeholder="Length"
                         value={form.length}
                         onChange={(e) => update('length', e.target.value)}
-                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                       />
                       <input
                         type="number"
                         placeholder="Width"
                         value={form.width}
                         onChange={(e) => update('width', e.target.value)}
-                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                       />
                       <input
                         type="number"
                         placeholder="Height"
                         value={form.height}
                         onChange={(e) => update('height', e.target.value)}
-                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                        className="px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                       />
                     </div>
                   </div>
@@ -617,7 +605,7 @@ export default function PickupPage(): ReactNode {
                       onChange={(e) => update('message', e.target.value)}
                       placeholder="Special instructions or notes"
                       rows={3}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all resize-none"
+                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all resize-none"
                     />
                   </div>
                   <div className="flex justify-between pt-2">
@@ -631,7 +619,7 @@ export default function PickupPage(): ReactNode {
                     <button
                       type="button"
                       onClick={() => setStep(3)}
-                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-[#E8621A] hover:bg-[#C45016] transition-colors"
+                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-brand-accent hover:bg-brand-accent-hover transition-colors"
                     >
                       Next – Schedule
                     </button>
@@ -659,7 +647,7 @@ export default function PickupPage(): ReactNode {
                       id="pickup-center"
                       value={form.center}
                       onChange={(e) => update('center', e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                     >
                       <option value="">Choose a center</option>
                       {branches.map((b) => (
@@ -683,7 +671,7 @@ export default function PickupPage(): ReactNode {
                         value={form.date}
                         onChange={(e) => update('date', e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                        className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                       />
                     </div>
                     <div>
@@ -696,7 +684,7 @@ export default function PickupPage(): ReactNode {
                             onClick={() => update('timeSlot', slot.id)}
                             className={`flex items-center justify-between px-4 py-2 rounded-xl border text-base transition-all ${
                               form.timeSlot === slot.id
-                                ? 'border-[#E8621A] bg-[#E8621A]/5 text-[#C45016] font-medium'
+                                ? 'border-brand-accent bg-brand-accent/5 text-brand-accent-hover font-medium'
                                 : 'border-border text-foreground/70 hover:border-border'
                             }`}
                           >
@@ -716,7 +704,7 @@ export default function PickupPage(): ReactNode {
                       value={form.mathAnswer}
                       onChange={(e) => update('mathAnswer', e.target.value)}
                       placeholder="Solve the math"
-                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
                     />
                   </div>
                   <label className="flex items-start gap-3 cursor-pointer">
@@ -724,11 +712,11 @@ export default function PickupPage(): ReactNode {
                       type="checkbox"
                       checked={form.terms}
                       onChange={(e) => update('terms', e.target.checked)}
-                      className="mt-0.5 rounded border-border text-[#E8621A] focus:ring-[#E8621A]"
+                      className="mt-0.5 rounded border-border text-brand-accent focus:ring-brand-accent"
                     />
                     <span className=" text-foreground/70">
                       I agree to the{' '}
-                      <a href="/terms-conditions" className="text-[#E8621A] underline">
+                      <a href="/terms-conditions" className="text-brand-accent underline">
                         Terms & Conditions
                       </a>
                     </span>
@@ -744,7 +732,7 @@ export default function PickupPage(): ReactNode {
                     <button
                       type="submit"
                       disabled={!canSubmit()}
-                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-[#E8621A] hover:bg-[#C45016] disabled:opacity-50 transition-colors"
+                      className="rounded-full px-6 py-2.5 text-base font-medium text-white bg-brand-accent hover:bg-brand-accent-hover disabled:opacity-50 transition-colors"
                     >
                       Submit Pickup Request
                     </button>
@@ -760,7 +748,7 @@ export default function PickupPage(): ReactNode {
           <div className="flex items-center gap-2 mb-5 px-1">
             <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
             <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <div className="w-1.5 h-1.5 rounded-full bg-[#E8621A]" />
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
             <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-gray-400 ml-1">
               Prohibited Items
             </h3>
@@ -782,7 +770,7 @@ export default function PickupPage(): ReactNode {
         </aside>
       </div>
       <FaqSection />
-    </div>
+    </PageShell>
   );
 }
 
@@ -817,7 +805,7 @@ function FInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-[#E8621A]/20 focus:border-[#E8621A] transition-all"
+        className="w-full px-4 py-2.5 rounded-xl border border-border text-base outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
       />
     </div>
   );

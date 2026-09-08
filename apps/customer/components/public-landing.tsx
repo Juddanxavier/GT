@@ -15,9 +15,9 @@ export function PublicLanding(): ReactNode {
     <div>
       <HeroSection />
       <ServicesSection />
+      <ParallaxStatsSection />
       <AboutSection />
       <InfrastructureSection />
-      <ParallaxStatsSection />
       <FreedomSection />
       <TestimonialsSectionV2 />
       <CTAFAQFooterSection />

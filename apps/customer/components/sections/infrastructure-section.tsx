@@ -1,24 +1,14 @@
 ﻿'use client';
 
+import { motion } from 'framer-motion';
 import { Clock, Globe, Headphones, Scan, Shield, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SectionIntro } from '@/components/sections/section-intro';
 
 const features = [
-  {
-    icon: Zap,
-    title: 'Fast Delivery',
-    desc: 'Express shipping with priority handling for time-sensitive parcels.',
-  },
-  {
-    icon: Globe,
-    title: 'Global Reach',
-    desc: 'Delivering to 200+ countries with reliable partner networks.',
-  },
-  {
-    icon: Shield,
-    title: 'Secure Handling',
-    desc: 'Tamper-proof packaging and end-to-end chain of custody.',
-  },
+  { icon: Zap, title: 'Fast Delivery', desc: 'Express shipping with priority handling for time-sensitive parcels.' },
+  { icon: Globe, title: 'Global Reach', desc: 'Delivering to 200+ countries with reliable partner networks.' },
+  { icon: Shield, title: 'Secure Handling', desc: 'Tamper-proof packaging and end-to-end chain of custody.' },
   { icon: Clock, title: 'Real-time Tracking', desc: 'Live status updates at every scan point.' },
   { icon: Headphones, title: 'Dedicated Support', desc: 'Human support within hours, not days.' },
   { icon: Scan, title: 'Smart Logistics', desc: 'Automated routing and customs documentation.' },
@@ -26,33 +16,32 @@ const features = [
 
 export function InfrastructureSection(): ReactNode {
   return (
-    <section className="relative bg-surface">
-      <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-        <div className="max-w-2xl mx-auto text-center mb-14">
-          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#E8621A] mb-4">
-            <span className="w-6 h-px bg-[#E8621A]" />
-            Why Choose Us
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15]">
-            The foundation for <span className="text-[#E8621A]">reliable shipping.</span>
-          </h2>
-          <p className="mt-4 text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
-            We combine technology, infrastructure, and expertise to move parcels across borders
-            seamlessly.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((f) => (
-            <div
+    <section className="premium-section bg-brand-cream">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8 md:px-12 lg:px-16">
+        <SectionIntro
+          eyebrow="Why Choose Us"
+          title="The foundation for reliable shipping"
+          subtitle="We combine technology, infrastructure, and expertise to move parcels across borders seamlessly."
+          align="center"
+          className="mb-14 md:mb-16"
+        />
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f, i) => (
+            <motion.div
               key={f.title}
-              className="rounded-2xl bg-white border border-border p-7 hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.07, duration: 0.45 }}
+              className="premium-card premium-card-hover group p-7"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mb-5">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-accent/15 to-brand-accent/5 text-brand-accent transition-colors group-hover:from-brand-accent group-hover:to-brand-accent-hover group-hover:text-white">
                 <f.icon className="size-5" />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-1.5">{f.title}</h3>
-              <p className="text-base text-foreground/70 leading-relaxed">{f.desc}</p>
-            </div>
+              <h3 className="text-base font-semibold text-foreground">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{f.desc}</p>
+            </motion.div>
           ))}
         </div>
       </div>
