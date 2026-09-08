@@ -333,9 +333,9 @@ export default function CheckPricePage(): ReactNode {
                       const matched = matchedRate(slabs);
                       if (!matched) return null;
                       const rateNum = parseFloat(matched.rate);
-                      const shipping = rateNum * weightNum;
-                      const gst = shipping * 0.18;
-                      const total = shipping + gst;
+                      const shipping = Math.ceil(rateNum * weightNum * 100) / 100;
+                      const gst = Math.ceil(shipping * 0.18 * 100) / 100;
+                      const total = Math.ceil((shipping + gst) * 100) / 100;
                       return (
                         <div key={svcType} className="rounded-2xl bg-[#fafafa] p-5 md:p-6">
                           <div className="flex items-center gap-3 mb-4">
