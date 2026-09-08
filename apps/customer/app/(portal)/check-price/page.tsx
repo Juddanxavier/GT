@@ -327,69 +327,58 @@ export default function CheckPricePage(): ReactNode {
                     <p className="text-sm text-foreground/40">No rates available for shipments to {priceData.destinationCountry}.</p>
                   </div>
                 ) : (
-                  Object.entries(grouped).map(([svcType, slabs]) => {
-                    const meta = SERVICE_META[svcType];
-                    const matched = matchedRate(slabs);
-                    return (
-                      <div key={svcType} className="mb-8 last:mb-0">
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: meta?.color ?? '#6B7280' }}>
-                            <Clock size={12} />
-                            {meta?.tat ?? svcType}
-                          </span>
-                          <span className="text-base font-semibold text-foreground">{meta?.label ?? svcType}</span>
+                  <div className="space-y-4">
+                    {Object.entries(grouped).map(([svcType, slabs]) => {
+                      const meta = SERVICE_META[svcType];
+                      const matched = matchedRate(slabs);
+                      if (!matched) return null;
+                      const rateNum = parseFloat(matched.rate);
+                      const shipping = rateNum * weightNum;
+                      const gst = shipping * 0.18;
+                      const total = shipping + gst;
+                      return (
+                        <div key={svcType} className="rounded-2xl bg-[#fafafa] p-5 md:p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: meta?.color ?? '#6B7280' }}>
+                              <Clock size={12} />
+                              {meta?.tat ?? svcType}
+                            </span>
+                            <span className="text-base font-semibold text-foreground">{meta?.label ?? svcType}</span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                            <div>
+                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Weight Slab</p>
+                              <p className="text-sm font-medium text-foreground">{matched.weightFrom} – {matched.weightTo} kg</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Per Kg</p>
+                              <p className="text-sm font-medium text-foreground">{currencySymbol}{rateNum.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Shipping ({weightNum} kg)</p>
+                              <p className="text-sm font-medium text-foreground">{currencySymbol}{shipping.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">GST 18%</p>
+                              <p className="text-sm font-medium text-foreground/70">{currencySymbol}{gst.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Total</p>
+                              <p className="text-lg font-bold text-[#E8621A]">{currencySymbol}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <a
+                              href={`/contact?service=${encodeURIComponent(meta?.label ?? svcType)}&country=${encodeURIComponent(priceData.destinationCountry)}&weight=${weightNum}`}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#E8621A] text-white text-xs font-semibold hover:bg-[#C45016] transition-colors whitespace-nowrap"
+                            >
+                              Book Now
+                            </a>
+                          </div>
                         </div>
-                        <div className="rounded-2xl overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr>
-                                <th className="px-5 py-3 text-left text-xs font-semibold text-foreground/50 uppercase tracking-wider">Weight Slab (kg)</th>
-                                <th className="px-5 py-3 text-right text-xs font-semibold text-foreground/50 uppercase tracking-wider">Per Kg ({priceData.currency})</th>
-                                <th className="px-5 py-3 text-right text-xs font-semibold text-foreground/50 uppercase tracking-wider">Rate ({priceData.currency})</th>
-                                <th className="px-5 py-3 text-right text-xs font-semibold text-foreground/50 uppercase tracking-wider">GST 18%</th>
-                                <th className="px-5 py-3 text-right text-xs font-semibold text-foreground/50 uppercase tracking-wider">Total</th>
-                                <th className="px-5 py-3 text-center text-xs font-semibold text-foreground/50 uppercase tracking-wider"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {slabs.map((s) => {
-                                const isMatch = matched?.id === s.id;
-                                const rateNum = parseFloat(s.rate);
-                                const from = parseFloat(s.weightFrom);
-                                const to = parseFloat(s.weightTo);
-                                const slabKg = to - from || 1;
-                                const perKg = rateNum / slabKg;
-                                const gst = rateNum * 0.18;
-                                const total = rateNum + gst;
-                                return (
-                                  <tr key={s.id} className={isMatch ? 'bg-[#E8621A]/[0.04]' : ''}>
-                                    <td className="px-5 py-3.5 text-foreground/80">
-                                      <div className="flex items-center gap-2">
-                                        {s.weightFrom} – {s.weightTo}
-                                        {isMatch && <span className="text-[10px] font-bold text-[#E8621A] bg-[#E8621A]/10 px-1.5 py-0.5 rounded">Your slab</span>}
-                                      </div>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right text-foreground/60">{currencySymbol}{perKg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                    <td className="px-5 py-3.5 text-right font-semibold text-foreground">{currencySymbol}{rateNum.toLocaleString()}</td>
-                                    <td className="px-5 py-3.5 text-right text-foreground/60">{currencySymbol}{gst.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                    <td className="px-5 py-3.5 text-right font-bold text-[#E8621A]">{currencySymbol}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                    <td className="px-5 py-3.5 text-center">
-                                      <a
-                                        href={`/contact?service=${encodeURIComponent(meta?.label ?? svcType)}&country=${encodeURIComponent(priceData.destinationCountry)}&weight=${s.weightTo}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8621A] text-white text-xs font-semibold hover:bg-[#C45016] transition-colors whitespace-nowrap"
-                                      >
-                                        Book Now
-                                      </a>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
 
                 <div className="mt-6 p-4 bg-amber-50/80 border border-amber-200/50 rounded-xl flex items-start gap-3">
