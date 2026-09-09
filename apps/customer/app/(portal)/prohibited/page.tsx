@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowUpRight, FileText, HelpCircle, Shield } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 import { FaqSection } from '@/components/sections/faq-section';
 
 const items = [
@@ -300,8 +300,7 @@ export default function ProhibitedPage(): ReactNode {
         subtitle="Certain items cannot be shipped for safety, legal, or regulatory reasons."
       />
 
-      <section className="relative bg-white">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="flex flex-col items-center text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               Quick overview <span className="text-brand-accent">by category</span>
@@ -373,11 +372,9 @@ export default function ProhibitedPage(): ReactNode {
               </table>
             </div>
           </div>
-        </div>
-      </section>
+      </PageSection>
 
-      <section className="relative bg-surface border-t border-border">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection cream>
           <div className="flex flex-col items-center text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-sm font-semibold text-brand-accent mb-4">
               <AlertTriangle size={14} />
@@ -400,7 +397,7 @@ export default function ProhibitedPage(): ReactNode {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="rounded-2xl bg-white border border-border p-6 text-center shadow-sm"
+                className="premium-card premium-card-hover p-6 text-center"
               >
                 <div className="w-12 h-12 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto mb-4">
                   <e.icon className="size-6" />
@@ -419,8 +416,7 @@ export default function ProhibitedPage(): ReactNode {
               Contact Support <ArrowUpRight size={16} />
             </a>
           </div>
-        </div>
-      </section>
+      </PageSection>
 
       <FaqSection />
     </PageShell>

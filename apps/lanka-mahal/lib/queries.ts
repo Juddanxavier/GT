@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
 
 interface RecentShipment {
@@ -41,15 +41,22 @@ interface Notification {
   createdAt: string;
 }
 
-// -- Notifications --
+// ── Notifications ──
 
-export function useNotifications(): ReturnType<typeof useQuery<{ data: Notification[]; total: number }>> {
+export function useNotifications(
+  limit = 50,
+): ReturnType<typeof useQuery<{ data: Notification[]; total: number }>> {
   return useQuery<{ data: Notification[]; total: number }>({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', limit],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/notifications?limit=50`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/notifications?limit=${limit}`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to load notifications');
-      return (await res.json().catch(() => ({ data: [], total: 0 }))) as { data: Notification[]; total: number };
+      return (await res.json().catch(() => ({ data: [], total: 0 }))) as {
+        data: Notification[];
+        total: number;
+      };
     },
   });
 }
@@ -58,7 +65,9 @@ export function useUnreadCount(): ReturnType<typeof useQuery<{ count: number }>>
   return useQuery<{ count: number }>({
     queryKey: ['unread-count'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/notifications/unread-count`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/notifications/unread-count`, {
+        credentials: 'include',
+      });
       if (!res.ok) return { count: 0 };
       return (await res.json().catch(() => ({ count: 0 }))) as { count: number };
     },
@@ -70,7 +79,10 @@ export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_BASE}/api/notifications/${id}/read`, { method: 'PATCH', credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to mark as read');
       return res.json();
     },
@@ -85,7 +97,10 @@ export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_BASE}/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/notifications/read-all`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to mark all as read');
       return res.json();
     },
@@ -109,7 +124,9 @@ export function useNotificationPrefs(): ReturnType<typeof useQuery<Partial<Notif
   return useQuery<Partial<NotificationPrefs>>({
     queryKey: ['notification-prefs'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/notification-preferences`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/notification-preferences`, {
+        credentials: 'include',
+      });
       if (!res.ok) return {};
       return res.json();
     },
@@ -135,7 +152,7 @@ export function useUpdateNotificationPrefs() {
   });
 }
 
-// -- Profile --
+// ── Profile ──
 
 interface Address {
   street?: string;
@@ -185,7 +202,7 @@ export function useDeleteAccount() {
   });
 }
 
-// -- Dashboard --
+// ── Dashboard ──
 
 export function useCustomerDashboard(enabled = true): ReturnType<typeof useQuery<DashboardData>> {
   return useQuery<DashboardData>({
@@ -199,7 +216,7 @@ export function useCustomerDashboard(enabled = true): ReturnType<typeof useQuery
   });
 }
 
-// -- Shipments --
+// ── Shipments ──
 
 export interface ShipmentRow {
   id: string;
@@ -228,7 +245,9 @@ export function useMyShipments(page: number, limit: number, statusFilter: string
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`${API_BASE}/api/customers/my-shipments?${params}`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/customers/my-shipments?${params}`, {
+        credentials: 'include',
+      });
       if (!res.ok) {
         if (res.status === 401) throw new Error('unauthorized');
         throw new Error('Failed to load shipments');
@@ -239,7 +258,7 @@ export function useMyShipments(page: number, limit: number, statusFilter: string
   });
 }
 
-// -- Tracking --
+// ── Tracking ──
 
 export interface TrackEvent {
   status: string;
@@ -266,7 +285,9 @@ export function useTrackShipment(trackingNo: string | undefined) {
     queryKey: ['track-shipment', trackingNo],
     queryFn: async () => {
       if (!trackingNo) throw new Error('Tracking number required');
-      const res = await fetch(`${API_BASE}/api/track/${encodeURIComponent(trackingNo)}`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/track/${encodeURIComponent(trackingNo)}`, {
+        credentials: 'include',
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error((body as { error?: string }).error || 'Shipment not found');
@@ -278,7 +299,7 @@ export function useTrackShipment(trackingNo: string | undefined) {
   });
 }
 
-// -- Claim Shipment (mutation) --
+// ── Claim Shipment (mutation) ──
 
 export function useClaimShipment() {
   const queryClient = useQueryClient();
@@ -299,4 +320,3 @@ export function useClaimShipment() {
     },
   });
 }
-

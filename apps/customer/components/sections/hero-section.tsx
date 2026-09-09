@@ -56,7 +56,7 @@ export function HeroSection(): ReactNode {
           variants={container}
           initial="hidden"
           animate="show"
-          className="relative z-10 mx-auto w-full max-w-7xl px-5 py-28 sm:px-8 md:px-12 lg:px-16"
+          className="relative z-10 mx-auto w-full max-w-7xl px-5 py-24 sm:px-8 sm:py-28 md:px-12 lg:px-16"
         >
           <motion.div variants={item}>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/80 backdrop-blur-md">
@@ -67,7 +67,7 @@ export function HeroSection(): ReactNode {
 
           <motion.h1
             variants={item}
-            className="mt-6 max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl"
+            className="mt-6 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl"
           >
             {config.hero.headline[0]}
             <br />
@@ -109,7 +109,7 @@ export function HeroSection(): ReactNode {
           <motion.form
             variants={item}
             onSubmit={handleTrack}
-            className="mt-8 flex w-full max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/10 p-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+            className="mt-8 flex w-full max-w-md flex-col gap-2 rounded-2xl border border-white/10 bg-white/10 p-3 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:flex-row sm:items-center sm:rounded-full sm:p-1.5"
           >
             <div className="relative min-w-0 flex-1">
               <Search
@@ -128,7 +128,7 @@ export function HeroSection(): ReactNode {
             <button
               type="submit"
               disabled={!trackingNo.trim()}
-              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white px-5 text-sm font-medium text-brand-navy disabled:opacity-40"
+              className="flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-medium text-brand-navy disabled:opacity-40 sm:w-auto"
             >
               Track <ArrowRight size={13} />
             </button>

@@ -67,6 +67,11 @@ export interface TenantCopy {
     pattern: RegExp;
     digits: number;
   };
+  pickup: {
+    radiusKm: number;
+    shortNotice: string;
+    formNotice: string;
+  };
 }
 
 export const tenantConfig: TenantCopy = {
@@ -104,7 +109,7 @@ export const tenantConfig: TenantCopy = {
     badge: 'Global Shipping Made Simple',
     headline: ['Send your parcel anywhere', 'in the world'],
     description:
-      'Pickup within 3 km of our offices, real-time tracking, and customs clearance for shipments from India to 220+ destinations. Ship with confidence.',
+      'Pickup within 5 km of our offices (conditions apply), real-time tracking, and customs clearance for shipments from India to 220+ destinations. Ship with confidence.',
     ctaTrack: 'Send a Parcel',
     trust: 'Trusted by exporters, students & NRIs since 2016',
   },
@@ -188,5 +193,11 @@ export const tenantConfig: TenantCopy = {
     label: 'PIN Code',
     pattern: /^\d{6}$/,
     digits: 6,
+  },
+  pickup: {
+    radiusKm: 5,
+    shortNotice: 'Pickup within 5 km of our offices. Conditions apply.',
+    formNotice:
+      'Door-to-door pickup is available only within 5 km of the selected office. Requests are subject to confirmation and applicable conditions.',
   },
 };

@@ -1,8 +1,8 @@
-/** @format */
-
 'use client';
 
 import {
+  ArrowRight,
+  ArrowUpRight,
   ChevronUp,
   Clock,
   Globe,
@@ -31,15 +31,18 @@ const footerLinks = [
     links: [
       { href: '/air-freight', label: 'Air Freight' },
       { href: '/ocean-freight', label: 'Ocean Freight' },
-      { href: '/#track', label: 'Track Shipment' },
+      { href: '/check-price', label: 'Check Price' },
+      { href: '/rate-cards', label: 'Rate Cards' },
+      { href: '/track', label: 'Track Shipment' },
     ],
   },
   {
-    title: 'Support',
+    title: 'Tools & Support',
     links: [
-      { href: '/faq', label: 'FAQ' },
-      { href: '/prohibited', label: 'Prohibited Items' },
       { href: '/pickup', label: 'Schedule Pickup' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/claim', label: 'File a Claim' },
+      { href: '/prohibited', label: 'Prohibited Items' },
       { href: '/volumetric-calculator', label: 'Volumetric Calculator' },
       { href: '/currency-converter', label: 'Currency Converter' },
     ],
@@ -54,80 +57,97 @@ const footerLinks = [
   },
 ];
 
-const trustIcons = [
-  { icon: Truck, label: 'Door-to-Door Pickup' },
-  { icon: Shield, label: 'Secure Handling' },
-  { icon: Globe, label: '200+ Countries' },
-  { icon: Clock, label: 'Real-time Tracking' },
-];
-
 export function Footer(): ReactNode {
   const config = useTenantConfig();
+  const headOffice =
+    config.offices.find((office) => /head office/i.test(office.name)) ?? config.offices[0];
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const trustItems = [
+    { icon: Truck, label: `Pickup within ${config.pickup.radiusKm} km`, sub: 'Conditions apply' },
+    { icon: Shield, label: 'Secure handling', sub: 'Careful packing & transit' },
+    { icon: Globe, label: `${config.stats.countries} countries`, sub: 'Worldwide delivery' },
+    { icon: Clock, label: 'Live tracking', sub: 'Updates at every stage' },
+  ];
+
   return (
-    <footer className='relative bg-[#1a1a2e] text-white overflow-hidden'>
-      <div className='absolute inset-0'>
+    <footer className="relative overflow-hidden bg-brand-navy text-white">
+      <div className="pointer-events-none absolute inset-0">
         <Image
-          src='/images/cargo-bg.webp'
-          alt=''
+          src="/images/cargo-bg.webp"
+          alt=""
           fill
-          sizes='100vw'
-          className='object-cover opacity-20'
+          sizes="100vw"
+          className="object-cover opacity-[0.12]"
         />
-        <div className='absolute inset-0 bg-gradient-to-b from-[#1a1a2e] via-[#1a1a2e]/95 to-[#1a1a2e]' />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-navy via-brand-navy/98 to-brand-navy" />
       </div>
 
-      <div className='relative z-10'>
-        {/* Hero banner */}
-        <div className='relative w-full aspect-[2.5/1] overflow-hidden'>
-          <Image
-            src='/images/cta.webp'
-            alt=''
-            fill
-            sizes='100vw'
-            className='object-cover'
-          />
-          <div className='absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/90 via-[#1a1a2e]/80 to-[#1a1a2e]/70' />
-          <div className='absolute inset-0 flex flex-col items-center justify-center text-center px-6'>
-            <h2 className='text-2xl md:text-3xl font-bold tracking-tight mb-3 drop-shadow-lg'>
-              Ship <span className='text-[#E8621A]'>Without Borders</span>
-            </h2>
-            <p className='text-base text-white/80 max-w-xl mb-6 drop-shadow'>
-              From India to 200+ countries — fast, secure, and tracked every
-              step of the way. Real-time tracking, door-to-door pickup, and
-              dedicated support for every shipment.
-            </p>
-            <div className='flex gap-4'>
-              <a
-                href='/register'
-                className='px-6 py-3 rounded-full bg-[#E8621A] hover:bg-[#C45016] text-white text-base font-semibold transition-colors'>
-                Get Started
-              </a>
-              <a
-                href='/#track'
-                className='px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-base font-semibold hover:bg-white/20 transition-colors'>
-                Track Shipment
-              </a>
+      <div className="relative z-10">
+        {/* CTA image banner */}
+        <div className="relative w-full overflow-hidden border-b border-white/10">
+          <div className="relative min-h-[300px] sm:min-h-[320px] md:aspect-[2.5/1] md:min-h-[220px] md:max-h-[420px]">
+            <Image
+              src="/images/cta.webp"
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover object-center"
+              priority={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/95 via-brand-navy/88 to-brand-navy/92 md:bg-gradient-to-r md:from-brand-navy/92 md:via-brand-navy/78 md:to-brand-navy/65" />
+            <div className="relative flex flex-col items-center justify-center px-5 py-12 text-center sm:px-8 sm:py-14 md:absolute md:inset-0 md:px-6 md:py-0">
+              <p className="section-eyebrow mb-3 !text-brand-accent/90 sm:mb-4">
+                <span className="section-eyebrow-line !bg-brand-accent" />
+                Ready to ship
+              </p>
+              <h2 className="max-w-2xl text-xl font-bold tracking-tight drop-shadow-lg sm:text-2xl md:text-3xl lg:text-4xl">
+                Ship <span className="text-brand-accent">without borders.</span>
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/80 drop-shadow sm:text-base">
+                From India to {config.stats.countries} destinations — fast, secure, and tracked every
+                step of the way. {config.pickup.shortNotice}
+              </p>
+              <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
+                <a href="/register" className="premium-btn w-full justify-center gap-2 sm:w-auto">
+                  Get started <ArrowRight size={14} />
+                </a>
+                <a
+                  href="/track"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto"
+                >
+                  Track shipment
+                </a>
+                <a
+                  href="/check-price"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto"
+                >
+                  Check price
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Trust bar */}
-        <div className='border-b border-white/10'>
-          <div className='max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-6'>
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-              {trustIcons.map((t) => (
+        <div className="border-b border-white/10">
+          <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 md:px-12 lg:px-16">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
+              {trustItems.map((t) => (
                 <div
                   key={t.label}
-                  className='flex items-center gap-3 justify-center lg:justify-start'>
-                  <div className='w-10 h-10 rounded-lg bg-[#E8621A]/10 flex items-center justify-center shrink-0'>
-                    <t.icon className='size-5 text-[#E8621A]' />
+                  className="flex items-start gap-2.5 rounded-2xl border border-white/8 bg-white/[0.04] p-3 sm:gap-3 sm:p-4"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-accent/15 text-brand-accent">
+                    <t.icon size={18} />
                   </div>
-                  <span className='text-white/85 font-medium'>{t.label}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white/90">{t.label}</p>
+                    <p className="mt-0.5 text-xs text-white/50">{t.sub}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -135,83 +155,101 @@ export function Footer(): ReactNode {
         </div>
 
         {/* Main footer */}
-        <div className='max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-14'>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12'>
-            {/* Brand column */}
-            <div className='sm:col-span-2'>
-              <div className='flex items-center gap-2 mb-4'>
-                <span className='text-lg font-bold text-white'>
-                  {config.name}
-                </span>
-              </div>
-              <p className='text-white/80 leading-relaxed max-w-xs mb-6'>
-                {config.hero.description}
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 md:px-12 md:py-14 lg:px-16">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+            {/* Brand + contact */}
+            <div className="lg:col-span-4">
+              <p className="text-lg font-bold tracking-tight">{config.name}</p>
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/65">
+                {config.about.body}
               </p>
-              <div className='space-y-3 text-white/80'>
-                <div className='flex items-center gap-2.5'>
-                  <MapPin size={14} className='text-[#E8621A] shrink-0' />
-                  <span>{config.contact.city}</span>
-                </div>
-                <div className='flex items-center gap-2.5'>
-                  <Phone size={14} className='text-[#E8621A] shrink-0' />
-                  <a
-                    href={config.contact.phoneHref}
-                    className='hover:text-[#E8621A] transition-colors'>
-                    {config.contact.phone}
-                  </a>
-                </div>
-                <div className='flex items-center gap-2.5'>
-                  <Mail size={14} className='text-[#E8621A] shrink-0' />
-                  <a
-                    href={`mailto:${config.contact.email}`}
-                    className='hover:text-[#E8621A] transition-colors'>
-                    {config.contact.email}
-                  </a>
-                </div>
+
+              <div className="mt-6">
+                {headOffice && (
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                    <p className="text-sm font-semibold text-white/90">{headOffice.name}</p>
+                    <div className="mt-2 flex items-start gap-2 text-xs text-white/55">
+                      <MapPin size={12} className="mt-0.5 shrink-0 text-brand-accent" />
+                      <span>{headOffice.address}</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-white/55">
+                      <Clock size={12} className="shrink-0 text-brand-accent" />
+                      <span>{headOffice.hours}</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-white/55">
+                      <Phone size={12} className="shrink-0 text-brand-accent" />
+                      <span>{headOffice.phones}</span>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              <div className="mt-5 space-y-2.5 text-sm text-white/70">
+                <a
+                  href={config.contact.phoneHref}
+                  className="flex items-center gap-2.5 transition-colors hover:text-brand-accent"
+                >
+                  <Phone size={14} className="shrink-0 text-brand-accent" />
+                  {config.contact.phone}
+                </a>
+                <a
+                  href={`mailto:${config.contact.email}`}
+                  className="flex items-center gap-2.5 transition-colors hover:text-brand-accent"
+                >
+                  <Mail size={14} className="shrink-0 text-brand-accent" />
+                  {config.contact.email}
+                </a>
+              </div>
+
+              <a
+                href="/branches"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-accent transition-colors hover:text-brand-accent-hover"
+              >
+                View all branches <ArrowUpRight size={14} />
+              </a>
             </div>
 
             {/* Link columns */}
-            {footerLinks.map((item) => (
-              <div key={item.title}>
-                <h3 className='mb-4 text-xs font-semibold uppercase tracking-wider text-white/80'>
-                  {item.title}
-                </h3>
-                <ul className='space-y-3 text-white/80'>
-                  {item.links.map((link) => (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className='hover:text-[#E8621A] transition-colors'>
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div className="grid grid-cols-2 gap-8 sm:col-span-1 sm:grid-cols-2 lg:col-span-8 lg:grid-cols-4">
+              {footerLinks.map((item) => (
+                <div key={item.title}>
+                  <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+                    {item.title}
+                  </h3>
+                  <ul className="space-y-2.5">
+                    {item.links.map((link) => (
+                      <li key={link.label}>
+                        <a
+                          href={link.href}
+                          className="text-sm text-white/70 transition-colors hover:text-brand-accent"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className='h-px bg-white/10' />
+          <div className="mt-12 h-px bg-white/10" />
 
-          {/* Bottom bar */}
-          <div className='pt-6 flex flex-col sm:flex-row items-center justify-between gap-4'>
-            <div className='flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm text-white/70'>
+          <div className="flex flex-col items-center justify-between gap-4 pt-6 sm:flex-row">
+            <div className="flex flex-col items-center gap-1 text-center text-sm text-white/50 sm:flex-row sm:gap-3 sm:text-left">
               <span>
-                &copy; {new Date().getFullYear()} {config.name}. All rights
-                reserved.
+                &copy; {new Date().getFullYear()} {config.name}. All rights reserved.
               </span>
-              <span className='hidden sm:inline'>|</span>
-              <span className='text-white/70'>
-                International Courier Services
-              </span>
+              <span className="hidden text-white/30 sm:inline" aria-hidden="true">·</span>
+              <span>International courier &amp; logistics</span>
             </div>
 
             <button
-              type='button'
+              type="button"
               onClick={scrollToTop}
-              aria-label='Back to top'
-              className='w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/10 hover:text-white transition-colors ml-1'>
+              aria-label="Back to top"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
               <ChevronUp size={16} />
             </button>
           </div>

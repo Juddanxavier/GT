@@ -122,7 +122,7 @@ function DashboardSection(): ReactNode {
             icon: Calendar,
             label: 'Schedule Pickup',
             href: '/pickup',
-            desc: 'Door-to-door pickup',
+            desc: 'Within 5 km of our offices',
             color: '#10B981',
           },
         ].map((a) => (

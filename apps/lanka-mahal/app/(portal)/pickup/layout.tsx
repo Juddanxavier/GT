@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { tenantConfig } from '@/lib/tenant-config';
 
 export const metadata: Metadata = {
   title: 'Schedule a Doorstep Pickup',
-  description:
-    'Book a free doorstep pickup with Lanka Mahal. Choose a convenient time slot and we will collect your parcel from anywhere in Sri Lanka.',
+  description: `Book a doorstep pickup with Lanka Mahal. ${tenantConfig.pickup.shortNotice} Choose a convenient time slot near our offices.`,
 };
 
 export default function PickupLayout({ children }: { children: ReactNode }): ReactNode {

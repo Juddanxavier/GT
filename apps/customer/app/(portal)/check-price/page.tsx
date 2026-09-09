@@ -23,7 +23,7 @@ import {
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -61,7 +61,7 @@ const factors = [
 
 const strengths = [
   { icon: DollarSign, title: 'Transparent pricing', desc: 'No hidden fees. Clear rates with GST breakup upfront on every quote.', color: 'bg-violet-100 text-violet-600', iconBg: 'bg-violet-100 text-violet-600' },
-  { icon: Truck, title: 'Doorstep pickup', desc: 'We collect from your home or office — no branch visit needed for most shipments.', color: 'bg-emerald-100 text-emerald-600', iconBg: 'bg-emerald-100 text-emerald-600' },
+  { icon: Truck, title: 'Doorstep pickup', desc: 'Available within 5 km of our offices. Conditions apply — drop off at a branch if you are outside the pickup zone.', color: 'bg-emerald-100 text-emerald-600', iconBg: 'bg-emerald-100 text-emerald-600' },
   { icon: Globe, title: 'Real-time tracking', desc: 'Track your shipment at every stage — from pickup to delivery with live updates.', color: 'bg-sky-100 text-sky-600', iconBg: 'bg-sky-100 text-sky-600' },
   { icon: Headphones, title: '24/7 support', desc: 'Our support team is available around the clock for booking and shipment assistance.', color: 'bg-amber-100 text-amber-600', iconBg: 'bg-amber-100 text-amber-600' },
 ];
@@ -162,8 +162,7 @@ export default function CheckPricePage(): ReactNode {
       />
 
       {/* Main Content */}
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="max-w-5xl mx-auto space-y-14">
 
             {/* Intro */}
@@ -204,7 +203,7 @@ export default function CheckPricePage(): ReactNode {
                 Enter your destination, shipment type, and weight to see instant rates.
               </p>
 
-              <div className="rounded-2xl bg-[#fafafa] p-6 md:p-8">
+              <div className="premium-card p-6 md:p-8">
                 <div className="space-y-4">
                   {/* Row 1: Destination */}
                   <div className="flex flex-col gap-1.5">
@@ -315,7 +314,7 @@ export default function CheckPricePage(): ReactNode {
                 <p className="text-sm text-foreground/50 mb-8">Last updated: {new Date(priceData.updatedAt).toLocaleDateString()}</p>
 
                 {filteredRates.length === 0 ? (
-                  <div className="text-center py-16 rounded-2xl bg-[#fafafa]">
+                  <div className="text-center py-16 premium-card">
                     <Package size={32} className="mx-auto text-foreground/15 mb-3" />
                     <p className="text-sm text-foreground/40">No rates available for shipments to {priceData.destinationCountry}.</p>
                   </div>
@@ -330,7 +329,7 @@ export default function CheckPricePage(): ReactNode {
                       const gst = Math.ceil(shipping * 0.18 * 100) / 100;
                       const total = Math.ceil((shipping + gst) * 100) / 100;
                       return (
-                        <div key={svcType} className="rounded-2xl bg-[#fafafa] p-5 md:p-6">
+                        <div key={svcType} className="premium-card p-5 md:p-6">
                           <div className="flex items-center gap-3 mb-4">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: meta?.color ?? '#6B7280' }}>
                               <Clock size={12} />
@@ -408,7 +407,7 @@ export default function CheckPricePage(): ReactNode {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.08, duration: 0.4 }}
-                    className="rounded-2xl bg-[#fafafa] p-6"
+                    className="premium-card p-6"
                   >
                     <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                       <f.icon size={20} />
@@ -548,7 +547,7 @@ export default function CheckPricePage(): ReactNode {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="rounded-2xl bg-[#fafafa] overflow-hidden"
+                    className="premium-card overflow-hidden"
                   >
                     <button
                       type="button"
@@ -594,8 +593,7 @@ export default function CheckPricePage(): ReactNode {
             </div>
 
           </div>
-        </div>
-      </section>
+      </PageSection>
     </PageShell>
   );
 }

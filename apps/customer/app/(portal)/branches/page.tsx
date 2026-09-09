@@ -16,7 +16,7 @@ import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 
 const branches = [
   {
@@ -103,9 +103,8 @@ export default function BranchesPage(): ReactNode {
       />
 
       {/* Intro */}
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24 text-center">
-          <div className="max-w-2xl mx-auto">
+      <PageSection>
+          <div className="max-w-2xl mx-auto text-center">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50 inline-block mb-6">
               About Our Branches
             </div>
@@ -118,12 +117,10 @@ export default function BranchesPage(): ReactNode {
               customs documentation and expert advice.
             </p>
           </div>
-        </div>
-      </section>
+      </PageSection>
 
       {/* Branches */}
-      <section className="relative bg-surface">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection cream>
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Locations
@@ -223,12 +220,10 @@ export default function BranchesPage(): ReactNode {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+      </PageSection>
 
       {/* Services */}
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="flex flex-col items-center text-center max-w-lg mx-auto mb-12">
             <div className="border border-border py-1 px-4 rounded-full text-base font-semibold tracking-wide uppercase text-foreground/85 bg-surface-secondary/50">
               Branch Services
@@ -245,7 +240,7 @@ export default function BranchesPage(): ReactNode {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="rounded-2xl bg-surface border border-border p-6 text-center"
+                className="premium-card premium-card-hover p-6 text-center"
               >
                 <div className="w-12 h-12 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto mb-4">
                   <s.icon className="size-5" />
@@ -255,12 +250,10 @@ export default function BranchesPage(): ReactNode {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+      </PageSection>
 
       {/* FAQ */}
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <div>
               <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent mb-6">
@@ -329,8 +322,7 @@ export default function BranchesPage(): ReactNode {
               ))}
             </div>
           </div>
-        </div>
-      </section>
+      </PageSection>
     </PageShell>
   );
 }

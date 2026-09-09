@@ -17,7 +17,7 @@ import {
 import type { ReactNode } from 'react';
 import { FaqSection } from '@/components/sections/faq-section';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 
 const plans = [
   {
@@ -86,7 +86,7 @@ const strengths = [
   {
     icon: Truck,
     title: 'Doorstep pickup',
-    desc: 'Book a convenient pickup from your home or office — or drop off at the nearest branch.',
+    desc: 'Within 5 km of our offices — conditions apply. Outside the zone? Drop off at your nearest branch.',
   },
   {
     icon: Headphones,
@@ -129,9 +129,7 @@ export default function AirFreightPage(): ReactNode {
         subtitle="Fast air freight shipping to 200+ countries with daily uplift operations and delivery in 3–15 days."
       />
 
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
-          <div>
+      <PageSection>
             <div className="space-y-14">
               <div>
                 <p className="text-lg text-foreground/90 leading-relaxed mb-8">
@@ -143,7 +141,7 @@ export default function AirFreightPage(): ReactNode {
 
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { icon: Truck, label: 'Same-day pickup available' },
+                    { icon: Truck, label: 'Pickup within 5 km of offices' },
                     { icon: Shield, label: 'Fully insured shipments' },
                     { icon: Globe, label: 'Customs handled end-to-end' },
                     { icon: Clock, label: '4.8★ rated on Google' },
@@ -181,7 +179,7 @@ export default function AirFreightPage(): ReactNode {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: i * 0.08, duration: 0.4 }}
-                      className="rounded-2xl border border-border/50 bg-white p-6 flex flex-col"
+                      className="premium-card premium-card-hover p-6 flex flex-col"
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
@@ -332,9 +330,7 @@ export default function AirFreightPage(): ReactNode {
                 }
               `}</style>
             </div>
-          </div>
-        </div>
-      </section>
+      </PageSection>
 
       <FaqSection />
     </PageShell>

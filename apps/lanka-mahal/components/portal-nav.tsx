@@ -14,7 +14,6 @@ import {
   LogOut,
   Menu,
   Package,
-  Plane,
   Receipt,
   Ruler,
   Search,
@@ -22,14 +21,16 @@ import {
   User,
   UserPlus,
   X,
+  DollarSign,
+  Plane,
 } from 'lucide-react';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { useUnreadCount } from '@/lib/queries';
 import { connectSocket, disconnectSocket } from '@/lib/realtime';
+import { useCustomerSession } from '@/lib/use-customer-session';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const itemV: Variants = {
@@ -37,10 +38,11 @@ const itemV: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
 };
 
-export function PortalNav(): ReactNode {
+export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
   const config = useTenantConfig();
+  const { user } = useCustomerSession();
   const { data: session } = authClient.useSession();
   const { data: unreadData } = useUnreadCount();
   const [scrolled, setScrolled] = useState(false);
@@ -59,10 +61,9 @@ export function PortalNav(): ReactNode {
   // Live notification updates for signed-in customers
   useEffect(() => {
     if (!session) return;
-    const tenantId = (session.user as Record<string, unknown>).tenantId as string | undefined;
-    if (tenantId) connectSocket(tenantId);
+    if (user?.tenantId) connectSocket(user.tenantId);
     return () => disconnectSocket();
-  }, [session]);
+  }, [session, user]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -152,12 +153,13 @@ export function PortalNav(): ReactNode {
       pathname === '/profile' ||
       pathname === '/onboarding');
   const lightNav = isAuthPage || isDashboardPage;
-  const tc = lightNav
+  const isLight = lightNav || (!lightNav && scrolled);
+  const tc = isLight
     ? {
-        link: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
-        muted: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
-        logo: 'text-[#1a1a2e]',
-        btn: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
+        link: 'text-brand-navy/80 hover:text-brand-navy',
+        muted: 'text-brand-navy/80 hover:text-brand-navy',
+        logo: 'text-brand-navy',
+        btn: 'text-brand-navy/80 hover:text-brand-navy',
       }
     : {
         link: 'text-white/90 hover:text-white',
@@ -170,7 +172,7 @@ export function PortalNav(): ReactNode {
     ? 'bg-white border-border'
     : !scrolled
       ? 'bg-transparent border-transparent'
-      : 'bg-[#1a1a2e]/95 backdrop-blur-md border-white/10';
+      : 'bg-white/95 backdrop-blur-md border-border shadow-sm';
 
   const badge = unreadData?.count ?? 0;
 
@@ -186,29 +188,24 @@ export function PortalNav(): ReactNode {
     '/pickup',
     '/volumetric-calculator',
     '/currency-converter',
+    '/check-price',
   ].some(isActive);
 
   const navLinkCls = (href: string) =>
-    `text-base font-semibold transition-colors ${isActive(href) ? `text-[#F59E0B]` : tc.link}`;
+    `text-base font-semibold transition-colors ${isActive(href) ? `text-brand-accent` : tc.link}`;
 
   const navRowCls = (href: string) =>
-    `group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold transition-colors ${isActive(href) ? `text-[#F59E0B]` : 'text-white/90 hover:text-white'}`;
+    `group flex min-h-[52px] items-center justify-between border-b border-white/10 py-3 text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${isActive(href) ? `text-brand-accent` : 'text-white/90 hover:text-white'}`;
 
   return (
     <header
-      className={`fixed top-9 left-0 w-full z-50 transition-all duration-300 ${navBg}`}
+      className={`fixed left-0 w-full z-50 transition-all duration-300 ${hasMarquee ? 'top-10' : 'top-0'} ${navBg}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
         <a href="/" className="flex items-center gap-2 ml-2">
-          <div className="bg-white rounded-lg p-1.5 flex items-center justify-center">
-            <Image
-              src="/images/logo.png"
-              alt={config.name}
-              width={!scrolled ? 80 : 40}
-              height={!scrolled ? 80 : 40}
-              className="rounded object-contain transition-all duration-300"
-            />
-          </div>
+          <span className={`text-lg sm:text-xl font-bold tracking-tight ${tc.logo}`}>
+            {config.shortName}
+          </span>
         </a>
 
         <div className="hidden lg:flex items-center gap-6">
@@ -236,7 +233,7 @@ export function PortalNav(): ReactNode {
             <button
               type="button"
               aria-expanded={servicesOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-[#F59E0B]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-brand-accent` : tc.link}`}
             >
               Services{' '}
               <ChevronDown
@@ -246,18 +243,18 @@ export function PortalNav(): ReactNode {
             </button>
             {servicesOpen && (
               <div className="absolute top-full left-0 pt-2 w-48">
-                <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
                   <a
                     href="/air-freight"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Plane size={16} className={`text-[#F59E0B]`} /> Air Freight
+                    <Plane size={16} className={`text-brand-accent`} /> Air Freight
                   </a>
                   <a
                     href="/ocean-freight"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ship size={16} className={`text-[#F59E0B]`} /> Ocean Freight
+                    <Ship size={16} className={`text-brand-accent`} /> Ocean Freight
                   </a>
                 </div>
               </div>
@@ -277,7 +274,7 @@ export function PortalNav(): ReactNode {
             <button
               type="button"
               aria-expanded={supportOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-[#F59E0B]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-brand-accent` : tc.link}`}
             >
               Support{' '}
               <ChevronDown
@@ -287,36 +284,42 @@ export function PortalNav(): ReactNode {
             </button>
             {supportOpen && (
               <div className="absolute top-full left-0 pt-2 w-56">
-                <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
                   <a
                     href="/faq"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <HelpCircle size={16} className={`text-[#F59E0B]`} /> FAQ
+                    <HelpCircle size={16} className={`text-brand-accent`} /> FAQ
                   </a>
                   <a
                     href="/prohibited"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ban size={16} className={`text-[#F59E0B]`} /> Prohibited Items
+                    <Ban size={16} className={`text-brand-accent`} /> Prohibited Items
                   </a>
                   <a
                     href="/pickup"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Calendar size={16} className={`text-[#F59E0B]`} /> Pickup
+                    <Calendar size={16} className={`text-brand-accent`} /> Pickup
                   </a>
                   <a
                     href="/volumetric-calculator"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ruler size={16} className={`text-[#F59E0B]`} /> Volumetric Calculator
+                    <Ruler size={16} className={`text-brand-accent`} /> Volumetric Calculator
                   </a>
                   <a
                     href="/currency-converter"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Globe size={16} className={`text-[#F59E0B]`} /> Currency Converter
+                    <Globe size={16} className={`text-brand-accent`} /> Currency Converter
+                  </a>
+                  <a
+                    href="/check-price"
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
+                  >
+                    <DollarSign size={16} className={`text-brand-accent`} /> Check Price
                   </a>
                 </div>
               </div>
@@ -330,9 +333,9 @@ export function PortalNav(): ReactNode {
             Branches
           </a>
           <a
-            href="/#track"
-            aria-current={isActive('/#track') ? 'page' : undefined}
-            className={navLinkCls('/#track')}
+            href="/track"
+            aria-current={isActive('/track') ? 'page' : undefined}
+            className={navLinkCls('/track')}
           >
             Track
           </a>
@@ -353,88 +356,84 @@ export function PortalNav(): ReactNode {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 onFocus={() => setUserMenuOpen(true)}
                 aria-expanded={userMenuOpen}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${lightNav ? 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70 hover:text-foreground' : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${lightNav || scrolled ? 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70 hover:text-foreground' : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white'}`}
               >
                 <User size={16} />
                 <span className="text-sm font-medium max-w-[100px] truncate hidden sm:inline">
-                  {(session.user as Record<string, unknown>).name as string}
+                  {user?.name}
                 </span>
                 <ChevronDown
                   size={12}
                   className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
                 />
                 {badge > 0 && (
-                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F59E0B] px-1 text-[9px] font-bold text-white leading-none">
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white leading-none">
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2 w-56">
-                  <div className={`rounded-sm bg-[#1a1a2e] border border-white/10 overflow-hidden`}>
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <div className="text-sm font-medium text-white">
-                        {(session.user as Record<string, unknown>).name as string}
-                      </div>
-                      <div className="text-xs text-white/60">
-                        {(session.user as Record<string, unknown>).email as string}
-                      </div>
+                  <div className={`rounded-sm ${lightNav || scrolled ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
+                    <div className={`px-4 py-3 border-b ${lightNav || scrolled ? 'border-border' : 'border-white/10'}`}>
+                      <div className={`text-sm font-medium ${lightNav || scrolled ? 'text-foreground' : 'text-white'}`}>{user?.name}</div>
+                      <div className={`text-xs ${lightNav || scrolled ? 'text-foreground/60' : 'text-white/60'}`}>{user?.email}</div>
                     </div>
                     <a
                       href="/dashboard"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <LayoutDashboard size={16} className={`text-[#F59E0B]`} /> Dashboard
+                      <LayoutDashboard size={16} className={`text-brand-accent`} /> Dashboard
                     </a>
                     <a
                       href="/my-shipments"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Package size={16} className={`text-[#F59E0B]`} /> My Shipments
+                      <Package size={16} className={`text-brand-accent`} /> My Shipments
                     </a>
                     <a
                       href="/my-invoices"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Receipt size={16} className={`text-[#F59E0B]`} /> Invoices
+                      <Receipt size={16} className={`text-brand-accent`} /> Invoices
                     </a>
                     <a
                       href="/track"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Search size={16} className={`text-[#F59E0B]`} /> Track
+                      <Search size={16} className={`text-brand-accent`} /> Track
                     </a>
                     <a
                       href="/pickup"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Calendar size={16} className={`text-[#F59E0B]`} /> Schedule Pickup
+                      <Calendar size={16} className={`text-brand-accent`} /> Schedule Pickup
                     </a>
                     <a
                       href="/notifications"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Bell size={16} className={`text-[#F59E0B]`} /> Notifications
+                      <Bell size={16} className={`text-brand-accent`} /> Notifications
                       {badge > 0 && (
-                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F59E0B] px-1 text-[9px] font-bold text-white leading-none">
+                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white leading-none">
                           {badge > 9 ? '9+' : badge}
                         </span>
                       )}
                     </a>
                     <a
                       href="/profile"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <User size={16} className={`text-[#F59E0B]`} /> Profile
+                      <User size={16} className={`text-brand-accent`} /> Profile
                     </a>
-                    <div className="border-t border-white/10" />
+                    <div className={`border-t ${isLight ? 'border-border' : 'border-white/10'}`} />
                     <button
                       type="button"
                       onClick={async () => {
                         await authClient.signOut();
                         router.push('/');
                       }}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors w-full text-left"
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/60 hover:text-foreground hover:bg-foreground/5' : 'text-white/60 hover:text-white hover:bg-white/10'} transition-colors w-full text-left`}
                     >
                       <LogOut size={16} /> Sign out
                     </button>
@@ -453,7 +452,7 @@ export function PortalNav(): ReactNode {
               </a>
               <a
                 href="/register"
-                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#F59E0B] hover:bg-[#D97706] transition-all active:scale-[0.98]`}
+                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-brand-accent hover:bg-brand-accent-hover transition-all active:scale-[0.98]`}
               >
                 <UserPlus size={15} />
                 <span className="hidden sm:inline">Register</span>
@@ -470,7 +469,7 @@ export function PortalNav(): ReactNode {
             setMobileOpen(next);
             if (!next) hamburgerRef.current?.focus();
           }}
-          className={`lg:hidden p-2 rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors active:scale-90`}
+          className={`lg:hidden flex h-11 w-11 items-center justify-center rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors active:scale-90`}
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -482,7 +481,7 @@ export function PortalNav(): ReactNode {
             <motion.div
               key="mobile-menu"
               ref={menuRef}
-              className={`lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#1a1a2e]`}
+              className={`lg:hidden fixed inset-0 z-[70] flex flex-col bg-brand-navy`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -490,15 +489,9 @@ export function PortalNav(): ReactNode {
             >
               <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
                 <a href="/" className="flex items-center gap-2 ml-2">
-                  <div className="bg-white rounded-lg p-1.5 flex items-center justify-center">
-                    <Image
-                      src="/images/logo.png"
-                      alt={config.name}
-                      width={40}
-                      height={40}
-                      className="rounded object-contain"
-                    />
-                  </div>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-white">
+                    {config.shortName}
+                  </span>
                 </a>
                 <button
                   type="button"
@@ -516,7 +509,7 @@ export function PortalNav(): ReactNode {
                 animate="show"
                 exit="hidden"
                 variants={{ show: { transition: { staggerChildren: 0.05 } }, hidden: {} }}
-                className="flex-1 overflow-y-auto px-6 pb-6"
+                className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4 sm:px-6 sm:pb-6"
               >
                 <div className="mx-auto flex max-w-md flex-col">
                   <motion.a
@@ -529,7 +522,7 @@ export function PortalNav(): ReactNode {
                     Home
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F59E0B] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -542,7 +535,7 @@ export function PortalNav(): ReactNode {
                     About
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F59E0B] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.div variants={itemV} className="border-b border-white/10">
@@ -550,12 +543,12 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                       aria-expanded={mobileServicesOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${servicesActive ? `text-[#F59E0B]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full min-h-[52px] items-center justify-between py-3 text-left text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${servicesActive ? `text-brand-accent` : 'text-white/90 hover:text-white'}`}
                     >
                       Services
                       <ChevronDown
                         size={22}
-                        className={`text-[#F59E0B] transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
+                        className={`text-brand-accent transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -574,14 +567,14 @@ export function PortalNav(): ReactNode {
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Plane size={18} className={`text-[#F59E0B]`} /> Air Freight
+                              <Plane size={18} className={`text-brand-accent`} /> Air Freight
                             </a>
                             <a
                               href="/ocean-freight"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ship size={18} className={`text-[#F59E0B]`} /> Ocean Freight
+                              <Ship size={18} className={`text-brand-accent`} /> Ocean Freight
                             </a>
                           </div>
                         </motion.div>
@@ -593,12 +586,12 @@ export function PortalNav(): ReactNode {
                       type="button"
                       onClick={() => setMobileSupportOpen(!mobileSupportOpen)}
                       aria-expanded={mobileSupportOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${supportActive ? `text-[#F59E0B]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full min-h-[52px] items-center justify-between py-3 text-left text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${supportActive ? `text-brand-accent` : 'text-white/90 hover:text-white'}`}
                     >
                       Support
                       <ChevronDown
                         size={22}
-                        className={`text-[#F59E0B] transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
+                        className={`text-brand-accent transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -617,35 +610,42 @@ export function PortalNav(): ReactNode {
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <HelpCircle size={18} className={`text-[#F59E0B]`} /> FAQ
+                              <HelpCircle size={18} className={`text-brand-accent`} /> FAQ
                             </a>
                             <a
                               href="/prohibited"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ban size={18} className={`text-[#F59E0B]`} /> Prohibited Items
+                              <Ban size={18} className={`text-brand-accent`} /> Prohibited Items
                             </a>
                             <a
                               href="/pickup"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Calendar size={18} className={`text-[#F59E0B]`} /> Pickup
+                              <Calendar size={18} className={`text-brand-accent`} /> Pickup
                             </a>
                             <a
                               href="/volumetric-calculator"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ruler size={18} className={`text-[#F59E0B]`} /> Volumetric Calculator
+                              <Ruler size={18} className={`text-brand-accent`} /> Volumetric Calculator
                             </a>
                             <a
                               href="/currency-converter"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Globe size={18} className={`text-[#F59E0B]`} /> Currency Converter
+                              <Globe size={18} className={`text-brand-accent`} /> Currency Converter
+                            </a>
+                            <a
+                              href="/check-price"
+                              onClick={() => setMobileOpen(false)}
+                              className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                            >
+                              <DollarSign size={18} className={`text-brand-accent`} /> Check Price
                             </a>
                           </div>
                         </motion.div>
@@ -662,21 +662,20 @@ export function PortalNav(): ReactNode {
                     Branches
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F59E0B] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
-                  {/* biome-ignore lint/a11y/useValidAnchor: real navigation link to the track section on the home page */}
                   <motion.a
-                    href="/#track"
+                    href="/track"
                     onClick={() => setMobileOpen(false)}
-                    aria-current={isActive('/#track') ? 'page' : undefined}
+                    aria-current={isActive('/track') ? 'page' : undefined}
                     variants={itemV}
-                    className={navRowCls('/#track')}
+                    className={navRowCls('/track')}
                   >
                     Track
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F59E0B] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -689,13 +688,13 @@ export function PortalNav(): ReactNode {
                     Contact
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#F59E0B] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                 </div>
               </motion.nav>
 
-              <div className={`shrink-0 border-t border-white/10 bg-[#1a1a2e] px-6 py-5`}>
+              <div className={`shrink-0 border-t border-white/10 bg-brand-navy px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5`}>
                 <div className="mx-auto flex max-w-md flex-col gap-2">
                   {session ? (
                     <>
@@ -704,35 +703,35 @@ export function PortalNav(): ReactNode {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Dashboard <ArrowRight size={18} className={`text-[#F59E0B]`} />
+                        Dashboard <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/my-shipments"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        My Shipments <ArrowRight size={18} className={`text-[#F59E0B]`} />
+                        My Shipments <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/my-invoices"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Invoices <ArrowRight size={18} className={`text-[#F59E0B]`} />
+                        Invoices <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/track"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Track <ArrowRight size={18} className={`text-[#F59E0B]`} />
+                        Track <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/profile"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Profile <ArrowRight size={18} className={`text-[#F59E0B]`} />
+                        Profile <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <button
                         type="button"
@@ -757,7 +756,7 @@ export function PortalNav(): ReactNode {
                       <a
                         href="/register"
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center justify-center gap-2 rounded-sm bg-[#F59E0B] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#D97706] transition-colors active:scale-[0.98]`}
+                        className={`flex items-center justify-center gap-2 rounded-sm bg-brand-accent px-4 py-3.5 text-base font-semibold text-white hover:bg-brand-accent-hover transition-colors active:scale-[0.98]`}
                       >
                         <UserPlus size={18} /> Register
                       </a>

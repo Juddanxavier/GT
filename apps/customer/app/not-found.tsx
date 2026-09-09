@@ -9,7 +9,7 @@ export default function NotFound(): ReactNode {
   const config = useTenantConfig();
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#1a1a2e]">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-navy">
       <div className="absolute inset-0">
         <Image
           src="/images/heroparcel.webp"
@@ -18,14 +18,14 @@ export default function NotFound(): ReactNode {
           sizes="100vw"
           className="object-cover opacity-20"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a2e]/80 via-[#1a1a2e]/95 to-[#1a1a2e]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/80 via-brand-navy/95 to-brand-navy" />
       </div>
 
       <div className="relative z-10 text-center px-6 py-24">
-        <div className="w-16 h-16 rounded-2xl bg-[#E8621A]/10 text-[#E8621A] flex items-center justify-center mx-auto mb-8">
+        <div className="w-16 h-16 rounded-2xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto mb-8">
           <PackageSearch size={30} />
         </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#E8621A] mb-4">404</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-accent mb-4">404</p>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white max-w-lg mx-auto leading-[1.15]">
           This page seems to have lost its way.
         </h1>
@@ -34,10 +34,7 @@ export default function NotFound(): ReactNode {
           back on track.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E8621A] hover:bg-[#C45016] text-white text-sm font-semibold transition-colors"
-          >
+          <a href="/" className="premium-btn gap-2">
             <ArrowLeft size={14} /> Back to Home
           </a>
           <a

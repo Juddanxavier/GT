@@ -97,10 +97,12 @@ export function LeftSidebar({
   );
 }
 
-export function RightSidebar(): ReactNode {
+export function RightSidebar({ alwaysShow = false }: { alwaysShow?: boolean }): ReactNode {
   const config = useTenantConfig();
   return (
-    <aside className="sticky top-24 hidden space-y-6 lg:block">
+    <aside
+      className={`sticky top-24 space-y-6 ${alwaysShow ? 'block' : 'hidden lg:block'}`}
+    >
       <div className="premium-card p-5">
         <div className="mb-4 flex items-center gap-2">
           <MapPin size={14} className="text-brand-accent" />

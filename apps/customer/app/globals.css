@@ -151,6 +151,27 @@ body {
   }
 }
 
+@layer components {
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll var(--marquee-duration, 55s) linear infinite;
+    will-change: transform;
+  }
+
+  @media (max-width: 639px) {
+    .marquee-track {
+      --marquee-duration: 80s;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+}
+
 @utility premium-section {
   @apply py-24 md:py-32;
 }

@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
+import { SectionIntro } from '@/components/sections/section-intro';
 
 const TILES = [
   {
@@ -20,23 +20,27 @@ const TILES = [
     icon: PackageSearch,
     title: 'Track Shipment',
     description: 'Real-time status on any shipment, no login needed.',
-    span: 'col-span-2',
-    interactive: true,
+    href: '/track',
+    tint: 'from-brand-navy to-[#152a45]',
+    light: true,
   },
   {
     id: 'pickup',
     icon: CalendarClock,
     title: 'Schedule Pickup',
-    description: 'Pickup within 3 km of our offices.',
+    description: 'Pickup within 5 km of our offices. Conditions apply.',
     href: '/pickup',
-    span: 'col-span-1',
+    tint: 'from-brand-cream to-white',
+    light: false,
   },
   {
     id: 'customs',
     icon: ShieldCheck,
     title: 'Customs Support',
     description: 'Hassle-free clearance for every destination.',
-    span: 'col-span-1',
+    href: '/faq',
+    tint: 'from-white to-brand-cream',
+    light: false,
   },
   {
     id: 'invoice',
@@ -44,100 +48,78 @@ const TILES = [
     title: 'View Invoices',
     description: 'Download & manage billing in one place.',
     href: '/my-invoices',
-    span: 'col-span-1',
+    tint: 'from-white to-brand-cream',
+    light: false,
   },
   {
     id: 'delivery',
     icon: Truck,
     title: 'Door-to-Door',
     description: "From pickup to your recipient's doorstep.",
-    span: 'col-span-1',
+    href: '/air-freight',
+    tint: 'from-brand-cream to-white',
+    light: false,
   },
 ] as const;
 
 export function ServicesSection(): ReactNode {
   const config = useTenantConfig();
   const router = useRouter();
-  const [trackingNo, setTrackingNo] = useState('');
-
-  function handleTrack(e: React.FormEvent) {
-    e.preventDefault();
-    if (!trackingNo.trim()) return;
-    router.push(`/track/${encodeURIComponent(trackingNo.trim())}`);
-  }
 
   return (
-    <section
-      id="services"
-      className="relative overflow-hidden bg-gradient-to-br from-[#fffbeb] via-white to-[#fef3c7]"
-    >
-      <div className="relative z-10 mx-auto max-w-7xl px-5 py-16 sm:px-8 md:px-16 md:py-24 lg:px-24">
-        <div className="mb-10 text-center">
-          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B]">
-            <span className="h-px w-6 bg-[#F59E0B]" />
-            Quick Services
-          </span>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-            {config.services.title}
-          </h2>
-          <p className="mt-2 text-base text-foreground/65">{config.services.subtitle}</p>
-        </div>
+    <section id="services" className="premium-section relative overflow-hidden bg-brand-cream">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(245,158,11,0.06),transparent)]" />
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8 md:px-12 lg:px-16">
+        <SectionIntro
+          eyebrow="Quick Services"
+          title={config.services.title}
+          subtitle={config.services.subtitle}
+          align="center"
+          className="mb-14 md:mb-16"
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TILES.map((tile, i) => {
             const Icon = tile.icon;
             const isTrack = tile.id === 'track';
 
             return (
-              <motion.div
+              <motion.a
                 key={tile.id}
-                initial={{ opacity: 0, y: 20 }}
+                href={tile.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(tile.href);
+                }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.45, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                className={`${tile.span} group relative flex flex-col justify-between rounded-2xl border border-border/60 ${isTrack ? 'bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,rgba(245,158,11,0.04)_10px,rgba(245,158,11,0.04)_20px)]' : 'bg-white'} p-6 transition-shadow hover:shadow-lg ${isTrack ? 'md:p-8' : ''}`}
+                transition={{ duration: 0.5, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                className={`premium-card premium-card-hover group relative flex flex-col justify-between overflow-hidden bg-gradient-to-br p-7 ${tile.tint} ${isTrack ? 'sm:col-span-2 lg:col-span-1 lg:row-span-2 lg:min-h-[280px]' : 'min-h-[160px]'}`}
               >
-                <div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F59E0B]/10 transition-colors group-hover:bg-[#F59E0B]/20">
-                    <Icon size={20} className="text-[#F59E0B]" />
+                <div
+                  className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl ${isTrack ? 'bg-brand-accent/20' : 'bg-brand-accent/10'}`}
+                />
+                <div className="relative">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tile.light ? 'bg-white/10 text-white' : 'bg-brand-accent/10 text-brand-accent'}`}
+                  >
+                    <Icon size={20} />
                   </span>
-                  <h3 className="mt-4 text-base font-semibold text-foreground">{tile.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-foreground/60">
+                  <h3
+                    className={`mt-5 text-lg font-semibold ${tile.light ? 'text-white' : 'text-foreground'}`}
+                  >
+                    {tile.title}
+                  </h3>
+                  <p className={`mt-2 text-sm leading-relaxed ${tile.light ? 'text-white/65' : 'text-muted'}`}>
                     {tile.description}
                   </p>
                 </div>
-
-                {isTrack && (
-                  <form onSubmit={handleTrack} className="mt-6">
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="text"
-                        value={trackingNo}
-                        onChange={(e) => setTrackingNo(e.target.value)}
-                        placeholder="Enter tracking number"
-                        aria-label="Tracking number"
-                        className="h-11 w-full flex-1 rounded-xl border border-border bg-white px-4 text-sm text-foreground outline-none placeholder:text-foreground/30 focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!trackingNo.trim()}
-                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-[#F59E0B] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#D97706] disabled:opacity-50 sm:w-auto"
-                      >
-                        Track <ArrowRight size={14} />
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {!isTrack && (tile as { href?: string }).href && (
-                  <a
-                    href={(tile as { href?: string }).href}
-                    className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-[#F59E0B] transition-colors hover:text-[#D97706]"
-                  >
-                    Get started <ArrowRight size={13} />
-                  </a>
-                )}
-              </motion.div>
+                <span className="relative mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-brand-accent">
+                  Explore <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                </span>
+              </motion.a>
             );
           })}
         </div>

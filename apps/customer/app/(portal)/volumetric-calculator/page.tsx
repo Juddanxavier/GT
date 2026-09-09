@@ -17,7 +17,7 @@ import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 import { FaqSection } from '@/components/sections/faq-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
@@ -57,8 +57,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
         subtitle="Calculate dimensional weight for your shipments using IATA standards."
       />
 
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="grid md:grid-cols-[1fr_280px] gap-8 md:gap-12">
             <div className="space-y-12">
               <div>
@@ -477,8 +476,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
               </div>
             </aside>
           </div>
-        </div>
-      </section>
+      </PageSection>
 
       <FaqSection />
     </PageShell>

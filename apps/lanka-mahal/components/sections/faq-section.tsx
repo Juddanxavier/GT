@@ -1,8 +1,11 @@
 'use client';
 
-import { ArrowUpRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { FaqAccordion } from '@/components/faq-accordion';
+import { PageSection } from '@/components/page/page-section';
+import { SectionIntro } from '@/components/sections/section-intro';
 
 const faqData = [
   {
@@ -19,77 +22,48 @@ const faqData = [
   },
   {
     q: 'Can I schedule a door-to-door pickup?',
-    a: 'Yes. Use the Schedule Pickup tab or the Pickup page to choose a convenient time and location.',
+    a: 'Yes, within 5 km of our office locations. Use the Pickup page to choose your nearest office and a time slot. Conditions apply — our team will confirm availability.',
   },
   {
     q: 'How do I get a shipping quote?',
-    a: 'Fill in origin, destination, and weight details in the Get a Quote tab and submit the form. Our team will respond within 24 hours.',
+    a: 'Fill in origin, destination, and weight details on the Check Price page and submit the form. Our team will respond within 24 hours.',
   },
 ];
 
 export function FaqSection(): ReactNode {
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [openFaqs, setOpenFaqs] = useState<Record<string, boolean>>({ 'What countries do you ship to?': true });
+
+  function toggle(key: string) {
+    setOpenFaqs((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   return (
-    <section className="relative bg-white">
-      <div className="max-w-7xl mx-auto px-8 md:px-16 lg:px-24 py-16 md:py-20">
-        <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
-          <div>
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-4">
-              <span className="w-6 h-px bg-[#F59E0B]" />
-              FAQ
-            </span>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-[1.15] mb-4">
-              Frequently Asked <span className="text-[#F59E0B]">Questions</span>
-            </h2>
-            <p className="text-base text-foreground/90 leading-relaxed mb-6">
-              Common questions about our services.
+    <PageSection cream>
+      <div className="grid items-start gap-12 md:grid-cols-2 md:gap-16">
+        <div>
+          <SectionIntro
+            eyebrow="FAQ"
+            title="Frequently asked questions"
+            subtitle="Common questions about our services. Can't find your answer? Our team is here to help."
+          />
+          <div className="mt-10 border-t border-border pt-8">
+            <h3 className="text-xl font-semibold tracking-tight text-foreground">Still need help?</h3>
+            <p className="mt-2 text-base leading-relaxed text-muted">
+              Get in touch for personalised support on quotes, tracking, or customs.
             </p>
-            <p className="text-base text-foreground/80 leading-relaxed mb-10">
-              Can&apos;t find your answer? Contact our support team.
-            </p>
-            <div className="border-t border-border pt-8">
-              <h3 className="text-2xl font-bold tracking-tight text-foreground mb-2">
-                Still need help?
-              </h3>
-              <p className="text-base text-foreground/90 mb-6">
-                Get in touch for personalised support.
-              </p>
-              <a
-                href="/contact"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F59E0B] text-white text-base font-semibold hover:bg-[#D97706] transition-colors cursor-pointer w-fit"
-              >
-                Contact Support <ArrowUpRight size={16} />
-              </a>
-            </div>
-          </div>
-          <div className="space-y-0 border-t border-border">
-            {faqData.map((faq, i) => {
-              const isOpen = openFaq === i;
-              return (
-                <div key={faq.q} className="border-b border-border">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between py-4 text-left cursor-pointer"
-                  >
-                    <span className="text-base font-medium text-foreground pr-4">{faq.q}</span>
-                    <ChevronDown
-                      size={16}
-                      className={`text-foreground/70 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-40 pb-4' : 'max-h-0'}`}
-                  >
-                    <p className="text-base text-foreground/90 leading-relaxed">{faq.a}</p>
-                  </div>
-                </div>
-              );
-            })}
+            <a href="/contact" className="premium-btn mt-6 inline-flex items-center gap-2">
+              Contact Support <ArrowUpRight size={16} />
+            </a>
+            <a
+              href="/faq"
+              className="mt-3 block text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
+            >
+              View all FAQs →
+            </a>
           </div>
         </div>
+        <FaqAccordion items={faqData} openKeys={openFaqs} onToggle={toggle} />
       </div>
-    </section>
+    </PageSection>
   );
 }

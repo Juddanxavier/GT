@@ -22,7 +22,7 @@ const faqData = [
   },
   {
     q: 'Can I schedule a door-to-door pickup?',
-    a: 'Yes. Use the Schedule Pickup tab or the Pickup page to choose a convenient time and location.',
+    a: 'Yes, within 5 km of our office locations. Use the Pickup page to choose your nearest office and a time slot. Conditions apply — our team will confirm availability.',
   },
   {
     q: 'How do I get a shipping quote?',

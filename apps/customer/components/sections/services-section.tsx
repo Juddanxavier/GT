@@ -28,7 +28,7 @@ const TILES = [
     id: 'pickup',
     icon: CalendarClock,
     title: 'Schedule Pickup',
-    description: 'Pickup within 3 km of our offices.',
+    description: 'Pickup within 5 km of our offices. Conditions apply.',
     href: '/pickup',
     tint: 'from-brand-cream to-white',
     light: false,

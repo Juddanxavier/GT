@@ -22,7 +22,7 @@ import {
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { PageHero } from '@/components/page/page-hero';
-import { PageShell } from '@/components/page/page-section';
+import { PageSection, PageShell } from '@/components/page/page-section';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -145,8 +145,7 @@ export default function RateCardsPage(): ReactNode {
         subtitle="Select a destination to view per-kg courier charges across all service tiers — express, economy, and ocean freight."
       />
 
-      <section className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-16 lg:px-24 py-16 md:py-24">
+      <PageSection>
           <div className="max-w-5xl mx-auto space-y-14">
 
             <div>
@@ -180,7 +179,7 @@ export default function RateCardsPage(): ReactNode {
                 Only countries with active rate cards are shown. Can&apos;t find yours? Contact us for a custom quote.
               </p>
 
-              <div className="rounded-2xl bg-[#fafafa] p-6 md:p-8">
+              <div className="premium-card p-6 md:p-8">
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="rate-country" className="text-sm font-semibold text-foreground/80">
@@ -268,7 +267,7 @@ export default function RateCardsPage(): ReactNode {
                 )}
 
                 {filteredRates.length === 0 ? (
-                  <div className="text-center py-16 rounded-2xl bg-[#fafafa]">
+                  <div className="text-center py-16 premium-card">
                     <Package size={32} className="mx-auto text-foreground/15 mb-3" />
                     <p className="text-sm text-foreground/40">No rates available for shipments to {priceData.destinationCountry}.</p>
                   </div>
@@ -339,7 +338,7 @@ export default function RateCardsPage(): ReactNode {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.08, duration: 0.4 }}
-                    className="rounded-2xl bg-[#fafafa] p-6"
+                    className="premium-card p-6"
                   >
                     <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
                       <f.icon size={20} />
@@ -390,7 +389,7 @@ export default function RateCardsPage(): ReactNode {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="rounded-2xl bg-[#fafafa] overflow-hidden"
+                    className="premium-card overflow-hidden"
                   >
                     <button
                       type="button"
@@ -433,8 +432,7 @@ export default function RateCardsPage(): ReactNode {
             </div>
 
           </div>
-        </div>
-      </section>
+      </PageSection>
     </PageShell>
   );
 }

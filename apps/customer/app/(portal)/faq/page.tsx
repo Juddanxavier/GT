@@ -43,7 +43,7 @@ const categories: FaqCategory[] = [
       },
       {
         q: 'Do you have a branch near me?',
-        a: 'We have multiple branches across India. Visit our Branches page to find the nearest location or simply schedule a free door-to-door pickup online.',
+        a: 'We have branches in Chennai. Visit our Branches page to find the nearest location, or schedule a doorstep pickup within 5 km of an office (conditions apply).',
       },
       {
         q: 'What is the difference between air freight and ocean freight?',
@@ -57,7 +57,7 @@ const categories: FaqCategory[] = [
     items: [
       {
         q: 'How do I ship a parcel?',
-        a: 'You can book a shipment online through our website, schedule a doorstep pickup, or drop off your parcel at any Gajan Traders branch. We will handle the rest including documentation and customs clearance.',
+        a: 'Book online, schedule a pickup within 5 km of our offices (conditions apply), or drop off your parcel at a Gajan Traders branch. We handle documentation and customs clearance.',
       },
       {
         q: 'What is the weight limit for a shipment?',

@@ -1,4 +1,8 @@
+import { getHeadOffice, lankaMahalBranches } from './branches-data';
+
 export type TenantTheme = 'amber';
+
+const headOffice = getHeadOffice();
 
 export interface TenantCopy {
   name: string;
@@ -12,6 +16,18 @@ export interface TenantCopy {
   stats: {
     countries: string;
   };
+  contact: {
+    phone: string;
+    phoneHref: string;
+    email: string;
+    city: string;
+  };
+  offices: Array<{
+    name: string;
+    address: string;
+    hours: string;
+    phones: string;
+  }>;
   hero: {
     badge: string;
     headline: string[];
@@ -42,6 +58,27 @@ export interface TenantCopy {
     role: string;
     text: string;
   }>;
+  currency: {
+    code: string;
+    symbol: string;
+    locale: string;
+  };
+  phone: {
+    prefix: string;
+    countryCode: string;
+    digits: number;
+    placeholder: string;
+  };
+  postalCode: {
+    label: string;
+    pattern: RegExp;
+    digits: number;
+  };
+  pickup: {
+    radiusKm: number;
+    shortNotice: string;
+    formNotice: string;
+  };
 }
 
 export const tenantConfig: TenantCopy = {
@@ -56,11 +93,23 @@ export const tenantConfig: TenantCopy = {
   stats: {
     countries: '200+',
   },
+  contact: {
+    phone: headOffice.phone.split(' / ')[0] ?? '074 030 0976',
+    phoneHref: 'tel:+94740300976',
+    email: 'info@lankamahal.com',
+    city: 'Colombo, Sri Lanka',
+  },
+  offices: lankaMahalBranches.map((b) => ({
+    name: b.name,
+    address: b.address,
+    hours: b.hours,
+    phones: b.phone,
+  })),
   hero: {
     badge: 'International Courier Services — Sri Lanka',
     headline: ['Ship from Sri Lanka', 'to Anywhere in the World'],
     description:
-      'Lanka Mahal ships parcels from Sri Lanka to 200+ countries with pickup within 3 km of our offices, real-time tracking, and customs clearance support.',
+      'Pickup within 5 km of our offices (conditions apply), real-time tracking, and customs clearance for shipments from Sri Lanka to 200+ destinations.',
     ctaTrack: 'Track Your Shipment',
     trust: 'Serving exporters, students & Sri Lankans abroad since 2015.',
   },
@@ -70,11 +119,12 @@ export const tenantConfig: TenantCopy = {
   },
   services: {
     title: 'Quick Services',
-    subtitle: 'Track your shipment or schedule a pickup near you.',
+    subtitle: 'Track, quote, or schedule a pickup near you.',
   },
   about: {
     headline: 'Your trusted logistics partner, delivering across 200+ countries.',
-    body: 'From doorstep pickup near our offices to real-time tracking and on-time delivery, we help businesses and individuals ship with confidence worldwide.',
+    body:
+      'Eight branches across Sri Lanka, real staff, real handshakes. Walk in with a parcel — we handle packing, customs, and delivery worldwide. From doorstep pickup near our offices to real-time tracking, we help businesses and individuals ship with confidence.',
     cta: 'Learn About Us',
   },
   cta: {
@@ -129,4 +179,26 @@ export const tenantConfig: TenantCopy = {
       text: 'We ship to our international clients regularly. Lanka Mahal has been reliable, affordable, and their online tracking is seamless.',
     },
   ],
+  currency: {
+    code: 'LKR',
+    symbol: 'Rs',
+    locale: 'en-LK',
+  },
+  phone: {
+    prefix: '+94',
+    countryCode: '94',
+    digits: 9,
+    placeholder: '+94 77 123 4567',
+  },
+  postalCode: {
+    label: 'Postal Code',
+    pattern: /^\d{5}$/,
+    digits: 5,
+  },
+  pickup: {
+    radiusKm: 5,
+    shortNotice: 'Pickup within 5 km of our offices. Conditions apply.',
+    formNotice:
+      'Door-to-door pickup is available only within 5 km of the selected office. Requests are subject to confirmation and applicable conditions.',
+  },
 };

@@ -23,7 +23,7 @@ export default function PortalError({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E8621A] text-white text-sm font-semibold hover:bg-[#C45016] transition-colors cursor-pointer"
+          className="premium-btn gap-2 cursor-pointer"
         >
           <RefreshCw size={14} /> Try Again
         </button>

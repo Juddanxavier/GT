@@ -156,10 +156,10 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
   const isLight = lightNav || (!lightNav && scrolled);
   const tc = isLight
     ? {
-        link: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
-        muted: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
-        logo: 'text-[#1a1a2e]',
-        btn: 'text-[#1a1a2e]/80 hover:text-[#1a1a2e]',
+        link: 'text-brand-navy/80 hover:text-brand-navy',
+        muted: 'text-brand-navy/80 hover:text-brand-navy',
+        logo: 'text-brand-navy',
+        btn: 'text-brand-navy/80 hover:text-brand-navy',
       }
     : {
         link: 'text-white/90 hover:text-white',
@@ -192,10 +192,10 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
   ].some(isActive);
 
   const navLinkCls = (href: string) =>
-    `text-base font-semibold transition-colors ${isActive(href) ? `text-[#E8621A]` : tc.link}`;
+    `text-base font-semibold transition-colors ${isActive(href) ? `text-brand-accent` : tc.link}`;
 
   const navRowCls = (href: string) =>
-    `group flex items-center justify-between border-b border-white/10 py-4 text-2xl font-semibold transition-colors ${isActive(href) ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`;
+    `group flex min-h-[52px] items-center justify-between border-b border-white/10 py-3 text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${isActive(href) ? `text-brand-accent` : 'text-white/90 hover:text-white'}`;
 
   return (
     <header
@@ -233,7 +233,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             <button
               type="button"
               aria-expanded={servicesOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-[#E8621A]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${servicesActive ? `text-brand-accent` : tc.link}`}
             >
               Services{' '}
               <ChevronDown
@@ -243,18 +243,18 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             </button>
             {servicesOpen && (
               <div className="absolute top-full left-0 pt-2 w-48">
-                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
                   <a
                     href="/air-freight"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Plane size={16} className={`text-[#E8621A]`} /> Air Freight
+                    <Plane size={16} className={`text-brand-accent`} /> Air Freight
                   </a>
                   <a
                     href="/ocean-freight"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ship size={16} className={`text-[#E8621A]`} /> Ocean Freight
+                    <Ship size={16} className={`text-brand-accent`} /> Ocean Freight
                   </a>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             <button
               type="button"
               aria-expanded={supportOpen}
-              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-[#E8621A]` : tc.link}`}
+              className={`flex items-center gap-1 text-base font-semibold transition-colors cursor-pointer ${supportActive ? `text-brand-accent` : tc.link}`}
             >
               Support{' '}
               <ChevronDown
@@ -284,42 +284,42 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             </button>
             {supportOpen && (
               <div className="absolute top-full left-0 pt-2 w-56">
-                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
+                <div className={`rounded-sm ${isLight ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
                   <a
                     href="/faq"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <HelpCircle size={16} className={`text-[#E8621A]`} /> FAQ
+                    <HelpCircle size={16} className={`text-brand-accent`} /> FAQ
                   </a>
                   <a
                     href="/prohibited"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ban size={16} className={`text-[#E8621A]`} /> Prohibited Items
+                    <Ban size={16} className={`text-brand-accent`} /> Prohibited Items
                   </a>
                   <a
                     href="/pickup"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Calendar size={16} className={`text-[#E8621A]`} /> Pickup
+                    <Calendar size={16} className={`text-brand-accent`} /> Pickup
                   </a>
                   <a
                     href="/volumetric-calculator"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Ruler size={16} className={`text-[#E8621A]`} /> Volumetric Calculator
+                    <Ruler size={16} className={`text-brand-accent`} /> Volumetric Calculator
                   </a>
                   <a
                     href="/currency-converter"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <Globe size={16} className={`text-[#E8621A]`} /> Currency Converter
+                    <Globe size={16} className={`text-brand-accent`} /> Currency Converter
                   </a>
                   <a
                     href="/check-price"
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                   >
-                    <DollarSign size={16} className={`text-[#E8621A]`} /> Check Price
+                    <DollarSign size={16} className={`text-brand-accent`} /> Check Price
                   </a>
                 </div>
               </div>
@@ -367,14 +367,14 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                   className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
                 />
                 {badge > 0 && (
-                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E8621A] px-1 text-[9px] font-bold text-white leading-none">
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white leading-none">
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2 w-56">
-                  <div className={`rounded-sm ${lightNav || scrolled ? 'bg-white border-border shadow-lg' : 'bg-[#1a1a2e] border border-white/10'} overflow-hidden`}>
+                  <div className={`rounded-sm ${lightNav || scrolled ? 'bg-white border-border shadow-lg' : 'bg-brand-navy border border-white/10'} overflow-hidden`}>
                     <div className={`px-4 py-3 border-b ${lightNav || scrolled ? 'border-border' : 'border-white/10'}`}>
                       <div className={`text-sm font-medium ${lightNav || scrolled ? 'text-foreground' : 'text-white'}`}>{user?.name}</div>
                       <div className={`text-xs ${lightNav || scrolled ? 'text-foreground/60' : 'text-white/60'}`}>{user?.email}</div>
@@ -383,39 +383,39 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                       href="/dashboard"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <LayoutDashboard size={16} className={`text-[#E8621A]`} /> Dashboard
+                      <LayoutDashboard size={16} className={`text-brand-accent`} /> Dashboard
                     </a>
                     <a
                       href="/my-shipments"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Package size={16} className={`text-[#E8621A]`} /> My Shipments
+                      <Package size={16} className={`text-brand-accent`} /> My Shipments
                     </a>
                     <a
                       href="/my-invoices"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Receipt size={16} className={`text-[#E8621A]`} /> Invoices
+                      <Receipt size={16} className={`text-brand-accent`} /> Invoices
                     </a>
                     <a
                       href="/track"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Search size={16} className={`text-[#E8621A]`} /> Track
+                      <Search size={16} className={`text-brand-accent`} /> Track
                     </a>
                     <a
                       href="/pickup"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Calendar size={16} className={`text-[#E8621A]`} /> Schedule Pickup
+                      <Calendar size={16} className={`text-brand-accent`} /> Schedule Pickup
                     </a>
                     <a
                       href="/notifications"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <Bell size={16} className={`text-[#E8621A]`} /> Notifications
+                      <Bell size={16} className={`text-brand-accent`} /> Notifications
                       {badge > 0 && (
-                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E8621A] px-1 text-[9px] font-bold text-white leading-none">
+                        <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white leading-none">
                           {badge > 9 ? '9+' : badge}
                         </span>
                       )}
@@ -424,7 +424,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                       href="/profile"
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${isLight ? 'text-foreground/80 hover:text-foreground hover:bg-foreground/5' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                     >
-                      <User size={16} className={`text-[#E8621A]`} /> Profile
+                      <User size={16} className={`text-brand-accent`} /> Profile
                     </a>
                     <div className={`border-t ${isLight ? 'border-border' : 'border-white/10'}`} />
                     <button
@@ -452,7 +452,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
               </a>
               <a
                 href="/register"
-                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-[#E8621A] hover:bg-[#C45016] transition-all active:scale-[0.98]`}
+                className={`inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white rounded-full bg-brand-accent hover:bg-brand-accent-hover transition-all active:scale-[0.98]`}
               >
                 <UserPlus size={15} />
                 <span className="hidden sm:inline">Register</span>
@@ -469,7 +469,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             setMobileOpen(next);
             if (!next) hamburgerRef.current?.focus();
           }}
-          className={`lg:hidden p-2 rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors active:scale-90`}
+          className={`lg:hidden flex h-11 w-11 items-center justify-center rounded-lg ${tc.logo} hover:bg-foreground/5 transition-colors active:scale-90`}
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -481,7 +481,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
             <motion.div
               key="mobile-menu"
               ref={menuRef}
-              className={`lg:hidden fixed inset-0 z-[60] flex flex-col bg-[#1a1a2e]`}
+              className={`lg:hidden fixed inset-0 z-[70] flex flex-col bg-brand-navy`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -509,7 +509,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                 animate="show"
                 exit="hidden"
                 variants={{ show: { transition: { staggerChildren: 0.05 } }, hidden: {} }}
-                className="flex-1 overflow-y-auto px-6 pb-6"
+                className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4 sm:px-6 sm:pb-6"
               >
                 <div className="mx-auto flex max-w-md flex-col">
                   <motion.a
@@ -522,7 +522,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                     Home
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -535,7 +535,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                     About
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.div variants={itemV} className="border-b border-white/10">
@@ -543,12 +543,12 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                       type="button"
                       onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                       aria-expanded={mobileServicesOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${servicesActive ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full min-h-[52px] items-center justify-between py-3 text-left text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${servicesActive ? `text-brand-accent` : 'text-white/90 hover:text-white'}`}
                     >
                       Services
                       <ChevronDown
                         size={22}
-                        className={`text-[#E8621A] transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
+                        className={`text-brand-accent transition-transform duration-300 ${mobileServicesOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -567,14 +567,14 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Plane size={18} className={`text-[#E8621A]`} /> Air Freight
+                              <Plane size={18} className={`text-brand-accent`} /> Air Freight
                             </a>
                             <a
                               href="/ocean-freight"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ship size={18} className={`text-[#E8621A]`} /> Ocean Freight
+                              <Ship size={18} className={`text-brand-accent`} /> Ocean Freight
                             </a>
                           </div>
                         </motion.div>
@@ -586,12 +586,12 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                       type="button"
                       onClick={() => setMobileSupportOpen(!mobileSupportOpen)}
                       aria-expanded={mobileSupportOpen}
-                      className={`flex w-full items-center justify-between py-4 text-left text-2xl font-semibold transition-colors ${supportActive ? `text-[#E8621A]` : 'text-white/90 hover:text-white'}`}
+                      className={`flex w-full min-h-[52px] items-center justify-between py-3 text-left text-xl font-semibold transition-colors sm:py-4 sm:text-2xl ${supportActive ? `text-brand-accent` : 'text-white/90 hover:text-white'}`}
                     >
                       Support
                       <ChevronDown
                         size={22}
-                        className={`text-[#E8621A] transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
+                        className={`text-brand-accent transition-transform duration-300 ${mobileSupportOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
                     <AnimatePresence initial={false}>
@@ -610,42 +610,42 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <HelpCircle size={18} className={`text-[#E8621A]`} /> FAQ
+                              <HelpCircle size={18} className={`text-brand-accent`} /> FAQ
                             </a>
                             <a
                               href="/prohibited"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ban size={18} className={`text-[#E8621A]`} /> Prohibited Items
+                              <Ban size={18} className={`text-brand-accent`} /> Prohibited Items
                             </a>
                             <a
                               href="/pickup"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Calendar size={18} className={`text-[#E8621A]`} /> Pickup
+                              <Calendar size={18} className={`text-brand-accent`} /> Pickup
                             </a>
                             <a
                               href="/volumetric-calculator"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Ruler size={18} className={`text-[#E8621A]`} /> Volumetric Calculator
+                              <Ruler size={18} className={`text-brand-accent`} /> Volumetric Calculator
                             </a>
                             <a
                               href="/currency-converter"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <Globe size={18} className={`text-[#E8621A]`} /> Currency Converter
+                              <Globe size={18} className={`text-brand-accent`} /> Currency Converter
                             </a>
                             <a
                               href="/check-price"
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 rounded-sm bg-white/5 px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                             >
-                              <DollarSign size={18} className={`text-[#E8621A]`} /> Check Price
+                              <DollarSign size={18} className={`text-brand-accent`} /> Check Price
                             </a>
                           </div>
                         </motion.div>
@@ -662,7 +662,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                     Branches
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -675,7 +675,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                     Track
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                   <motion.a
@@ -688,13 +688,13 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                     Contact
                     <ArrowRight
                       size={20}
-                      className={`-translate-x-2 text-[#E8621A] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
+                      className={`-translate-x-2 text-brand-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100`}
                     />
                   </motion.a>
                 </div>
               </motion.nav>
 
-              <div className={`shrink-0 border-t border-white/10 bg-[#1a1a2e] px-6 py-5`}>
+              <div className={`shrink-0 border-t border-white/10 bg-brand-navy px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5`}>
                 <div className="mx-auto flex max-w-md flex-col gap-2">
                   {session ? (
                     <>
@@ -703,35 +703,35 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Dashboard <ArrowRight size={18} className={`text-[#E8621A]`} />
+                        Dashboard <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/my-shipments"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        My Shipments <ArrowRight size={18} className={`text-[#E8621A]`} />
+                        My Shipments <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/my-invoices"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Invoices <ArrowRight size={18} className={`text-[#E8621A]`} />
+                        Invoices <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/track"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Track <ArrowRight size={18} className={`text-[#E8621A]`} />
+                        Track <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <a
                         href="/profile"
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-sm bg-white/5 px-4 py-3.5 text-base font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
                       >
-                        Profile <ArrowRight size={18} className={`text-[#E8621A]`} />
+                        Profile <ArrowRight size={18} className={`text-brand-accent`} />
                       </a>
                       <button
                         type="button"
@@ -756,7 +756,7 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
                       <a
                         href="/register"
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center justify-center gap-2 rounded-sm bg-[#E8621A] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#C45016] transition-colors active:scale-[0.98]`}
+                        className={`flex items-center justify-center gap-2 rounded-sm bg-brand-accent px-4 py-3.5 text-base font-semibold text-white hover:bg-brand-accent-hover transition-colors active:scale-[0.98]`}
                       >
                         <UserPlus size={18} /> Register
                       </a>
