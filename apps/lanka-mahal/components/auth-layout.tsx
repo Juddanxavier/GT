@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, Globe, Package, Shield } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SiteLogo } from '@/components/site-logo';
 
 interface AuthLayoutProps {
   config: {
@@ -36,11 +37,8 @@ export function AuthLayout({
 
       <div className="relative z-10 flex min-h-[100svh] flex-col">
         <header className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-accent text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(245,158,11,0.45)]">
-              {config.shortName}
-            </span>
-            <span className="hidden font-semibold text-brand-navy sm:inline">{config.name}</span>
+          <a href="/" className="flex items-center">
+            <SiteLogo height={48} showName nameClassName="hidden font-semibold text-brand-navy sm:inline" />
           </a>
           <a
             href="/"

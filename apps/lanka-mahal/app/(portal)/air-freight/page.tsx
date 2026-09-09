@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { FaqSection } from '@/components/sections/faq-section';
+import { ShipSmarterCta } from '@/components/sections/ship-smarter-cta';
 import { PageHero } from '@/components/page/page-hero';
 import { PageSection, PageShell } from '@/components/page/page-section';
 
@@ -250,85 +251,7 @@ export default function AirFreightPage(): ReactNode {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center">
-                <div className="absolute inset-0 bg-brand-navy" />
-                <div className="cta-orb cta-orb-1" />
-                <div className="cta-orb cta-orb-2" />
-                <div className="cta-orb cta-orb-3" />
-                <div className="relative z-10">
-                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
-                    Ship Faster.{' '}
-                    <span className="text-brand-accent">Ship Smarter.</span>
-                  </h2>
-                  <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
-                    Get an instant quote, find a branch, or schedule a pickup — whatever works for
-                    you.
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-3">
-                    <a
-                      href="/check-price"
-                      className="px-6 py-3 rounded-xl bg-white text-brand-accent text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
-                    >
-                      Check Price <ArrowRight size={16} />
-                    </a>
-                    <a
-                      href="/pickup"
-                      className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2"
-                    >
-                      Schedule Pickup
-                    </a>
-                    <a
-                      href="/branches"
-                      className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2"
-                    >
-                      Find a Branch
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <style>{`
-                .cta-orb {
-                  position: absolute;
-                  border-radius: 50%;
-                  filter: blur(80px);
-                  opacity: 0.5;
-                  will-change: transform;
-                }
-                .cta-orb-1 {
-                  width: 300px; height: 300px;
-                  background: #E8621A;
-                  top: -40px; left: -60px;
-                  animation: orbFloat1 8s ease-in-out infinite;
-                }
-                .cta-orb-2 {
-                  width: 200px; height: 200px;
-                  background: #FFB347;
-                  bottom: -30px; right: -20px;
-                  animation: orbFloat2 10s ease-in-out infinite;
-                }
-                .cta-orb-3 {
-                  width: 160px; height: 160px;
-                  background: #E8621A;
-                  top: 50%; left: 55%;
-                  opacity: 0.25;
-                  animation: orbFloat3 12s ease-in-out infinite;
-                }
-                @keyframes orbFloat1 {
-                  0%, 100% { transform: translate(0, 0) scale(1); }
-                  33% { transform: translate(60px, 40px) scale(1.1); }
-                  66% { transform: translate(-20px, 70px) scale(0.95); }
-                }
-                @keyframes orbFloat2 {
-                  0%, 100% { transform: translate(0, 0) scale(1); }
-                  33% { transform: translate(-50px, -30px) scale(1.15); }
-                  66% { transform: translate(30px, -60px) scale(0.9); }
-                }
-                @keyframes orbFloat3 {
-                  0%, 100% { transform: translate(0, 0) scale(1); }
-                  50% { transform: translate(-40px, 30px) scale(1.2); }
-                }
-              `}</style>
+              <ShipSmarterCta />
             </div>
       </PageSection>
 

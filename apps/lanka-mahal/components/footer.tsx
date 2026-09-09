@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
+import { SiteLogo } from '@/components/site-logo';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 import { images } from '@/lib/images';
 
@@ -160,8 +161,8 @@ export function Footer(): ReactNode {
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
             {/* Brand + contact */}
             <div className="lg:col-span-4">
-              <p className="text-lg font-bold tracking-tight">{config.name}</p>
-              <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/65">
+              <SiteLogo height={56} className="mb-4" withBackdrop />
+              <p className="max-w-sm text-sm leading-relaxed text-white/65">
                 {config.about.body}
               </p>
 

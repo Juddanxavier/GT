@@ -27,11 +27,11 @@ import {
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { SiteLogo } from '@/components/site-logo';
 import { authClient } from '@/lib/auth-client';
 import { useUnreadCount } from '@/lib/queries';
 import { connectSocket, disconnectSocket } from '@/lib/realtime';
 import { useCustomerSession } from '@/lib/use-customer-session';
-import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const itemV: Variants = {
   hidden: { opacity: 0, y: 14 },
@@ -41,7 +41,6 @@ const itemV: Variants = {
 export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
-  const config = useTenantConfig();
   const { user } = useCustomerSession();
   const { data: session } = authClient.useSession();
   const { data: unreadData } = useUnreadCount();
@@ -202,10 +201,8 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
       className={`fixed left-0 w-full z-50 transition-all duration-300 ${hasMarquee ? 'top-10' : 'top-0'} ${navBg}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-        <a href="/" className="flex items-center gap-2 ml-2">
-          <span className={`text-lg sm:text-xl font-bold tracking-tight ${tc.logo}`}>
-            {config.shortName}
-          </span>
+        <a href="/" className="ml-2 flex items-center">
+          <SiteLogo height={48} priority withBackdrop={!lightNav && !scrolled} />
         </a>
 
         <div className="hidden lg:flex items-center gap-6">
@@ -488,10 +485,8 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-                <a href="/" className="flex items-center gap-2 ml-2">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-white">
-                    {config.shortName}
-                  </span>
+                <a href="/" className="ml-2 flex items-center">
+                  <SiteLogo height={48} withBackdrop />
                 </a>
                 <button
                   type="button"

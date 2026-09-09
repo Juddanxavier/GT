@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import {
-  ArrowRight,
   Box,
   ChevronDown,
   Clock,
@@ -23,6 +22,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { PageHero } from '@/components/page/page-hero';
 import { PageSection, PageShell } from '@/components/page/page-section';
+import { ShipSmarterCta } from '@/components/sections/ship-smarter-cta';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -350,26 +350,7 @@ export default function RateCardsPage(): ReactNode {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center">
-              <div className="absolute inset-0 bg-brand-navy" />
-              <div className="relative z-10">
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.08] text-white mb-3">
-                  Ship Faster.{' '}
-                  <span className="text-brand-accent">Ship Smarter.</span>
-                </h2>
-                <p className="text-base text-white/75 max-w-lg mx-auto mb-8">
-                  Get an instant quote, find a branch, or schedule a pickup — whatever works for you.
-                </p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <a href="/check-price" className="px-6 py-3 rounded-xl bg-white text-brand-accent text-base font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2">
-                    Check Price <ArrowRight size={16} />
-                  </a>
-                  <a href="/pickup" className="px-6 py-3 rounded-xl border border-white/20 text-white text-base font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
-                    Schedule Pickup
-                  </a>
-                </div>
-              </div>
-            </div>
+            <ShipSmarterCta showBranches={false} />
 
             <div>
               <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-accent">
