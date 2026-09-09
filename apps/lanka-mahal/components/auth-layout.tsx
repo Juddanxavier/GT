@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, Globe, Package, Shield } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -15,7 +16,7 @@ interface AuthLayoutProps {
   children: ReactNode;
 }
 
-const highlightIcons = [Globe, Package, Shield];
+const highlightIcons: LucideIcon[] = [Globe, Package, Shield];
 
 export function AuthLayout({
   config,
