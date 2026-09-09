@@ -77,7 +77,7 @@ export default function RateCardsPage(): ReactNode {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [countriesLoading, setCountriesLoading] = useState(true);
 
-  const tenantSlug = config.name === 'Lanka Mahal' ? 'lanka-mahal' : 'gajan-traders';
+  const tenantSlug = config.slug;
 
   useEffect(() => {
     fetch(`${API_BASE}/api/check-price/countries?tenant=${tenantSlug}`)

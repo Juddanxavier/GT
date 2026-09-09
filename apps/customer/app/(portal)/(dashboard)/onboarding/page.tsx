@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Branch } from '@/lib/types';
+import { fetchPublicBranches } from '@/lib/fetch-public-branches';
 import { useCustomerSession } from '@/lib/use-customer-session';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
@@ -37,17 +38,16 @@ function OnboardingPageContent(): ReactNode {
       return;
     }
     setPhone(user.phone || `${config.phone.prefix} `);
-    fetch('/api/branches/public')
-      .then((r) => r.json())
-      .then((d) => {
-        setBranches(Array.isArray(d.data) ? d.data : []);
+    fetchPublicBranches(config.slug)
+      .then((data) => {
+        setBranches(data);
         setLoading(false);
       })
       .catch(() => {
         setError('Could not load branch list — please refresh the page to try again');
         setLoading(false);
       });
-  }, [user, sessionLoading, router, sessionError, config.phone.prefix]);
+  }, [user, sessionLoading, router, sessionError, config.phone.prefix, config.slug]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

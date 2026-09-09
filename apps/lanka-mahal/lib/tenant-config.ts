@@ -5,6 +5,7 @@ export type TenantTheme = 'amber';
 const headOffice = getHeadOffice();
 
 export interface TenantCopy {
+  slug: string;
   name: string;
   shortName: string;
   title: string;
@@ -82,6 +83,7 @@ export interface TenantCopy {
 }
 
 export const tenantConfig: TenantCopy = {
+  slug: 'lanka-mahal',
   name: 'Lanka Mahal',
   shortName: 'LM',
   title: 'Lanka Mahal — International Courier',

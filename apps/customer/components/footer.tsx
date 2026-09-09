@@ -87,9 +87,9 @@ export function Footer(): ReactNode {
       </div>
 
       <div className="relative z-10">
-        {/* CTA image banner */}
-        <div className="relative w-full overflow-hidden border-b border-white/10">
-          <div className="relative min-h-[300px] sm:min-h-[320px] md:aspect-[2.5/1] md:min-h-[220px] md:max-h-[420px]">
+        {/* CTA image banner — full viewport width */}
+        <div className="relative w-full border-b border-white/10">
+          <div className="relative min-h-[360px] w-full lg:min-h-[400px]">
             <Image
               src="/images/cta.webp"
               alt=""
@@ -98,32 +98,32 @@ export function Footer(): ReactNode {
               className="object-cover object-center"
               priority={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/95 via-brand-navy/88 to-brand-navy/92 md:bg-gradient-to-r md:from-brand-navy/92 md:via-brand-navy/78 md:to-brand-navy/65" />
-            <div className="relative flex flex-col items-center justify-center px-5 py-12 text-center sm:px-8 sm:py-14 md:absolute md:inset-0 md:px-6 md:py-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-navy/95 via-brand-navy/88 to-brand-navy/92 lg:bg-gradient-to-r lg:from-brand-navy/92 lg:via-brand-navy/78 lg:to-brand-navy/65" />
+            <div className="relative flex min-h-[360px] w-full flex-col items-center justify-center px-5 py-14 text-center sm:px-8 lg:min-h-[400px] lg:px-12">
               <p className="section-eyebrow mb-3 !text-brand-accent/90 sm:mb-4">
                 <span className="section-eyebrow-line !bg-brand-accent" />
                 Ready to ship
               </p>
-              <h2 className="max-w-2xl text-xl font-bold tracking-tight drop-shadow-lg sm:text-2xl md:text-3xl lg:text-4xl">
+              <h2 className="max-w-3xl text-xl font-bold tracking-tight drop-shadow-lg sm:text-2xl md:text-3xl lg:text-4xl">
                 Ship <span className="text-brand-accent">without borders.</span>
               </h2>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/80 drop-shadow sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/80 drop-shadow sm:text-base">
                 From India to {config.stats.countries} destinations — fast, secure, and tracked every
                 step of the way. {config.pickup.shortNotice}
               </p>
-              <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
-                <a href="/register" className="premium-btn w-full justify-center gap-2 sm:w-auto">
+              <div className="mt-8 grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3">
+                <a href="/register" className="premium-btn w-full justify-center gap-2">
                   Get started <ArrowRight size={14} />
                 </a>
                 <a
                   href="/track"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                 >
                   Track shipment
                 </a>
                 <a
                   href="/check-price"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                 >
                   Check price
                 </a>

@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const h = await headers();
-  const tenantSlug = h.get('x-tenant-slug') ?? 'gajan-traders';
+  const tenantSlug = h.get('x-tenant-slug') ?? 'lanka-mahal';
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,

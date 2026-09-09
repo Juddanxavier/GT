@@ -1,4 +1,5 @@
 export interface TenantCopy {
+  slug: string;
   name: string;
   shortName: string;
   title: string;
@@ -75,6 +76,7 @@ export interface TenantCopy {
 }
 
 export const tenantConfig: TenantCopy = {
+  slug: 'gajan-traders',
   name: 'Gajan Traders',
   shortName: 'GT',
   title: 'Gajan Traders — International Courier',

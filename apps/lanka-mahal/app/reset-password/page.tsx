@@ -1,14 +1,16 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { z } from 'zod';
-import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Spinner } from '@heroui/react';
+import { CheckCircle2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { z } from 'zod';
+import { AuthAlert } from '@/components/auth/auth-alert';
+import { PasswordField } from '@/components/auth/password-field';
+import { AuthLayout } from '@/components/auth-layout';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { authClient } from '@/lib/auth-client';
-import { AuthLayout } from '@/components/auth-layout';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const resetSchema = z
@@ -31,8 +33,6 @@ function ResetPasswordForm(): ReactNode {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,10 +47,15 @@ function ResetPasswordForm(): ReactNode {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError('');
-    if (!token) { setSubmitError('Invalid reset link'); return; }
+    if (!token) {
+      setSubmitError('Invalid reset link');
+      return;
+    }
     const result = resetSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
-      setFieldErrors(Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])));
+      setFieldErrors(
+        Object.fromEntries(result.error.issues.map((i) => [i.path[0] as string, i.message])),
+      );
       return;
     }
     setFieldErrors({});
@@ -75,7 +80,7 @@ function ResetPasswordForm(): ReactNode {
 
   if (!token && !submitError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-[100svh] items-center justify-center bg-brand-cream">
         <Spinner size="lg" />
       </div>
     );
@@ -84,12 +89,12 @@ function ResetPasswordForm(): ReactNode {
   if (success) {
     return (
       <AuthLayout config={config} title="Password reset" subtitle="Your password has been updated">
-        <div className="text-center space-y-5 animate-[fade-up_0.4s_ease-out]">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 border border-green-200 shadow-inner">
+        <div className="space-y-5 text-center animate-[fade-up_0.4s_ease-out]">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full border border-green-200 bg-green-50">
             <CheckCircle2 size={32} className="text-green-600" />
           </div>
-          <p className="text-foreground">Redirecting you to sign in...</p>
-          <a href="/login" className="inline-flex items-center gap-1.5 font-medium text-[#F59E0B] hover:text-[#D97706] transition-colors">
+          <p className="text-sm text-foreground/70">Redirecting you to sign in...</p>
+          <a href="/login" className="text-sm font-semibold text-brand-accent hover:text-brand-accent-hover">
             Go to sign in
           </a>
         </div>
@@ -99,64 +104,39 @@ function ResetPasswordForm(): ReactNode {
 
   return (
     <AuthLayout config={config} title="Set new password" subtitle="Enter your new password below">
-      {submitError && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
-          {submitError}
-        </div>
-      )}
+      {submitError && <AuthAlert>{submitError}</AuthAlert>}
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-        <div className="space-y-2">
-          <label className="font-medium text-foreground/80">New Password</label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
-              placeholder="Enter new password"
-              autoComplete="new-password"
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors cursor-pointer"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
-        </div>
+        <PasswordField
+          id="reset-password"
+          label="New password"
+          value={password}
+          onChange={(v) => {
+            setPassword(v);
+            setFieldErrors((p) => ({ ...p, password: '' }));
+          }}
+          placeholder="Enter new password"
+          autoComplete="new-password"
+          error={fieldErrors.password}
+        />
 
-        <div className="space-y-2">
-          <label className="font-medium text-foreground/80">Confirm Password</label>
-          <div className="relative">
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((p) => ({ ...p, confirmPassword: '' })); }}
-              placeholder="Re-enter new password"
-              autoComplete="new-password"
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]/50 transition-all ${fieldErrors.confirmPassword ? 'border-red-400' : 'border-border'}`}
-            />
-            <button
-              type="button"
-              aria-label={showConfirm ? 'Hide confirm' : 'Show confirm'}
-              onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors cursor-pointer"
-            >
-              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {fieldErrors.confirmPassword && <p className="text-xs text-red-500">{fieldErrors.confirmPassword}</p>}
-        </div>
+        <PasswordField
+          id="reset-confirm"
+          label="Confirm password"
+          value={confirmPassword}
+          onChange={(v) => {
+            setConfirmPassword(v);
+            setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+          }}
+          placeholder="Re-enter new password"
+          autoComplete="new-password"
+          error={fieldErrors.confirmPassword}
+        />
 
         <button
           type="submit"
           disabled={loading || !token}
-          className="w-full bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
+          className="premium-btn w-full disabled:opacity-60"
         >
           {loading ? 'Resetting...' : 'Reset password'}
         </button>
@@ -168,10 +148,15 @@ function ResetPasswordForm(): ReactNode {
 export default function ResetPasswordPage(): ReactNode {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><Spinner size="lg" /></div>}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[100svh] items-center justify-center bg-brand-cream">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
         <ResetPasswordForm />
       </Suspense>
     </ErrorBoundary>
   );
 }
-

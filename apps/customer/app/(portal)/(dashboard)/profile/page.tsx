@@ -8,22 +8,42 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
+  Lock,
   Mail,
+  MapPin,
+  Phone,
   Trash2,
   User,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { BranchSelect } from '@/components/profile/branch-select';
+import { authClient } from '@/lib/auth-client';
+import { fetchPublicBranches } from '@/lib/fetch-public-branches';
 import { useDeleteAccount, useUpdateProfile } from '@/lib/queries';
 import type { Branch } from '@/lib/types';
 import { useCustomerSession } from '@/lib/use-customer-session';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
+function ProfileSkeleton(): ReactNode {
+  return (
+    <div className="max-w-2xl space-y-6 animate-pulse">
+      <div className="premium-card h-28" />
+      <div className="premium-card h-64" />
+      <div className="premium-card h-80" />
+      <div className="premium-card h-48" />
+    </div>
+  );
+}
+
 function ProfilePageContent(): ReactNode {
   const { user, isPending: sessionLoading } = useCustomerSession();
+  const { refetch: refetchSession } = authClient.useSession();
   const config = useTenantConfig();
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
+  const [branchesError, setBranchesError] = useState('');
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,11 +68,18 @@ function ProfilePageContent(): ReactNode {
   const deleteAccount = useDeleteAccount();
 
   useEffect(() => {
-    fetch('/api/branches/public')
-      .then((r) => r.json())
-      .then((d) => setBranches(Array.isArray(d.data) ? d.data : []))
-      .catch(() => {});
-  }, []);
+    setBranchesLoading(true);
+    setBranchesError('');
+    fetchPublicBranches(config.slug)
+      .then((data) => {
+        setBranches(data);
+        setBranchesLoading(false);
+      })
+      .catch(() => {
+        setBranchesError('Could not load branches. Please refresh and try again.');
+        setBranchesLoading(false);
+      });
+  }, [config.slug]);
 
   useEffect(() => {
     if (!user) return;
@@ -64,25 +91,18 @@ function ProfilePageContent(): ReactNode {
     setCity(addr?.city ?? '');
     setState(addr?.state ?? '');
     setPincode(addr?.pincode ?? '');
-  }, [user]);
+  }, [user?.id, user?.name, user?.phone, user?.branchId, user?.address]);
 
-  if (sessionLoading) {
-    return (
-      <div className="max-w-lg mx-auto space-y-8 animate-pulse">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-foreground/5 mb-4" />
-          <div className="h-7 w-24 bg-foreground/5 rounded-lg mx-auto mb-2" />
-          <div className="h-4 w-48 bg-foreground/5 rounded-lg mx-auto" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-2xl bg-foreground/[0.02] p-6 space-y-4">
-            <div className="h-10 bg-foreground/5 rounded-xl" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  const initials = useMemo(() => {
+    const parts = (user?.name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return parts
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? '')
+      .join('');
+  }, [user?.name]);
 
+  if (sessionLoading) return <ProfileSkeleton />;
   if (!user) return null;
 
   const createdAt = user.createdAt
@@ -93,15 +113,14 @@ function ProfilePageContent(): ReactNode {
       })
     : null;
 
-  const hasProfileChanges = user
-    ? name !== (user.name ?? '') ||
-      phone !== (user.phone ?? '') ||
-      branchId !== (user.branchId ?? '') ||
-      street !== (user.address?.street ?? '') ||
-      city !== (user.address?.city ?? '') ||
-      state !== (user.address?.state ?? '') ||
-      pincode !== (user.address?.pincode ?? '')
-    : false;
+  const hasProfileChanges =
+    name !== (user.name ?? '') ||
+    phone !== (user.phone ?? '') ||
+    branchId !== (user.branchId ?? '') ||
+    street !== (user.address?.street ?? '') ||
+    city !== (user.address?.city ?? '') ||
+    state !== (user.address?.state ?? '') ||
+    pincode !== (user.address?.pincode ?? '');
 
   const hasPasswordChanges = currentPassword.length > 0 && newPassword.length > 0;
   const hasChanges = hasProfileChanges || hasPasswordChanges;
@@ -119,10 +138,12 @@ function ProfilePageContent(): ReactNode {
       data.newPassword = newPassword;
     }
     if (Object.keys(data).length === 0) return;
+
     saveProfile(data as Parameters<ReturnType<typeof useUpdateProfile>['mutate']>[0], {
       onSuccess: () => {
         setCurrentPassword('');
         setNewPassword('');
+        void refetchSession();
       },
     });
   }
@@ -141,7 +162,7 @@ function ProfilePageContent(): ReactNode {
     saveReset();
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     deleteAccount.mutate(undefined, {
       onSuccess: () => {
         window.location.href = '/';
@@ -149,244 +170,287 @@ function ProfilePageContent(): ReactNode {
     });
   }
 
-  const _canSave = !!(hasProfileChanges || hasPasswordChanges);
-
   return (
-    <div className="max-w-lg mx-auto space-y-8">
+    <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-accent/10 text-brand-accent">
           <User size={24} />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Profile</h1>
-          <p className="text-foreground/50 mt-0.5">Manage your account details.</p>
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">Profile</h1>
+          <p className="mt-0.5 text-foreground/50">Manage your account and delivery details.</p>
         </div>
       </div>
 
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-accent/10 text-brand-accent mb-4 shadow-sm">
-          <User size={30} />
+      <div className="premium-card flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-accent text-xl font-bold text-white shadow-[0_8px_24px_-8px_rgba(232,98,26,0.5)]">
+          {initials}
         </div>
-        <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-foreground/50">
-          <Mail size={14} />
-          <span>{user.email}</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-xl font-bold text-foreground">{user.name}</h2>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-foreground/55">
+            <Mail size={14} className="shrink-0" />
+            <span className="truncate">{user.email}</span>
+          </div>
+          {createdAt && (
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-foreground/40">
+              <Calendar size={12} />
+              <span>Member since {createdAt}</span>
+            </div>
+          )}
         </div>
-        {createdAt && (
-          <div className="flex items-center justify-center gap-1.5 mt-1.5 text-xs text-foreground/40">
-            <Calendar size={12} />
-            <span>Member since {createdAt}</span>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-6">
+        <section className="premium-card space-y-5 p-6">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              Personal information
+            </h2>
+            <p className="mt-1 text-xs text-foreground/45">Your contact details for shipments and alerts.</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <label htmlFor="profile-name" className="text-sm font-medium text-foreground/80">
+                Full name
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="premium-input"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="profile-phone" className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                <Phone size={14} className="text-brand-accent" />
+                Phone
+              </label>
+              <input
+                id="profile-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={config.phone.placeholder}
+                className="premium-input"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="profile-email" className="flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                <Mail size={14} className="text-brand-accent" />
+                Email
+              </label>
+              <input
+                id="profile-email"
+                type="email"
+                value={user.email ?? ''}
+                readOnly
+                className="premium-input cursor-not-allowed bg-foreground/[0.03] text-foreground/60"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-foreground/40">
+            Email cannot be changed online. Contact support if you need to update it.
+          </p>
+        </section>
+
+        <section className="premium-card space-y-5 p-6">
+          <div>
+            <h2 className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-foreground">
+              <Building2 size={14} className="text-brand-accent" />
+              Nearest branch
+            </h2>
+            <p className="mt-1 text-xs text-foreground/45">
+              Pick the office you usually visit for drop-offs and pickups.
+            </p>
+          </div>
+
+          <BranchSelect
+            branches={branches}
+            value={branchId}
+            onChange={setBranchId}
+            loading={branchesLoading}
+            error={branchesError}
+          />
+
+          <div className="border-t border-foreground/5 pt-5">
+            <h3 className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-foreground/80">
+              <MapPin size={14} className="text-brand-accent" />
+              Your address
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                placeholder="Street / Area"
+                className="premium-input"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City"
+                  className="premium-input"
+                />
+                <input
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="State"
+                  className="premium-input"
+                />
+              </div>
+              <input
+                type="text"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                placeholder={config.postalCode.label}
+                className="premium-input"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="premium-card space-y-4 p-6">
+          <div>
+            <h2 className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-foreground">
+              <Lock size={14} className="text-brand-accent" />
+              Security
+            </h2>
+            <p className="mt-1 text-xs text-foreground/45">Leave blank to keep your current password.</p>
+          </div>
+
+          <TextField
+            fullWidth
+            name="current-password"
+            type="password"
+            value={currentPassword}
+            onChange={(v) => setCurrentPassword(v)}
+          >
+            <Label>Current password</Label>
+            <Input placeholder="Enter current password" autoComplete="current-password" />
+          </TextField>
+
+          <TextField
+            fullWidth
+            name="new-password"
+            type={showPassword ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(v) => setNewPassword(v)}
+          >
+            <Label>New password</Label>
+            <InputGroup fullWidth>
+              <InputGroup.Input placeholder="Min. 8 characters" autoComplete="new-password" />
+              <InputGroup.Suffix className="pr-0">
+                <Button
+                  isIconOnly
+                  aria-label="Toggle password visibility"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </InputGroup.Suffix>
+            </InputGroup>
+          </TextField>
+        </section>
+
+        {(saveError || saveSuccess || hasChanges) && (
+          <div className="premium-card space-y-4 p-6">
+            {saveError && (
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertCircle size={16} />
+                <span>{saveErrorData?.message || 'Update failed. Please try again.'}</span>
+              </div>
+            )}
+            {saveSuccess && (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <CheckCircle size={16} />
+                <span>Profile updated successfully.</span>
+              </div>
+            )}
+            <div className="flex flex-wrap justify-end gap-3">
+              {hasChanges && (
+                <button type="button" onClick={handleCancel} className="premium-btn-ghost">
+                  Cancel
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={savePending || !hasChanges}
+                className="premium-btn min-w-[140px] disabled:opacity-50"
+              >
+                {savePending ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
           </div>
         )}
-      </div>
-
-      <form
-        onSubmit={handleSave}
-        className="premium-card overflow-hidden"
-      >
-        <div className="p-6 pb-4 space-y-4">
-          <TextField fullWidth name="name" type="text" value={name} onChange={(v) => setName(v)}>
-            <Label>Full Name</Label>
-            <Input placeholder="Your name" />
-          </TextField>
-
-          <TextField fullWidth name="phone" type="tel" value={phone} onChange={(v) => setPhone(v)}>
-            <Label>Phone</Label>
-            <Input placeholder={config.phone.placeholder} />
-          </TextField>
-
-          <TextField fullWidth name="email" type="email" value={user.email ?? ''} isReadOnly>
-            <Label>Email</Label>
-            <Input placeholder="Email address" />
-          </TextField>
-          <p className="text-xs text-foreground/40 -mt-2 ml-1">
-            Email cannot be changed. Contact support for email updates.
-          </p>
-        </div>
-
-        <div className="border-t border-foreground/5 px-6 py-4 space-y-3">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Building2 size={14} className="text-brand-accent" />
-            <span className="font-semibold text-foreground">Branch &amp; Address</span>
-          </div>
-
-          <select
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-brand-accent/50 border border-foreground/10 bg-white text-sm"
-          >
-            <option value="">Select your nearest branch</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-
-          <div className="grid grid-cols-1 gap-3">
-            <input
-              type="text"
-              value={street}
-              onChange={(e) => setStreet(e.target.value)}
-              placeholder="Street / Area"
-              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 border border-foreground/10 bg-white text-sm"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
-                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 border border-foreground/10 bg-white text-sm"
-              />
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="State"
-                className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 border border-foreground/10 bg-white text-sm"
-              />
-            </div>
-            <input
-              type="text"
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value)}
-              placeholder={config.postalCode.label}
-              className="w-full px-4 py-2.5 rounded-xl text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 border border-foreground/10 bg-white text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-foreground/5 px-6 py-4">
-          <h2 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4">
-            Change Password
-          </h2>
-          <div className="space-y-3">
-            <TextField
-              fullWidth
-              name="cpw"
-              type="password"
-              value={currentPassword}
-              onChange={(v) => setCurrentPassword(v)}
-            >
-              <Label>Current Password</Label>
-              <Input placeholder="Leave blank to keep same" autoComplete="current-password" />
-            </TextField>
-            <TextField
-              fullWidth
-              name="npw"
-              type={showPassword ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(v) => setNewPassword(v)}
-            >
-              <Label>New Password</Label>
-              <InputGroup fullWidth>
-                <InputGroup.Input placeholder="Min. 8 characters" autoComplete="new-password" />
-                <InputGroup.Suffix className="pr-0">
-                  <Button
-                    isIconOnly
-                    aria-label="Toggle password visibility"
-                    size="sm"
-                    variant="ghost"
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </Button>
-                </InputGroup.Suffix>
-              </InputGroup>
-            </TextField>
-          </div>
-        </div>
-
-        <div className="px-6 pb-4">
-          {saveError && (
-            <div className="flex items-center gap-2 text-xs text-danger bg-red-50 rounded-lg px-3 py-2">
-              <AlertCircle size={14} />
-              <span>{saveErrorData?.message || 'Update failed. Please try again.'}</span>
-            </div>
-          )}
-          {saveSuccess && (
-            <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">
-              <CheckCircle size={14} />
-              <span>Profile updated successfully.</span>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-foreground/5 px-6 py-4 flex gap-3 justify-end">
-          {hasChanges && (
-            <Button type="button" variant="ghost" onPress={handleCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button
-            type="submit"
-            isDisabled={savePending || !hasChanges}
-            isPending={savePending}
-            className="bg-brand-accent text-white px-6"
-          >
-            Save Changes
-          </Button>
-        </div>
       </form>
 
-      <div className="premium-card overflow-hidden">
-        <div className="p-6 pb-4">
-          <div className="flex items-center gap-2 mb-1">
+      <section className="premium-card overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center gap-2">
             <Trash2 size={16} className="text-red-500" />
-            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-              Delete Account
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              Delete account
             </h2>
           </div>
-          <p className="text-xs text-foreground/50">
-            Permanently delete your account and all associated data. This action cannot be undone.
+          <p className="mt-2 text-xs text-foreground/50">
+            Permanently delete your account and all associated data. This cannot be undone.
           </p>
         </div>
         <div className="border-t border-foreground/5 px-6 py-4">
           {!confirmDelete ? (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              className="text-red-600 border-red-200"
-              onPress={() => setConfirmDelete(true)}
+              onClick={() => setConfirmDelete(true)}
+              className="premium-btn-ghost border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
             >
-              Delete Account
-            </Button>
+              Delete account
+            </button>
           ) : (
             <div className="space-y-3">
               {deleteAccount.isError && (
-                <div className="flex items-center gap-2 text-xs text-danger bg-red-50 rounded-lg px-3 py-2">
-                  <AlertCircle size={14} />
+                <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <AlertCircle size={16} />
                   <span>{deleteAccount.error?.message || 'Delete failed. Please try again.'}</span>
                 </div>
               )}
-              <p className="text-xs text-foreground/60">
+              <p className="text-sm text-foreground/60">
                 Are you sure? This will permanently delete your account.
               </p>
               <div className="flex gap-2">
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  onPress={() => {
+                  onClick={() => {
                     setConfirmDelete(false);
                     deleteAccount.reset();
                   }}
+                  className="premium-btn-ghost"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  isPending={deleteAccount.isPending}
-                  className="bg-red-600 text-white"
-                  onPress={handleDelete}
+                  disabled={deleteAccount.isPending}
+                  onClick={handleDelete}
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-6 text-sm font-medium text-white disabled:opacity-60"
                 >
-                  {deleteAccount.isPending ? 'Deleting...' : 'Confirm Delete'}
-                </Button>
+                  {deleteAccount.isPending ? 'Deleting...' : 'Confirm delete'}
+                </button>
               </div>
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { PickupSidebar, PickupStepBar } from '@/components/pickup/pickup-sidebar
 import { RightSidebar } from '@/components/sidebar';
 import { FaqSection } from '@/components/sections/faq-section';
 import type { Branch } from '@/lib/types';
+import { fetchPublicBranches } from '@/lib/fetch-public-branches';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
 const PACKAGE_TYPES = [
@@ -57,11 +58,10 @@ export default function PickupPage(): ReactNode {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    fetch('/api/branches/public')
-      .then((r) => r.json())
-      .then((d) => setBranches(Array.isArray(d.data) ? d.data : []))
+    fetchPublicBranches(config.slug)
+      .then(setBranches)
       .catch(() => {});
-  }, []);
+  }, [config.slug]);
 
   const mathResult = useMemo(() => mathA + mathB, [mathA, mathB]);
 

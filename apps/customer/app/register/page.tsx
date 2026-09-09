@@ -1,10 +1,11 @@
 'use client';
 
-import { Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
+import { AuthAlert } from '@/components/auth/auth-alert';
+import { PasswordField } from '@/components/auth/password-field';
 import { AuthLayout } from '@/components/auth-layout';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { authClient } from '@/lib/auth-client';
@@ -23,15 +24,13 @@ function RegisterForm(): ReactNode {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = '';
-
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (loading) return;
     setSubmitError('');
     if (honeypot) return;
@@ -46,11 +45,11 @@ function RegisterForm(): ReactNode {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/customers/register`, {
+      const res = await fetch('/api/customers/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-slug': 'gajan-traders',
+          'x-tenant-slug': config.slug,
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -84,35 +83,15 @@ function RegisterForm(): ReactNode {
       window.location.href = '/onboarding';
     } catch {
       setSubmitError('Connection failed. Please try again.');
+      setLoading(false);
     }
   }
 
   return (
-    <AuthLayout
-      config={config}
-      title="Create your account"
-      subtitle="Start tracking your shipments"
-    >
-      {submitError && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 mb-6">
-          <svg
-            aria-hidden="true"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="shrink-0"
-          >
-            <circle cx="8" cy="8" r="7" />
-            <path d="M8 5v3M8 10.5v.5" />
-          </svg>
-          {submitError}
-        </div>
-      )}
+    <AuthLayout config={config} title="Create your account" subtitle="Start tracking shipments in minutes">
+      {submitError && <AuthAlert>{submitError}</AuthAlert>}
 
-      <form className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div className="absolute -left-[9999px]" aria-hidden="true">
           <label htmlFor="hp-field">Leave empty</label>
           <input
@@ -127,8 +106,8 @@ function RegisterForm(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="reg-name" className="font-medium text-foreground/80">
-            Full Name
+          <label htmlFor="reg-name" className="text-sm font-medium text-foreground/80">
+            Full name
           </label>
           <input
             id="reg-name"
@@ -137,13 +116,13 @@ function RegisterForm(): ReactNode {
             onChange={(e) => setName(e.target.value)}
             placeholder="Your full name"
             autoComplete="name"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all ${fieldErrors.name ? 'border-red-400' : 'border-border'}`}
+            className={`premium-input ${fieldErrors.name ? '!border-red-400' : ''}`}
           />
           {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="reg-email" className="font-medium text-foreground/80">
+          <label htmlFor="reg-email" className="text-sm font-medium text-foreground/80">
             Email
           </label>
           <input
@@ -153,62 +132,35 @@ function RegisterForm(): ReactNode {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
             autoComplete="email"
-            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all ${fieldErrors.email ? 'border-red-400' : 'border-border'}`}
+            className={`premium-input ${fieldErrors.email ? '!border-red-400' : ''}`}
           />
           {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="reg-password" className="font-medium text-foreground/80">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="reg-password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password (min. 8 characters)"
-              autoComplete="new-password"
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all ${fieldErrors.password ? 'border-red-400' : 'border-border'}`}
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors cursor-pointer"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
-        </div>
+        <PasswordField
+          id="reg-password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          placeholder="Create a password (min. 8 characters)"
+          autoComplete="new-password"
+          error={fieldErrors.password}
+        />
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full bg-brand-accent hover:bg-brand-accent-hover disabled:opacity-60 text-white font-semibold rounded-xl h-11 transition-all cursor-pointer"
-        >
+        <button type="submit" disabled={loading} className="premium-btn w-full disabled:opacity-60">
           {loading ? 'Creating account...' : 'Create account'}
         </button>
 
-        <p className="text-center text-foreground/60">
+        <p className="text-center text-sm text-foreground/55">
           Already have an account?{' '}
-          <a
-            href="/login"
-            className="font-semibold text-brand-accent hover:text-brand-accent-hover underline underline-offset-2 transition-colors"
-          >
+          <a href="/login" className="font-semibold text-brand-accent hover:text-brand-accent-hover">
             Sign in
           </a>
         </p>
 
-        <p className="text-center text-foreground/50">
+        <p className="text-center text-xs text-foreground/45">
           By creating an account, you agree to our{' '}
-          <a
-            href="/terms"
-            className="text-foreground/60 hover:text-brand-accent underline underline-offset-2 transition-colors"
-          >
+          <a href="/terms-conditions" className="text-foreground/60 hover:text-brand-accent">
             Terms of Service
           </a>
         </p>

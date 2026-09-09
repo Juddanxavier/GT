@@ -99,7 +99,7 @@ export default function CheckPricePage(): ReactNode {
     setError('');
     setPriceData(null);
     try {
-      const res = await fetch(`${API_BASE}/api/check-price/${encodeURIComponent(country)}?tenant=${config.name === 'Lanka Mahal' ? 'lanka-mahal' : 'gajan-traders'}`);
+      const res = await fetch(`${API_BASE}/api/check-price/${encodeURIComponent(country)}?tenant=${config.slug}`);
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? 'Failed to fetch rates');
       setPriceData(body.data);

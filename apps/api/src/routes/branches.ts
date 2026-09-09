@@ -57,7 +57,7 @@ app.get('/public', async (c) => {
     .limit(1);
   if (!tenant) return c.json({ error: 'Invalid tenant' }, 400);
   const rows = await db
-    .select({ id: branches.id, name: branches.name, address: branches.address, phone: branches.email })
+    .select({ id: branches.id, name: branches.name, address: branches.address, phone: branches.phone })
     .from(branches)
     .where(eq(branches.tenantId, tenant.id))
     .orderBy(branches.name);
