@@ -1,6 +1,5 @@
-﻿import type { LucideIcon } from 'lucide-react';
-import { ArrowLeft, Globe, Package, Shield } from 'lucide-react';
-import type { ReactNode } from 'react';
+﻿import { ArrowLeft, Globe, Package, Shield } from 'lucide-react';
+import type { LucideIcon, ReactNode } from 'react';
 
 interface AuthLayoutProps {
   config: {
@@ -16,18 +15,16 @@ interface AuthLayoutProps {
   children: ReactNode;
 }
 
-const highlightIcons: LucideIcon[] = [Globe, Package, Shield];
-
 export function AuthLayout({
   config,
   title,
   subtitle,
   children,
 }: AuthLayoutProps): ReactNode {
-  const highlights = [
-    { icon: highlightIcons[0], label: `${config.stats.countries} destinations` },
-    { icon: highlightIcons[1], label: 'Doorstep pickup' },
-    { icon: highlightIcons[2], label: 'Secure handling' },
+  const highlights: { icon: LucideIcon; label: string }[] = [
+    { icon: Globe, label: `${config.stats.countries} destinations` },
+    { icon: Package, label: 'Doorstep pickup' },
+    { icon: Shield, label: 'Secure handling' },
   ];
 
   return (
