@@ -160,7 +160,7 @@ async function seed() {
       tenantId: c.tenantId,
     });
   }
-  const customerMap = new Map(insertedCustomerUsers.map((c) => [c.email, c]));
+  const _customerMap = new Map(insertedCustomerUsers.map((c) => [c.email, c]));
   console.log(`  Created ${insertedCustomerUsers.length} customer users`);
 
   // Clear existing seed data for FK-dependent tables

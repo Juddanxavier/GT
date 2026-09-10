@@ -25,7 +25,7 @@ export function defineAbilityFor(user: PermissionContext) {
   const isCustomer = user.role === 'customer';
 
   // Effective tenant ID (superadmin can override via X-Tenant-ID)
-  const effectiveTenantId = user.overrideTenantId ?? user.tenantId;
+  const _effectiveTenantId = user.overrideTenantId ?? user.tenantId;
 
   // ── SUPERADMIN: Cross-tenant access, full control ──
   if (isSuperadmin) {

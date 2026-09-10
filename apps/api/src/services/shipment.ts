@@ -321,7 +321,7 @@ export async function autoCreateInvoice(
     const shortId = shipment.id.slice(0, 5).toUpperCase();
     const invoiceNo = `INV-${y}${m}-${shortId}`;
 
-    const [tenantRow] = await db
+    const [_tenantRow] = await db
       .select({ name: tenants.name })
       .from(tenants)
       .where(eq(tenants.id, tenantId))

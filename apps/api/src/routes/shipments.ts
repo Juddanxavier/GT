@@ -7,6 +7,7 @@ import { getQueryScope, requireBranchScope, requireRole } from '../middleware/au
 import { emitToTenant } from '../realtime';
 import { cacheClient } from '../redis';
 import { logAudit } from '../services/audit';
+import { resolveShipmentId } from '../services/shipment-resolve';
 import { createShipment, DuplicateTrackingError, regenerateInvoice } from '../services/shipment';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
@@ -18,33 +19,6 @@ import { createShipmentSchema, updateShipmentSchema } from '../validators';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
-
-// Resolve a route param (shipment uuid or tracking number) to the shipment's uuid,
-// respecting the caller's tenant/branch scope.
-async function resolveShipmentId(
-  param: string,
-  scope: { tenantId?: string | null; branchId?: string | null },
-): Promise<string | null> {
-  const [row] = await db
-    .select({ id: shipments.id })
-    .from(shipments)
-    .where(
-      and(
-        or(eq(shipments.id, param), eq(shipments.trackingNo, param)),
-        ...shipmentScope(scope),
-      ) as SQL | undefined,
-    )
-    .limit(1);
-  return row?.id ?? null;
-}
-
-// Build the tenant/branch scope conditions used across :id handlers.
-function shipmentScope(scope: { tenantId?: string | null; branchId?: string | null }): (ReturnType<typeof eq | typeof or> | ReturnType<typeof isNull>)[] {
-  const conditions: (ReturnType<typeof eq> | ReturnType<typeof or> | ReturnType<typeof isNull>)[] = [];
-  if (scope.tenantId) conditions.push(eq(shipments.tenantId, scope.tenantId));
-  if (scope.branchId) conditions.push(or(eq(shipments.branchId, scope.branchId!), isNull(shipments.branchId))!);
-  return conditions;
-}
 
 app.get(
   '/',
@@ -155,8 +129,10 @@ app.get(
         date: sql<string>`DATE(${shipments.createdAt})::text`,
         total: sql<number>`COUNT(*)::int`,
         intransit: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'in_transit')::int`,
+        outfordelivery: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'out_for_delivery')::int`,
         delivered: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'delivered')::int`,
         pending: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'pending')::int`,
+        exception: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'exception')::int`,
       })
       .from(shipments)
       .where(and(...conditions) as SQL | undefined)
@@ -274,7 +250,8 @@ app.get(
 
     if (!scope.tenantId && !c.get('user')) return c.json({ error: 'Tenant required' }, 400);
 
-    const resolvedId = (await resolveShipmentId(id!, scope)) ?? id!;
+    const resolvedId = await resolveShipmentId(id!, scope);
+    if (!resolvedId) return c.json({ error: 'Shipment not found' }, 404);
 
     // T002: match either explicit branch or unassigned (NULL)
     const conditions: (ReturnType<typeof eq> | ReturnType<typeof or>)[] = [

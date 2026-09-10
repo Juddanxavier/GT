@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { invoices, shipments, tenants, user } from '../db/schema';
 import { InvoiceDocument } from './pdf';
+import { ensurePdfFonts } from './pdf-fonts';
 
 const lankaLogoBase64: string | null = (() => {
   try {
@@ -111,6 +112,7 @@ export async function getInvoiceData(invoiceId: string, tenantId: string): Promi
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
+  ensurePdfFonts();
   const doc = <InvoiceDocument data={{
     invoiceNo: data.invoiceNo,
     trackingNo: data.trackingNo,

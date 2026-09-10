@@ -1,5 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "files": {
+    "experimentalScannerIgnores": [
+      ".planning/**",
+      "additional_parameters.json",
+      "**/*.pdf",
+      "apps/api/drizzle/**"
+    ]
+  },
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -40,8 +48,37 @@
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off"
+          },
+          "style": {
+            "useTemplate": "off"
+          },
+          "suspicious": {
+            "noExplicitAny": "off",
+            "noThenProperty": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/report-pdf.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    }
+  ]
 }

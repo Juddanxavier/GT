@@ -158,21 +158,21 @@ export default function UsersPage() {
         />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{totalCount}</p>
           <p className="text-sm text-muted mt-1">Total Users</p>
         </div>
-        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-success">{activeCount}</p>
           <p className="text-sm text-muted mt-1">Active</p>
         </div>
-        <div className="rounded-sm border border-border/70 bg-surface hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-danger">{bannedCount}</p>
           <p className="text-sm text-muted mt-1">Banned</p>
         </div>
       </div>
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1"><Input id="users-search" variant="secondary" placeholder="Search users..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth /></div>

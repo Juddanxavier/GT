@@ -26,7 +26,7 @@ describe('currency', () => {
 
   it('getCurrencySymbol returns Rs for LKR', async () => {
     const { getCurrencySymbol } = await import('@/lib/currency');
-    expect(getCurrencySymbol('LKR')).toBe('Rs.');
+    expect(getCurrencySymbol('LKR')).toBe('Rs');
   });
 
   it('getCurrencySymbol defaults to ₹ for null', async () => {

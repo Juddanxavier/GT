@@ -124,7 +124,7 @@ export default function BranchesPage() {
         action={<Button onPress={() => { setNewName(''); setNewPhoneLocal(''); setNewEmail(''); setNewAddress(''); setNewTenantId(''); setFormErrors({}); setCreateOpen(true); }}>New Branch</Button>}
       />
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
           <Input placeholder="Search branches..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth />
         </div>
@@ -249,13 +249,13 @@ export default function BranchesPage() {
                       onSelectionChange={(k) => setNewTenantId(k as string)}
                       className="w-full"
                     >
-                      <Select.Trigger className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
+                      <Select.Trigger className="h-10 content-panel px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
                         <Select.Value />
                         <Select.Indicator>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                         </Select.Indicator>
                       </Select.Trigger>
-                      <Select.Popover className="min-w-[200px] rounded-sm border border-border bg-surface p-1">
+                      <Select.Popover className="min-w-[200px] content-panel p-1">
                         <ListBox>
                           {tenants.map((t) => (
                             <ListBox.Item key={t.id} id={t.id} className="flex items-center px-3 py-2 text-sm text-foreground rounded-lg cursor-pointer data-[focused]:bg-muted/40 data-[selected]:bg-accent/10 transition-colors">{t.name}</ListBox.Item>

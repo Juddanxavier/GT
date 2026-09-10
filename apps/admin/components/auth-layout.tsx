@@ -20,20 +20,20 @@ const brandPanel = [
 
 export function AuthLayout({ children, backHref, backLabel = 'Back', title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2 bg-background">
-      {/* Brand panel */}
-      <aside className="hidden lg:flex flex-col bg-sidebar text-sidebar-foreground relative overflow-hidden">
-        <img
-          src="/images/auth-hero.png"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none select-none"
+    <div className="min-h-screen lg:grid lg:grid-cols-2 app-mesh-bg">
+      <aside className="hidden lg:flex flex-col bg-rail text-sidebar-foreground relative overflow-hidden border-r border-glass">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-info/5 pointer-events-none" />
+        <div
+          className="absolute inset-0 opacity-30 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(167,139,250,0.15) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[#111113]/85 to-[#111113]/40" />
 
         <div className="relative flex flex-col h-full p-10 xl:p-14">
-          {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-accent text-accent-foreground">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent text-accent-foreground shadow-glow-accent">
               <span className="text-base font-bold tracking-tight">GT</span>
             </div>
             <div className="text-left">
@@ -42,20 +42,18 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
             </div>
           </div>
 
-          {/* Headline */}
           <div className="mt-auto mb-auto pt-10">
-            <h2 className="text-4xl font-bold tracking-tight leading-[1.15] text-sidebar-foreground max-w-md relative">
+            <h2 className="text-4xl font-bold tracking-tight leading-[1.15] text-sidebar-foreground max-w-md">
               Shipments, quotes, and invoicing — under one roof.
             </h2>
             <p className="text-sidebar-muted mt-4 max-w-sm text-sm leading-relaxed">
               Manage every parcel across branches and organizations without leaking data between tenants.
             </p>
 
-            {/* Feature list */}
-            <ul className="mt-10 space-y-5 relative">
+            <ul className="mt-10 space-y-5">
               {brandPanel.map((f) => (
                 <li key={f.title} className="flex items-start gap-3.5">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-sidebar-active-bg text-sidebar-active-fg shrink-0">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sidebar-active-bg text-sidebar-active-fg shrink-0 border border-glass">
                     <f.icon size={16} />
                   </span>
                   <div>
@@ -67,7 +65,6 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
             </ul>
           </div>
 
-          {/* Footer note */}
           <p className="text-xs text-sidebar-muted/70 flex items-center gap-1.5">
             <MapPin size={12} />
             Serving India &amp; Sri Lanka
@@ -75,19 +72,20 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
         </div>
       </aside>
 
-      {/* Form side */}
-      <div className="flex flex-col min-h-screen items-center justify-center px-4 py-10 bg-background">
+      <div className="flex flex-col min-h-screen items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
           {backHref && (
-            <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors mb-8">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent transition-colors mb-8"
+            >
               <ArrowLeft size={14} />
               {backLabel}
             </Link>
           )}
 
-          {/* Mobile brand */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-accent text-accent-foreground">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent text-accent-foreground shadow-glow-accent">
               <span className="text-base font-bold tracking-tight">GT</span>
             </div>
             <div className="text-left">
@@ -96,14 +94,16 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
             </div>
           </div>
 
-          <div className="mb-6">
-            {title && <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>}
-            {subtitle && <p className="text-sm text-muted mt-1.5">{subtitle}</p>}
+          <div className="glass-panel rounded-2xl border border-glass p-6 sm:p-8">
+            <div className="mb-6">
+              {title && <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>}
+              {subtitle && <p className="text-sm text-muted mt-1.5">{subtitle}</p>}
+            </div>
+
+            {children}
           </div>
 
-          {children}
-
-          <p className="text-center text-xs text-muted/50 mt-10">
+          <p className="text-center text-xs text-muted/50 mt-8">
             &copy; {new Date().getFullYear()} Gajan Traders
           </p>
         </div>

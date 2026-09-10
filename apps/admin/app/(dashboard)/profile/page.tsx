@@ -121,7 +121,7 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
         {/* Left profile sidebar */}
-        <aside className="lg:sticky lg:top-6 rounded-sm border border-border bg-surface overflow-hidden">
+        <aside className="lg:sticky-sidebar sticky-surface content-panel overflow-hidden">
           <div className="p-6 bg-gradient-to-b from-accent-soft/60 to-transparent border-b border-border">
             <div className="flex flex-col items-center text-center">
               <Avatar size="lg" color={roleColor[role] ?? 'default'} className="text-2xl font-semibold w-16 h-16 text-base mb-3">
@@ -158,7 +158,7 @@ export default function ProfilePage() {
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm text-sm font-medium text-muted hover:bg-muted/40 hover:text-foreground transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:bg-muted/40 hover:text-foreground transition-colors"
               >
                 <s.icon size={15} />
                 {s.label}
@@ -170,9 +170,9 @@ export default function ProfilePage() {
         {/* Right content */}
         <div className="space-y-6 min-w-0">
           {/* Account Information */}
-          <section id="account" className="scroll-mt-6 rounded-sm border border-border bg-surface">
+          <section id="account" className="scroll-mt-6 content-panel">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-accent-soft text-accent-soft-foreground shrink-0">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-soft text-accent-soft-foreground shrink-0">
                 <User size={15} />
               </span>
               <div>
@@ -222,9 +222,9 @@ export default function ProfilePage() {
           </section>
 
           {/* Security */}
-          <section id="security" className="scroll-mt-6 rounded-sm border border-border bg-surface">
+          <section id="security" className="scroll-mt-6 content-panel">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-accent-soft text-accent-soft-foreground shrink-0">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-soft text-accent-soft-foreground shrink-0">
                 <Lock size={15} />
               </span>
               <div>
@@ -292,7 +292,7 @@ export default function ProfilePage() {
           </section>
 
           {/* Danger Zone */}
-          <section id="danger" className="scroll-mt-6 rounded-sm border border-danger/20 bg-surface">
+          <section id="danger" className="scroll-mt-6 content-panel border-danger/25">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-danger/20">
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-danger/10 text-danger shrink-0">
                 <Trash2 size={15} />

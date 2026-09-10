@@ -87,5 +87,5 @@ export async function verifyOtp(trackingNo: string, otp: string): Promise<boolea
 export function maskEmail(email: string): string {
   const at = email.indexOf('@');
   if (at <= 1) return email;
-  return email.slice(0, 2) + '***' + email.slice(at);
+  return `${email.slice(0, 2)}***${email.slice(at)}`;
 }

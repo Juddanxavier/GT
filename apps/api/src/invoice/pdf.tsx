@@ -2,6 +2,7 @@ import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 
 import { currencySymbol } from '../lib/currency';
+import { PDF_FONT_FAMILY } from './pdf-fonts';
 
 const accent = '#22c55e';
 const black = '#111827';
@@ -11,7 +12,7 @@ const light = '#e5e7eb';
 const styles = StyleSheet.create({
   page: {
     padding: 0,
-    fontFamily: 'Helvetica',
+    fontFamily: PDF_FONT_FAMILY,
     fontSize: 9,
     color: black,
   },
@@ -185,9 +186,6 @@ type InvoicePdfData = {
 export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
   const sym = currencySymbol(data.currency);
   const amt = Number(data.amount);
-  const hasGst = data.companyName !== 'Lanka Mahal';
-  const gst = hasGst ? Math.round(amt * 0.18) : 0;
-  const subtotal = hasGst ? amt - gst : amt;
 
   return (
     <Document>
@@ -243,32 +241,12 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
             <Text style={[styles.cellText, styles.cellDesc]}>Freight Charges</Text>
             <Text style={[styles.cellMuted, styles.cellRef]}>{data.invoiceNo}</Text>
             <Text style={[styles.cellText, styles.cellQty]}>1</Text>
-            <Text style={[styles.cellText, styles.cellRate]}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
-            <Text style={[styles.cellText, styles.cellAmount]}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.cellText, styles.cellRate]}>{sym} {amt.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.cellText, styles.cellAmount]}>{sym} {amt.toLocaleString('en-IN')}</Text>
           </View>
-
-          {hasGst && (
-            <View style={styles.tableRow}>
-              <Text style={[styles.cellMuted, styles.cellDesc]}>GST @ 18%</Text>
-              <Text style={[styles.cellMuted, styles.cellRef]} />
-              <Text style={[styles.cellMuted, styles.cellQty]}>1</Text>
-              <Text style={[styles.cellMuted, styles.cellRate]}>{sym} {gst.toLocaleString('en-IN')}</Text>
-              <Text style={[styles.cellMuted, styles.cellAmount]}>{sym} {gst.toLocaleString('en-IN')}</Text>
-            </View>
-          )}
 
           {/* Totals */}
           <View style={styles.totals}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal</Text>
-              <Text style={styles.totalValue}>{sym} {subtotal.toLocaleString('en-IN')}</Text>
-            </View>
-            {hasGst && (
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>GST (18%)</Text>
-                <Text style={styles.totalValue}>{sym} {gst.toLocaleString('en-IN')}</Text>
-              </View>
-            )}
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandLabel}>Total</Text>
               <Text style={styles.grandValue}>{sym} {amt.toLocaleString('en-IN')}</Text>
@@ -287,8 +265,8 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
                 {'INSURANCE\n'}
                 {'Insurance is available for total loss of parcel (please note that no insurance is payable for damages caused to goods while being transported to the respective destinations).\n'}
                 {'Insurance fee is as follows:\n'}
-                {'Rs. 1,000 /= for the declared value of 50,000/= or Less.\n'}
-                {'For declared values over Rs. 50,000 the insurance fee would be 2% of the declared value.'}
+                {'Rs 1,000 /= for the declared value of 50,000/= or Less.\n'}
+                {'For declared values over Rs 50,000 the insurance fee would be 2% of the declared value.'}
               </Text>
             ) : (
               <Text style={styles.notesText}>

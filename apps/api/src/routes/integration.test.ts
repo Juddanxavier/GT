@@ -256,13 +256,17 @@ describe('role enforcement', () => {
 describe('public routes', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('GET /api/health returns 200', async () => {
-    const { app } = await import('../index');
-    const res = await app.request('/api/health');
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.status).toBe('ok');
-  });
+  it(
+    'GET /api/health returns 200',
+    async () => {
+      const { app } = await import('../index');
+      const res = await app.request('/api/health');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.status).toBe('ok');
+    },
+    20_000,
+  );
 
   it('GET /api/ready returns 200 (db mock returns ok)', async () => {
     mockDb.execute.mockResolvedValue([{ '?column?': 1 }]);

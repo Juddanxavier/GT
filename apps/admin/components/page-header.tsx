@@ -4,7 +4,6 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   icon?: ReactNode;
-  accentChar?: boolean;
   action?: ReactNode;
 }
 
@@ -13,7 +12,7 @@ export function PageHeader({ title, subtitle, icon, action }: PageHeaderProps) {
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-3">
         {icon && (
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-sm border border-border bg-surface text-muted shrink-0">
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-glass glass-panel text-muted shrink-0 shadow-glow-accent-subtle">
             {icon}
           </span>
         )}

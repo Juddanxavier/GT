@@ -69,7 +69,6 @@ app.get(
   requireRole('superadmin', 'tenant-admin', 'staff'),
   requireBranchScope(),
   async (c) => {
-    const scope = getQueryScope(c);
     const curUser = getUser(c);
     const isSuperAdmin = curUser?.role === 'superadmin';
 

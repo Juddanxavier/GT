@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "lint": "biome lint .",
+    "check-types": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {

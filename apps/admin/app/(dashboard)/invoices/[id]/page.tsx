@@ -40,6 +40,7 @@ export default function InvoiceDetailPage() {
 
   const emailCount = invoice.emailCount ?? 0;
   const emailsLeft = Math.max(2 - emailCount, 0);
+  const currencyCode = invoice.currency ?? undefined;
 
   return (
     <DetailShell>
@@ -85,7 +86,7 @@ export default function InvoiceDetailPage() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Amount" value={formatCurrency(invoice.amount, 'INR')} icon={<DollarSign size={14} />} highlighted />
+            <StatCard label="Amount" value={formatCurrency(invoice.amount, currencyCode)} icon={<DollarSign size={14} />} highlighted />
             <StatCard label="Status" value="Paid" icon={<Receipt size={14} />} highlighted />
             <StatCard label="Emails Sent" value={`${emailCount}/2 today`} icon={<Mail size={14} />} />
             <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Calendar size={14} />} />
@@ -97,7 +98,7 @@ export default function InvoiceDetailPage() {
               <InfoRow label="Invoice No" value={invoice.invoiceNo} />
               <InfoRow label="Tracking No" value={invoice.trackingNo ?? '—'} />
               <InfoRow label="Customer" value={invoice.customerName ?? '—'} />
-              <InfoRow label="Amount" value={formatCurrency(invoice.amount, 'INR')} />
+              <InfoRow label="Amount" value={formatCurrency(invoice.amount, currencyCode)} />
               <InfoRow label="Emails Sent" value={`${emailCount}/2 today`} />
               <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
               <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
@@ -118,7 +119,7 @@ export default function InvoiceDetailPage() {
               <div className="flex items-center gap-2 text-xs">
                 <Clock size={14} className="text-muted" />
                 <span className="text-muted">Amount</span>
-                <span className="font-semibold ml-auto">{formatCurrency(invoice.amount, 'INR')}</span>
+                <span className="font-semibold ml-auto">{formatCurrency(invoice.amount, currencyCode)}</span>
               </div>
               {invoice.createdAt && (
                 <div className="flex items-center gap-2 text-xs">

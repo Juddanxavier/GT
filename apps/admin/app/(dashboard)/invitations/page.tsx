@@ -163,22 +163,22 @@ export default function InvitationsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{invitations.length}</p>
           <p className="text-sm text-muted mt-1">Total Invitations</p>
         </div>
-        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-success">{pendingInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Pending</p>
         </div>
-        <div className="rounded-sm border border-border/70 bg-surface hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-muted">{otherInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Accepted / Cancelled</p>
         </div>
       </div>
 
       {/* Pending Invitations */}
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="text-base font-semibold tracking-tight">Pending Invitations</h2>
         </div>
@@ -226,7 +226,7 @@ export default function InvitationsPage() {
 
       {/* History */}
       {otherInvitations.length > 0 && (
-        <div className="rounded-sm border border-border bg-surface overflow-hidden">
+        <div className="content-panel overflow-hidden">
           <div className="p-4 border-b border-border">
             <h2 className="text-base font-semibold tracking-tight">History</h2>
           </div>

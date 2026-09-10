@@ -18,8 +18,8 @@ function prefersDark(): boolean {
 }
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<ThemePreference>(() => readSaved() ?? 'light');
-  const [resolved, setResolved] = useState<ResolvedTheme>('light');
+  const [theme, setThemeState] = useState<ThemePreference>(() => readSaved() ?? 'dark');
+  const [resolved, setResolved] = useState<ResolvedTheme>('dark');
 
   useEffect(() => {
     const apply = () => {

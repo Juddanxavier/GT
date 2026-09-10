@@ -116,7 +116,7 @@ app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
       bodyHtml: `<table role="presentation" style="width:100%">
         <tr>
           <td style="text-align:center;padding-bottom:16px">
-            <p style="font-size:13px;margin:0 0 4px;color:#52525b">Hello${displayedName ? ' ' + displayedName : ''},</p>
+            <p style="font-size:13px;margin:0 0 4px;color:#52525b">Hello${displayedName ? ` ${displayedName}` : ''},</p>
             <p style="font-size:13px;margin:0;color:#52525b">You've been invited as <strong style="color:#18181b">${role}</strong>.</p>
           </td>
         </tr>

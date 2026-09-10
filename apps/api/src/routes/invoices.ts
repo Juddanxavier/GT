@@ -15,6 +15,7 @@ import { updateInvoiceSchema } from '../validators';
 import { emailQueue } from '../queues';
 import { emitToTenant } from '../realtime';
 import { logAudit } from '../services/audit';
+import { resolveShipmentId } from '../services/shipment-resolve';
 import type { AppVariables } from './types';
 
 const app = new Hono<{ Variables: AppVariables }>();
@@ -42,25 +43,18 @@ app.get(
   requireBranchScope(),
   async (c) => {
     const scope = getQueryScope(c);
-    const shipmentId = c.req.param('shipmentId');
-    if (!shipmentId) return c.json({ error: 'Invalid request' }, 400);
+    const shipmentParam = c.req.param('shipmentId');
+    if (!shipmentParam) return c.json({ error: 'Invalid request' }, 400);
 
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    // Verify branch scope
-    if (scope.branchId) {
-      const [ship] = await db
-        .select({ id: shipments.id })
-        .from(shipments)
-        .where(and(eq(shipments.id, shipmentId), eq(shipments.branchId, scope.branchId)))
-        .limit(1);
-      if (!ship) return c.json({ error: 'Shipment not found' }, 404);
-    }
+    const shipmentId = await resolveShipmentId(shipmentParam, scope);
+    if (!shipmentId) return c.json({ error: 'Shipment not found' }, 404);
 
     const data = await withCache(
       scope.tenantId,
       `invoices:shipment:${shipmentId}`,
-      () => getInvoiceByShipmentId(shipmentId!, scope.tenantId!),
+      () => getInvoiceByShipmentId(shipmentId, scope.tenantId!),
       120,
     );
     return c.json({ data: data ?? null });
@@ -74,8 +68,11 @@ app.post(
   async (c) => {
     try {
       const scope = getQueryScope(c);
-      const shipmentId = c.req.param('shipmentId');
-      if (!scope.tenantId || !shipmentId) return c.json({ error: 'Invalid request' }, 400);
+      const shipmentParam = c.req.param('shipmentId');
+      if (!scope.tenantId || !shipmentParam) return c.json({ error: 'Invalid request' }, 400);
+
+      const shipmentId = await resolveShipmentId(shipmentParam, scope);
+      if (!shipmentId) return c.json({ error: 'Shipment not found' }, 404);
 
       const [existing] = await db
         .select({ id: invoices.id })
@@ -88,15 +85,10 @@ app.post(
         return c.json({ error: 'Invoice already exists for this shipment' }, 409);
       }
 
-      const shipConditions: ReturnType<typeof eq>[] = [
-        eq(shipments.id, shipmentId),
-        eq(shipments.tenantId, scope.tenantId),
-      ];
-      if (scope.branchId) shipConditions.push(eq(shipments.branchId, scope.branchId));
       const [ship] = await db
         .select()
         .from(shipments)
-        .where(and(...shipConditions))
+        .where(and(eq(shipments.id, shipmentId), eq(shipments.tenantId, scope.tenantId)))
         .limit(1);
 
       if (!ship) return c.json({ error: 'Shipment not found' }, 404);

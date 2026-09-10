@@ -1,6 +1,6 @@
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',
-  LKR: 'Rs.',
+  LKR: 'Rs',
   USD: '$',
   EUR: '€',
   GBP: '£',

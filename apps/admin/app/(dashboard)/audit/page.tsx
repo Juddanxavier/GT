@@ -254,7 +254,7 @@ export default function AuditLogPage() {
         icon={<List size={18} />}
         action={
           <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
+          <div className="flex items-center rounded-lg content-panel p-0.5">
             <button
               type="button"
               className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors ${

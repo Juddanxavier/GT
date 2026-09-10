@@ -1,6 +1,6 @@
 const SYMBOLS: Record<string, string> = {
   INR: '₹',
-  LKR: 'Rs.',
+  LKR: 'Rs',
   USD: '$',
   EUR: '€',
   GBP: '£',

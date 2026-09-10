@@ -61,7 +61,7 @@ const factors = [
 ];
 
 const strengths = [
-  { icon: DollarSign, title: 'Transparent pricing', desc: 'No hidden fees. Clear rates with GST breakup upfront on every quote.', color: 'bg-violet-100 text-violet-600', iconBg: 'bg-violet-100 text-violet-600' },
+  { icon: DollarSign, title: 'Transparent pricing', desc: 'No hidden fees. Clear all-in rates upfront on every quote.', color: 'bg-violet-100 text-violet-600', iconBg: 'bg-violet-100 text-violet-600' },
   { icon: Truck, title: 'Doorstep pickup', desc: 'Available within 5 km of our offices. Conditions apply — drop off at a branch if you are outside the pickup zone.', color: 'bg-emerald-100 text-emerald-600', iconBg: 'bg-emerald-100 text-emerald-600' },
   { icon: Globe, title: 'Real-time tracking', desc: 'Track your shipment at every stage — from pickup to delivery with live updates.', color: 'bg-sky-100 text-sky-600', iconBg: 'bg-sky-100 text-sky-600' },
   { icon: Headphones, title: '24/7 support', desc: 'Our support team is available around the clock for booking and shipment assistance.', color: 'bg-amber-100 text-amber-600', iconBg: 'bg-amber-100 text-amber-600' },
@@ -327,8 +327,7 @@ export default function CheckPricePage(): ReactNode {
                       if (!matched) return null;
                       const rateNum = parseFloat(matched.rate);
                       const shipping = Math.ceil(rateNum * weightNum * 100) / 100;
-                      const gst = Math.ceil(shipping * 0.18 * 100) / 100;
-                      const total = Math.ceil((shipping + gst) * 100) / 100;
+                      const total = shipping;
                       return (
                         <div key={svcType} className="premium-card p-5 md:p-6">
                           <div className="flex items-center gap-3 mb-4">
@@ -338,7 +337,7 @@ export default function CheckPricePage(): ReactNode {
                             </span>
                             <span className="text-base font-semibold text-foreground">{meta?.label ?? svcType}</span>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                             <div>
                               <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Weight Slab</p>
                               <p className="text-sm font-medium text-foreground">{matched.weightFrom} – {matched.weightTo} kg</p>
@@ -350,10 +349,6 @@ export default function CheckPricePage(): ReactNode {
                             <div>
                               <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Shipping ({weightNum} kg)</p>
                               <p className="text-sm font-medium text-foreground">{currencySymbol}{shipping.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">GST 18%</p>
-                              <p className="text-sm font-medium text-foreground/70">{currencySymbol}{gst.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                             </div>
                             <div>
                               <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-1">Total</p>
@@ -377,7 +372,6 @@ export default function CheckPricePage(): ReactNode {
                 <div className="mt-6 p-4 bg-amber-50/80 border border-amber-200/50 rounded-xl flex items-start gap-3">
                   <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
                   <ul className="text-xs text-amber-800/80 space-y-1 list-disc list-inside">
-                    <li>GST @ 18% as per Govt of India norms.</li>
                     <li>Medicine shipments capped at 1 kg or 3 months' supply, whichever is less.</li>
                     <li>Weight rounded up to nearest 0.5 kg below 20 kg, nearest 1 kg above 20 kg.</li>
                     <li>Final charges based on actual weight at time of tendering.</li>

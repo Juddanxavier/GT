@@ -328,7 +328,7 @@ export default function ReportsPage() {
           </Tabs.List>
         </Tabs>
 
-        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1">
+        <div className="flex items-center gap-1.5 rounded-lg content-panel px-3 py-1">
           <Calendar size={14} className="text-muted shrink-0" />
           <input type="date" value={startDate} onChange={(e) => handleFilterChange(reportType, e.target.value, endDate)}
             className="w-28 bg-transparent text-sm outline-none border-none p-0 [color-scheme:var(--color-scheme)]" placeholder="Start" />

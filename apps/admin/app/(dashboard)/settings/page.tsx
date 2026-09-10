@@ -74,7 +74,7 @@ function SectionCard({
   action?: React.ReactNode;
 }) {
   return (
-    <Card>
+    <Card className="content-panel border-glass">
       <Card.Header className="pb-1">
         <Card.Title className="text-sm font-semibold flex items-center gap-2">
           <span className="text-muted">{icon}</span> {title}
@@ -202,7 +202,7 @@ export default function SettingsPage() {
               </Card.Title>
             </Card.Header>
             <Card.Content>
-              {branchesLoading && <div className="h-24 rounded-sm bg-surface animate-pulse" />}
+              {branchesLoading && <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />}
               {branchesError && (
                 <div className="py-8 text-center space-y-2">
                   <p className="text-sm text-muted">Failed to load branches.</p>
@@ -297,7 +297,7 @@ export default function SettingsPage() {
           }
         >
           {!previews ? (
-            <div className="h-24 rounded-sm bg-surface animate-pulse" />
+            <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />
           ) : (
             <ul className="divide-y divide-border">
               {previews.map((t) => (
@@ -351,7 +351,7 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-muted">Integration Status</h2>
           <SectionCard title="Integration Status" icon={<ShieldCheck size={16} />}>
             {!integrations ? (
-              <div className="h-24 rounded-sm bg-surface animate-pulse" />
+              <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />
             ) : (
               <ul className="divide-y divide-border">
                 <li className="flex items-center justify-between py-2.5 first:pt-0">

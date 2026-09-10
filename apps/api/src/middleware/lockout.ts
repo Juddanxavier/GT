@@ -72,7 +72,7 @@ export async function signInHandler(c: Context) {
     }
   }
 
-  let res = await auth.handler(c.req.raw);
+  const res = await auth.handler(c.req.raw);
 
   if (email) {
     const useFallback = !cacheClient;

@@ -91,9 +91,9 @@ export default function NotificationsPage(): ReactNode {
       {/* Notification list */}
       <div className="space-y-2">
         {isLoading ? (
-          <Card><Card.Content><div className="flex items-center justify-center py-8 text-muted text-sm">Loading...</div></Card.Content></Card>
+          <Card className="content-panel border-glass"><Card.Content><div className="flex items-center justify-center py-8 text-muted text-sm">Loading...</div></Card.Content></Card>
         ) : filtered.length === 0 ? (
-          <Card><Card.Content>
+          <Card className="content-panel border-glass"><Card.Content>
             <div className="flex flex-col items-center py-8 text-muted">
               <Bell size={32} />
               <p className="mt-2">No notifications</p>
@@ -101,7 +101,7 @@ export default function NotificationsPage(): ReactNode {
           </Card.Content></Card>
         ) : (
           filtered.map((n: { id: string; type: string; title: string; message: string; read: boolean; createdAt: string }) => (
-            <Card key={n.id} className={n.read ? '' : 'border-l-3 border-l-primary'}>
+            <Card key={n.id} className={`content-panel border-glass ${n.read ? '' : 'border-l-3 border-l-primary'}`}>
               <Card.Content className="flex items-start gap-3">
                 <Checkbox
                   isSelected={selected.has(n.id)}

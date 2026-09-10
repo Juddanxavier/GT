@@ -1,33 +1,36 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Button, Card, Chip, Skeleton, Tabs, cn, Spinner } from '@heroui/react';
-import { api } from '@/lib/api';
-import { useShipment, useShipmentTracking, useShipmentInvoice, useGenerateInvoice, useTrackShipment, useStopTracking, useDeleteShipment, useUpdateShipment, useTenants } from '@/lib/queries';
-import { STATUS_META } from '@/lib/status-config';
+import { Button, Card, Skeleton, Spinner, cn } from '@heroui/react';
+import {
+  useDeleteShipment,
+  useShipment,
+  useShipmentInvoice,
+  useShipmentTracking,
+  useStopTracking,
+  useTenants,
+  useTrackShipment,
+} from '@/lib/queries';
 import { TrackingTimeline } from './tracking-timeline';
-import { AssignedTo } from '@/components/assigned-to';
 import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
 import { addressDisplay } from '@/components/address-form';
 import { formatCurrency } from '@/lib/currency';
-import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/lib/use-page-title';
-import { ArrowLeft, Package, MapPin, Clock, Calendar, FileText, MessageSquare, Check, RefreshCw, Trash2, Pencil, Ban, Send, Plus, DollarSign, Globe, Users } from 'lucide-react';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
+import { ArrowLeft, ChevronDown, MapPin, Package } from 'lucide-react';
 import { useToast } from '@/components/toast';
-import { DetailShell, DetailBack } from '@/components/detail-layout';
-
-type TabKey = 'details' | 'tracking' | 'invoice' | 'notes';
+import { DetailShell } from '@/components/detail-layout';
+import { RouteJourneyStepper } from '@/components/shipments/route-journey-stepper';
+import { ShipmentCommandSidebar } from '@/components/shipments/shipment-command-sidebar';
+import { ShipmentStatusBadge } from '@/components/shipment-status-badge';
 
 export default function ShipmentDetailPage(): ReactNode {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const queryClient = useQueryClient();
-  const { tenantFilter, branchFilter } = useTenantFilter();
   const { toast } = useToast();
+  const { tenantFilter } = useTenantFilter();
   const { data: tenants = [] } = useTenants();
   const tenantCurrency = useMemo(() => {
     const t = tenants.find((t) => t.id === tenantFilter);
@@ -41,45 +44,26 @@ export default function ShipmentDetailPage(): ReactNode {
   const trackMutation = useTrackShipment();
   const stopMutation = useStopTracking();
   const deleteMutation = useDeleteShipment();
-  const generateInvoice = useGenerateInvoice();
-  const updateShipment = useUpdateShipment();
 
-  const [tab, setTab] = useState<TabKey>('details');
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const trackingEvents = trackingData?.events ?? [];
-  const sortedEvents = useMemo(
-    () => [...trackingEvents].sort((a, b) => new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime()),
-    [trackingEvents],
-  );
+  const sortedEvents = useMemo(() => {
+    const events = trackingData?.events ?? [];
+    return [...events].sort((a, b) => new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime());
+  }, [trackingData?.events]);
 
   usePageTitle(shipment ? `Shipment ${shipment.trackingNo}` : 'Shipment');
 
-  const handleTrack = async () => {
-    await trackMutation.mutateAsync(id);
-  };
-
-  const handleStopTracking = async () => {
-    if (!shipment) return;
-    if (!window.confirm(`Stop tracking ${shipment.trackingNo}?`)) return;
-    await stopMutation.mutateAsync(id);
-  };
-
-  const handleDelete = async () => {
-    await deleteMutation.mutateAsync(id);
-    router.push('/shipments');
-  };
-
-  // ── Loading state ──
   if (isLoading) return <DetailLoadingSkeleton />;
 
-  // ── Error state ──
   if (error || !shipment) {
     return (
       <DetailShell>
-        <DetailBack onClick={() => router.push('/shipments')} label="Back to Shipments" />
-        <Card className="p-12 text-center">
+        <Button variant="ghost" size="sm" onPress={() => router.push('/shipments')} className="mb-4 -ml-2">
+          <ArrowLeft size={14} /> Back to Shipments
+        </Button>
+        <Card className="ops-panel p-12 text-center">
           <p className="text-danger text-sm mb-3">{error?.message ?? 'Failed to load shipment'}</p>
           <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
         </Card>
@@ -87,428 +71,172 @@ export default function ShipmentDetailPage(): ReactNode {
     );
   }
 
-  const cfg = STATUS_META[shipment.status as keyof typeof STATUS_META] ?? { label: shipment.status.replace(/_/g, ' '), color: 'default' };
   const originCountry = shipment.origin ? countryFromString(shipment.origin) : null;
   const destCountry = shipment.destination ? countryFromString(shipment.destination) : null;
-  const daysSinceUpdate = shipment.lastTrackedAt
-    ? Math.floor((Date.now() - new Date(shipment.lastTrackedAt).getTime()) / 86400000) : null;
-  const transitDays = shipment.estimatedDelivery && shipment.createdAt
-    ? Math.ceil((new Date(shipment.estimatedDelivery).getTime() - new Date(shipment.createdAt).getTime()) / 86400000) : null;
 
   return (
-    <DetailShell>
-      {/* Back button */}
-      <DetailBack onClick={() => router.push('/shipments')} label="Back to Shipments" />
+    <div className="shipments-ops">
+      <DetailShell>
+        <Button variant="ghost" size="sm" onPress={() => router.push('/shipments')} className="mb-4 -ml-2">
+          <ArrowLeft size={14} /> Operations Board
+        </Button>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
-        {/* Main column */}
-        <div className="space-y-5 min-w-0">
-
-      {/* Hero section */}
-      <div className={cn(
-        'relative overflow-hidden rounded-sm border',
-        cfg.color === 'primary' && 'border-primary/30',
-        cfg.color === 'success' && 'border-success/30',
-        cfg.color === 'danger' && 'border-danger/30',
-        cfg.color === 'warning' && 'border-warning/30',
-        cfg.color === 'default' && 'border-border',
-      )}>
-        <div className={cn(
-          'absolute inset-0',
-          cfg.color === 'primary' && 'bg-gradient-to-br from-primary/[0.08] to-transparent',
-          cfg.color === 'success' && 'bg-gradient-to-br from-success/[0.08] to-transparent',
-          cfg.color === 'danger' && 'bg-gradient-to-br from-danger/[0.08] to-transparent',
-          cfg.color === 'warning' && 'bg-gradient-to-br from-warning/[0.08] to-transparent',
-          cfg.color === 'default' && 'bg-gradient-to-br from-muted/[0.04] to-transparent',
-        )} />
-        <div className="relative px-6 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className={cn(
-                'w-12 h-12 rounded-sm flex items-center justify-center shrink-0',
-                cfg.color === 'primary' && 'bg-primary/15 text-primary',
-                cfg.color === 'success' && 'bg-success/15 text-success',
-                cfg.color === 'danger' && 'bg-danger/15 text-danger',
-                cfg.color === 'warning' && 'bg-warning/15 text-warning',
-                cfg.color === 'default' && 'bg-muted/15 text-muted',
-              )}>
-                <Package size={20} />
+        <header className="ops-header-bar ops-grid-bg sticky-below-header sticky-surface px-5 py-4 mb-5 space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <ShipmentStatusBadge status={shipment.status} />
+                <span className="text-xs text-muted">{shipment.carrier || 'Unknown carrier'}</span>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Chip size="sm" variant="soft" color={cfg.color as 'success' | 'danger' | 'warning' | 'default'}>{cfg.label}</Chip>
-                  <span className="text-xs text-muted bg-muted/10 px-2 py-0.5 rounded-full">{shipment.carrier || 'Unknown'}</span>
-                  {shipment.trackingRegistered && (
-                    <span className="text-xs text-success flex items-center gap-1"><Check size={12} />Active</span>
-                  )}
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                  {shipment.trackingNo}
-                  <CopyButton text={shipment.trackingNo} />
-                </h1>
-                {shipment.labelCode && (
-                  <p className="text-xs text-muted mt-1 font-mono flex items-center gap-1.5">
-                    <span className="text-muted/60">Label:</span> {shipment.labelCode} <CopyButton text={shipment.labelCode} />
-                  </p>
-                )}
-              </div>
+              <h1 className="ops-mono text-xl font-bold flex items-center gap-2">
+                {shipment.trackingNo}
+                <CopyButton text={shipment.trackingNo} />
+              </h1>
+              {shipment.labelCode && (
+                <p className="text-xs text-muted ops-mono">Label: {shipment.labelCode}</p>
+              )}
+            </div>
+            <div className="text-right text-sm">
+              {shipment.billAmount && (
+                <p className="font-semibold">{formatCurrency(shipment.billAmount, tenantCurrency)}</p>
+              )}
+              <p className="text-xs text-muted">
+                Created {new Date(shipment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-4 text-xs text-muted flex-wrap">
-            {shipment.origin && (
-              <div className="flex items-center gap-1.5"><MapPin size={14} /><span className="truncate max-w-[200px]">{shipment.origin}</span></div>
-            )}
-            <div className="flex items-center gap-1.5"><Package size={12} /><span>{shipment.status.replace(/_/g, ' ')}</span></div>
-            {shipment.estimatedDelivery && (
-              <div className="flex items-center gap-1.5"><Clock size={14} /><span>Est. {new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span></div>
-            )}
-            {daysSinceUpdate !== null && (
-              <div className="flex items-center gap-1.5"><Calendar size={14} /><span>{daysSinceUpdate === 0 ? 'Today' : `${daysSinceUpdate}d ago`}</span></div>
-            )}
-          </div>
-        </div>
-      </div>
+          <RouteJourneyStepper
+            status={shipment.status}
+            origin={shipment.origin}
+            destination={shipment.destination}
+          />
+        </header>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Origin" value={shipment.origin || '—'} icon={<MapPin size={14} />} accent={originCountry ? <Flag country={originCountry} /> : null} />
-        <StatCard label="Destination" value={shipment.destination || '—'} icon={<MapPin size={14} />} accent={destCountry ? <Flag country={destCountry} /> : null} />
-        <StatCard label="Estimated Delivery" value={shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Clock size={14} />} meta={transitDays ? `${transitDays}d transit` : null} />
-        <StatCard label="Actual Delivery" value={shipment.actualDelivery ? new Date(shipment.actualDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Check size={14} />} highlighted={!!shipment.actualDelivery} />
-      </div>
-
-      {/* Tab Navigation */}
-      <Tabs selectedKey={tab} onSelectionChange={(key) => setTab(key as TabKey)}>
-        <Tabs.List>
-          <Tabs.Tab id="details">Details</Tabs.Tab>
-          <Tabs.Tab id="tracking">Tracking</Tabs.Tab>
-          <Tabs.Tab id="invoice">Invoice</Tabs.Tab>
-          <Tabs.Tab id="notes">Notes</Tabs.Tab>
-        </Tabs.List>
-
-        {/* Details Tab */}
-        <Tabs.Panel id="details" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Shipment Info */}
-            <Card>
-              <div className="px-5 py-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
-                  <h3 className="text-sm font-semibold">Shipment Info</h3>
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                <InfoRow label="Carrier" value={shipment.carrier || '—'} />
-                <InfoRow label="Provider" value={shipment.trackingProvider || '—'} />
-                <InfoRow label="Bill Amount" value={shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'} />
-                <InfoRow label="Tracking" value={shipment.trackingRegistered ? 'Active' : 'Inactive'} />
-                <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'} />
-                <InfoRow label="Created" value={new Date(shipment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
-                <InfoRow label="Updated" value={new Date(shipment.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
-              </div>
-            </Card>
-
-            {/* Route */}
-            <Card className="lg:col-span-2">
-              <div className="px-5 py-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
-                  <h3 className="text-sm font-semibold">Route</h3>
-                </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
+          <div className="space-y-5 min-w-0">
+            <section className="ops-panel-raised overflow-hidden">
+              <div className="px-5 py-3 border-b border-[var(--ops-border)] flex items-center justify-between">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  <Package size={14} className="text-[var(--ops-accent)]" />
+                  Tracking Timeline
+                </h2>
+                {sortedEvents.length > 0 && (
+                  <span className="text-xs text-muted bg-[var(--ops-surface)] px-2 py-0.5 rounded-full border border-[var(--ops-border)]">
+                    {sortedEvents.length} events
+                  </span>
+                )}
               </div>
               <div className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20" />
-                    <div className="w-0.5 h-8 bg-gradient-to-b from-primary/60 to-muted" />
-                    <div className="w-4 h-4 rounded-full border-2 border-success bg-success/20" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-6">
-                    <div>
-                      <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Origin</p>
-                      <p className="text-sm font-medium flex items-center gap-1.5">
-                        {originCountry && <Flag country={originCountry} />}
-                        {shipment.origin || addressDisplay(shipment.senderAddress) || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-1">Destination</p>
-                      <p className="text-sm font-medium flex items-center gap-1.5">
-                        {destCountry && <Flag country={destCountry} />}
-                        {shipment.destination || addressDisplay(shipment.recipientAddress) || '—'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {shipment.estimatedDelivery && (
-                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                    <span className="text-muted">Estimated delivery</span>
-                    <span className="font-semibold">{new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                  </div>
+                {trackingLoading ? (
+                  <div className="flex justify-center py-12"><Spinner /></div>
+                ) : (
+                  <TrackingTimeline events={sortedEvents} />
                 )}
               </div>
-            </Card>
+            </section>
 
-            <Card className="lg:col-span-2">
-              <div className="px-5 py-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="w-0.5 h-3.5 bg-primary/60 rounded-full shrink-0" />
-                  <h3 className="text-sm font-semibold">Sender & Recipient</h3>
+            <section className="ops-panel overflow-hidden">
+              <button
+                type="button"
+                className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-[var(--ops-surface-raised)] transition-colors"
+                onClick={() => setDetailsOpen((v) => !v)}
+              >
+                <span className="text-sm font-semibold">Shipment Details</span>
+                <ChevronDown size={16} className={cn('text-muted transition-transform', detailsOpen && 'rotate-180')} />
+              </button>
+              {detailsOpen && (
+                <div className="px-5 pb-5 pt-2 border-t border-[var(--ops-border)] space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <InfoRow label="Provider" value={shipment.trackingProvider || '—'} />
+                    <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'} />
+                    <InfoRow label="Est. Delivery" value={shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                    <InfoRow label="Actual Delivery" value={shipment.actualDelivery ? new Date(shipment.actualDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Sender</p>
+                      <p className="text-sm flex items-start gap-1.5">
+                        {originCountry && <Flag country={originCountry} />}
+                        {addressDisplay(shipment.senderAddress) || shipment.origin || '—'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Recipient</p>
+                      <p className="text-sm flex items-start gap-1.5">
+                        {destCountry && <Flag country={destCountry} />}
+                        {addressDisplay(shipment.recipientAddress) || shipment.destination || '—'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <p className="text-[11px] text-muted font-medium uppercase tracking-wider">Sender</p>
-                  <p className="text-sm">{addressDisplay(shipment.senderAddress)}</p>
-                  {shipment.senderAddress?.phone && <p className="text-xs text-muted">{shipment.senderAddress?.phone}</p>}
-                  {shipment.senderAddress?.email && <p className="text-xs text-muted">{shipment.senderAddress?.email}</p>}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[11px] text-muted font-medium uppercase tracking-wider">Recipient</p>
-                  <p className="text-sm">{addressDisplay(shipment.recipientAddress)}</p>
-                  {shipment.recipientAddress?.phone && <p className="text-xs text-muted">{shipment.recipientAddress?.phone}</p>}
-                  {shipment.recipientAddress?.email && <p className="text-xs text-muted">{shipment.recipientAddress?.email}</p>}
-                </div>
+              )}
+            </section>
+          </div>
+
+          <ShipmentCommandSidebar
+            shipment={shipment}
+            shipmentId={id}
+            invoice={invoice}
+            invoiceLoading={invoiceLoading}
+            tenantCurrency={tenantCurrency}
+            onTrack={() => trackMutation.mutate(id)}
+            trackPending={trackMutation.isPending}
+            onStopTracking={async () => {
+              if (!window.confirm(`Stop tracking ${shipment.trackingNo}?`)) return;
+              await stopMutation.mutateAsync(id);
+            }}
+            stopPending={stopMutation.isPending}
+            onEdit={() => toast('info', 'Edit coming soon')}
+            onDelete={() => setDeleteOpen(true)}
+          />
+        </div>
+
+        {deleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <Card className="ops-panel w-full max-w-sm mx-4 p-6 space-y-4">
+              <p className="text-sm">
+                Delete <strong className="ops-mono">{shipment.trackingNo}</strong>? This cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" size="sm" onPress={() => setDeleteOpen(false)}>Cancel</Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  isPending={deleteMutation.isPending}
+                  onPress={async () => {
+                    await deleteMutation.mutateAsync(id);
+                    router.push('/shipments');
+                  }}
+                >
+                  Delete
+                </Button>
               </div>
             </Card>
           </div>
-        </Tabs.Panel>
-
-        {/* Tracking Tab */}
-        <Tabs.Panel id="tracking">
-          <Card>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><Package size={14} /> Tracking Timeline</h3>
-              {sortedEvents.length > 0 && (
-                <span className="text-xs text-muted bg-muted/10 px-2.5 py-1 rounded-full">{sortedEvents.length} events</span>
-              )}
-            </div>
-            <div className="p-5">
-              <TrackingTimeline events={sortedEvents} />
-            </div>
-          </Card>
-        </Tabs.Panel>
-
-        {/* Invoice Tab */}
-        <Tabs.Panel id="invoice">
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><FileText size={14} /> Invoice</h3>
-            </div>
-            <div className="p-5">
-              {invoiceLoading ? (
-                <div className="flex items-center justify-center py-8"><Spinner size="sm" /></div>
-              ) : invoice ? (
-                <div className="space-y-3 max-w-md">
-                  <InfoRow label="Invoice #" value={invoice.invoiceNo} />
-                  <InfoRow label="Amount" value={formatCurrency(invoice.amount, tenantCurrency)} />
-                  <InfoRow label="Sent" value={`${invoice.emailCount}/2 today`} />
-                  <InfoRow label="Created" value={new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
-                  <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="secondary" onPress={async () => {
-                      try {
-                        const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                        const headers: Record<string, string> = {};
-                        const tid = tenantFilter;
-                        if (tid) headers['X-Tenant-ID'] = tid;
-                        const res = await fetch(`${base}/api/invoices/${invoice.id}/pdf`, { credentials: 'include', headers });
-                        if (!res.ok) throw new Error('Failed to generate PDF');
-                        const blob = await res.blob();
-                        window.open(URL.createObjectURL(blob), '_blank');
-                      } catch (e) { toast('error', 'Failed to generate PDF', e instanceof Error ? e.message : undefined); }
-                    }}>
-                      <FileText size={14} /> View PDF
-                    </Button>
-                    <Button size="sm" variant="secondary" onPress={async () => {
-                      try {
-                        await api.post(`/api/invoices/${invoice.id}/send`);
-                        queryClient.invalidateQueries({ queryKey: ['shipment-invoice', id] });
-                      } catch (e) { toast('error', 'Failed to send invoice', e instanceof Error ? e.message : undefined); }
-                    }}>
-                      <Send size={14} /> Send
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 space-y-3">
-                  <p className="text-sm text-muted">No invoice generated yet</p>
-                  <Button size="sm" variant="secondary" onPress={async () => {
-                    try {
-                      await generateInvoice.mutateAsync(id);
-                    } catch (e) {
-                      if ((e as { status?: number })?.status === 409) {
-                        queryClient.invalidateQueries({ queryKey: ['shipment-invoice', id] });
-                      }
-                    }
-                  }} isPending={generateInvoice.isPending}>
-                    <Plus size={14} /> Generate Invoice
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Tabs.Panel>
-
-        {/* Notes Tab */}
-        <Tabs.Panel id="notes">
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><MessageSquare size={14} /> Notes</h3>
-            </div>
-            <div className="p-5 text-center py-12 text-sm text-muted">
-              <MessageSquare size={24} className="mx-auto mb-2 opacity-40" />
-              <p>No notes yet</p>
-            </div>
-          </Card>
-        </Tabs.Panel>
-      </Tabs>
-        </div>
-
-        {/* Right sidebar */}
-        <aside className="space-y-5 xl:sticky xl:top-24">
-          {/* Status card */}
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-sm font-semibold">Status</h3>
-            </div>
-            <div className="p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Chip size="sm" variant="soft" color={cfg.color as 'success' | 'danger' | 'warning' | 'default'}>{cfg.label}</Chip>
-                {shipment.trackingRegistered && (
-                  <span className="text-xs text-success flex items-center gap-1"><Check size={12} />Active</span>
-                )}
-              </div>
-              {shipment.estimatedDelivery && (
-                <div className="flex items-center gap-2 text-xs">
-                  <Clock size={14} className="text-muted" />
-                  <span className="text-muted">Est. delivery</span>
-                  <span className="font-semibold ml-auto">{new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                </div>
-              )}
-              {daysSinceUpdate !== null && (
-                <div className="flex items-center gap-2 text-xs">
-                  <Calendar size={14} className="text-muted" />
-                  <span className="text-muted">Last update</span>
-                  <span className="font-semibold ml-auto">{daysSinceUpdate === 0 ? 'Today' : `${daysSinceUpdate}d ago`}</span>
-                </div>
-              )}
-              {shipment.lastTrackedAt && (
-                <div className="flex items-center gap-2 text-xs">
-                  <RefreshCw size={14} className="text-muted" />
-                  <span className="text-muted">Last tracked</span>
-                  <span className="font-semibold ml-auto">{new Date(shipment.lastTrackedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Customer card */}
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-sm font-semibold">Customer</h3>
-            </div>
-            <div className="p-5">
-              <AssignedTo
-                shipmentId={id}
-                customerId={shipment.customerId}
-                customerName={shipment.customerName}
-                customerEmail={shipment.contactEmail}
-                customerPhone={shipment.contactPhone}
-              />
-            </div>
-          </Card>
-
-          {/* Actions card */}
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-sm font-semibold">Actions</h3>
-            </div>
-            <div className="p-4 flex flex-col gap-2">
-              <Button variant="secondary" size="sm" onPress={handleTrack} isPending={trackMutation.isPending} fullWidth>
-                <RefreshCw size={14} /> Track Now
-              </Button>
-              <Button variant="secondary" size="sm" onPress={() => setEditOpen(true)} fullWidth>
-                <Pencil size={14} /> Edit
-              </Button>
-              {shipment.trackingRegistered && (
-                <Button variant="ghost" size="sm" onPress={handleStopTracking} isPending={stopMutation.isPending} fullWidth>
-                  <Ban size={14} /> Stop Tracking
-                </Button>
-              )}
-              <Button variant="danger" size="sm" onPress={() => setDeleteOpen(true)} fullWidth>
-                <Trash2 size={14} /> Delete
-              </Button>
-            </div>
-          </Card>
-        </aside>
-      </div>
-
-      {/* Delete Modal */}
-      {/* ponytail: keep simple modal pattern */}
-      {deleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-sm mx-4">
-            <div className="p-6 space-y-4">
-              <p className="text-sm">Delete <strong>{shipment.trackingNo}</strong>? This cannot be undone.</p>
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" size="sm" onPress={() => setDeleteOpen(false)}>Cancel</Button>
-                <Button variant="danger" size="sm" onPress={handleDelete} isPending={deleteMutation.isPending}>Delete</Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-    </DetailShell>
-  );
-}
-
-function InfoRow({ label, value, icon }: { label: string; value: string; icon?: ReactNode }): ReactNode {
-  return (
-    <div className="flex items-center gap-3 py-1.5">
-      {icon && <span className="flex-shrink-0 text-muted">{icon}</span>}
-      <span className="text-sm text-muted flex-1">{label}</span>
-      <span className="text-sm font-medium text-right max-w-[50%] truncate">{value}</span>
+        )}
+      </DetailShell>
     </div>
   );
 }
 
-function StatCard({ label, value, icon, accent, meta, highlighted }: {
-  label: string; value: string; icon: ReactNode; accent?: ReactNode | null; meta?: string | null; highlighted?: boolean;
-}): ReactNode {
+function InfoRow({ label, value }: { label: string; value: string }): ReactNode {
   return (
-    <Card className={cn('p-4', highlighted && 'border-success/30 bg-success/[0.02]')}>
-      <div className="flex items-center gap-2 mb-2.5">
-        <span className="text-muted">{icon}</span>
-        {accent && <span className="flex-shrink-0">{accent}</span>}
-        <span className="text-[11px] text-muted font-medium uppercase tracking-wider">{label}</span>
-      </div>
-      <p className={cn('text-sm font-semibold truncate', highlighted && 'text-success')}>{value}</p>
-      {meta && <p className="text-[11px] text-muted mt-0.5">{meta}</p>}
-    </Card>
+    <div className="flex justify-between gap-3 py-1">
+      <span className="text-muted">{label}</span>
+      <span className="font-medium text-right truncate">{value}</span>
+    </div>
   );
 }
 
 function DetailLoadingSkeleton(): ReactNode {
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="shipments-ops max-w-6xl mx-auto space-y-5">
       <Skeleton className="h-4 w-36" />
-      <div className="rounded-sm border border-border overflow-hidden">
-        <div className="p-8">
-          <div className="flex items-start gap-5">
-            <Skeleton className="w-14 h-14 rounded-sm shrink-0" />
-            <div className="flex-1">
-              <div className="flex gap-2 mb-2"><Skeleton className="h-5 w-20 rounded-full" /><Skeleton className="h-5 w-16 rounded-full" /></div>
-              <Skeleton className="h-8 w-64 mb-1" /><Skeleton className="h-4 w-40" />
-            </div>
-            <div className="flex gap-2 shrink-0"><Skeleton className="h-9 w-24 rounded-sm" /><Skeleton className="h-9 w-16 rounded-sm" /></div>
-          </div>
-          <div className="mt-6 flex gap-4">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-4 w-32" />)}</div>
-        </div>
+      <Skeleton className="h-32 w-full rounded-md" />
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
+        <Skeleton className="h-96 w-full rounded-md" />
+        <Skeleton className="h-80 w-full rounded-md" />
       </div>
-      <div className="grid grid-cols-4 gap-4">
-        {Array.from({ length: 4 }, (_, i) => <Card key={i} className="p-4"><Skeleton className="h-3 w-16 mb-2" /><Skeleton className="h-5 w-28" /></Card>)}
-      </div>
-      <Skeleton className="h-10 w-full rounded-sm" />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 
 import { currencySymbol } from '../lib/currency';
+import { PDF_FONT_FAMILY } from './pdf-fonts';
 
 const green = '#15803d';
 const black = '#111827';
@@ -9,7 +10,7 @@ const gray = '#6b7280';
 const light = '#e5e7eb';
 
 const styles = StyleSheet.create({
-  page: { padding: 0, fontFamily: 'Helvetica', color: black },
+  page: { padding: 0, fontFamily: PDF_FONT_FAMILY, color: black },
   body: { padding: '32 36' },
   // Header
   headerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 14, borderBottom: `2px solid ${green}` },

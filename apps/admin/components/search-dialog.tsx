@@ -153,7 +153,7 @@ export function SearchDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Modal.Container>
-        <Modal.Dialog className="max-w-2xl">
+        <Modal.Dialog className="max-w-2xl glass-panel border-glass">
           <div className="px-5 pt-5 pb-3">
             <SearchField value={query} onChange={setQuery} autoFocus aria-label="Search">
               <SearchField.Group>

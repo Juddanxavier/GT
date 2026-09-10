@@ -233,9 +233,9 @@ export async function queryPerDayShipments(filter: StatsFilter): Promise<unknown
     sql`
       SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val
       FROM (
-        SELECT DATE(created_at) AS d, COUNT(*)::int AS c
+        SELECT DATE(created_at)::text AS d, COUNT(*)::int AS c
         FROM shipment${w ? sql` WHERE ${w} AND` : sql` WHERE`} created_at>=NOW()-INTERVAL '1 year'
-        GROUP BY d
+        GROUP BY DATE(created_at)
       ) sub
     `,
   );
@@ -247,13 +247,51 @@ export async function queryPerDayShipmentsRaw(filter: SQL | undefined): Promise<
     sql`
       SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val
       FROM (
-        SELECT DATE(created_at) AS d, COUNT(*)::int AS c
+        SELECT DATE(created_at)::text AS d, COUNT(*)::int AS c
         FROM shipment WHERE archived_at IS NULL AND created_at>=NOW()-INTERVAL '1 year' ${filter ?? sql``}
-        GROUP BY d
+        GROUP BY DATE(created_at)
       ) sub
     `,
   );
   return (row?.val as unknown[]) ?? [];
+}
+
+export type ShipmentTrendRow = {
+  date: string;
+  total: number;
+  intransit: number;
+  outfordelivery: number;
+  delivered: number;
+  pending: number;
+  exception: number;
+};
+
+/** Per-day shipment counts by current status (for KPI sparklines). */
+export async function queryShipmentTrend(filter: StatsFilter): Promise<ShipmentTrendRow[]> {
+  const w = makeShipmentWhere(filter);
+  const rows = await db
+    .select({
+      date: sql<string>`DATE(${shipments.createdAt})::text`,
+      total: sql<number>`COUNT(*)::int`,
+      intransit: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'in_transit')::int`,
+      outfordelivery: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'out_for_delivery')::int`,
+      delivered: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'delivered')::int`,
+      pending: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} = 'pending')::int`,
+      exception: sql<number>`COUNT(*) FILTER (WHERE ${shipments.status} IN ('exception','failed_attempt'))::int`,
+    })
+    .from(shipments)
+    .where(w)
+    .groupBy(sql`DATE(${shipments.createdAt})`)
+    .orderBy(sql`DATE(${shipments.createdAt})`);
+  return rows.map((r) => ({
+    date: String(r.date),
+    total: Number(r.total),
+    intransit: Number(r.intransit),
+    outfordelivery: Number(r.outfordelivery),
+    delivered: Number(r.delivered),
+    pending: Number(r.pending),
+    exception: Number(r.exception),
+  }));
 }
 
 // ── Revenue Per Month ──

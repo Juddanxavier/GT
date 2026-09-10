@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTenants } from '@/lib/queries';
+import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { useRouter } from 'next/navigation';
 import { Download, Eye, FileText, MoreVertical, Send, Trash2, CheckCircle, Clock } from 'lucide-react';
 import { Button, Chip, Dropdown, Input, ListBox, Modal, Pagination, Skeleton, Spinner, Table, Tabs, Select, type Key, type SortDescriptor } from '@heroui/react';
@@ -42,6 +44,12 @@ export default function InvoicesPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; invoiceNo: string } | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE);
   const prefs = useTablePreferences('invoices-table', INVOICE_COLUMNS);
+  const { tenantFilter } = useTenantFilter();
+  const { data: tenants = [] } = useTenants();
+  const tenantCurrency = useMemo(() => {
+    const t = tenants.find((t) => t.id === tenantFilter);
+    return t?.currency ?? undefined;
+  }, [tenantFilter, tenants]);
 
   const invoicesQuery = useInvoices(searchQuery, page, rowsPerPage, statusFilter);
   const invoicesResp = invoicesQuery.data as PaginatedResult<Invoice> | undefined;
@@ -146,7 +154,7 @@ export default function InvoicesPage() {
         <KpiCard label="Unpaid" count={kpiPending} color="#f59e0b" icon={Clock} data={sparklines.unpaid} />
       </div>
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="sm:flex-1">
@@ -210,7 +218,7 @@ export default function InvoicesPage() {
                       <Table.Cell><span className="font-mono text-xs font-medium">{inv.invoiceNo}</span></Table.Cell>
                       {prefs.isVisible('trackingNo') && <Table.Cell className="font-mono text-xs">{inv.trackingNo || '—'}</Table.Cell>}
                       {prefs.isVisible('customerName') && <Table.Cell>{inv.customerName}</Table.Cell>}
-                      {prefs.isVisible('amount') && <Table.Cell className="font-medium">{formatCurrency(inv.amount, 'INR')}</Table.Cell>}
+                      {prefs.isVisible('amount') && <Table.Cell className="font-medium">{formatCurrency(inv.amount, tenantCurrency)}</Table.Cell>}
                       {prefs.isVisible('status') && (
                         <Table.Cell>
                           <Chip size="sm" variant="soft" color="success">Paid</Chip>

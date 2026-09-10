@@ -13,7 +13,7 @@ export function TrackQuotaCard() {
       .catch(() => setErr(true));
   }, []);
   if (err) return null;
-  if (!quota) return <div className="h-24 rounded-sm bg-surface animate-pulse" />;
+  if (!quota) return <div className="h-24 rounded-xl glass-panel border border-glass animate-pulse" />;
   const pct = quota.quota_total > 0 ? Math.round((quota.quota_used / quota.quota_total) * 100) : 0;
   return (
     <Card>

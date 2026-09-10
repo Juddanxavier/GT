@@ -67,13 +67,13 @@ function CountryInput({ value, onChange, countryList }: { value: string; onChang
       onSelectionChange={(k) => { const v = k as string; onChange(v); }}
       className="w-full"
     >
-      <Select.Trigger className="h-10 rounded-sm border border-border bg-surface px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
+      <Select.Trigger className="h-10 content-panel px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
         <Select.Value />
         <Select.Indicator>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </Select.Indicator>
       </Select.Trigger>
-      <Select.Popover className="min-w-[300px] rounded-sm border border-border bg-surface p-1">
+      <Select.Popover className="min-w-[300px] content-panel p-1">
         <div className="px-2 py-1.5 border-b border-border mb-1">
           <input
             type="text"
@@ -357,7 +357,7 @@ export default function RateCardsPage() {
         </div>
       )}
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
           <Input placeholder="Search by country..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} fullWidth />
         </div>
@@ -472,7 +472,7 @@ export default function RateCardsPage() {
                   <div className="flex flex-col gap-1">
                     <Label>CSV Data</Label>
                     <p className="text-xs text-muted mb-1">Format: serviceType,weight,rate (one row per slab)</p>
-                    <textarea className="h-48 rounded-sm border border-border bg-surface p-3 text-sm font-mono outline-none focus:ring-1 focus:ring-ring" placeholder={`express-priority,0.5,1250\nexpress-priority,1,1450\neconomy,1,1800`} value={csvText} onChange={(e) => setCsvText(e.target.value)} />
+                    <textarea className="h-48 content-panel p-3 text-sm font-mono outline-none focus:ring-1 focus:ring-ring" placeholder={`express-priority,0.5,1250\nexpress-priority,1,1450\neconomy,1,1800`} value={csvText} onChange={(e) => setCsvText(e.target.value)} />
                     {csvError && <p className="text-xs text-danger">{csvError}</p>}
                   </div>
                 </div>
@@ -578,7 +578,7 @@ export default function RateCardsPage() {
                       {rateInputMode === 'paste' && (
                         <div className="flex flex-col gap-2">
                           <p className="text-xs text-muted">Paste rates — one per line. Format: <code className="bg-muted/40 px-1 rounded">weight,rate</code></p>
-                          <textarea className="h-48 rounded-sm border border-border bg-surface p-3 text-sm font-mono outline-none focus:ring-1 focus:ring-ring" placeholder={`5,1200\n10,1800\n15,2500`} value={pasteText} onChange={(e) => setPasteText(e.target.value)} />
+                          <textarea className="h-48 content-panel p-3 text-sm font-mono outline-none focus:ring-1 focus:ring-ring" placeholder={`5,1200\n10,1800\n15,2500`} value={pasteText} onChange={(e) => setPasteText(e.target.value)} />
                           <Button size="sm" variant="secondary" onPress={parsePasteText} className="self-start"><Check size={12} /> Apply Pasted Rates</Button>
                         </div>
                       )}

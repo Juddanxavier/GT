@@ -17,6 +17,7 @@ import {
   queryPerBranchBreakdown,
   queryPerDayShipments,
   queryPerDayShipmentsRaw,
+  queryShipmentTrend,
   queryPerTenantBreakdown,
   queryQuotationCount,
   queryQuotationCountRaw,
@@ -73,9 +74,10 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
   if (!scope.tenantId) throw new Error('tenantId required for tenant stats');
   const filter: StatsFilter = { tenantId: scope.tenantId, branchId: scope.branchId };
 
-  const [s, pdVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow] = await Promise.all([
+  const [s, pdVal, trendVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow] = await Promise.all([
     queryShipmentDetailed(filter),
     queryPerDayShipments(filter),
+    queryShipmentTrend(filter),
     queryByCarrier(filter),
     queryCustomerCount(filter),
     queryQuotationCount(filter),
@@ -142,6 +144,7 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
     },
     revenuePerMonth: rmVal,
     perDay: pdVal,
+    shipmentTrend: trendVal,
     branches: { total: bRow.length },
     alerts: alVal,
     total: {
@@ -188,7 +191,8 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
   const tFilter = makeRawShipmentFilter(tenantId!);
   const tWhere = makeRawShipmentWhere(tenantId!);
 
-  const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, alVal] = await Promise.all([
+  const branchFilter: StatsFilter = { tenantId };
+  const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, trendVal, alVal] = await Promise.all([
     queryShipmentSummary(tenantId),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
@@ -196,6 +200,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
     queryPerBranchBreakdown(tenantId),
     queryRevenuePerMonthRaw(tFilter),
     queryPerDayShipmentsRaw(tFilter),
+    queryShipmentTrend(branchFilter),
     queryAlertsRaw(tFilter),
   ]);
 
@@ -248,6 +253,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
     },
     perBranch: pbVal,
     perDay: pdVal,
+    shipmentTrend: trendVal,
     revenuePerMonth: rmVal,
     alerts: alVal,
   };
@@ -256,15 +262,18 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
 async function buildSuperadminStats(filterTenantId: string | null) {
   const tFilter = makeRawShipmentFilter(filterTenantId ?? undefined);
   const tWhere = makeRawShipmentWhere(filterTenantId ?? undefined);
+  const statsFilter: StatsFilter = { tenantId: filterTenantId ?? undefined };
 
-  const [s, cRow, qRow, iRow, ptVal, rmVal, pdVal, alVal] = await Promise.all([
-    queryShipmentSummary(filterTenantId ?? undefined),
+  const [s, pdVal, trendVal, bcVal, cRow, qRow, iRow, ptVal, rmVal, alVal] = await Promise.all([
+    queryShipmentDetailed(statsFilter),
+    queryPerDayShipmentsRaw(tFilter),
+    queryShipmentTrend(statsFilter),
+    queryByCarrier(statsFilter),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
     queryRevenueStatsRaw(tFilter),
     queryPerTenantBreakdown(filterTenantId),
     queryRevenuePerMonthRaw(tFilter),
-    queryPerDayShipmentsRaw(tFilter),
     queryAlertsRaw(tFilter),
   ]);
 
@@ -272,9 +281,36 @@ async function buildSuperadminStats(filterTenantId: string | null) {
   const qc = Number(qRow.converted ?? 0);
   const conversionRate = computeConversionRate(qt, qc);
 
+  const byStatus: Record<string, number> = {
+    in_transit: Number(s.inTransit ?? 0),
+    out_for_delivery: Number(s.outForDelivery ?? 0),
+    delivered: Number(s.delivered ?? 0),
+    exception: Number(s.exceptions ?? 0),
+    pending: Number(s.pending ?? 0),
+    info_received: Number(s.infoReceived ?? 0),
+    expired: Number(s.expired ?? 0),
+    failed_attempt: 0,
+  };
+
   return {
     role: 'superadmin',
     scope: {},
+    shipments: {
+      total: Number(s.total ?? 0),
+      inTransit: Number(s.inTransit ?? 0),
+      outForDelivery: Number(s.outForDelivery ?? 0),
+      deliveredToday: Number(s.deliveredToday ?? 0),
+      deliveredThisMonth: Number(s.deliveredThisMonth ?? 0),
+      exceptions: Number(s.exceptions ?? 0),
+      pending: Number(s.pending ?? 0),
+      stale: Number(s.stale ?? 0),
+      overdue: Number(s.overdue ?? 0),
+      notTracked: Number(s.notTracked ?? 0),
+      byStatus,
+      perDay: pdVal,
+      byCarrier: bcVal,
+      byBranch: [],
+    },
     total: {
       shipments: {
         total: Number(s.total ?? 0),
@@ -292,6 +328,7 @@ async function buildSuperadminStats(filterTenantId: string | null) {
     },
     perTenant: ptVal,
     perDay: pdVal,
+    shipmentTrend: trendVal,
     revenuePerMonth: rmVal,
     alerts: alVal,
   };

@@ -3,8 +3,6 @@ import { db } from '../db';
 import { notificationPreferences } from '../db/schema';
 
 type PrefCategory = 'delivery' | 'exception' | 'general';
-type PrefChannel = 'email' | 'whatsapp';
-
 // Map a shipment event type to a preference category so prefs can gate the send.
 export function eventTypeToPrefCategory(eventType: string): PrefCategory {
   if (eventType === 'Exception') return 'exception';

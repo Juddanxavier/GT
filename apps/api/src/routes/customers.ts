@@ -209,7 +209,7 @@ app.patch('/profile', async (c) => {
   const parsed = updateProfileSchema.safeParse(await c.req.json());
   if (!parsed.success) return errorResponse(c, 'VALIDATION_ERROR', parsed.error.issues.map(i => i.message).join(', '), 400);
   const { name, currentPassword, newPassword, phone, branchId } = parsed.data!;
-  let updateErrors: string[] = [];
+  const updateErrors: string[] = [];
 
   if (name) {
     try {

@@ -84,7 +84,7 @@ export default function CustomerProfilePage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="rounded-sm border border-border bg-surface p-5">
+        <div className="content-panel p-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center text-lg font-bold shrink-0">
               {initials}
@@ -112,7 +112,7 @@ export default function CustomerProfilePage() {
         </div>
 
         <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-          <div className="rounded-sm border border-border bg-surface p-5 flex flex-col">
+          <div className="content-panel p-5 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-muted">Shipments</span>
               <Package size={16} className="text-muted" />
@@ -120,7 +120,7 @@ export default function CustomerProfilePage() {
             <p className="text-3xl font-bold tracking-tight">{shipmentsData?.total ?? 0}</p>
             <p className="mt-auto pt-2 text-[11px] text-muted">Across all statuses</p>
           </div>
-          <div className="rounded-sm border border-border bg-surface p-5 flex flex-col">
+          <div className="content-panel p-5 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-muted">Invoices</span>
               <Receipt size={16} className="text-muted" />
@@ -131,7 +131,7 @@ export default function CustomerProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold text-sm">Shipments</h2>
           {shipments.length > 0 && (
@@ -170,7 +170,7 @@ export default function CustomerProfilePage() {
         )}
       </div>
 
-      <div className="rounded-sm border border-border bg-surface overflow-hidden">
+      <div className="content-panel overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="font-semibold text-sm">Invoices</h2>
         </div>
