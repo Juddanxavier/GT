@@ -45,18 +45,32 @@ const prohibitedItems = [
 export function LeftSidebar({
   variant = 'dashboard',
   drawer = false,
+  opsDrawer = false,
 }: {
   variant?: 'dashboard' | 'public';
   drawer?: boolean;
+  opsDrawer?: boolean;
 }): ReactNode {
   const links = variant === 'public' ? publicLinks : dashboardLinks;
   const pathname = usePathname();
   const config = useTenantConfig();
   const isActive = (href: string): boolean => pathname === href || pathname.startsWith(`${href}/`);
+  const shellCls = opsDrawer
+    ? 'rounded-xl border border-white/10 bg-white/5 p-4'
+    : 'premium-card p-5';
+  const titleCls = opsDrawer
+    ? 'mb-3 text-[10px] font-semibold uppercase tracking-widest text-white/45'
+    : 'mb-4 text-xs font-bold uppercase tracking-wider text-foreground';
+  const linkActiveCls = opsDrawer
+    ? 'bg-brand-accent/20 font-semibold text-white'
+    : 'bg-brand-accent/10 font-semibold text-brand-accent-hover';
+  const linkIdleCls = opsDrawer
+    ? 'text-white/70 hover:bg-white/10 hover:text-white'
+    : 'text-foreground/60 hover:bg-foreground/[0.03] hover:text-foreground';
   return (
     <aside className={`${drawer ? '' : 'hidden lg:block'} space-y-6`}>
-      <div className="premium-card p-5">
-        <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-foreground">
+      <div className={shellCls}>
+        <h3 className={titleCls}>
           Quick Links
         </h3>
         <div className="space-y-1">
@@ -66,9 +80,7 @@ export function LeftSidebar({
               href={l.href}
               aria-current={isActive(l.href) ? 'page' : undefined}
               className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                isActive(l.href)
-                  ? 'bg-brand-accent/10 font-semibold text-brand-accent-hover'
-                  : 'text-foreground/60 hover:bg-foreground/[0.03] hover:text-foreground'
+                isActive(l.href) ? linkActiveCls : linkIdleCls
               }`}
             >
               <div
@@ -80,19 +92,21 @@ export function LeftSidebar({
           ))}
         </div>
       </div>
-      <div className="rounded-2xl bg-brand-accent/5 p-5 text-center">
-        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-accent/10 text-brand-accent">
-          <HelpCircle size={20} />
+      {!opsDrawer && (
+        <div className="rounded-2xl bg-brand-accent/5 p-5 text-center">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-accent/10 text-brand-accent">
+            <HelpCircle size={20} />
+          </div>
+          <h3 className="mb-1 text-sm font-bold text-foreground">Need help?</h3>
+          <p className="mb-3 text-xs leading-relaxed text-foreground/60">Mon–Sat, 9 AM – 9 PM</p>
+          <a
+            href={config.contact.phoneHref}
+            className="inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-accent shadow-sm transition-colors hover:text-brand-accent-hover"
+          >
+            {config.contact.phone}
+          </a>
         </div>
-        <h3 className="mb-1 text-sm font-bold text-foreground">Need help?</h3>
-        <p className="mb-3 text-xs leading-relaxed text-foreground/60">Mon–Sat, 9 AM – 9 PM</p>
-        <a
-          href={config.contact.phoneHref}
-          className="inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-accent shadow-sm transition-colors hover:text-brand-accent-hover"
-        >
-          {config.contact.phone}
-        </a>
-      </div>
+      )}
     </aside>
   );
 }

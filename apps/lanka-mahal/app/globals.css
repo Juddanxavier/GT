@@ -341,3 +341,32 @@ html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .c5-animated-gradient { animation: none; }
 }
+
+.portal-mobile-command-bar,
+.portal-ops-command-bar {
+  isolation: isolate;
+  background: color-mix(in oklab, var(--color-brand-navy-deep) 88%, transparent);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, white 12%, transparent),
+    0 8px 24px -12px color-mix(in oklab, var(--color-brand-navy) 65%, transparent);
+}
+
+.portal-mobile-command-bar--hero {
+  background: color-mix(in oklab, var(--color-brand-navy-deep) 35%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: none;
+  border-bottom-color: color-mix(in oklab, white 8%, transparent);
+}
+
+.portal-mobile-drawer {
+  background: var(--color-brand-navy-deep);
+  box-shadow: 8px 0 40px -12px color-mix(in oklab, black 50%, transparent);
+}
+
+.portal-ops-dark .portal-ops-page {
+  background: var(--color-brand-navy-deep);
+  color: white;
+}

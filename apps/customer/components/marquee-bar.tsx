@@ -27,7 +27,7 @@ export function MarqueeBar({ onDismiss }: MarqueeBarProps): ReactNode {
   ));
 
   return (
-    <div className="fixed top-0 left-0 z-[60] flex h-10 w-full items-stretch bg-brand-navy-deep/95 backdrop-blur-xl">
+    <div className="relative flex h-10 w-full items-stretch bg-brand-navy-deep/95 backdrop-blur-xl">
       <div className="flex shrink-0 items-center border-r border-white/10 bg-brand-accent/90 px-2.5 sm:px-4">
         <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white sm:text-[10px] sm:tracking-[0.14em]">
           Live
