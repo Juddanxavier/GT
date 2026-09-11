@@ -1,16 +1,14 @@
 'use client';
 
-import { Button, Chip, Spinner } from '@heroui/react';
-import { ArrowLeft, CheckCircle2, Clock, Copy, Link2, MapPin, PackageSearch } from 'lucide-react';
+import { Button } from '@heroui/react';
+import { ArrowLeft, CheckCircle2, Link2, PackageSearch } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { TrackShipmentSummary } from '@/components/track/track-shipment-summary';
+import { TrackTimeline } from '@/components/track/track-timeline';
 import { useClaimShipment, useTrackShipment } from '@/lib/queries';
-import { STATUS_COLORS, STATUS_LABELS } from '@/lib/status';
 import { useCustomerSession } from '@/lib/use-customer-session';
-
-const cardClass =
-  'rounded-2xl bg-white border border-foreground/5 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6';
 
 export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode {
   const params = useParams();
@@ -45,199 +43,98 @@ export function TrackingDetail({ hideBack }: { hideBack?: boolean }): ReactNode 
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-accent/20 border-t-brand-accent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-16 text-center">
+        <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-red-100 bg-red-50">
+          <PackageSearch size={28} className="text-red-400" />
+        </div>
+        <h2 className="mb-2 text-2xl font-bold text-foreground">Shipment not found</h2>
+        <p className="mx-auto max-w-sm text-foreground/60">{errorMessage}</p>
+        <p className="mt-3 text-sm text-foreground/40">
+          Double-check the tracking number or contact support.
+        </p>
+      </div>
+    );
+  }
+
+  if (!result) return null;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {!hideBack && (
         <a
-          href={user ? '/my-shipments' : '/'}
-          className="inline-flex items-center gap-1.5 text-sm text-foreground/50 hover:text-foreground transition-colors"
+          href={user ? '/my-shipments' : '/track'}
+          className="inline-flex items-center gap-1.5 text-sm text-foreground/50 transition-colors hover:text-foreground"
         >
-          <ArrowLeft size={14} /> {user ? 'Back to my shipments' : 'Back to home'}
+          <ArrowLeft size={14} /> {user ? 'Back to my shipments' : 'Track another parcel'}
         </a>
       )}
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <Spinner size="lg" />
-        </div>
-      ) : error ? (
-        <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-100 mb-4">
-            <PackageSearch size={24} className="text-red-400" />
-          </div>
-          <h2 className="text-base font-semibold text-foreground mb-1">Shipment not found</h2>
-          <p className="text-foreground/60">{errorMessage}</p>
-        </div>
-      ) : result ? (
-        <>
-          <div className={cardClass}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
-                  <PackageSearch size={18} />
-                </div>
+      <TrackShipmentSummary result={result} />
+
+      {!result.claimed && (
+        <div className="rounded-2xl border border-foreground/5 bg-white p-5 shadow-sm">
+          {user ? (
+            claimSuccess ? (
+              <div className="flex items-center gap-2 text-[#B8441A]">
+                <CheckCircle2 size={16} /> {claimSuccess}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-mono text-base font-bold text-foreground">
-                      {result.trackingNo}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => navigator.clipboard.writeText(result.trackingNo)}
-                      className="p-1 rounded-lg hover:bg-foreground/5 text-foreground/30 hover:text-foreground/60 transition-colors"
-                    >
-                      <Copy size={14} />
-                    </button>
-                  </div>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={STATUS_COLORS[result.status] ?? 'default'}
-                    className="mt-1.5"
-                  >
-                    {STATUS_LABELS[result.status] || result.status}
-                  </Chip>
+                  <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
+                  <p className="mt-0.5 text-sm text-foreground/60">
+                    Link it to your account for email and WhatsApp updates.
+                  </p>
                 </div>
+                <Button
+                  isDisabled={claimMutation.isPending}
+                  isPending={claimMutation.isPending}
+                  onPress={handleClaim}
+                  size="sm"
+                  className={btnClass}
+                >
+                  <Link2 size={14} />
+                  {claimMutation.isPending ? 'Linking...' : 'Link to my account'}
+                </Button>
               </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {(result.origin || result.destination) && (
-                <div className="flex items-center gap-2 text-foreground/60">
-                  <MapPin size={14} className="text-brand-accent/60 shrink-0" />
-                  <span>
-                    {result.origin || '?'} → {result.destination || '?'}
-                  </span>
-                </div>
-              )}
-              {result.lastTrackedAt && (
-                <div className="flex items-center gap-2 text-foreground/60">
-                  <Clock size={14} className="text-brand-accent/60 shrink-0" />
-                  <span>Last updated {new Date(result.lastTrackedAt).toLocaleDateString()}</span>
-                </div>
-              )}
-            </div>
-
-            {result.estimatedDelivery && (
-              <div className="mt-4 p-3 rounded-xl bg-foreground/[0.02] border border-foreground/5">
-                <p className="font-medium text-foreground">
-                  Estimated delivery: {new Date(result.estimatedDelivery).toLocaleDateString()}
+            )
+          ) : (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Is this your shipment?</h2>
+                <p className="mt-0.5 text-sm text-foreground/60">
+                  Claim it to get notified on every status change.
                 </p>
               </div>
-            )}
-            {result.actualDelivery && (
-              <div className="mt-2 p-3 rounded-xl bg-green-50 border border-green-100">
-                <p className="font-medium text-green-700">
-                  Delivered on: {new Date(result.actualDelivery).toLocaleDateString()}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {!result.claimed && (
-            <div className={cardClass}>
-              {user ? (
-                claimSuccess ? (
-                  <div className="flex items-center gap-2 text-[#B8441A]">
-                    <CheckCircle2 size={16} /> {claimSuccess}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-sm font-semibold text-foreground">
-                        Is this your shipment?
-                      </h2>
-                      <p className="text-foreground/60 mt-0.5">
-                        Link to receive updates on status changes.
-                      </p>
-                    </div>
-                    <Button
-                      isDisabled={claimMutation.isPending}
-                      isPending={claimMutation.isPending}
-                      onPress={handleClaim}
-                      size="sm"
-                      className={btnClass}
-                    >
-                      <Link2 size={14} />
-                      {claimMutation.isPending ? 'Linking...' : 'Link'}
-                    </Button>
-                  </div>
-                )
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">
-                      Is this your shipment?
-                    </h2>
-                    <p className="text-foreground/60 mt-0.5">
-                      Claim to get notified on status changes.
-                    </p>
-                  </div>
-                  <a
-                    href={`/claim?trackingNo=${trackingNo}`}
-                    className={`inline-flex items-center gap-1.5 ${btnClass} px-4 py-2 rounded-xl text-sm font-semibold transition-colors`}
-                  >
-                    <Link2 size={14} /> Claim
-                  </a>
-                </div>
-              )}
-              {claimError && <p className="mt-3 text-red-500">{claimError}</p>}
+              <a
+                href={`/claim?trackingNo=${trackingNo}`}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${btnClass}`}
+              >
+                <Link2 size={14} /> Claim shipment
+              </a>
             </div>
           )}
+          {claimError && <p className="mt-3 text-sm text-red-500">{claimError}</p>}
+        </div>
+      )}
 
-          <div className={cardClass}>
-            <div className="flex items-center gap-2 mb-6">
-              <span className="w-6 h-px bg-brand-accent" />
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Tracking History
-              </h2>
-            </div>
-            {result.events.length === 0 ? (
-              <p className="text-foreground/60 text-center py-8">No tracking events yet.</p>
-            ) : (
-              <div className="relative">
-                {result.events.map((event, i) => (
-                  <div
-                    key={`${event.eventTime}-${event.description ?? ''}`}
-                    className="flex gap-4 pb-6 relative last:pb-0"
-                  >
-                    {i < result.events.length - 1 && (
-                      <div className="absolute left-[9px] top-5 bottom-0 w-0.5 bg-foreground/5" />
-                    )}
-                    <div className="flex flex-col items-center shrink-0">
-                      <div
-                        className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
-                          i === 0
-                            ? 'border-brand-accent bg-brand-accent'
-                            : 'border-foreground/10 bg-white'
-                        }`}
-                      >
-                        {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0 -mt-0.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-foreground">
-                          {STATUS_LABELS[event.status] || event.status}
-                        </p>
-                        <span className="text-sm text-foreground/50">
-                          {new Date(event.eventTime).toLocaleString()}
-                        </span>
-                      </div>
-                      {event.description && (
-                        <p className="text-foreground/70 mt-1">{event.description}</p>
-                      )}
-                      {event.location && (
-                        <p className="text-foreground/50 mt-0.5">{event.location}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      ) : null}
+      <div className="rounded-3xl border border-foreground/5 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-6 flex items-center gap-2">
+          <span className="h-px w-6 bg-brand-accent" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">Tracking history</h2>
+        </div>
+        <TrackTimeline events={result.events} />
+      </div>
     </div>
   );
 }

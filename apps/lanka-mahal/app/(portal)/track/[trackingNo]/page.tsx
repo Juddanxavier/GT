@@ -1,51 +1,62 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Suspense } from 'react';
-import { motion } from 'framer-motion';
-import { Spinner } from '@heroui/react';
+import { Suspense, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { PageHero } from '@/components/page/page-hero';
+import { PageSection, PageShell } from '@/components/page/page-section';
+import { TrackSidebar } from '@/components/track/track-sidebar';
 import { TrackingDetail } from '@/components/tracking-detail';
-import { LeftSidebar, RightSidebar } from '@/components/sidebar';
+import { images } from '@/lib/images';
 
-function TrackDetailPageInner(): ReactNode {
+function TrackDetailContent(): ReactNode {
+  const params = useParams();
+  const router = useRouter();
+  const trackingNo = params.trackingNo as string;
+  const [searchValue, setSearchValue] = useState('');
+
   return (
-    <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden min-h-[450px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
-        <div className="absolute inset-0">
-          <img src="/images/trackbg.png" alt="" className="w-full h-full object-cover hidden md:block" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
-        </div>
-        <div className="relative z-10 px-8 md:px-16 lg:px-24 w-full">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#F59E0B] mb-3">
-              <span className="w-6 h-px bg-[#F59E0B]" />
-              Tracking
-            </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">Track Your Shipment</h1>
-            <p className="text-base text-white/75 max-w-md mt-4">Real-time updates for your shipment from pickup to delivery.</p>
-          </motion.div>
-        </div>
-      </section>
+    <PageShell>
+      <PageHero
+        image={images.track}
+        eyebrow="Shipment tracking"
+        title={<span className="font-mono">{trackingNo}</span>}
+        subtitle="Live status and full tracking history below."
+      />
 
-      <div className="px-4 sm:px-6 lg:px-8 py-10 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-[220px_1fr_260px] gap-6">
-          <LeftSidebar variant="public" />
-          <main className="min-w-0">
-            <TrackingDetail />
-          </main>
-          <RightSidebar />
+      <PageSection>
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10 xl:gap-12">
+          <div className="order-2 lg:order-1 lg:col-span-4">
+            <TrackSidebar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              onSearchSubmit={(v) => router.push(`/track/${encodeURIComponent(v)}`)}
+              searchTitle="Track another"
+              searchPlaceholder="Another tracking number"
+            />
+          </div>
+
+          <div className="order-1 lg:order-2 lg:col-span-8">
+            <TrackingDetail hideBack />
+          </div>
         </div>
-      </div>
-    </div>
+      </PageSection>
+    </PageShell>
   );
 }
 
 export default function TrackDetailPage(): ReactNode {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-[40vh]"><Spinner size="lg" /></div>}>
-        <TrackDetailPageInner />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[40vh] items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-accent/20 border-t-brand-accent" />
+          </div>
+        }
+      >
+        <TrackDetailContent />
       </Suspense>
     </ErrorBoundary>
   );
