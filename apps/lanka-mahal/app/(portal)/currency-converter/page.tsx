@@ -94,7 +94,7 @@ export default function CurrencyConverterPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/currencyhero.png"
+        image="/images/currencyhero.webp"
         eyebrow="Useful Tools"
         title="Currency Converter"
         subtitle="Convert currencies using real-time exchange rates."

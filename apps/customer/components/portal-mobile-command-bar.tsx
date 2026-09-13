@@ -9,7 +9,6 @@ import { PortalMobileDrawer } from '@/components/portal-mobile-drawer';
 import { SiteLogo } from '@/components/site-logo';
 
 type PortalMobileCommandBarProps = {
-  hasMarquee: boolean;
   heroMode: boolean;
   isSignedIn: boolean;
   userName?: string | null;
@@ -51,7 +50,6 @@ function MobileIconButton({
 }
 
 export function PortalMobileCommandBar({
-  hasMarquee,
   heroMode,
   isSignedIn,
   userName,
@@ -62,18 +60,16 @@ export function PortalMobileCommandBar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const barTop = hasMarquee ? 'top-10' : 'top-0';
-
   return (
     <>
       <header
-        className={`portal-mobile-command-bar fixed inset-x-0 z-[70] transition-all duration-300 lg:hidden ${barTop} ${
+        className={`portal-mobile-command-bar w-full transition-all duration-300 lg:hidden ${
           heroMode ? 'portal-mobile-command-bar--hero' : ''
         }`}
       >
         <div className="flex h-14 items-center gap-2 border-b border-white/10 px-3 sm:px-4">
           <a href="/" className="mr-1 shrink-0" aria-label="Home">
-            <SiteLogo height={32} withBackdrop={heroMode} />
+            <SiteLogo height={40} withBackdrop={heroMode} />
           </a>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">

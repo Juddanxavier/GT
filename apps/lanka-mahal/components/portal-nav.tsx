@@ -31,10 +31,12 @@ import { isDashboardPath } from '@/lib/portal-paths';
 import { useUnreadCount } from '@/lib/queries';
 import { connectSocket, disconnectSocket } from '@/lib/realtime';
 import { useCustomerSession } from '@/lib/use-customer-session';
+import { useTenantConfig } from '@/lib/use-tenant-config';
 
-export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): ReactNode {
+export function PortalNav(): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
+  const config = useTenantConfig();
   const { user } = useCustomerSession();
   const { data: session } = authClient.useSession();
   const { data: unreadData } = useUnreadCount();
@@ -145,19 +147,16 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
         />
       ) : (
         <PortalMobileCommandBar
-          hasMarquee={hasMarquee}
           heroMode={heroMode}
           isSignedIn={!!session}
           userName={user?.name}
           unreadCount={badge}
         />
       )}
-    <header
-      className={`hidden lg:block fixed left-0 w-full z-[70] transition-all duration-300 ${hasMarquee ? 'top-10' : 'top-0'} ${navBg}`}
-    >
+    <header className={`hidden lg:block w-full transition-all duration-300 ${navBg}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-        <a href="/" className="ml-2 flex items-center">
-          <SiteLogo height={48} priority withBackdrop={!lightNav && !scrolled} />
+        <a href="/" className="ml-2 flex items-center" aria-label={config.name}>
+          <SiteLogo height={48} priority withBackdrop={heroMode} />
         </a>
 
         <div className="hidden lg:flex items-center gap-6">

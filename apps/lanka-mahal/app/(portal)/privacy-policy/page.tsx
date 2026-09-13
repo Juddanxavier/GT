@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/contact.png"
+        image="/images/contact.webp"
         title="Privacy Policy"
         subtitle="Last updated: July 2026"
       />

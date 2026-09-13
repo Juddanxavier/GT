@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { HeroImageOverlays } from '@/components/page/hero-image-overlays';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Building2, Clock, Users, Package, Globe, ArrowUpRight, ChevronDown, PhoneCall, Navigation } from 'lucide-react';
 
@@ -181,14 +182,14 @@ export default function BranchesPage(): ReactNode {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="relative overflow-hidden min-h-[520px] md:min-h-[600px] flex items-center bg-[#1a1a2e]">
+      <section className="relative flex min-h-[520px] items-center overflow-hidden bg-brand-navy md:min-h-[600px]">
         <div className="absolute inset-0">
           <img
-            src="/images/branchesbg.png"
+            src="/images/branchesbg.webp"
             alt=""
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/45 to-[#1a1a2e]/15" />
+          <HeroImageOverlays />
         </div>
         <div className="relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 w-full py-20">
           <motion.div
@@ -298,7 +299,7 @@ export default function BranchesPage(): ReactNode {
 
               <div className="relative overflow-hidden rounded-2xl border-t border-border pt-8">
                 <div className="absolute inset-0 -mx-8 md:-mx-16 lg:-mx-24 -mb-16 md:-mb-20">
-                  <img src="/images/cta.png" alt="" className="w-full h-full object-cover" />
+                  <img src="/images/cta.webp" alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-[#1a1a2e]/80" />
                 </div>
                 <div className="relative z-10 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 p-6 md:p-8">

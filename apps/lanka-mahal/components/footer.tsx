@@ -34,7 +34,6 @@ const footerLinks = [
       { href: '/air-freight', label: 'Air Freight' },
       { href: '/ocean-freight', label: 'Ocean Freight' },
       { href: '/check-price', label: 'Check Price' },
-      { href: '/rate-cards', label: 'Rate Cards' },
       { href: '/track', label: 'Track Shipment' },
     ],
   },

@@ -8,7 +8,7 @@ export default function TermsConditionsPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/contact.png"
+        image="/images/contact.webp"
         title="Terms & Conditions"
         subtitle="Last updated: July 2026"
       />

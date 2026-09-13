@@ -112,7 +112,7 @@ export default function PickupPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/heroparcel.png"
+        image="/images/heroparcel.webp"
         eyebrow="Schedule Pickup"
         title={
           <>

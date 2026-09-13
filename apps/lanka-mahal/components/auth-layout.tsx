@@ -38,7 +38,7 @@ export function AuthLayout({
       <div className="relative z-10 flex min-h-[100svh] flex-col">
         <header className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
           <a href="/" className="flex items-center">
-            <SiteLogo height={48} showName nameClassName="hidden font-semibold text-brand-navy sm:inline" />
+            <SiteLogo height={48} />
           </a>
           <a
             href="/"

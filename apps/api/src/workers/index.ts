@@ -14,7 +14,7 @@ import { resolve } from 'node:path';
 
 const lankaLogoDataUri: string | null = (() => {
   try {
-    const buf = readFileSync(resolve(process.cwd(), 'public', 'lanka-mahal-logo.png'));
+    const buf = readFileSync(resolve(process.cwd(), 'public', 'lanka-mahal-logo.webp'));
     return `data:image/png;base64,${buf.toString('base64')}`;
   } catch {
     return null;

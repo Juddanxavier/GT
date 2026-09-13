@@ -198,7 +198,7 @@ export default function FaqPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/contact.png"
+        image="/images/contact.webp"
         eyebrow="Help Center"
         title={
           <>

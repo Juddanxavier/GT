@@ -1,3 +1,3 @@
 export const images = {
-  logo: '/images/logo.svg',
+  logo: '/images/logo.webp',
 } as const;

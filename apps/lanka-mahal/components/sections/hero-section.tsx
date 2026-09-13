@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useTenantConfig } from '@/lib/use-tenant-config';
+import { HeroImageOverlays } from '@/components/page/hero-image-overlays';
 import { images } from '@/lib/images';
 
 const container: Variants = {
@@ -48,8 +49,7 @@ export function HeroSection(): ReactNode {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/75 via-brand-navy/45 to-brand-navy/25" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_20%,rgba(245,158,11,0.12),transparent)]" />
+        <HeroImageOverlays />
       </div>
 
       <MotionConfig reducedMotion="user">

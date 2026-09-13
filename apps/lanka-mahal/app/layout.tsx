@@ -8,9 +8,7 @@ const manrope = Manrope({
   variable: '--font-manrope',
 });
 
-import { Footer } from '@/components/footer';
-import { MarqueeBar } from '@/components/marquee-bar';
-import { PortalNav } from '@/components/portal-nav';
+import { GajanLayout } from '@/components/gajan/layout';
 import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
@@ -41,17 +39,17 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'Lanka Mahal',
-    images: [{ url: '/images/logo.png' }],
+    images: [{ url: '/images/logo.webp' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lanka Mahal — International Courier',
     description:
       'Express air freight and ocean freight from Sri Lanka to Europe and 200+ destinations, with doorstep pickup and real-time tracking.',
-    images: ['/images/logo.png'],
+    images: ['/images/logo.webp'],
   },
   icons: {
-    icon: '/images/logo.png',
+    icon: '/images/logo.webp',
   },
 };
 
@@ -67,10 +65,7 @@ export default async function RootLayout({
         style={{ fontFamily: 'var(--font-manrope)' }}
       >
         <Providers>
-          <MarqueeBar />
-          <PortalNav />
-          {children}
-          <Footer />
+          <GajanLayout>{children}</GajanLayout>
         </Providers>
       </body>
     </html>

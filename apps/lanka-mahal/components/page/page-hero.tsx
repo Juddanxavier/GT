@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
+import { HeroImageOverlays } from '@/components/page/hero-image-overlays';
 
 interface PageHeroProps {
   image: string;
@@ -29,8 +30,7 @@ export function PageHero({
     >
       <div className="absolute inset-0">
         <Image src={image} alt="" fill sizes="100vw" className="object-cover" priority />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/75 via-brand-navy/45 to-brand-navy/25" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_20%,rgba(245,158,11,0.1),transparent)]" />
+        <HeroImageOverlays />
       </div>
 
       <div className="relative z-10 w-full px-5 pb-16 pt-28 sm:px-8 md:px-12 md:pt-32 lg:px-16">

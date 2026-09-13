@@ -69,7 +69,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                 </p>
 
                 <Image
-                  src="/images/volumehero.png"
+                  src="/images/volumehero.webp"
                   alt=""
                   width={1774}
                   height={887}
@@ -218,7 +218,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
 
                 <div className="mt-8">
                   <Image
-                    src="/images/volume.png"
+                    src="/images/volume.webp"
                     alt="Volumetric weight illustration"
                     width={1677}
                     height={938}

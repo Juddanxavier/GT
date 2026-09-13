@@ -25,6 +25,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { PortalMobileCommandBar } from '@/components/portal-mobile-command-bar';
 import { PortalOpsCommandBar } from '@/components/portal-ops-command-bar';
+import { SiteLogo } from '@/components/site-logo';
 import { authClient } from '@/lib/auth-client';
 import { isDashboardPath } from '@/lib/portal-paths';
 import { useUnreadCount } from '@/lib/queries';
@@ -32,7 +33,7 @@ import { connectSocket, disconnectSocket } from '@/lib/realtime';
 import { useCustomerSession } from '@/lib/use-customer-session';
 import { useTenantConfig } from '@/lib/use-tenant-config';
 
-export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): ReactNode {
+export function PortalNav(): ReactNode {
   const router = useRouter();
   const pathname = usePathname();
   const config = useTenantConfig();
@@ -146,21 +147,16 @@ export function PortalNav({ hasMarquee = true }: { hasMarquee?: boolean }): Reac
         />
       ) : (
         <PortalMobileCommandBar
-          hasMarquee={hasMarquee}
           heroMode={heroMode}
           isSignedIn={!!session}
           userName={user?.name}
           unreadCount={badge}
         />
       )}
-    <header
-      className={`hidden lg:block fixed left-0 w-full z-[70] transition-all duration-300 ${hasMarquee ? 'top-10' : 'top-0'} ${navBg}`}
-    >
+    <header className={`hidden lg:block w-full transition-all duration-300 ${navBg}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-        <a href="/" className="flex items-center gap-2 ml-2">
-          <span className={`text-lg sm:text-xl font-bold tracking-tight ${tc.logo}`}>
-            {config.shortName}
-          </span>
+        <a href="/" className="ml-2 flex items-center" aria-label={config.name}>
+          <SiteLogo height={48} priority withBackdrop={heroMode} />
         </a>
 
         <div className="hidden lg:flex items-center gap-6">

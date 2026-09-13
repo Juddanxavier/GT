@@ -54,10 +54,10 @@ export function PortalOpsCommandBar({
 
   return (
     <>
-      <header className="portal-ops-command-bar fixed inset-x-0 top-0 z-[70] lg:hidden">
+      <header className="portal-ops-command-bar w-full lg:hidden">
         <div className="flex h-14 items-center gap-2 border-b border-white/10 px-3 sm:px-4">
           <a href="/" className="mr-1 shrink-0" aria-label="Home">
-            <SiteLogo height={32} />
+            <SiteLogo height={40} />
           </a>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">

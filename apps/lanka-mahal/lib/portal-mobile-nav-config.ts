@@ -43,7 +43,6 @@ export const PUBLIC_PAGE_TITLES: Record<string, string> = {
   '/volumetric-calculator': 'Volumetric Calculator',
   '/currency-converter': 'Currency Converter',
   '/check-price': 'Check Price',
-  '/rate-cards': 'Rate Cards',
   '/claim': 'Claim Shipment',
   '/privacy-policy': 'Privacy',
   '/terms-conditions': 'Terms',
@@ -83,7 +82,6 @@ export const MOBILE_NAV_SECTIONS: MobileNavSection[] = [
       { label: 'Air Freight', href: '/air-freight', icon: Plane },
       { label: 'Ocean Freight', href: '/ocean-freight', icon: Ship },
       { label: 'Check Price', href: '/check-price', icon: DollarSign },
-      { label: 'Rate Cards', href: '/rate-cards', icon: FileText },
     ],
   },
   {

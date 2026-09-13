@@ -12,7 +12,7 @@ export default function NotFound(): ReactNode {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-navy">
       <div className="absolute inset-0">
         <Image
-          src="/images/heroparcel.png"
+          src="/images/heroparcel.webp"
           alt=""
           fill
           sizes="100vw"

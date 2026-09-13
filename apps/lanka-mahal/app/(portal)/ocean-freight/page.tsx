@@ -1,3 +1,5 @@
+/** @format */
+
 'use client';
 
 import { motion } from 'framer-motion';
@@ -105,35 +107,36 @@ export default function OceanFreightPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/ctabout.png"
-        eyebrow="Ocean Freight"
+        image='/images/support.webp'
+        eyebrow='Ocean Freight'
         title={
           <>
             Ship by sea
             <br />
-            <span className="text-brand-accent">across the globe.</span>
+            <span className='text-brand-accent'>across the globe.</span>
           </>
         }
-        subtitle="Affordable LCL & FCL shipping from India to Canada, UK, Singapore, Malaysia, and Sri Lanka."
+        subtitle='Affordable LCL & FCL shipping from India to Canada, UK, Singapore, Malaysia, and Sri Lanka.'
         tall
       />
 
       <PageSection>
-        <div className="mx-auto max-w-5xl space-y-16 md:space-y-20">
-          <p className="text-lg leading-relaxed text-foreground/90">
-            Shipping large or heavy cargo internationally doesn&apos;t have to be complicated or
-            expensive. Ocean freight is the smartest way to move bulk goods across borders. We take
-            care of everything from India&apos;s major ports to doorsteps across{' '}
+        <div className='mx-auto max-w-5xl space-y-16 md:space-y-20'>
+          <p className='text-lg leading-relaxed text-foreground/90'>
+            Shipping large or heavy cargo internationally doesn&apos;t have to
+            be complicated or expensive. Ocean freight is the smartest way to
+            move bulk goods across borders. We take care of everything from
+            India&apos;s major ports to doorsteps across{' '}
             <strong>Canada, UK, Singapore, Malaysia, and Sri Lanka</strong>.
           </p>
 
           <div>
             <SectionIntro
-              eyebrow="Routes & Transit"
-              title="Our ocean freight routes"
-              subtitle="Fixed schedules, transparent transit times, and full port-to-door support on every lane."
+              eyebrow='Routes & Transit'
+              title='Our ocean freight routes'
+              subtitle='Fixed schedules, transparent transit times, and full port-to-door support on every lane.'
             />
-            <div className="mt-10 space-y-4">
+            <div className='mt-10 space-y-4'>
               {routes.map((r, i) => (
                 <motion.div
                   key={r.country}
@@ -141,26 +144,31 @@ export default function OceanFreightPage(): ReactNode {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.06, duration: 0.3 }}
-                  className="premium-card premium-card-hover p-5 md:p-6"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-black/5 bg-brand-accent/5 text-xl">
+                  className='premium-card premium-card-hover p-5 md:p-6'>
+                  <div className='flex items-start gap-4'>
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-black/5 bg-brand-accent/5 text-xl'>
                       {r.flag}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <h3 className="text-xl font-semibold text-foreground">{r.country}</h3>
-                        <span className="rounded-full bg-brand-accent/10 px-3 py-0.5 text-sm font-semibold text-brand-accent">
+                    <div className='min-w-0 flex-1'>
+                      <div className='mb-1 flex flex-wrap items-center gap-x-4 gap-y-1'>
+                        <h3 className='text-xl font-semibold text-foreground'>
+                          {r.country}
+                        </h3>
+                        <span className='rounded-full bg-brand-accent/10 px-3 py-0.5 text-sm font-semibold text-brand-accent'>
                           {r.transit}
                         </span>
                       </div>
-                      <p className="mb-2 leading-relaxed text-foreground/80">{r.desc}</p>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-foreground/70">
-                        <span className="flex items-center gap-1.5">
-                          <MapPin size={14} className="text-brand-accent" /> {r.port}
+                      <p className='mb-2 leading-relaxed text-foreground/80'>
+                        {r.desc}
+                      </p>
+                      <div className='flex flex-wrap gap-x-6 gap-y-1 text-sm text-foreground/70'>
+                        <span className='flex items-center gap-1.5'>
+                          <MapPin size={14} className='text-brand-accent' />{' '}
+                          {r.port}
                         </span>
-                        <span className="flex items-center gap-1.5">
-                          <Ship size={14} className="text-brand-accent" /> {r.via}
+                        <span className='flex items-center gap-1.5'>
+                          <Ship size={14} className='text-brand-accent' />{' '}
+                          {r.via}
                         </span>
                       </div>
                     </div>
@@ -172,11 +180,11 @@ export default function OceanFreightPage(): ReactNode {
 
           <div>
             <SectionIntro
-              eyebrow="Container Solutions"
-              title="LCL & FCL container options"
+              eyebrow='Container Solutions'
+              title='LCL & FCL container options'
               subtitle="Whether you're sending a few packages or a full container load, we'll find the right fit."
             />
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <div className='mt-10 grid gap-6 md:grid-cols-2'>
               {[
                 {
                   title: 'Less than Container Load (LCL)',
@@ -207,50 +215,68 @@ export default function OceanFreightPage(): ReactNode {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1, duration: 0.4 }}
-                  className="premium-card p-6"
-                >
-                  <h3 className="mb-2 text-lg font-semibold text-foreground">{option.title}</h3>
-                  <p className="mb-4 leading-relaxed text-foreground/80">{option.desc}</p>
-                  <div className="mb-4 space-y-1.5">
+                  className='premium-card p-6'>
+                  <h3 className='mb-2 text-lg font-semibold text-foreground'>
+                    {option.title}
+                  </h3>
+                  <p className='mb-4 leading-relaxed text-foreground/80'>
+                    {option.desc}
+                  </p>
+                  <div className='mb-4 space-y-1.5'>
                     {option.steps.map((s) => (
-                      <div key={s} className="flex items-start gap-2 text-sm text-foreground/80">
-                        <CheckCircle size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                      <div
+                        key={s}
+                        className='flex items-start gap-2 text-sm text-foreground/80'>
+                        <CheckCircle
+                          size={16}
+                          className='mt-0.5 shrink-0 text-emerald-500'
+                        />
                         <span>{s}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="border-t border-border pt-3 text-sm text-foreground/80">
+                  <div className='border-t border-border pt-3 text-sm text-foreground/80'>
                     <strong>Best for:</strong> {option.best}
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            <div className="premium-card mt-8 overflow-hidden">
-              <div className="border-b border-border p-5">
-                <h3 className="text-lg font-semibold text-foreground">Available container sizes</h3>
+            <div className='premium-card mt-8 overflow-hidden'>
+              <div className='border-b border-border p-5'>
+                <h3 className='text-lg font-semibold text-foreground'>
+                  Available container sizes
+                </h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className='overflow-x-auto'>
+                <table className='w-full'>
                   <thead>
-                    <tr className="border-b border-border bg-brand-cream/50">
-                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80">
+                    <tr className='border-b border-border bg-brand-cream/50'>
+                      <th className='px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80'>
                         Size
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80">
+                      <th className='px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80'>
                         Capacity
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80">
+                      <th className='px-5 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground/80'>
                         Best For
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {containerOptions.map((c) => (
-                      <tr key={c.size} className="border-b border-border last:border-b-0">
-                        <td className="px-5 py-3 font-semibold text-foreground">{c.size}</td>
-                        <td className="px-5 py-3 text-foreground/80">{c.capacity}</td>
-                        <td className="px-5 py-3 text-foreground/80">{c.best}</td>
+                      <tr
+                        key={c.size}
+                        className='border-b border-border last:border-b-0'>
+                        <td className='px-5 py-3 font-semibold text-foreground'>
+                          {c.size}
+                        </td>
+                        <td className='px-5 py-3 text-foreground/80'>
+                          {c.capacity}
+                        </td>
+                        <td className='px-5 py-3 text-foreground/80'>
+                          {c.best}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -259,7 +285,7 @@ export default function OceanFreightPage(): ReactNode {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
             {features.map((f, i) => (
               <motion.div
                 key={f.title}
@@ -267,35 +293,39 @@ export default function OceanFreightPage(): ReactNode {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05, duration: 0.3 }}
-                className="premium-card premium-card-hover p-5 text-center"
-              >
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-accent/10 text-brand-accent">
+                className='premium-card premium-card-hover p-5 text-center'>
+                <div className='mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-accent/10 text-brand-accent'>
                   <f.icon size={20} />
                 </div>
-                <h3 className="mb-1 text-base font-semibold text-foreground">{f.title}</h3>
-                <p className="text-sm leading-relaxed text-muted">{f.desc}</p>
+                <h3 className='mb-1 text-base font-semibold text-foreground'>
+                  {f.title}
+                </h3>
+                <p className='text-sm leading-relaxed text-muted'>{f.desc}</p>
               </motion.div>
             ))}
           </div>
 
-          <div className="premium-card relative overflow-hidden bg-gradient-to-br from-brand-navy to-[#152a45] p-8 text-center md:p-12">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-accent/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-brand-accent/10 blur-3xl" />
-            <div className="relative z-10">
-              <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                Ready to ship <span className="text-brand-accent">by ocean?</span>
+          <div className='premium-card relative overflow-hidden bg-gradient-to-br from-brand-navy to-[#152a45] p-8 text-center md:p-12'>
+            <div className='pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-accent/20 blur-3xl' />
+            <div className='pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-brand-accent/10 blur-3xl' />
+            <div className='relative z-10'>
+              <h2 className='text-3xl font-semibold tracking-tight text-white sm:text-4xl'>
+                Ready to ship{' '}
+                <span className='text-brand-accent'>by ocean?</span>
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-white/70">
-                Get an instant quote or speak to our freight experts to plan your next shipment.
+              <p className='mx-auto mt-4 max-w-lg text-base leading-relaxed text-white/70'>
+                Get an instant quote or speak to our freight experts to plan
+                your next shipment.
               </p>
-              <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <a href="/check-price" className="premium-btn inline-flex items-center gap-2">
+              <div className='mt-8 flex flex-wrap justify-center gap-3'>
+                <a
+                  href='/check-price'
+                  className='premium-btn inline-flex items-center gap-2'>
                   Get a Quote <ArrowRight size={16} />
                 </a>
                 <a
-                  href="/contact"
-                  className="premium-btn-ghost inline-flex items-center gap-2 border-white/25 text-white hover:bg-white/10"
-                >
+                  href='/contact'
+                  className='premium-btn-ghost inline-flex items-center gap-2 border-white/25 text-white hover:bg-white/10'>
                   Speak to an Expert
                 </a>
               </div>

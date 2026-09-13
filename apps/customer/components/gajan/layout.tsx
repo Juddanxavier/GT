@@ -29,19 +29,21 @@ export function GajanLayout({ children }: { children: ReactNode }): ReactNode {
     return <>{children}</>;
   }
 
-  const marqueeActive = showMarquee && marqueeVisible;
-
   return (
     <>
-      {showMarquee && (
-        <div
-          className={`fixed top-0 left-0 z-[55] w-full transition-transform duration-300 ${marqueeVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'}`}
-          aria-hidden={!marqueeVisible}
-        >
-          <MarqueeBar />
-        </div>
-      )}
-      <PortalNav hasMarquee={marqueeActive} />
+      <div className="fixed top-0 left-0 right-0 z-[70]">
+        {showMarquee && (
+          <div
+            className={`overflow-hidden transition-[max-height] duration-300 ease-out ${
+              marqueeVisible ? 'max-h-10' : 'max-h-0'
+            }`}
+            aria-hidden={!marqueeVisible}
+          >
+            <MarqueeBar />
+          </div>
+        )}
+        <PortalNav />
+      </div>
       {children}
       <Footer />
     </>

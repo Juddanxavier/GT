@@ -20,7 +20,7 @@ export default function ContactPage(): ReactNode {
   return (
     <PageShell>
       <PageHero
-        image="/images/contact.png"
+        image="/images/contact.webp"
         eyebrow="Contact Us"
         title={
           <>
