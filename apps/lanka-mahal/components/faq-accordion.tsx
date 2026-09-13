@@ -10,7 +10,7 @@ export interface FaqItem {
 }
 
 interface FaqAccordionProps {
-  items: FaqItem[];
+  items: readonly FaqItem[];
   openKeys: Record<string, boolean>;
   onToggle: (key: string) => void;
   keyPrefix?: string;
