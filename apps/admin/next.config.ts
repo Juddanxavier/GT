@@ -6,12 +6,6 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
 
 const nextConfig: NextConfig = {
   transpilePackages: ['better-auth'],
-  async rewrites() {
-    const api = process.env.NEXT_PUBLIC_API_URL;
-    return api
-      ? [{ source: '/api/auth/:path*', destination: `${api}/api/auth/:path*` }]
-      : [];
-  },
   async headers() {
     return [
       {
