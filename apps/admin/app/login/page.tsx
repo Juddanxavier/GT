@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
 import { z } from 'zod';
 import { Button, Input, InputGroup, TextField, Label, FieldError } from '@heroui/react';
 import { Eye, EyeOff } from 'lucide-react';
@@ -8,7 +8,6 @@ import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { usePageTitle } from '@/lib/use-page-title';
 
 const loginSchema = z.object({
@@ -19,7 +18,6 @@ const loginSchema = z.object({
 type FieldErrors = Partial<Record<keyof z.infer<typeof loginSchema>, string>>;
 
 function LoginForm() {
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +44,7 @@ function LoginForm() {
     try {
       const { error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) setSubmitError(friendlyError(signInError.message || 'Invalid email or password'));
-      else window.location.href = searchParams.get('next') || '/';
+      else window.location.href = '/';
     } catch { setSubmitError('Connection failed. Check your network and try again.'); }
     finally { setLoading(false); }
   }
@@ -110,5 +108,5 @@ function LoginForm() {
 
 export default function LoginPage() {
   usePageTitle('Sign In');
-  return (<ErrorBoundary><Suspense><LoginForm /></Suspense></ErrorBoundary>);
+  return (<ErrorBoundary><LoginForm /></ErrorBoundary>);
 }
