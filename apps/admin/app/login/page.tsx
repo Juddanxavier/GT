@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { z } from 'zod';
 import { Button, Input, InputGroup, TextField, Label, FieldError } from '@heroui/react';
 import { Eye, EyeOff } from 'lucide-react';
@@ -110,5 +110,5 @@ function LoginForm() {
 
 export default function LoginPage() {
   usePageTitle('Sign In');
-  return (<ErrorBoundary><LoginForm /></ErrorBoundary>);
+  return (<ErrorBoundary><Suspense><LoginForm /></Suspense></ErrorBoundary>);
 }
