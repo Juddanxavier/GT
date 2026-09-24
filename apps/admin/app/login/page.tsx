@@ -8,6 +8,7 @@ import { authClient } from '@/lib/auth-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthLayout } from '@/components/auth-layout';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { usePageTitle } from '@/lib/use-page-title';
 
 const loginSchema = z.object({
@@ -18,6 +19,7 @@ const loginSchema = z.object({
 type FieldErrors = Partial<Record<keyof z.infer<typeof loginSchema>, string>>;
 
 function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +46,7 @@ function LoginForm() {
     try {
       const { error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) setSubmitError(friendlyError(signInError.message || 'Invalid email or password'));
-      else window.location.href = '/';
+      else window.location.href = searchParams.get('next') || '/';
     } catch { setSubmitError('Connection failed. Check your network and try again.'); }
     finally { setLoading(false); }
   }
