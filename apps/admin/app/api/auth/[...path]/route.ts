@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,20 +25,16 @@ export async function HEAD(req: NextRequest) {
 }
 
 async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const path = pathname.replace(/^\/api\/auth/, '/api/auth');
-  const target = `${API_BASE}${path}${req.nextUrl.search}`;
+  const { pathname, search } = req.nextUrl;
+  const target = `${API_BASE}${pathname}${search}`;
 
   const headers = new Headers(req.headers);
   headers.set('host', new URL(API_BASE).host);
-  headers.delete('cookie');
 
-  const cookie = req.headers.get('cookie');
-  if (cookie) headers.set('cookie', cookie);
-
-  const body = req.body && req.method !== 'GET' && req.method !== 'HEAD'
-    ? await req.arrayBuffer()
-    : undefined;
+  let body: BodyInit | undefined;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    body = await req.arrayBuffer();
+  }
 
   const upstream = await fetch(target, {
     method: req.method,
@@ -59,7 +55,7 @@ async function proxy(req: NextRequest) {
     }
   }
 
-  return new NextResponse(upstream.body, {
+  return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: resHeaders,
