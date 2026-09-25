@@ -107,7 +107,7 @@ export function OperationalDashboard({
     { label: 'exceptions', value: s.exceptions },
   ];
   if (!isStaff) {
-    ticker.push({ label: 'revenue this month', value: fmt(stats.invoices.revenueThisMonth) });
+    ticker.push({ label: 'revenue this month', value: fmt(stats.invoices?.revenueThisMonth ?? '0') });
   }
 
   const activeKpis: KpiItem[] = [

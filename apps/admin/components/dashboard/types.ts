@@ -19,11 +19,11 @@ export type Stats = {
     byCarrier: { carrier: string; count: number }[];
     byBranch: { branch: string; count: number }[];
   };
-  customers: { total: number; active: number };
-  quotations: { total: number; converted: number; conversionRate: number };
-  invoices: { total: number; revenueThisMonth: string; revenueTotal: string };
+  customers?: { total: number; active: number };
+  quotations?: { total: number; converted: number; conversionRate: number };
+  invoices?: { total: number; revenueThisMonth: string; revenueTotal: string };
   revenuePerMonth: { month: string; revenue: number }[];
-  branches: { total: number };
+  branches?: { total: number };
   alerts: Alert[];
   total?: SuperTotal;
   perTenant?: PerTenant[];

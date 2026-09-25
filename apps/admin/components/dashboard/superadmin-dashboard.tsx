@@ -52,7 +52,7 @@ export function SuperadminDashboard({
     { label: 'in transit', value: t.shipments.inTransit },
     { label: 'delivered today', value: t.shipments.deliveredToday },
     { label: 'exceptions', value: t.shipments.exceptions },
-    { label: 'revenue this month', value: formatCurrency(t.invoices.revenueThisMonth) },
+    { label: 'revenue this month', value: formatCurrency(t?.invoices?.revenueThisMonth ?? '0') },
   ];
 
   const activeKpis: KpiItem[] = [
