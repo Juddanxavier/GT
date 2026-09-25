@@ -1,8 +1,13 @@
 import type { z } from 'zod';
 import { validateResponse } from './validation';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL;
-if (!BASE) throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+function resolveBaseUrl(): string {
+  if (typeof window !== 'undefined') return window.location.origin;
+  if (!API_BASE) throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
+  return API_BASE;
+}
 
 let tenantOverride: string | null = null;
 let branchOverride: string | null = null;
@@ -73,7 +78,7 @@ async function fetchJson<T>(path: string, options?: RequestInit, retries = 1): P
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
     try {
-      const res = await fetch(`${BASE}${path}`, {
+      const res = await fetch(`${resolveBaseUrl()}${path}`, {
         credentials: 'include',
         headers,
         signal: controller.signal,
@@ -117,7 +122,7 @@ async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
-    const res = await fetch(`${BASE}${path}`, { credentials: 'include', headers, signal: controller.signal, ...options });
+    const res = await fetch(`${resolveBaseUrl()}${path}`, { credentials: 'include', headers, signal: controller.signal, ...options });
     const body = await res.json().catch(() => null);
     if (!res.ok) {
       const msg = parseApiError(res.status, body);
