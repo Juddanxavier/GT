@@ -39,7 +39,7 @@ function OnboardForm() {
     async function validateToken() {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/onboard/validate?token=${encodeURIComponent(token!)}`,
+          `/api/onboard/validate?token=${encodeURIComponent(token!)}`,
           { credentials: 'include' },
         );
         const body = await res.json();
@@ -88,7 +88,7 @@ function OnboardForm() {
     setSaving(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/onboard/complete`,
+          `/api/onboard/complete`,
         {
           method: 'POST',
           credentials: 'include',

@@ -135,11 +135,10 @@ export default function InvoicesPage() {
   }
 
   async function downloadPdf(id: string) {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const headers: Record<string, string> = {};
     const tid = getTenantFilter();
     if (tid) headers['X-Tenant-ID'] = tid;
-    const res = await fetch(`${base}/api/invoices/${id}/pdf`, { credentials: 'include', headers });
+    const res = await fetch(`/api/invoices/${id}/pdf`, { credentials: 'include', headers });
     const blob = await res.blob();
     window.open(URL.createObjectURL(blob), '_blank');
   }

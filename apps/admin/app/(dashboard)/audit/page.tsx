@@ -176,7 +176,7 @@ export default function AuditLogPage() {
     if (startDate) params.set('start', startDate);
     if (endDate) params.set('end', endDate);
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/audit-logs/export?${params.toString()}`;
+    const url = `/api/audit-logs/export?${params.toString()}`;
 
     const headers: Record<string, string> = {};
     const tenantId = getTenantFilter();

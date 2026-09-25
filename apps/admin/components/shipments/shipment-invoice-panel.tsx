@@ -40,10 +40,9 @@ export function ShipmentInvoicePanel({
 
   async function viewPdf(invoiceId: string) {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const headers: Record<string, string> = {};
       if (tenantFilter) headers['X-Tenant-ID'] = tenantFilter;
-      const res = await fetch(`${base}/api/invoices/${invoiceId}/pdf`, { credentials: 'include', headers });
+      const res = await fetch(`/api/invoices/${invoiceId}/pdf`, { credentials: 'include', headers });
       if (!res.ok) throw new Error('Failed to generate PDF');
       const blob = await res.blob();
       window.open(URL.createObjectURL(blob), '_blank');

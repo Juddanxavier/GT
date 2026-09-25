@@ -1,12 +1,13 @@
+/** @format */
+
 import type { z } from 'zod';
 import { validateResponse } from './validation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-
 function resolveBaseUrl(): string {
-  if (typeof window !== 'undefined') return window.location.origin;
-  if (!API_BASE) throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
-  return API_BASE;
+  if (typeof window !== 'undefined') return '';
+  const base = process.env.NEXT_PUBLIC_API_URL;
+  if (!base) throw new Error('NEXT_PUBLIC_API_URL environment variable is required');
+  return base;
 }
 
 let tenantOverride: string | null = null;
@@ -136,6 +137,10 @@ async function requestFull<T>(path: string, options?: RequestInit): Promise<T> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export function getApiBase(): string {
+  return typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
 }
 
 export const api = {

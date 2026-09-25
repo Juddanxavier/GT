@@ -85,7 +85,7 @@ export default function InvitationsPage() {
     setInviteSaving(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/invitations/invite`,
+        `/api/invitations/invite`,
         {
           method: 'POST',
           credentials: 'include',

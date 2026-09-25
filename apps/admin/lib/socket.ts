@@ -1,7 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 let socket: Socket | null = null;
 
 export function getSocket(): Socket | null {
@@ -10,7 +8,8 @@ export function getSocket(): Socket | null {
 
 export function connectSocket(tenantId: string): Socket {
   if (socket?.connected) return socket;
-  socket = io(SOCKET_URL, {
+  const url = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
+  socket = io(url, {
     query: { tenantId },
     transports: ['websocket', 'polling'],
     withCredentials: true,

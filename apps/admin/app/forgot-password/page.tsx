@@ -22,7 +22,7 @@ function ForgotPasswordForm() {
     if (!email) { setFieldError('Enter your email address'); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/auth/forgot-password`, {
+      const res = await fetch(`/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, redirectTo: `${window.location.origin}/reset-password` }),
