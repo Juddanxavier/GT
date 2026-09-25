@@ -9,9 +9,9 @@ const PUBLIC_PATHS = [
   '/unauthorized',
 ];
 
-const SESSION_COOKIE = 'better-auth.session_token';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
@@ -24,14 +24,20 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) {
-    const login = new URL('/login', request.url);
-    login.searchParams.set('next', pathname);
-    return NextResponse.redirect(login);
-  }
+  const cookie = request.headers.get('cookie') || '';
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/get-session`, {
+      headers: { cookie },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.session) return NextResponse.next();
+    }
+  } catch {}
 
-  return NextResponse.next();
+  const login = new URL('/login', request.url);
+  login.searchParams.set('next', pathname);
+  return NextResponse.redirect(login);
 }
 
 export const config = {
