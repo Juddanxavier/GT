@@ -629,7 +629,7 @@ app.onError((err, c) => {
   });
   const detail = err instanceof Error ? err.message : String(err);
   const cause = (err as any)?.cause instanceof Error ? (err as any).cause.message : undefined;
-  const msg = process.env.NODE_ENV === 'production' ? `Internal server error: ${detail}${cause ? ` — ${cause}` : ''}` : 'Internal server error';
+  const msg = process.env.NODE_ENV === 'production' ? 'Internal server error' : `Internal server error: ${detail}${cause ? ` — ${cause}` : ''}`;
   return errorResponse(c, 'INTERNAL_ERROR', msg, 500);
 });
 
