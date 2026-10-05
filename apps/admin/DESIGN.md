@@ -1,0 +1,64 @@
+# Admin App — Design System (Raycast-inspired, dark-first)
+
+Reference: the shipped admin console. Dense operations tool, glass surfaces, cyan accent, dark mode first with full light support. This is the design contract for `apps/admin`. Token values live in `packages/ui/src/tokens.css`; this file holds direction and rules. If values and prose disagree, the CSS wins.
+
+## Principles
+1. **Density without noise** — many records per screen, calm chrome, content first.
+2. **Glass over flat** — frosted panels, hairline borders, soft shadows; depth from blur and light.
+3. **One accent, used with intent** — cyan for actions, selection, focus, and active nav only.
+4. **Quiet motion** — short ease-out transitions for color, border, shadow, and opacity; honor reduced motion.
+
+## Color (from shared tokens — do not hardcode hex in components)
+| Token | Value (light) | Use |
+| --- | --- | --- |
+| `--background` | `#F4F4F5` | page canvas |
+| `--surface` | `rgba(255,255,255,0.92)` | frosted panels |
+| `--foreground` | `#09090B` | headings, body |
+| `--muted` | `#52525B` | secondary text |
+| `--border` | `#E4E4E7` | hairlines, dividers |
+| `--accent` | `#0891B2` | actions, selection, focus |
+| `--sidebar` | `#18181B` | dark rail in both themes |
+| `--sidebar-active-bg` / `--fg` | `#164E63` / `#67E8F9` | active nav item |
+
+Dark theme inverts canvas and surfaces (`#09090B` canvas, translucent zinc panels) and lifts the accent to `#22D3EE`. Always use semantic classes or `var()` references: `bg-background`, `text-foreground`, `text-muted`, `border-border`, `bg-[var(--glass-bg)]`.
+
+### Status colors (shared config is the source)
+`@repo/ui/status-config.ts` maps each shipment status to a semantic color and a token pair. Never invent a status color in a page. The badge always shows label text plus color — color alone is not enough.
+
+## Typography
+- Font: `var(--font-inter)` via the Next font loader, applied globally.
+- Scale: page title `text-lg font-bold tracking-tight`, section `text-base font-semibold`, body `text-sm`, meta `text-xs text-muted`.
+- Mono (`ui-monospace` stack) for tracking numbers, label codes, and ids.
+- Uppercase micro labels (`text-[0.625rem] font-semibold tracking-wider`) for ops section headers only.
+
+## Spacing & shape
+- 8px baseline grid; Tailwind steps in multiples of 2.
+- Radius: `0.75rem` panels (`.content-panel`), `0.5rem` inputs (`.input-surface`), full pills/badges.
+- Borders: 1px hairlines via tokens, never raw gray.
+- Page padding: `p-4 sm:p-6 lg:p-8`; tables scroll horizontally on small screens, never clip.
+- Table density via `.table-density-compact` / `.table-density-comfortable`.
+
+## Components
+### PageHeader
+- Title (h1), optional description, optional breadcrumb slot, actions slot. One per page.
+
+### FilterBar
+- Generic shell: filter controls as children plus an optional clear action. Not tied to any domain.
+
+### DataTable
+- Server-driven, fully controlled (sort, page, visibility, selection in; callbacks out). Slots for empty, error, loading. Sort headers announce via `aria-sort`; selection via checkboxes with labels; resize by drag with double-click reset.
+
+### StatusBadge
+- Pill with label text plus a status dot, colored from the shared token pairs. Reads `@repo/ui/status-config.ts`.
+
+### Empty / Error / Loading
+- `EmptyState`: message plus one optional action. `ErrorState`: message plus optional retry. `LoadingState`: skeleton shaped like the table.
+
+## Do / Don't
+- DO read every color from a token; DON'T paste hex in a component.
+- DO keep dark and light equal; DON'T ship a dark-only component.
+- DO give every status a label or icon; DON'T rely on color alone.
+- DO keep `@repo/ui` free of API calls; DON'T import app queries there.
+- DO use the shared table for lists; DON'T copy table markup page to page.
+- DO put a new status in the shared config plus `@repo/types/status`; DON'T add a local status map.
+- DO keep interactive elements keyboard reachable with a visible focus ring; DON'T leave focus to browser default.

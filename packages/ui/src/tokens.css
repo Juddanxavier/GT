@@ -1,0 +1,266 @@
+/* @repo/ui — shared design tokens.
+ * Single source of truth for the admin design system's values. Consumed by
+ * importing this file from an app's global stylesheet, after the app's own
+ * Tailwind entry (@theme / @custom-variant stay in the consuming app).
+ *
+ * Light tokens live on :root and the [data-theme="light"] aliases.
+ * Dark tokens live on .dark and [data-theme="dark"].
+ * Never hardcode a hex value in a component; reference a token here.
+ */
+
+:root,
+.light,
+.default,
+[data-theme="light"],
+[data-theme="default"] {
+  --accent: #0d6e88;
+  --accent-hover: #0b657c;
+  --accent-active: #094f5e;
+  --accent-soft: #ecfeff;
+  --accent-soft-foreground: #0d6e88;
+  --accent-foreground: #ffffff;
+  --accent-glow: rgba(13, 110, 136, 0.28);
+
+  --background: #f4f4f5;
+  --foreground: #09090b;
+  --surface: rgba(255, 255, 255, 0.92);
+  --rail: #18181b;
+  --subnav: #fafafa;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-muted: #a1a1aa;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-hover: rgba(0, 0, 0, 0.04);
+  --sidebar-active-bg: #164e63;
+  --sidebar-active-fg: #67e8f9;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --topbar-frost: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --mesh-1: rgba(13, 110, 136, 0.06);
+  --mesh-2: rgba(6, 182, 212, 0.04);
+
+  --surface-hover: #f4f4f5;
+  --surface-active: #e4e4e7;
+  --surface-secondary: #fafafa;
+  --surface-secondary-foreground: #09090b;
+  --surface-tertiary: #f4f4f5;
+  --surface-tertiary-foreground: #09090b;
+  --border: #e4e4e7;
+  --border-hover: #d4d4d8;
+  --muted: #52525b;
+  --muted-light: #6b6b73;
+  --separator: #e4e4e7;
+
+  --field-background: #ffffff;
+  --field-border: #e4e4e7;
+  --field-foreground: #09090b;
+  --field-placeholder: #71717a;
+  --field-radius: 0.5rem;
+
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --primary-soft: #ecfeff;
+  --primary-soft-foreground: #0e7490;
+  --secondary: #0f766e;
+  --secondary-foreground: #ffffff;
+  --secondary-soft: #f0fdfa;
+  --secondary-soft-foreground: #0f766e;
+
+  --success: #047857;
+  --success-foreground: #ffffff;
+  --success-soft: #ecfdf5;
+  --success-soft-foreground: #047857;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --warning-soft: #fffbeb;
+  --warning-soft-foreground: #b45309;
+  --danger: #b91c1c;
+  --danger-foreground: #ffffff;
+  --danger-soft: #fef2f2;
+  --danger-soft-foreground: #b91c1c;
+  --info: #0d6e88;
+  --info-foreground: #ffffff;
+  --info-soft: #ecfeff;
+  --info-soft-foreground: #0e7490;
+
+  --default: #f4f4f5;
+  --default-foreground: #09090b;
+  --default-soft: #f4f4f5;
+  --default-soft-foreground: #52525b;
+  --focus: #0d6e88;
+  --overlay: #ffffff;
+  --overlay-foreground: #09090b;
+  --scrollbar: #d4d4d8;
+  --segment: #ffffff;
+  --segment-foreground: #09090b;
+
+  --app-header-height: 3.5rem;
+  --sticky-sidebar-top: calc(var(--app-header-height) + 1rem);
+
+  --surface-shadow: 0 1px 2px 0 rgba(9, 9, 11, 0.04), 0 4px 16px -4px rgba(9, 9, 11, 0.08);
+  --overlay-shadow: 0 8px 32px -8px rgba(9, 9, 11, 0.12), 0 24px 48px -24px rgba(9, 9, 11, 0.16);
+  --field-shadow: 0 0 0 0 transparent;
+  --radius: 0.5rem;
+}
+
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-active: #a5f3fc;
+  --accent-soft: #164e63;
+  --accent-soft-foreground: #67e8f9;
+  --accent-foreground: #082f49;
+  --accent-glow: rgba(34, 211, 238, 0.35);
+
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: rgba(24, 24, 27, 0.85);
+  --rail: #0a0a0b;
+  --subnav: #111113;
+  --sidebar: #0a0a0b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-muted: #a1a1aa;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: #164e63;
+  --sidebar-active-fg: #67e8f9;
+  --glass-bg: rgba(24, 24, 27, 0.65);
+  --topbar-frost: rgba(9, 9, 11, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --mesh-1: rgba(34, 211, 238, 0.1);
+  --mesh-2: rgba(6, 182, 212, 0.06);
+
+  --surface-hover: rgba(39, 39, 42, 0.8);
+  --surface-active: #27272a;
+  --surface-secondary: #18181b;
+  --surface-secondary-foreground: #fafafa;
+  --surface-tertiary: #27272a;
+  --surface-tertiary-foreground: #fafafa;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --muted: #a1a1aa;
+  --muted-light: #8a8a93;
+  --separator: rgba(255, 255, 255, 0.06);
+
+  --field-background: rgba(24, 24, 27, 0.9);
+  --field-border: rgba(255, 255, 255, 0.1);
+  --field-foreground: #fafafa;
+  --field-placeholder: #8b8b93;
+
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --primary-soft: rgba(34, 211, 238, 0.12);
+  --primary-soft-foreground: #67e8f9;
+  --secondary: #2dd4bf;
+  --secondary-foreground: #042f2e;
+  --secondary-soft: rgba(45, 212, 191, 0.12);
+  --secondary-soft-foreground: #5eead4;
+
+  --success: #34d399;
+  --success-foreground: #052e1b;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --success-soft-foreground: #6ee7b7;
+  --warning: #fbbf24;
+  --warning-foreground: #422006;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --warning-soft-foreground: #fcd34d;
+  --danger: #f87171;
+  --danger-foreground: #450a0a;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --danger-soft-foreground: #fca5a5;
+  --info: #22d3ee;
+  --info-foreground: #082f49;
+  --info-soft: rgba(34, 211, 238, 0.12);
+  --info-soft-foreground: #67e8f9;
+
+  --default: #27272a;
+  --default-foreground: #fafafa;
+  --default-soft: rgba(255, 255, 255, 0.06);
+  --default-soft-foreground: #a1a1aa;
+  --focus: #22d3ee;
+  --overlay: rgba(24, 24, 27, 0.95);
+  --overlay-foreground: #fafafa;
+  --scrollbar: #3f3f46;
+  --segment: #27272a;
+  --segment-foreground: #fafafa;
+
+  --surface-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --overlay-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.6), 0 24px 64px -24px rgba(0, 0, 0, 0.7);
+  --field-shadow: 0 0 0 0 transparent;
+}
+
+/* Focus ring — shared so a component keeps a visible focus indicator anywhere
+ * that imports these tokens, not just inside the admin app. */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--focus);
+}
+
+/* Framework-neutral shared surfaces */
+.glass-panel {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--surface-shadow);
+}
+
+.content-panel {
+  border-radius: 0.75rem;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--surface-shadow);
+}
+
+.input-surface {
+  border-radius: 0.5rem;
+  border: 1px solid var(--glass-border);
+  background: var(--field-background);
+}
+
+.border-glass {
+  border-color: var(--glass-border);
+}
+
+/* Table density */
+.table-density-compact .table__cell,
+.table-density-compact .table__column {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.table-density-compact .table__column {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.table-density-comfortable .table__cell,
+.table-density-comfortable .table__column {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.table-clickable .table__row {
+  cursor: pointer;
+}
+
+.table-clickable .table__row .table__cell {
+  transition:
+    background-color 0.15s var(--ease-out-quint),
+    color 0.15s var(--ease-out-quint);
+}
+
+.table-clickable .table__row[data-hovered="true"] .table__cell {
+  background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.table-clickable .table__row[data-hovered="true"] {
+  box-shadow: inset 3px 0 0 0 var(--accent);
+}

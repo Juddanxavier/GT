@@ -1,6 +1,6 @@
 'use client';
 
-import type { Dispatch, SetStateAction } from 'react';
+import { useMemo, useRef } from 'react';
 import { Eye, MoreVertical, Pencil, Trash2, Clock, ChevronDown, FileDown, Printer, Tags } from 'lucide-react';
 import {
   Button,
@@ -9,14 +9,24 @@ import {
   ListBox,
   Pagination,
   Select,
-  Table,
   Tabs,
   type Key,
   type SortDescriptor,
 } from '@heroui/react';
-import { ShipmentStatusBadge } from '@/components/shipment-status-badge';
+import {
+  DataTable,
+  type ColumnDef as DataTableColumn,
+  type OnChangeFn,
+  type RowSelectionState,
+  type SortingState,
+  type VisibilityState,
+} from '@repo/ui/data-table';
+import { EmptyState } from '@repo/ui/empty-state';
+import { ErrorState } from '@repo/ui/error-state';
+import { FilterBar } from '@repo/ui/filter-bar';
+import { StatusBadge } from '@repo/ui/status-badge';
 import { CopyButton } from '@/components/copy-button';
-import { TablePreferences, densityClassName, type ColumnDef, type Density } from '@/components/table-preferences';
+import { TablePreferences, type ColumnDef, type TablePrefs } from '@/components/table-preferences';
 import { formatCurrency } from '@/lib/currency';
 import { STATUS_GROUPS, STATUS_META } from '@/lib/status-config';
 
@@ -33,14 +43,6 @@ export interface ShipmentTableRow {
   stale: boolean;
 }
 
-interface TablePrefs {
-  hidden: Set<string>;
-  setHidden: (next: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
-  density: Density;
-  setDensity: (d: Density) => void;
-  isVisible: (id: string) => boolean;
-}
-
 interface ShipmentsTableProps {
   search: string;
   onSearch: (value: string) => void;
@@ -50,8 +52,7 @@ interface ShipmentsTableProps {
   prefs: TablePrefs;
   rows: ShipmentTableRow[];
   selected: Set<string>;
-  onSelectedChange: Dispatch<SetStateAction<Set<string>>>;
-  onToggleAll: (rows: ShipmentTableRow[]) => void;
+  onSelectedChange: (next: Set<string>) => void;
   sortDescriptor: SortDescriptor;
   onSortChange: (descriptor: SortDescriptor) => void;
   previewTrackingId?: string | null;
@@ -70,6 +71,10 @@ interface ShipmentsTableProps {
   rowsPerPage: number;
   onRowsPerPageChange: (n: number) => void;
   totalCount: number;
+  isLoading?: boolean;
+  isFetching?: boolean;
+  error?: Error | null;
+  onRetry?: () => void;
 }
 
 export function ShipmentsTable({
@@ -82,7 +87,6 @@ export function ShipmentsTable({
   rows,
   selected,
   onSelectedChange,
-  onToggleAll,
   sortDescriptor,
   onSortChange,
   previewTrackingId,
@@ -101,17 +105,185 @@ export function ShipmentsTable({
   rowsPerPage,
   onRowsPerPageChange,
   totalCount,
+  isLoading = false,
+  isFetching = false,
+  error = null,
+  onRetry,
 }: ShipmentsTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   const start = (page - 1) * rowsPerPage + 1;
   const end = Math.min(page * rowsPerPage, totalCount);
 
+  // Always-on columns stay visible even when an old stored preference hides them.
+  const alwaysVisible = useMemo(
+    () => new Set(columns.filter((c) => c.always).map((c) => c.id)),
+    [columns],
+  );
+
+  const columnVisibility: VisibilityState = useMemo(() => {
+    const visibility: VisibilityState = {};
+    for (const id of prefs.hidden) {
+      if (!alwaysVisible.has(id)) visibility[id] = false;
+    }
+    return visibility;
+  }, [prefs.hidden, alwaysVisible]);
+
+  const handleVisibilityChange: OnChangeFn<VisibilityState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(columnVisibility) : updater;
+    const hidden = new Set<string>();
+    for (const [id, visible] of Object.entries(next)) {
+      if (!visible && !alwaysVisible.has(id)) hidden.add(id);
+    }
+    prefs.setHidden(hidden);
+  };
+
+  const sorting: SortingState = useMemo(
+    () => [{ id: String(sortDescriptor.column), desc: sortDescriptor.direction === 'descending' }],
+    [sortDescriptor],
+  );
+
+  const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    const first = next[0];
+    if (!first) return;
+    onSortChange({ column: first.id, direction: first.desc ? 'descending' : 'ascending' });
+    onPageChange(1);
+  };
+
+  const rowSelection: RowSelectionState = useMemo(() => {
+    const selection: RowSelectionState = {};
+    for (const id of selected) selection[id] = true;
+    return selection;
+  }, [selected]);
+
+  const handleSelectionChange: OnChangeFn<RowSelectionState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(rowSelection) : updater;
+    onSelectedChange(new Set(Object.keys(next).filter((id) => next[id])));
+  };
+
+  // Callbacks change every render; route them through a ref so the column
+  // definitions below stay stable and the table keeps its state.
+  const live = useRef({ onRowPreview, onRowOpen, onContextAction, userRole, tenantCurrency });
+  live.current = { onRowPreview, onRowOpen, onContextAction, userRole, tenantCurrency };
+
+  const tableColumns: DataTableColumn<ShipmentTableRow, unknown>[] = useMemo(
+    () => [
+      {
+        id: '#',
+        header: '#',
+        enableSorting: false,
+        enableHiding: false,
+        enableResizing: false,
+        size: 48,
+        cell: ({ row, table }) =>
+          table.getState().pagination.pageIndex * table.getState().pagination.pageSize + row.index + 1,
+      },
+      {
+        id: 'trackingNumber',
+        accessorKey: 'trackingNumber',
+        header: 'Tracking #',
+        enableHiding: false,
+        cell: ({ row }) => (
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-medium">
+            {row.original.trackingNumber}
+            <CopyButton text={row.original.trackingNumber} label="tracking number" />
+          </span>
+        ),
+      },
+      {
+        id: 'labelCode',
+        accessorKey: 'labelCode',
+        header: 'Label Code',
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.labelCode || '—'}</span>,
+      },
+      {
+        id: 'customerName',
+        accessorKey: 'customerName',
+        header: 'Customer',
+        cell: ({ row }) => row.original.customerName || '—',
+      },
+      {
+        id: 'carrier',
+        accessorKey: 'carrier',
+        header: 'Carrier',
+        cell: ({ row }) => row.original.carrier,
+      },
+      {
+        id: 'billAmount',
+        accessorKey: 'billAmount',
+        header: 'Bill',
+        size: 100,
+        cell: ({ row }) =>
+          row.original.billAmount ? formatCurrency(row.original.billAmount, live.current.tenantCurrency) : '—',
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'Status',
+        enableHiding: false,
+        cell: ({ row }) => (
+          <span className="inline-flex items-center">
+            <StatusBadge status={row.original.status} />
+            {row.original.stale && (
+              <span
+                className="ml-1.5 inline-flex items-center gap-1 text-xs text-danger"
+                title={`Last tracked ${row.original.lastTrackedAt ? new Date(row.original.lastTrackedAt).toLocaleDateString() : 'unknown'}`}
+              >
+                <Clock size={10} /> stale
+              </span>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        enableHiding: false,
+        enableResizing: false,
+        size: 48,
+        cell: ({ row }) => (
+          <Dropdown.Root>
+            <Dropdown.Trigger
+              className="inline-flex h-7 min-w-0 items-center justify-center rounded-sm px-1 text-sm text-muted outline-none transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={`Actions for ${row.original.trackingNumber}`}
+            >
+              <MoreVertical size={16} />
+            </Dropdown.Trigger>
+            <Dropdown.Popover placement="bottom end">
+              <Dropdown.Menu onAction={(key) => live.current.onContextAction(key, row.original)}>
+                <Dropdown.Item id="view" textValue="View">
+                  <span className="flex items-center gap-2">
+                    <Eye size={16} /> View
+                  </span>
+                </Dropdown.Item>
+                <Dropdown.Item id="edit" textValue="Edit">
+                  <span className="flex items-center gap-2">
+                    <Pencil size={16} /> Edit
+                  </span>
+                </Dropdown.Item>
+                {live.current.userRole !== 'staff' && (
+                  <Dropdown.Item id="delete" textValue="Delete">
+                    <span className="flex items-center gap-2">
+                      <Trash2 size={16} /> Delete
+                    </span>
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown.Root>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="ops-panel overflow-hidden">
-      <div className="p-4 border-b border-border">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="sm:flex-1">
+      <div className="border-b border-border p-4">
+        <FilterBar>
+          <div className="min-w-52 flex-1">
             <Input
               id="shipment-search"
               variant="secondary"
@@ -121,23 +293,21 @@ export function ShipmentsTable({
               fullWidth
             />
           </div>
-          <div className="flex items-center gap-2">
-            <TablePreferences
-              storageKey="shipments-table"
-              columns={columns}
-              hidden={prefs.hidden}
-              onHiddenChange={prefs.setHidden}
-              density={prefs.density}
-              onDensityChange={prefs.setDensity}
-            />
-          </div>
+          <TablePreferences
+            storageKey="shipments-table"
+            columns={columns}
+            hidden={prefs.hidden}
+            onHiddenChange={prefs.setHidden}
+            density={prefs.density}
+            onDensityChange={prefs.setDensity}
+          />
           <Tabs
             selectedKey={statusFilter}
             onSelectionChange={(key) => {
               onStatusFilter(key as string);
               onPageChange(1);
             }}
-            className="sm:flex-[2] overflow-x-auto"
+            className="overflow-x-auto sm:flex-[2]"
           >
             <Tabs.List>
               <Tabs.Tab id="all">All</Tabs.Tab>
@@ -148,14 +318,14 @@ export function ShipmentsTable({
               ))}
             </Tabs.List>
           </Tabs>
-        </div>
+        </FilterBar>
       </div>
       {selected.size > 0 && (
-        <div className="px-4 py-2 border-b border-border bg-accent/[0.04] flex items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border bg-accent/[0.04] px-4 py-2">
           <span className="text-xs font-medium">{selected.size} selected</span>
           {userRole !== 'staff' && (
             <Dropdown.Root>
-              <Dropdown.Trigger className="inline-flex items-center gap-1.5 content-panel px-3 h-8 text-xs font-medium text-foreground hover:bg-muted transition-colors outline-none data-[pressed]:bg-muted/60">
+              <Dropdown.Trigger className="content-panel inline-flex h-8 items-center gap-1.5 px-3 text-xs font-medium text-foreground outline-none transition-colors hover:bg-muted data-[pressed]:bg-muted/60">
                 <Tags size={14} /> Set Status <ChevronDown size={12} />
               </Dropdown.Trigger>
               <Dropdown.Popover placement="bottom start">
@@ -178,212 +348,102 @@ export function ShipmentsTable({
           <Button size="sm" variant="danger" isPending={bulkDeleting} isDisabled={bulkDeleting} onPress={onBulkDelete}>
             <Trash2 size={14} /> Delete
           </Button>
-          <Button size="sm" variant="ghost" onPress={() => onSelectedChange(new Set())}>Clear</Button>
+          <Button size="sm" variant="ghost" onPress={() => onSelectedChange(new Set())}>
+            Clear
+          </Button>
         </div>
       )}
-      <Table className={`table-clickable ${densityClassName(prefs.density)}`}>
-        <Table.ScrollContainer>
-          <Table.Content
-            aria-label="Shipments"
-            className="min-w-[1050px]"
-            sortDescriptor={sortDescriptor}
-            onSortChange={(d) => {
-              onSortChange(d);
-              onPageChange(1);
-            }}
-            onRowAction={(key) => onRowPreview(String(key))}
+      <DataTable
+        data={rows}
+        columns={tableColumns}
+        total={totalCount}
+        getRowId={(row) => row.id}
+        sorting={sorting}
+        onSortingChange={handleSortingChange}
+        pagination={{ pageIndex: page - 1, pageSize: rowsPerPage }}
+        onPaginationChange={(updater) => {
+          const current = { pageIndex: page - 1, pageSize: rowsPerPage };
+          const next = typeof updater === 'function' ? updater(current) : updater;
+          onPageChange(next.pageIndex + 1);
+          onRowsPerPageChange(next.pageSize);
+        }}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={handleVisibilityChange}
+        rowSelection={rowSelection}
+        onRowSelectionChange={handleSelectionChange}
+        enableRowSelection
+        density={prefs.density === 'compact' ? 'compact' : 'comfortable'}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        error={error}
+        emptyState={<EmptyState title="No shipments found" description="Try a different search or filter." />}
+        errorState={
+          onRetry ? (
+            <ErrorState message="Failed to load shipments" onRetry={onRetry} />
+          ) : undefined
+        }
+        onRowClick={(row) => live.current.onRowPreview(row.trackingNumber)}
+        onRowDoubleClick={(row) => live.current.onRowOpen(row.trackingNumber)}
+        getRowClassName={(row) =>
+          row.trackingNumber === previewTrackingId
+            ? 'bg-[var(--ops-accent-dim)] shadow-[inset_3px_0_0_0_var(--ops-accent)]'
+            : undefined
+        }
+        ariaLabel="Shipments"
+      />
+      <div className="flex w-full items-center justify-between gap-4 px-4 py-2">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <span>Rows</span>
+          <Select
+            selectedKey={String(rowsPerPage)}
+            onSelectionChange={(k) => onRowsPerPageChange(Number(k))}
+            variant="secondary"
+            className="w-20"
+            aria-label="Rows per page"
           >
-            <Table.Header>
-              <Table.Column id="select" width={40}>
-                {() => (
-                  <input
-                    type="checkbox"
-                    aria-label="Select all"
-                    className="accent-[var(--accent)] cursor-pointer"
-                    checked={rows.length > 0 && rows.every((s) => selected.has(s.id))}
-                    onChange={() => onToggleAll(rows)}
-                  />
-                )}
-              </Table.Column>
-              <Table.Column id="#" width={48}>
-                {() => <span className="text-muted text-xs">#</span>}
-              </Table.Column>
-              <Table.Column allowsSorting id="trackingNumber" isRowHeader>
-                <span className="text-muted text-xs">Tracking #</span>
-              </Table.Column>
-              {prefs.isVisible('labelCode') && <Table.Column allowsSorting id="labelCode">Label Code</Table.Column>}
-              {prefs.isVisible('customerName') && <Table.Column allowsSorting id="customerName">Customer</Table.Column>}
-              {prefs.isVisible('carrier') && <Table.Column allowsSorting id="carrier">Carrier</Table.Column>}
-              {prefs.isVisible('billAmount') && (
-                <Table.Column allowsSorting id="billAmount" width={100}>Bill</Table.Column>
-              )}
-              {prefs.isVisible('status') && <Table.Column allowsSorting id="status">Status</Table.Column>}
-              <Table.Column id="actions" width={48}>
-                {() => null}
-              </Table.Column>
-            </Table.Header>
-            <Table.Body
-              renderEmptyState={() => (
-                <div className="flex items-center justify-center py-24 text-muted text-sm">No shipments found</div>
-              )}
-            >
-              {rows.map((shipment, i) => (
-                <Table.Row
-                  key={shipment.id}
-                  id={shipment.trackingNumber}
-                  className={[
-                    selected.has(shipment.id) ? 'bg-accent/[0.06]' : '',
-                    previewTrackingId === shipment.trackingNumber ? 'ops-row-active' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ') || undefined}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    onRowOpen(shipment.trackingNumber);
-                  }}
-                >
-                  <Table.Cell>
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${shipment.trackingNumber}`}
-                      className="accent-[var(--accent)] cursor-pointer"
-                      checked={selected.has(shipment.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={() =>
-                        onSelectedChange((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(shipment.id)) next.delete(shipment.id);
-                          else next.add(shipment.id);
-                          return next;
-                        })
-                      }
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span className="text-xs text-muted">{start + i}</span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span className="font-mono text-xs font-medium inline-flex items-center gap-1">
-                      {shipment.trackingNumber}
-                      <span onClick={(e) => e.stopPropagation()}>
-                        <CopyButton text={shipment.trackingNumber} label="tracking number" />
-                      </span>
-                    </span>
-                  </Table.Cell>
-                  {prefs.isVisible('labelCode') && (
-                    <Table.Cell className="font-mono text-xs">{shipment.labelCode || '—'}</Table.Cell>
-                  )}
-                  {prefs.isVisible('customerName') && <Table.Cell>{shipment.customerName || '—'}</Table.Cell>}
-                  {prefs.isVisible('carrier') && <Table.Cell>{shipment.carrier}</Table.Cell>}
-                  {prefs.isVisible('billAmount') && (
-                    <Table.Cell>
-                      {shipment.billAmount ? formatCurrency(shipment.billAmount, tenantCurrency) : '—'}
-                    </Table.Cell>
-                  )}
-                  {prefs.isVisible('status') && (
-                    <Table.Cell>
-                      <ShipmentStatusBadge status={shipment.status} />
-                      {shipment.stale && (
-                        <span
-                          className="ml-1.5 text-xs text-danger inline-flex items-center gap-1"
-                          title={`Last tracked ${shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleDateString() : 'unknown'}`}
-                        >
-                          <Clock size={10} /> stale
-                        </span>
-                      )}
-                    </Table.Cell>
-                  )}
-                  <Table.Cell>
-                    <span onClick={(e) => e.stopPropagation()}>
-                      <Dropdown.Root>
-                        <Dropdown.Trigger className="inline-flex items-center justify-center rounded-sm min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                          <MoreVertical size={16} />
-                        </Dropdown.Trigger>
-                        <Dropdown.Popover placement="bottom end">
-                          <Dropdown.Menu onAction={(key) => onContextAction(key, shipment)}>
-                            <Dropdown.Item id="view" textValue="View">
-                              <span className="flex items-center gap-2">
-                                <Eye size={16} /> View
-                              </span>
-                            </Dropdown.Item>
-                            <Dropdown.Item id="edit" textValue="Edit">
-                              <span className="flex items-center gap-2">
-                                <Pencil size={16} /> Edit
-                              </span>
-                            </Dropdown.Item>
-                            {userRole !== 'staff' && (
-                              <Dropdown.Item id="delete" textValue="Delete">
-                                <span className="flex items-center gap-2">
-                                  <Trash2 size={16} /> Delete
-                                </span>
-                              </Dropdown.Item>
-                            )}
-                          </Dropdown.Menu>
-                        </Dropdown.Popover>
-                      </Dropdown.Root>
-                    </span>
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table.Content>
-        </Table.ScrollContainer>
-        <Table.Footer>
-          <div className="flex items-center justify-between w-full px-4 py-2 gap-4">
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>Rows</span>
-              <Select
-                selectedKey={String(rowsPerPage)}
-                onSelectionChange={(k) => onRowsPerPageChange(Number(k))}
-                variant="secondary"
-                className="w-20"
-                aria-label="Rows per page"
-              >
-                <Select.Trigger className="h-7 text-xs">
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {[25, 50, 100, 250].map((n) => (
-                      <ListBox.Item key={n} id={String(n)} textValue={String(n)}>
-                        {n}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
-            <Pagination size="sm">
-              <Pagination.Summary>
-                {start} to {end} of {totalCount} results
-              </Pagination.Summary>
-              <Pagination.Content>
-                <Pagination.Item>
-                  <Pagination.Previous isDisabled={page === 1} onPress={() => onPageChange((p) => Math.max(1, p - 1))}>
-                    <Pagination.PreviousIcon /> Prev
-                  </Pagination.Previous>
-                </Pagination.Item>
-                {pages.map((p) => (
-                  <Pagination.Item key={p}>
-                    <Pagination.Link isActive={p === page} onPress={() => onPageChange(p)}>
-                      {p}
-                    </Pagination.Link>
-                  </Pagination.Item>
+            <Select.Trigger className="h-7 text-xs">
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {[25, 50, 100, 250].map((n) => (
+                  <ListBox.Item key={n} id={String(n)} textValue={String(n)}>
+                    {n}
+                  </ListBox.Item>
                 ))}
-                <Pagination.Item>
-                  <Pagination.Next
-                    isDisabled={page === totalPages}
-                    onPress={() => onPageChange((p) => Math.min(totalPages, p + 1))}
-                  >
-                    Next <Pagination.NextIcon />
-                  </Pagination.Next>
-                </Pagination.Item>
-              </Pagination.Content>
-            </Pagination>
-          </div>
-        </Table.Footer>
-      </Table>
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        </div>
+        <Pagination size="sm">
+          <Pagination.Summary>
+            {start} to {end} of {totalCount} results
+          </Pagination.Summary>
+          <Pagination.Content>
+            <Pagination.Item>
+              <Pagination.Previous isDisabled={page === 1} onPress={() => onPageChange((p) => Math.max(1, p - 1))}>
+                <Pagination.PreviousIcon /> Prev
+              </Pagination.Previous>
+            </Pagination.Item>
+            {pages.map((p) => (
+              <Pagination.Item key={p}>
+                <Pagination.Link isActive={p === page} onPress={() => onPageChange(p)}>
+                  {p}
+                </Pagination.Link>
+              </Pagination.Item>
+            ))}
+            <Pagination.Item>
+              <Pagination.Next
+                isDisabled={page === totalPages}
+                onPress={() => onPageChange((p) => Math.min(totalPages, p + 1))}
+              >
+                Next <Pagination.NextIcon />
+              </Pagination.Next>
+            </Pagination.Item>
+          </Pagination.Content>
+        </Pagination>
+      </div>
     </div>
   );
 }

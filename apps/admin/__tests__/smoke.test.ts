@@ -51,10 +51,16 @@ describe('status config', () => {
     expect(STATUS_GROUPS.Delivered).toContain('delivered');
   });
 
-  it('STATUS_GROUPS no longer includes Available for Pickup', async () => {
+  it('STATUS_GROUPS includes Available for Pickup', async () => {
     const { STATUS_GROUPS } = await import('@/lib/status-config');
-    expect(Object.keys(STATUS_GROUPS)).toEqual(['Pending', 'In Transit', 'Delivered', 'Exception']);
-    expect(STATUS_GROUPS['Available for Pickup']).toBeUndefined();
+    expect(Object.keys(STATUS_GROUPS)).toEqual([
+      'Pending',
+      'In Transit',
+      'Delivered',
+      'Exception',
+      'Available for Pickup',
+    ]);
+    expect(STATUS_GROUPS['Available for Pickup']).toContain('available_for_pickup');
   });
 });
 

@@ -3,6 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    "./tokens.css": "./src/tokens.css",
+    "./package.json": "./package.json",
+    "./button": "./src/button.tsx",
+    "./card": "./src/card.tsx",
+    "./code": "./src/code.tsx",
+    "./data-table": "./src/data-table.tsx",
+    "./empty-state": "./src/empty-state.tsx",
+    "./error-state": "./src/error-state.tsx",
+    "./filter-bar": "./src/filter-bar.tsx",
+    "./page-header": "./src/page-header.tsx",
+    "./status-badge": "./src/status-badge.tsx",
+    "./status-config": "./src/status-config.ts",
     "./*": "./src/*"
   },
   "scripts": {
@@ -22,9 +34,10 @@
     "typescript": "5.9.2"
   },
   "dependencies": {
-    "@repo/types": "workspace:*",
     "@heroui/react": "^3.1.0",
     "@heroui/styles": "^3.1.0",
+    "@repo/types": "workspace:*",
+    "@tanstack/react-table": "^8.21.3",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

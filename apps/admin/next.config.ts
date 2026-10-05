@@ -5,7 +5,7 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['better-auth'],
+  transpilePackages: ['better-auth', '@repo/ui'],
   async headers() {
     return [
       {

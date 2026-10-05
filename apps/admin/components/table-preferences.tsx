@@ -12,6 +12,14 @@ export interface ColumnDef {
   always?: boolean;
 }
 
+export interface TablePrefs {
+  hidden: Set<string>;
+  setHidden: (next: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  density: Density;
+  setDensity: (d: Density) => void;
+  isVisible: (id: string) => boolean;
+}
+
 interface TablePreferencesProps {
   storageKey: string;
   columns: ColumnDef[];
@@ -99,8 +107,9 @@ export function useTablePreferences(storageKey: string, columns: ColumnDef[]) {
     (next: Set<string> | ((prev: Set<string>) => Set<string>)) => {
       setState((prev) => {
         const resolved = typeof next === 'function' ? next(prev.hidden) : next;
-        const clean = new Set(columns.filter((c) => c.always).map((c) => c.id));
-        for (const id of resolved) if (!clean.has(id)) clean.add(id);
+        const alwaysIds = new Set(columns.filter((c) => c.always).map((c) => c.id));
+        const clean = new Set<string>();
+        for (const id of resolved) if (!alwaysIds.has(id)) clean.add(id);
         try {
           window.localStorage.setItem(storageKey, JSON.stringify({ hidden: [...clean], density: prev.density }));
         } catch {

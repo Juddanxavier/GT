@@ -3,8 +3,9 @@
 import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { STATUS_GROUPS, STATUS_META, statusGroupCounts } from '@/lib/status-config';
-import { Plus, Radio } from 'lucide-react';
-import { Button, Modal, Spinner, type Key, type SortDescriptor } from '@heroui/react';
+import { Plus } from 'lucide-react';
+import { Button, Modal, type Key, type SortDescriptor } from '@heroui/react';
+import { PageHeader } from '@repo/ui/page-header';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AddressData } from '@/components/address-form';
 import { useTablePreferences } from '@/components/table-preferences';
@@ -110,15 +111,6 @@ export default function ShipmentsPage() {
   const { data: allCustomers = [] } = useCustomers();
   const { data: newBranches = [] } = useBranches();
   const queryClient = useQueryClient();
-
-  const toggleAll = useCallback((rows: { id: string }[]) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (rows.every((r) => next.has(r.id))) rows.forEach((r) => next.delete(r.id));
-      else rows.forEach((r) => next.add(r.id));
-      return next;
-    });
-  }, []);
 
   const handleBulkDelete = useCallback(async () => {
     if (selected.size === 0) return;
@@ -245,7 +237,6 @@ export default function ShipmentsPage() {
   }, [selected, paginated]);
 
   const isPending = shipmentsQuery.isPending;
-  const isError = shipmentsQuery.isError;
   const refetch = shipmentsQuery.refetch;
 
   function handleContextAction(key: Key, shipment: typeof paginated[number]) {
@@ -288,31 +279,17 @@ export default function ShipmentsPage() {
 
   return (
     <div className="shipments-ops space-y-4">
-      {isPending ? (
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Spinner />
-        </div>
-      ) : isError ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <p className="text-danger text-sm">Failed to load shipments</p>
-          <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
-        </div>
-      ) : (
-      <>
-      <header className="ops-header-bar flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md bg-[var(--ops-accent-dim)] border border-[var(--ops-border)] flex items-center justify-center text-[var(--ops-accent)]">
-            <Radio size={18} />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">Operations Board</h1>
-            <p className="text-xs text-muted">Shipments command center — filter, preview, act</p>
-          </div>
-        </div>
-        <Button onPress={openCreateModal}>
-          <Plus size={16} /> New Shipment
-        </Button>
-      </header>
+      <div className="ops-header-bar px-5 py-4">
+        <PageHeader
+          title="Operations Board"
+          description="Shipments command center — filter, preview, act"
+          actions={
+            <Button onPress={openCreateModal}>
+              <Plus size={16} /> New Shipment
+            </Button>
+          }
+        />
+      </div>
 
       <ShipmentsKpiRow counts={kpiCounts} statusFilter={statusFilter} onStatusFilter={applyStatus} />
 
@@ -328,7 +305,6 @@ export default function ShipmentsPage() {
         rows={paginated}
         selected={selected}
         onSelectedChange={setSelected}
-        onToggleAll={toggleAll}
         sortDescriptor={sortDescriptor}
         onSortChange={setSortDescriptor}
         previewTrackingId={previewTracking}
@@ -347,6 +323,10 @@ export default function ShipmentsPage() {
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={setRowsPerPage}
         totalCount={totalCount}
+        isLoading={isPending}
+        isFetching={shipmentsQuery.isFetching}
+        error={shipmentsQuery.error ?? null}
+        onRetry={() => refetch()}
       />
       </div>
 
@@ -408,7 +388,6 @@ export default function ShipmentsPage() {
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
-      </>)}
     </div>
   );
 }
