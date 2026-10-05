@@ -5,5 +5,7 @@ node_modules
 .planning
 .env
 .env.local
+.env.production
+.env.vercel
 *.md
 .DS_Store

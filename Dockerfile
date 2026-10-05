@@ -8,6 +8,7 @@ COPY apps/api/package.json apps/api/
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
 COPY apps/api/ apps/api/
+RUN pnpm --filter=api build
 EXPOSE 3001
 CMD ["pnpm", "--filter=api", "start"]
 
