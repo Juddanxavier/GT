@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/hono/node';
+import { logger } from './logger';
 
 const SENTRY_DSN = process.env.SENTRY_DSN;
 
@@ -10,7 +11,7 @@ if (SENTRY_DSN) {
     environment: process.env.NODE_ENV ?? 'development',
     enabled: !!SENTRY_DSN,
   } as Parameters<typeof Sentry.init>[0]);
-  console.log('[sentry] initialized');
+  logger.info('sentry initialized');
 } else {
-  console.log('[sentry] disabled — SENTRY_DSN not set');
+  logger.info('sentry disabled: SENTRY_DSN not set');
 }

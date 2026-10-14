@@ -72,9 +72,15 @@ describe('webhookWorker', () => {
     );
 
     expect(result).toEqual({ processed: true, eventsInserted: 2 });
-    expect(mockProcessWebhook).toHaveBeenCalledWith({ some: 'data' });
+    expect(mockProcessWebhook).toHaveBeenCalledWith({ some: 'data' }, expect.anything());
     expect(mockDb.update).toHaveBeenCalled();
-    expect(mockNotifyTrackingEvents).toHaveBeenCalledWith('s1', 't1', expect.any(Array), 'in_transit');
+    expect(mockNotifyTrackingEvents).toHaveBeenCalledWith(
+      's1',
+      't1',
+      expect.any(Array),
+      'in_transit',
+      expect.anything(),
+    );
     expect(mockEmitToTenant).toHaveBeenCalledWith('t1', 'dashboard:update', {});
   });
 

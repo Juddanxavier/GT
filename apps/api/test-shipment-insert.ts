@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import postgres from 'postgres';
+import { logger } from './src/logger';
 
 // Try root .env first, then fallback to ../../.env (when run from apps/api)
 const envPath = ['.env', '../../.env'].find((p) => {
@@ -21,21 +22,30 @@ for (const line of env.split('\n')) {
 async function main() {
   const sql = postgres(vars.DATABASE_URL!, { max: 1, ssl: 'require' });
   try {
+    const trackingNo = `TEST-MANUAL-${Date.now()}`;
     const r = await sql`
       insert into "shipment" ("tracking_no","carrier","payload","tenant_id","tracking_provider")
-      values (${'TEST-MANUAL-' + Date.now()}, ${'FedEx'}, ${'{"billAmount":"34000"}'}, ${'346569e2-1bd8-47a5-a6dc-ed46e2094543'}, ${'100003'})
+      values (${trackingNo}, ${'FedEx'}, ${'{"billAmount":"34000"}'}, ${'346569e2-1bd8-47a5-a6dc-ed46e2094543'}, ${'100003'})
       returning *
     `;
-    console.log('OK:', JSON.stringify(r, null, 2));
+    logger.info({ result: r }, 'shipment insert ok');
   } catch (e: any) {
-    console.error('Message:', e.message?.substring(0, 200));
-    console.error('Code:', e.code);
-    console.error('Detail:', e.detail);
-    console.error('Severity:', e.severity);
-    console.error('Constraint:', e.constraint);
-    console.error('All keys:', Object.getOwnPropertyNames(e));
+    logger.error(
+      {
+        err: e,
+        message: e.message?.substring(0, 200),
+        code: e.code,
+        detail: e.detail,
+        severity: e.severity,
+        constraint: e.constraint,
+        keys: Object.getOwnPropertyNames(e),
+      },
+      'shipment insert failed',
+    );
   }
   await sql.end();
 }
 
-main().catch(console.error);
+main().catch((e) => {
+  logger.error({ err: e }, 'test shipment insert failed');
+});

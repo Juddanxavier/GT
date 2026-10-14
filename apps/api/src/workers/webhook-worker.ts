@@ -8,16 +8,19 @@ import { emitToTenant } from '../realtime';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
 import { notifyTrackingEvents } from '../notifications/service';
+import { childLogger } from '../logger';
 
 export const webhookWorker: Worker | null = (() => {
+  const queue = 'webhook-events';
   if (!isRedisConnected()) {
-    console.warn('[webhook-worker] Redis not available — worker not started');
+    childLogger({ queue }).warn('redis not available, worker not started');
     return null;
   }
 
   const worker = new Worker(
-    'webhook-events',
+    queue,
     async (job) => {
+      const log = childLogger({ jobId: job.id, queue });
       const { provider: providerName, body } = job.data as {
         provider: string;
         body: unknown;
@@ -25,7 +28,7 @@ export const webhookWorker: Worker | null = (() => {
         timestamp: string;
       };
 
-      console.log(`[webhook-worker] processing job ${job.id} from ${providerName}`);
+      log.info({ provider: providerName }, 'processing job');
 
       // Determine and process webhook → get normalized events
       const provider = getProvider();
@@ -33,7 +36,7 @@ export const webhookWorker: Worker | null = (() => {
         throw new Error(`Provider mismatch: active=${provider.name}, job=${providerName}`);
       }
 
-      const result = await provider.processWebhook(body);
+      const result = await provider.processWebhook(body, log);
       if (!result) {
         throw new Error('Failed to parse webhook payload');
       }
@@ -51,7 +54,7 @@ export const webhookWorker: Worker | null = (() => {
 
       if (!shipment) {
         // 17TRACK may send webhook before shipment is created locally
-        console.log(`[webhook-worker] shipment not found for tracking ${result.trackingNo} — skipping`);
+        log.info({ trackingNo: result.trackingNo }, 'shipment not found for tracking, skipping');
         return { skipped: 'shipment_not_found', trackingNo: result.trackingNo };
       }
 
@@ -76,6 +79,7 @@ export const webhookWorker: Worker | null = (() => {
           shipment.tenantId,
           result.events,
           result.currentStatus,
+          log,
         );
 
         // Real-time push
@@ -91,11 +95,12 @@ export const webhookWorker: Worker | null = (() => {
     },
   );
 
-  worker.on('ready', () => console.log('[webhook-worker] ready'));
+  worker.on('ready', () => childLogger({ queue }).info('worker ready'));
   worker.on('failed', (job, err) => {
-    console.error(`[webhook-worker] job ${job?.id} failed:`, err.message);
+    const log = childLogger({ queue, ...(job?.id ? { jobId: job.id } : {}) });
+    log.error({ err }, 'job failed');
   });
-  worker.on('error', (err) => console.error('[webhook-worker] error:', err.message));
+  worker.on('error', (err) => childLogger({ queue }).error({ err }, 'worker error'));
 
   return worker;
 })();

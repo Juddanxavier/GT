@@ -39,6 +39,7 @@ import { bullConnectionOptions, cacheClient } from '../redis';
 import { runArchive } from '../services/archive';
 import { logAudit } from '../services/audit';
 import { performTracking, autoCreateInvoice } from '../services/shipment';
+import { childLogger, type Logger } from '../logger';
 
 function getConnection() {
   if (!bullConnectionOptions) {
@@ -49,7 +50,7 @@ function getConnection() {
 
 function createWorker<T extends Record<string, unknown> = Record<string, unknown>>(
   name: string,
-  processor: (data: T) => Promise<void>,
+  processor: (data: T, log: Logger) => Promise<void>,
   concurrency: number,
 ): Worker | null {
   if (!isRedisConnected()) {
@@ -58,20 +59,23 @@ function createWorker<T extends Record<string, unknown> = Record<string, unknown
   const worker = new Worker<T>(
     name,
     async (job) => {
-      console.log(`[worker/${name}] processing job ${job.id}:`, job.data);
-      await processor(job.data);
+      const log = childLogger({ jobId: job.id, queue: name });
+      log.info('processing job');
+      await processor(job.data, log);
     },
     { connection: getConnection(), concurrency },
   );
 
-  worker.on('ready', () => console.log(`[worker] ${name} ready`));
+  worker.on('ready', () => childLogger({ queue: name }).info('worker ready'));
   worker.on('failed', async (job, err) => {
-    console.error(`[worker] ${name} job ${job?.id} failed:`, err.message);
+    const log = childLogger({ queue: name, ...(job?.id ? { jobId: job.id } : {}) });
+    log.error({ err }, 'job failed');
     if (job && deadLetterQueue && name !== 'dead-letter') {
       await deadLetterQueue.add(name, {
         ...(job.data as Record<string, unknown>),
         queueName: name,
         failedReason: err.message,
+        jobId: job.id,
       });
     }
     if (job && ['notification', 'email', 'whatsapp'].includes(name)) {
@@ -94,7 +98,7 @@ function createWorker<T extends Record<string, unknown> = Record<string, unknown
       });
     }
   });
-  worker.on('error', (err) => console.error(`[worker] ${name} error:`, err.message));
+  worker.on('error', (err) => childLogger({ queue: name }).error({ err }, 'worker error'));
 
   return worker;
 }
@@ -116,7 +120,7 @@ type NotifyJobData = {
   customerUserId?: string;
 };
 
-export async function notificationProcessor(job: NotifyJobData): Promise<void> {
+export async function notificationProcessor(job: NotifyJobData, log: Logger): Promise<void> {
   const {
     shipmentId,
     eventId,
@@ -147,7 +151,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
       });
       emitToUser(customerUserId, 'notification:new', {});
     } catch (err) {
-      console.error('[notifications] failed to create in-app notification:', err);
+      log.error({ err, shipmentId, eventId }, 'failed to create in-app notification');
     }
   }
 
@@ -164,7 +168,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
       emailOn = emailPref;
       whatsappOn = whatsappPref;
     } catch (err) {
-      console.error('[notifications] pref check failed — sending anyway:', err);
+      log.error({ err, userId: customerUserId }, 'notification pref check failed, sending anyway');
     }
   }
 
@@ -202,7 +206,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
 
   // Fan out: email
   if (customerEmail && emailQueue && emailOn) {
-    const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email');
+    const emailAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'email', log);
     if (!emailAlreadySent) {
       await emailQueue.add('send', {
         to: customerEmail!,
@@ -211,15 +215,13 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
         branding,
       });
     } else {
-      console.log(
-        `[notifications] Skipping duplicate email for event ${eventId} / shipment ${shipmentId}`,
-      );
+      log.info({ eventId, shipmentId }, 'skipping duplicate email');
     }
   }
 
   // Fan out: WhatsApp (queued)
   if (customerPhone && isWhatsAppConfigured() && whatsappQueue && whatsappOn) {
-    const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp');
+    const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp', log);
     if (!waAlreadySent) {
       const waParams = getWhatsAppTemplateParams(eventType, shipmentData);
       if (waParams) {
@@ -230,9 +232,7 @@ export async function notificationProcessor(job: NotifyJobData): Promise<void> {
         });
       }
     } else {
-      console.log(
-        `[notifications] Skipping duplicate WhatsApp for event ${eventId} / shipment ${shipmentId}`,
-      );
+      log.info({ eventId, shipmentId }, 'skipping duplicate whatsapp');
     }
   }
 }
@@ -277,7 +277,7 @@ export type EmailJobData = {
   pdfBase64?: string;
 };
 
-export async function emailProcessor(job: EmailJobData): Promise<void> {
+export async function emailProcessor(job: EmailJobData, log: Logger): Promise<void> {
   const { to, eventType, shipment, branding, invoiceId, trackingNo, pdfBase64 } = job;
 
   if (invoiceId && pdfBase64) {
@@ -292,7 +292,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
       .limit(1);
 
     if (!inv) {
-      console.warn(`[email] Invoice ${invoiceId} not found`);
+      log.warn({ invoiceId }, 'invoice not found for email job');
       return;
     }
 
@@ -303,7 +303,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
       .limit(1);
 
     if (!cust?.email) {
-      console.warn(`[email] No email for user ${inv.userId}`);
+      log.warn({ userId: inv.userId }, 'no email address for invoice recipient');
       return;
     }
 
@@ -334,7 +334,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
           contentType: 'application/pdf',
         },
       ],
-    });
+    }, log);
 
     await logAudit('NOTIFICATION_SENT', null, {
       channel: 'email',
@@ -351,7 +351,7 @@ export async function emailProcessor(job: EmailJobData): Promise<void> {
 
   const html = await renderEmail(eventType, shipment, branding);
   const subject = getEmailSubject(eventType, shipment);
-  await sendEmail({ to, subject, html });
+  await sendEmail({ to, subject, html }, log);
 
   await logAudit('NOTIFICATION_SENT', null, {
     channel: 'email',
@@ -382,7 +382,7 @@ async function checkWhatsAppRateLimit(tenantId?: string): Promise<boolean> {
 
 export const whatsappWorker = createWorker<WhatsAppJobData>(
   'whatsapp',
-  async (job) => {
+  async (job, log) => {
     const { to, tenantId, templateId, variables } = job;
     const allowed = await checkWhatsAppRateLimit(tenantId);
     if (!allowed) {
@@ -409,13 +409,13 @@ type PdfJobData = {
 
 export const pdfWorker = createWorker<PdfJobData>(
   'pdf',
-  async (job) => {
+  async (job, log) => {
     const { type, invoiceId, tenantId } = job;
 
     if (type === 'invoice') {
       const data = await getInvoiceData(invoiceId, tenantId);
       if (!data) {
-        console.warn(`[pdf] Invoice ${invoiceId} not found`);
+        log.warn({ invoiceId }, 'invoice not found for pdf job');
         return;
       }
       const pdf = await generateInvoicePdf(data);
@@ -435,10 +435,18 @@ type ArchiveJobData = Record<string, never>;
 
 export const archiveWorker = createWorker<ArchiveJobData>(
   'archive',
-  async () => {
+  async (_data, log) => {
     const result = await runArchive();
-    console.log(
-      `[worker/archive] done — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}, notifications ${result.notificationsArchived}/${result.notificationsSkeletonized}/${result.notificationsPurged}`,
+    log.info(
+      {
+        archived: result.archived,
+        skeletonized: result.skeletonized,
+        purged: result.purged,
+        notificationsArchived: result.notificationsArchived,
+        notificationsSkeletonized: result.notificationsSkeletonized,
+        notificationsPurged: result.notificationsPurged,
+      },
+      'archive run complete',
     );
   },
   1,
@@ -447,6 +455,7 @@ export const archiveWorker = createWorker<ArchiveJobData>(
 // Register the daily repeatable job (3 AM) with retries.
 async function registerArchiveRepeatable(maxRetries = 3): Promise<void> {
   if (!archiveQueue) return;
+  const log = childLogger({ queue: 'archive', type: 'archive-run' });
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await archiveQueue.add(
@@ -458,13 +467,10 @@ async function registerArchiveRepeatable(maxRetries = 3): Promise<void> {
           removeOnFail: { age: 86400 * 30, count: 100 },
         },
       );
-      console.log('[archive] repeatable job registered (3 AM daily)');
+      log.info('repeatable job registered (3 AM daily)');
       return;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(
-        `[archive] failed to register repeatable job (attempt ${attempt}/${maxRetries}): ${message}`,
-      );
+      log.error({ err, attempt, maxRetries }, 'failed to register archive repeatable job');
       if (attempt < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
       }
@@ -477,6 +483,7 @@ registerArchiveRepeatable();
 // Register periodic re-tracking (every 2 hours) with retries.
 async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
   if (!shipmentQueue) return;
+  const log = childLogger({ queue: 'shipment', type: 'retrack' });
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await shipmentQueue.add(
@@ -488,13 +495,10 @@ async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
           removeOnFail: { age: 86400 * 30, count: 100 },
         },
       );
-      console.log('[retrack] repeatable job registered (every 2 hours)');
+      log.info('repeatable job registered (every 2 hours)');
       return;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(
-        `[retrack] failed to register repeatable job (attempt ${attempt}/${maxRetries}): ${message}`,
-      );
+      log.error({ err, attempt, maxRetries }, 'failed to register retrack repeatable job');
       if (attempt < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
       }
@@ -562,7 +566,7 @@ type ShipmentInvoiceJobData = {
 
 export const shipmentWorker = createWorker(
   'shipment',
-  async (data) => {
+  async (data, log) => {
     // Note: `createWorker` passes `job.data` to the processor, so `data` is the raw payload.
     // We use a `type` discriminator field set by the service to distinguish job types.
 
@@ -576,7 +580,7 @@ export const shipmentWorker = createWorker(
         .then((r) => r[0] ?? null);
 
       if (!shipment) {
-        console.warn(`[worker/shipment] track: shipment ${trackData.shipmentId} not found`);
+        log.warn({ shipmentId: trackData.shipmentId }, 'track job: shipment not found');
         return;
       }
 
@@ -593,13 +597,14 @@ export const shipmentWorker = createWorker(
           labelCode: trackData.labelCode,
         },
         trackData.tenantId,
+        log,
       );
       return;
     }
 
     if (data.type === 'retrack') {
       const count = await retrackActiveShipments();
-      console.log(`[retrack] enqueued ${count} track jobs`);
+      log.info({ type: 'retrack', count }, 'enqueued track jobs');
       return;
     }
 
@@ -610,11 +615,12 @@ export const shipmentWorker = createWorker(
         invoiceData.billAmount,
         invoiceData.tenantId,
         invoiceData.userId,
+        log,
       );
       return;
     }
 
-    console.warn(`[worker/shipment] unknown job type: ${String(data.type)}`);
+    log.warn({ type: String(data.type) }, 'unknown shipment job type');
   },
   5,
 );

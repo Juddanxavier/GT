@@ -84,7 +84,7 @@ app.get('/template-previews', requireRole('superadmin', 'tenant-admin'), async (
       try {
         emailHtml = await renderEmail(event, shipment, branding);
       } catch (err) {
-        console.error(`[settings] failed to render email preview for ${event}`, err);
+        c.get('logger').error({ err, event }, 'failed to render email preview');
       }
 
       const whatsapp = getWhatsAppTemplateParams(event, shipment);

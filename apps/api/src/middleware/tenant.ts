@@ -7,6 +7,7 @@ import { tenantDomains, tenants } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { cacheGet, cacheSet } from '../cache';
 import { errorResponse } from '../error-response';
+import type { Logger } from '../logger';
 
 const CACHE_TTL_SEC = 300;
 
@@ -22,7 +23,7 @@ export class TenantResolutionError extends Error {
   }
 }
 
-async function resolveTenantByDomain(host: string): Promise<string | null> {
+async function resolveTenantByDomain(host: string, log: Logger): Promise<string | null> {
   const domain = host.split(':')[0]?.toLowerCase() ?? '';
 
   if (!domain || domain === 'localhost') {
@@ -50,12 +51,12 @@ async function resolveTenantByDomain(host: string): Promise<string | null> {
     await cacheSet(null, `domain:${domain}`, '', CACHE_TTL_SEC);
     return null;
   } catch (error) {
-    console.error('Tenant domain lookup failed:', error);
+    log.error({ err: error }, 'tenant domain lookup failed');
     return null;
   }
 }
 
-async function resolveTenantBySlug(slug: string): Promise<string | null> {
+async function resolveTenantBySlug(slug: string, log: Logger): Promise<string | null> {
   const cached = await cacheGet<string | null>(null, `slug:${slug}`);
   if (cached !== null) {
     return cached || null;
@@ -76,7 +77,7 @@ async function resolveTenantBySlug(slug: string): Promise<string | null> {
     await cacheSet(null, `slug:${slug}`, '', CACHE_TTL_SEC);
     return null;
   } catch (error) {
-    console.error('Tenant slug lookup failed:', error);
+    log.error({ err: error }, 'tenant slug lookup failed');
     return null;
   }
 }
@@ -88,6 +89,7 @@ export async function tenantMiddleware(c: Context, next: Next) {
   const headerTenantId = c.req.header('X-Tenant-ID');
   const headerTenantSlug = c.req.header('X-Tenant-Slug');
   const user = c.get('user') as { role?: string; tenantId?: string; branchId?: string } | null;
+  const log = c.get('logger');
 
   if (headerTenantId && user?.role === 'superadmin') {
     tenantId = headerTenantId;
@@ -103,7 +105,7 @@ export async function tenantMiddleware(c: Context, next: Next) {
   }
 
   if (!tenantId && headerTenantSlug) {
-    tenantId = await resolveTenantBySlug(headerTenantSlug);
+    tenantId = await resolveTenantBySlug(headerTenantSlug, log);
     if (tenantId) {
       tenantSource = 'slug';
     }
@@ -112,7 +114,7 @@ export async function tenantMiddleware(c: Context, next: Next) {
   if (!tenantId) {
     const host = c.req.header('host');
     if (host) {
-      tenantId = await resolveTenantByDomain(host);
+      tenantId = await resolveTenantByDomain(host, log);
       if (tenantId) {
         tenantSource = 'domain';
       }
@@ -122,8 +124,10 @@ export async function tenantMiddleware(c: Context, next: Next) {
   c.set('tenantId', tenantId);
   c.set('tenantSource', tenantSource);
 
-  // Tag Sentry with tenant context
+  // Rebind the request logger with tenantId (spec 0001): every line after this
+  // point carries the tenant; lines before it carry reqId only.
   if (tenantId) {
+    c.set('logger', c.get('logger').child({ tenantId }));
     Sentry.setTag('tenantId', tenantId);
   }
   Sentry.setTag('tenantSource', (tenantSource as string) ?? 'none');
@@ -132,7 +136,7 @@ export async function tenantMiddleware(c: Context, next: Next) {
   try {
     await runWithTenantContext(tenantId, () => next());
   } catch (error) {
-    console.error('Failed to set RLS context:', error);
+    c.get('logger').error({ err: error }, 'failed to set RLS context');
     return errorResponse(c, 'INTERNAL_ERROR', 'Internal server error', 500);
   }
 }

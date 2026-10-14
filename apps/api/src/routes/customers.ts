@@ -193,7 +193,7 @@ app.post('/register', async (c) => {
     return c.json({ data: { id: created.user.id } });
   } catch (err) {
     const baErr = err as { status?: number; message?: string };
-    console.error('[customers] register error:', err);
+    c.get('logger').error({ err }, 'customer register failed');
     return c.json(
       { error: baErr.message || 'Registration failed. Please try again.' },
       (baErr.status ?? 500) as 400 | 409 | 500,
@@ -215,7 +215,7 @@ app.patch('/profile', async (c) => {
     try {
       await updateUser({ userId: currentUser.id, name });
     } catch (err: any) {
-      console.error('[profile] name update failed:', err);
+      c.get('logger').error({ err }, 'profile name update failed');
       updateErrors.push(err?.message || 'Failed to update name');
     }
   }
@@ -237,7 +237,7 @@ app.patch('/profile', async (c) => {
       });
     } catch (err: any) {
       const msg = (err as { message?: string; status?: number }).message || '';
-      console.error('[profile] password change failed:', err);
+      c.get('logger').error({ err }, 'profile password change failed');
       if (msg.includes('Invalid password') || msg.includes('incorrect')) {
         updateErrors.push('Current password is incorrect');
       } else if (msg.includes('same')) {

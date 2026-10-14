@@ -35,12 +35,12 @@ import { closeTransport, getEmailProviderStatus } from './email/provider';
 
 // Global crash handlers (before any other code)
 process.on('unhandledRejection', (reason) => {
-  console.error('[process] unhandledRejection:', reason);
+  logger.error({ err: reason }, 'unhandledRejection');
   Sentry.captureException(reason);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[process] uncaughtException:', err);
+  logger.error({ err }, 'uncaughtException');
   Sentry.captureException(err);
 });
 
@@ -51,23 +51,23 @@ function validateEnv(): void {
   const required = ['DATABASE_URL', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL'] as const;
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length > 0) {
-    console.error(`[env] Missing required variables: ${missing.join(', ')}`);
+    logger.error({ missing }, 'missing required environment variables');
     process.exit(1);
   }
   if (!process.env.TRACK_WEBHOOK_SECRET) {
-    console.warn(
-      '[env] TRACK_WEBHOOK_SECRET is empty — 17TRACK webhook verification will reject all requests',
+    logger.warn(
+      'TRACK_WEBHOOK_SECRET is empty — 17TRACK webhook verification will reject all requests',
     );
   }
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.REDIS_URL) {
-      console.warn(
-        '[env] REDIS_URL is empty — job queues and real-time features will be unavailable',
+      logger.warn(
+        'REDIS_URL is empty — job queues and real-time features will be unavailable',
       );
     }
     if (!process.env.SEED_SECRET) {
-      console.warn(
-        '[env] SEED_SECRET is empty — superadmin seed endpoint will reject all requests. Set SEED_SECRET to enable it.',
+      logger.warn(
+        'SEED_SECRET is empty — superadmin seed endpoint will reject all requests. Set SEED_SECRET to enable it.',
       );
     }
   }
@@ -85,19 +85,65 @@ const app = new Hono<{
 
 // ── Middleware ──
 // Middleware execution order matters:
-// 1. CORS — must run first to set response headers before any other middleware
-// 2. Compression — compresses response bodies
-// 3. Request ID — assigns unique ID for logging before anything else
-// 4. Request logging — captures incoming request
-// 5. Security headers — sets secure defaults on all responses
-// 6. Sentry — error/performance monitoring
-// 6. Lockout check — runs before auth handler for sign-in
-// 7. Forgot-password — runs before auth handler
-// 8. Auth handler — Better Auth (owns /api/auth/*)
-// 9. Session middleware — populates user context
-// 10. Tenant middleware — determines tenant from user/session/header
-// 11. Branch middleware — validates X-Branch-ID against tenant (depends on tenant)
-// 12. Rate limiting — limits per-route requests (depends on session for authenticated limits)
+// 1. Request ID — mints or validates the correlation id first, so every later
+//    line (including rejections from the payload cap, content type check, and
+//    timeout) carries it
+// 2. Request logging — incoming line up front; the terminal line runs after
+//    next() and stands down when the error handler already logged one
+// 3. CORS — sets response headers
+// 4. Body size limit — rejects oversized payloads
+// 5. Content-Type validation — rejects non JSON writes
+// 6. Request timeout
+// 7. Compression — compresses response bodies
+// 8. Security headers — sets secure defaults on all responses
+// 9. Sentry — error/performance monitoring
+// 10. Auth handler — Better Auth (owns /api/auth/*)
+// 11. Lockout check — runs before auth handler for sign-in
+// 12. Forgot-password — runs before auth handler
+// 13. Session middleware — populates user context
+// 14. Tenant middleware — determines tenant from user/session/header, rebinds
+//     the logger with tenantId
+// 15. Branch middleware — validates X-Branch-ID against tenant (depends on tenant)
+// 16. Rate limiting — limits per-route requests (depends on session for authenticated limits)
+
+// Request ID (first in the chain — spec 0001)
+app.use('*', requestIdMiddleware);
+
+// Request logging (second — wraps next() so every path emits one terminal line)
+app.use('*', async (c, next) => {
+  const start = Date.now();
+  const reqId = c.get('requestId');
+  const log = childLogger({ reqId });
+  c.set('logger', log);
+  log.info({ method: c.req.method, path: c.req.path }, 'incoming request');
+  try {
+    await next();
+  } catch (err) {
+    // next() rejected without the error handler seeing it (a non Error throw):
+    // this is the request's terminal line. Rethrow so Hono still handles it.
+    if (!c.error) c.get('logger').error({ err }, 'request failed');
+    throw err;
+  }
+  // Hono runs the error handler at the throwing level and then resolves next(),
+  // so for a thrown error the unhandled error line is already the terminal line
+  // (spec 0001, AC-2: exactly one terminal line per request).
+  if (c.error) return;
+  const ms = Date.now() - start;
+  const user = c.get('user') as { id?: string; tenantId?: string; role?: string } | null;
+  const tenantId = c.get('tenantId');
+  const status = c.res.status;
+  const fields = {
+    status,
+    ms,
+    userId: user?.id,
+    tenantId: tenantId || user?.tenantId,
+    role: user?.role,
+  };
+  const terminal = c.get('logger');
+  if (status >= 500) terminal.error(fields, 'response');
+  else if (status >= 400) terminal.warn(fields, 'response');
+  else terminal.info(fields, 'response');
+});
 
 const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim());
 const corsOrigin =
@@ -156,34 +202,8 @@ app.use('*', async (c, next) => {
 // Request timeout
 app.use('*', timeout(60000));
 
-// Compression (before request ID to compress before logging)
+// Compression (compresses the response body)
 app.use('*', compress());
-
-// Request ID (before all other middleware)
-app.use('*', requestIdMiddleware);
-
-// Request logging
-app.use('*', async (c, next) => {
-  const start = Date.now();
-  const reqId = c.get('requestId');
-  const log = childLogger({ reqId });
-  c.set('logger', log);
-  log.info({ method: c.req.method, path: c.req.path }, 'incoming request');
-  await next();
-  const ms = Date.now() - start;
-  const user = c.get('user') as { id?: string; tenantId?: string; role?: string } | null;
-  const tenantId = c.get('tenantId');
-  log.info(
-    {
-      status: c.res.status,
-      ms,
-      userId: user?.id,
-      tenantId: tenantId || user?.tenantId,
-      role: user?.role,
-    },
-    'response',
-  );
-});
 
 // Security headers
 app.use('*', securityHeadersMiddleware);
@@ -350,13 +370,13 @@ app.post('/api/seed/tenant', async (c) => {
   const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123';
   const seedStaffPassword = process.env.SEED_STAFF_PASSWORD || 'Staff@123';
   if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.warn(
-      '[seed] SEED_ADMIN_PASSWORD not set — using default password. Set it in production!',
+    c.get('logger').warn(
+      'SEED_ADMIN_PASSWORD not set — using default password. Set it in production!',
     );
   }
   if (!process.env.SEED_STAFF_PASSWORD) {
-    console.warn(
-      '[seed] SEED_STAFF_PASSWORD not set — using default password. Set it in production!',
+    c.get('logger').warn(
+      'SEED_STAFF_PASSWORD not set — using default password. Set it in production!',
     );
   }
 
@@ -499,7 +519,7 @@ app.post('/api/auth/forgot-password', async (c) => {
         );
       }
     } catch (err) {
-      console.error('[forgot-password] Redis rate limit error:', err);
+      c.get('logger').error({ err }, 'forgot-password Redis rate limit error');
     }
   } else {
     const now = Date.now();
@@ -772,12 +792,20 @@ async function main() {
   // Run archive on startup to catch up (non-blocking — runs in background)
   runArchive()
     .then((result) => {
-      console.log(
-        `[archive] startup run — archived ${result.archived}, skeletonized ${result.skeletonized}, purged ${result.purged}, notifications ${result.notificationsArchived}/${result.notificationsSkeletonized}/${result.notificationsPurged}`,
+      logger.info(
+        {
+          archived: result.archived,
+          skeletonized: result.skeletonized,
+          purged: result.purged,
+          notificationsArchived: result.notificationsArchived,
+          notificationsSkeletonized: result.notificationsSkeletonized,
+          notificationsPurged: result.notificationsPurged,
+        },
+        'archive startup run complete',
       );
     })
     .catch((err: Error) => {
-      console.error('[archive] startup run failed:', err.message);
+      logger.error({ err }, 'archive startup run failed');
     });
 
   server = serve({
@@ -795,23 +823,23 @@ async function main() {
   const { createRealtimeServer } = await import('./realtime.js');
   createRealtimeServer(server);
 
-  console.log(`[api] server running on http://localhost:${Number(process.env.PORT) || 3001}`);
+  logger.info(`server running on http://localhost:${Number(process.env.PORT) || 3001}`);
 }
 
 if (!process.env.VITEST) {
   main().catch((err) => {
-    console.error('[api] failed to start:', err);
+    logger.error({ err }, 'failed to start');
     process.exit(1);
   });
 }
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  console.log(`[api] received ${signal}, shutting down gracefully...`);
+  logger.info({ signal }, 'shutting down gracefully');
 
   // Force exit after 10s if shutdown hangs
   const forceExit = setTimeout(() => {
-    console.error('[api] shutdown timed out — force exiting');
+    logger.error('shutdown timed out — force exiting');
     process.exit(1);
   }, 10000);
   forceExit.unref();
@@ -828,14 +856,14 @@ async function shutdown(signal: string) {
     const { closeWorkers } = await import('./workers/index.js');
     await closeWorkers();
   } catch (err) {
-    console.error('[api] error closing workers:', err);
+    logger.error({ err }, 'error closing workers');
   }
 
   try {
     const { closeQueues } = await import('./queues/index.js');
     await closeQueues();
   } catch (err) {
-    console.error('[api] error closing queues:', err);
+    logger.error({ err }, 'error closing queues');
   }
 
   // Close Socket.IO
@@ -852,8 +880,15 @@ async function shutdown(signal: string) {
   // Disconnect Redis last (workers/queues depend on it)
   await disconnectRedis();
 
+  // Last line, then flush so deploy restarts do not eat it (spec 0001): the
+  // callback is awaited with a 50ms cap so shutdown can never hang on the log.
+  logger.info('shutdown complete');
+  await new Promise<void>((resolve) => {
+    logger.flush(() => resolve());
+    setTimeout(resolve, 50).unref();
+  });
+
   clearTimeout(forceExit);
-  console.log('[api] shutdown complete');
   process.exit(0);
 }
 

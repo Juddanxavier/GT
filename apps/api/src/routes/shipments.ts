@@ -229,7 +229,7 @@ app.post('/', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) => {
     customerName: parsed.data.customerName,
     senderAddress: parsed.data.senderAddress,
     recipientAddress: parsed.data.recipientAddress,
-    }));
+    }, c.get('logger')));
   } catch (err) {
     if (err instanceof DuplicateTrackingError) {
       return c.json({ error: err.message }, 409);
@@ -456,7 +456,7 @@ app.patch(
     if ('billAmount' in filteredData && Number(filteredData.billAmount) !== Number(existing.billAmount)) {
       if (role === 'tenant-admin' || role === 'superadmin') {
         const newAmount = Number(filteredData.billAmount) || 0;
-        await regenerateInvoice(row.id, newAmount, scope.tenantId!, row.userId ?? undefined);
+        await regenerateInvoice(row.id, newAmount, scope.tenantId!, row.userId ?? undefined, c.get('logger'));
       }
     }
 
@@ -781,7 +781,7 @@ app.post(
         if (cooled) return c.json({ error: 'Please wait before tracking again' }, 429);
         await cacheClient.set(cooldownKey, '1', 'EX', 60);
       } catch {
-        console.warn('[track] rate-limit redis unavailable, proceeding without cooldown');
+        c.get('logger').warn('track cooldown redis unavailable, proceeding without cooldown');
       }
     }
 
@@ -809,11 +809,11 @@ app.post(
 
     try {
       const provider = getProvider();
-      const result = await provider.track(shipment.trackingNo, shipment.carrier ?? undefined);
+      const result = await provider.track(shipment.trackingNo, shipment.carrier ?? undefined, c.get('logger'));
       const inserted = await insertEvents(shipment.id, scope.tenantId, result.events);
 
       if (inserted > 0) {
-        notifyTrackingEvents(shipment.id, scope.tenantId, result.events, result.currentStatus);
+        notifyTrackingEvents(shipment.id, scope.tenantId, result.events, result.currentStatus, c.get('logger'));
       }
 
       const updateFields: Record<string, unknown> = {
@@ -835,7 +835,7 @@ app.post(
 
       return c.json({ data: { newEvents: inserted, currentStatus: result.currentStatus } });
     } catch (err) {
-      console.error('[shipments] track failed:', err);
+      c.get('logger').error({ err, shipmentId: shipment.id, trackingNo: shipment.trackingNo }, 'track failed');
       return c.json({ error: 'Tracking failed' }, 500);
     }
   },
@@ -881,7 +881,7 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
       trackingNo: shipment.trackingNo,
       carrierCode: lastEvent?.carrierCode ?? undefined,
       carrier: shipment.carrier ?? undefined,
-    });
+    }, c.get('logger'));
 
     if (!ok) return c.json({ error: 'Failed to stop tracking' }, 500);
 
@@ -894,7 +894,7 @@ app.post('/:id/stop-tracking', requireRole('superadmin', 'tenant-admin'), async 
     await cacheDel(scope.tenantId!, `shipments:${resolvedId}:tracking`);
     return c.json({ data: { stopped: true } });
   } catch (err) {
-    console.error('[shipments] stop-tracking failed:', err);
+    c.get('logger').error({ err, shipmentId: resolvedId }, 'stop tracking failed');
     return c.json({ error: 'Failed to stop tracking' }, 500);
   }
 });

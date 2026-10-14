@@ -36,10 +36,11 @@ import { sendEmail } from '../email/provider';
 import { logAudit } from '../services/audit';
 import { generateOtp, verifyOtp, maskEmail } from '../services/otp';
 import { globalRateLimit } from '../middleware/rate-limit';
+import type { LoggerVariables } from '../logger';
 import type { TenantVariables } from '../middleware/tenant';
 import type { InternalStatus } from '../shipment-providers/types';
 
-const app = new Hono<{ Variables: TenantVariables }>();
+const app = new Hono<{ Variables: TenantVariables & LoggerVariables }>();
 
 const claimSchema = z.object({
   trackingNo: z.string().min(1).max(255),
@@ -275,9 +276,9 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
         <p style="color:#71717a;font-size:13px;margin:0 0 4px">This code expires in 10 minutes.</p>
         <p style="color:#a1a1aa;font-size:12px;margin:0">If you did not request this, please ignore this email.</p>
       </div>`,
-    });
+    }, c.get('logger'));
   } catch (err) {
-    console.error('[claim] failed to send OTP email:', err);
+    c.get('logger').error({ err, trackingNo }, 'failed to send claim OTP email');
     return c.json({ error: 'Failed to send verification code' }, 500);
   }
 
@@ -406,9 +407,9 @@ app.post('/claim/resend-otp', globalRateLimit({ windowSeconds: 600, maxRequests:
         <p style="color:#71717a;font-size:13px;margin:0 0 4px">This code expires in 10 minutes.</p>
         <p style="color:#a1a1aa;font-size:12px;margin:0">If you did not request this, please ignore this email.</p>
       </div>`,
-    });
+    }, c.get('logger'));
   } catch (err) {
-    console.error('[claim] failed to resend OTP email:', err);
+    c.get('logger').error({ err, trackingNo }, 'failed to resend claim OTP email');
     return c.json({ error: 'Failed to send verification code' }, 500);
   }
 

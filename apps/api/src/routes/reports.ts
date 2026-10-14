@@ -250,7 +250,7 @@ app.post('/pdf', requireRole('superadmin', 'tenant-admin'), async (c) => {
       },
     });
   } catch (err) {
-    console.error('[reports/pdf]', err);
+    c.get('logger').error({ err }, 'report pdf generation failed');
     return errorResponse(c, 'REPORT_ERROR', 'Failed to generate report', 500);
   }
 });
@@ -312,7 +312,7 @@ app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => 
           contentType: 'application/pdf',
         },
       ],
-    });
+    }, c.get('logger'));
 
     await logAudit('NOTIFICATION_SENT', (user.id as string) ?? null, {
       channel: 'email',
@@ -325,7 +325,7 @@ app.post('/send-email', requireRole('superadmin', 'tenant-admin'), async (c) => 
 
     return c.json({ data: { sent: true } });
   } catch (err) {
-    console.error('[reports/send-email]', err);
+    c.get('logger').error({ err }, 'report email failed');
     return c.json({ error: 'Failed to send report email' }, 500);
   }
 });

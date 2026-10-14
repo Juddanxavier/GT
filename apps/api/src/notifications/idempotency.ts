@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { cacheClient } from '../redis';
+import type { Logger } from '../logger';
 
 const NOTIFICATION_TTL = 7 * 24 * 3600;
 
@@ -7,9 +8,10 @@ export async function checkAndSetIdempotency(
   eventId: string,
   shipmentId: string,
   channel: 'email' | 'whatsapp',
+  log: Logger,
 ): Promise<boolean> {
   if (!cacheClient) {
-    console.warn('[idempotency] Redis cache not available — skipping dedup');
+    log.warn({ channel }, 'redis cache not available, skipping dedup');
     return false;
   }
 
@@ -21,8 +23,8 @@ export async function checkAndSetIdempotency(
       return false;
     }
     return true;
-  } catch {
-    console.warn('[idempotency] Redis error — allowing (skipping dedup)');
+  } catch (err) {
+    log.warn({ err, channel }, 'redis error, allowing (skipping dedup)');
     return false;
   }
 }
@@ -39,9 +41,9 @@ const WEBHOOK_TTL = 3600; // 1 hour — enough to catch retries, short enough to
  * Returns `true` if already seen (duplicate), `false` if new (first time).
  * Gracefully degrades to `false` if Redis is unavailable.
  */
-export async function checkWebhookIdempotency(rawBody: string): Promise<boolean> {
+export async function checkWebhookIdempotency(rawBody: string, log: Logger): Promise<boolean> {
   if (!cacheClient) {
-    console.warn('[webhook-idempotency] Redis not available — allowing');
+    log.warn('redis not available, allowing webhook');
     return false;
   }
 
@@ -55,7 +57,7 @@ export async function checkWebhookIdempotency(rawBody: string): Promise<boolean>
     }
     return true;
   } catch (err) {
-    console.error('[webhook-idempotency] Redis error — allowing:', err);
+    log.error({ err }, 'redis error, allowing webhook');
     return false;
   }
 }

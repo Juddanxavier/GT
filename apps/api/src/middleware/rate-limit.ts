@@ -79,7 +79,7 @@ export function globalRateLimit(config?: Partial<RateLimitConfig>) {
         return errorResponse(c, 'RATE_LIMITED', 'Too many requests. Please try again later.', 429);
       }
     } catch (err) {
-      console.error('[ratelimit] Redis operation failed — rate limiting bypassed for this request:', err);
+      c.get('logger').error({ err }, 'rate limit redis operation failed, bypassing for this request');
     }
 
     await next();

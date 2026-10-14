@@ -135,7 +135,7 @@ app.post('/invite', requireRole('superadmin', 'tenant-admin'), async (c) => {
         </tr>
       </table>`,
     }),
-  });
+  }, c.get('logger'));
 
   await logAudit('NOTIFICATION_SENT', invite.id, {
     channel: 'email',

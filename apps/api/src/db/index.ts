@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { logger } from '../logger';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -20,7 +21,7 @@ const client = postgres(connectionString, {
 
 // Warn about overly large pool in production
 if (Number(process.env.DB_POOL_MAX) > 50) {
-  console.warn('[db] DB_POOL_MAX > 50 may cause connection spikes under load');
+  logger.warn('db pool max above 50 may cause connection spikes under load');
 }
 
 export { client };

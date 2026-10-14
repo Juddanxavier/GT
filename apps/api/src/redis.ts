@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import { logger } from './logger';
 
 const REDIS_URL = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
 
@@ -13,7 +14,7 @@ function createBullConnection(): Redis | null {
     enableReadyCheck: false,
     lazyConnect: true,
   });
-  client.on('error', (err) => console.error('[redis] bull connection error:', err.message));
+  client.on('error', (err) => logger.error({ err }, 'bull connection error'));
   return client;
 }
 
@@ -24,7 +25,7 @@ function createCacheClient(): Redis | null {
     lazyConnect: true,
     retryStrategy: () => null, // don't retry — fail fast so lazyConnect surfaces the error immediately
   });
-  client.on('error', (err) => console.error('[redis] cache client error:', err.message));
+  client.on('error', (err) => logger.error({ err }, 'cache client error'));
   return client;
 }
 
@@ -35,17 +36,17 @@ export async function connectRedis(): Promise<void> {
   if (cacheClient) {
     try {
       await cacheClient.connect();
-      console.log('[redis] cache client connected');
+      logger.info('cache client connected');
     } catch (err) {
-      console.error('[redis] cache client connection failed:', err);
+      logger.error({ err }, 'cache client connection failed');
     }
   }
   if (bullConnection) {
     try {
       await bullConnection.connect();
-      console.log('[redis] bull connection ready');
+      logger.info('bull connection ready');
     } catch (err) {
-      console.error('[redis] bull connection failed:', err);
+      logger.error({ err }, 'bull connection failed');
     }
   }
 }

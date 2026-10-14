@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Logger } from '../logger';
 
 type SendEmailParams = {
   to: string;
@@ -8,7 +9,7 @@ type SendEmailParams = {
   attachments?: { filename: string; content: Buffer; contentType?: string }[];
 };
 
-type SendFn = (params: SendEmailParams) => Promise<void>;
+type SendFn = (params: SendEmailParams, log: Logger) => Promise<void>;
 
 // ZEPTOMAIL_API_KEY is for the HTTP API. If only ZEPTOMAIL_PASS is set, try it as the API key too.
 const ZEPTOMAIL_API_KEY = process.env.ZEPTOMAIL_API_KEY || process.env.ZEPTOMAIL_PASS || '';
@@ -21,11 +22,11 @@ const SMTP_PASS = process.env.SMTP_PASS || '';
 const DEFAULT_FROM_EMAIL = process.env.DEFAULT_FROM_EMAIL || 'noreply@gajantraders.com';
 const DEFAULT_FROM_NAME = process.env.DEFAULT_FROM_NAME || 'Gajan Traders';
 
-function createSendFn(): SendFn {
+function createSendFn(log: Logger): SendFn {
   // 1. ZeptoMail HTTP API (no SMTP needed)
   if (ZEPTOMAIL_API_KEY) {
-    console.log('[email] using ZeptoMail HTTP API');
-    return async (params) => {
+    log.info('email provider: ZeptoMail HTTP API');
+    return async (params, log) => {
       const from = params.from ?? { email: DEFAULT_FROM_EMAIL, name: DEFAULT_FROM_NAME };
       const body: Record<string, unknown> = {
         from: { address: from.email, name: from.name },
@@ -51,10 +52,10 @@ function createSendFn(): SendFn {
       if (!res.ok) {
         const text = await res.text();
         const errMsg = `ZeptoMail API ${res.status} from ${ZEPTOMAIL_API_HOST}: ${text || '(empty body)'}`;
-        console.error(`[email] HTTP API error: ${errMsg}`);
+        log.error({ status: res.status, body: text || '(empty body)' }, 'zeptomail http api error');
         throw new Error(errMsg);
       }
-      console.log(`[email] sent via HTTP API to ${params.to}: "${params.subject}"`);
+      log.info({ to: params.to, subject: params.subject }, 'email sent via http api');
     };
   }
 
@@ -62,7 +63,7 @@ function createSendFn(): SendFn {
   let transport: nodemailer.Transporter | null = null;
 
   if (ZEPTOMAIL_PASS) {
-    console.log('[email] creating ZeptoMail SMTP transport');
+    log.info('email provider: ZeptoMail SMTP transport');
     transport = nodemailer.createTransport({
       host: 'smtp.zeptomail.com',
       port: 587,
@@ -73,7 +74,7 @@ function createSendFn(): SendFn {
       connectionTimeout: 10000,
     });
   } else if (SMTP_HOST) {
-    console.log('[email] creating generic SMTP transport');
+    log.info('email provider: generic SMTP transport');
     const hasAuth = !!SMTP_USER && !!SMTP_PASS;
     transport = nodemailer.createTransport({
       host: SMTP_HOST,
@@ -86,10 +87,10 @@ function createSendFn(): SendFn {
 
   if (transport) {
     transport.verify((err) => {
-      if (err) console.error('[email] SMTP verify failed:', err.message);
-      else console.log('[email] SMTP transport verified OK');
+      if (err) log.error({ err }, 'smtp verify failed');
+      else log.info('smtp transport verified');
     });
-    return async (params) => {
+    return async (params, log) => {
       const from = params.from ?? { email: DEFAULT_FROM_EMAIL, name: DEFAULT_FROM_NAME };
       try {
         await transport!.sendMail({
@@ -103,24 +104,24 @@ function createSendFn(): SendFn {
             contentType: a.contentType,
           })),
         });
-        console.log(`[email] sent via SMTP to ${params.to}: "${params.subject}"`);
+        log.info({ to: params.to, subject: params.subject }, 'email sent via smtp');
       } catch (err) {
-        console.error(`[email] SMTP failed for ${params.to}:`, err instanceof Error ? err.message : err);
+        log.error({ err, to: params.to }, 'smtp send failed');
         throw err;
       }
     };
   }
 
-  const noop = async () => {
-    console.warn('[email] No email provider configured. Set ZEPTOMAIL_API_KEY, ZEPTOMAIL_PASS, or SMTP_HOST.');
+  const noop = async (_params: SendEmailParams, log: Logger) => {
+    log.warn('no email provider configured, set ZEPTOMAIL_API_KEY, ZEPTOMAIL_PASS, or SMTP_HOST');
   };
   return noop;
 }
 
 let send: SendFn | null = null;
 
-function getSend(): SendFn {
-  if (!send) send = createSendFn();
+function getSend(log: Logger): SendFn {
+  if (!send) send = createSendFn(log);
   return send;
 }
 
@@ -134,8 +135,8 @@ export function getEmailProviderStatus() {
   };
 }
 
-export async function sendEmail(params: SendEmailParams): Promise<void> {
-  await getSend()(params);
+export async function sendEmail(params: SendEmailParams, log: Logger): Promise<void> {
+  await getSend(log)(params, log);
 }
 
 export function closeTransport(): void {

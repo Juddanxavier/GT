@@ -24,6 +24,7 @@ import { pdfQueue, shipmentQueue } from '../queues';
 import { emitToTenant } from '../realtime';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
+import type { Logger } from '../logger';
 
 // ── Types ──
 
@@ -68,7 +69,10 @@ export class DuplicateTrackingError extends Error {
  *
  * If no Redis is available, runs tracking + invoice synchronously as a fallback.
  */
-export async function createShipment(input: CreateShipmentInput): Promise<CreateShipmentResult> {
+export async function createShipment(
+  input: CreateShipmentInput,
+  log: Logger,
+): Promise<CreateShipmentResult> {
   // ── Transaction 1: Core creation ──
   // This is the only synchronous DB operation. It must succeed before we respond.
   let row: typeof shipments.$inferSelect | undefined;
@@ -163,10 +167,11 @@ export async function createShipment(input: CreateShipmentInput): Promise<Create
         labelCode,
       },
       input.tenantId,
+      log,
     );
 
     if (input.billAmount != null && input.billAmount > 0) {
-      await autoCreateInvoice(created, input.billAmount, input.tenantId, input.userId);
+      await autoCreateInvoice(created, input.billAmount, input.tenantId, input.userId, log);
     }
   }
 
@@ -210,6 +215,7 @@ export async function performTracking(
     labelCode?: string;
   },
   tenantId: string,
+  log: Logger,
 ): Promise<void> {
   try {
     const provider = getProvider();
@@ -233,12 +239,14 @@ export async function performTracking(
         phone: extra.contactPhone ?? undefined,
         companyName: tenant?.name ?? undefined,
         countryName: tenant?.country ?? undefined,
-      });
+      }, log);
     }
 
     // 2. Fetch tracking data (17TRACK auto-detects carrier)
     const trackResult = await provider.track(
       shipment.trackingNo,
+      undefined,
+      log,
     );
 
     // 3. Insert deduplicated events
@@ -246,7 +254,7 @@ export async function performTracking(
 
     // 4. Trigger notifications for new events
     if (inserted > 0) {
-      notifyTrackingEvents(shipment.id, tenantId, trackResult.events, trackResult.currentStatus);
+      notifyTrackingEvents(shipment.id, tenantId, trackResult.events, trackResult.currentStatus, log);
     }
 
     // 5. Update shipment with tracking data
@@ -279,7 +287,7 @@ export async function performTracking(
     await cacheDelPattern(tenantId, 'dashboard:*');
   } catch (err) {
     // Log and rethrow — BullMQ will retry with backoff
-    console.error(`[shipment/track] failed for ${shipment.trackingNo} (${shipment.id}):`, err);
+    log.error({ err, shipmentId: shipment.id, trackingNo: shipment.trackingNo }, 'tracking failed');
     throw err;
   }
 }
@@ -303,7 +311,8 @@ export async function autoCreateInvoice(
   shipment: { id: string; trackingNo: string },
   billAmount: number,
   tenantId: string,
-  userId?: string,
+  userId: string | undefined,
+  log: Logger,
 ): Promise<void> {
   try {
     // Check for existing invoice (idempotency)
@@ -350,7 +359,7 @@ export async function autoCreateInvoice(
       });
     }
   } catch (err) {
-    console.error(`[shipment/invoice] failed for shipment ${shipment.id}:`, err);
+    log.error({ err, shipmentId: shipment.id }, 'invoice creation failed');
     throw err;
   }
 }
@@ -364,7 +373,8 @@ export async function regenerateInvoice(
   shipmentId: string,
   billAmount: number,
   tenantId: string,
-  userId?: string,
+  userId: string | undefined,
+  log: Logger,
 ): Promise<void> {
   try {
     const [existing] = await db
@@ -394,9 +404,10 @@ export async function regenerateInvoice(
         billAmount,
         tenantId,
         userId,
+        log,
       );
     }
   } catch (err) {
-    console.error(`[shipment/invoice] regenerate failed for shipment ${shipmentId}:`, err);
+    log.error({ err, shipmentId }, 'invoice regeneration failed');
   }
 }

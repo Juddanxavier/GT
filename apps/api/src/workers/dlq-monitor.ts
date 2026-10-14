@@ -1,21 +1,26 @@
 import * as Sentry from '@sentry/hono/node';
 import { type ConnectionOptions, Worker } from 'bullmq';
+import { childLogger } from '../logger';
 import { isRedisConnected } from '../queues';
 import { bullConnectionOptions } from '../redis';
+
+const QUEUE = 'dead-letter';
 
 export function startDlqMonitor(): void {
   if (!isRedisConnected() || !bullConnectionOptions) return;
 
   const worker = new Worker(
-    'dead-letter',
+    QUEUE,
     async (job) => {
-      const msg = `[DLQ] Job ${job.name} (${job.id}) failed after retries`;
-      console.error(msg);
+      const log = childLogger({ queue: QUEUE, jobId: job.id });
+      const msg = `Job ${job.name} (${job.id}) failed after retries`;
+      log.error({ jobName: job.name }, 'job failed after retries, reported to Sentry');
       Sentry.captureException(new Error(msg), {
         tags: {
           'dlq.jobName': job.name,
           'dlq.originalQueue': job.data?.queueName ?? 'unknown',
           'dlq.failedReason': job.failedReason ?? 'unknown',
+          jobId: job.data?.jobId ?? job.id,
         },
       });
     },
@@ -23,12 +28,14 @@ export function startDlqMonitor(): void {
   );
 
   worker.on('completed', (job) => {
-    console.error(`[DLQ] Job ${job?.id} moved to dead letter queue and reported to Sentry`);
+    childLogger({ queue: QUEUE, ...(job?.id ? { jobId: job.id } : {}) }).error(
+      'job moved to dead letter queue and reported to Sentry',
+    );
   });
 
   worker.on('error', (err) => {
-    console.error('[DLQ] Monitor error:', err.message);
+    childLogger({ queue: QUEUE }).error({ err }, 'dlq monitor error');
   });
 
-  console.log('[DLQ] Monitor started');
+  childLogger({ queue: QUEUE }).info('dlq monitor started');
 }

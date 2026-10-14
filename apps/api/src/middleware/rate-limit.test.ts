@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
+import { type LoggerVariables, logger } from '../logger';
 
 let mockRedisEnabled = true;
 const mockRedis = { incr: vi.fn(), expire: vi.fn() };
@@ -13,7 +14,13 @@ vi.mock('../redis.js', () => ({
 import { globalRateLimit } from './rate-limit.js';
 
 function createApp() {
-  const app = new Hono();
+  const app = new Hono<{ Variables: LoggerVariables }>();
+  // The middleware logs through the request logger, so the harness sets one
+  // the same way the real app's request-id middleware does.
+  app.use('*', async (c, next) => {
+    c.set('logger', logger);
+    await next();
+  });
   app.use('*', globalRateLimit());
   app.get('/test', (c) => c.json({ ok: true }));
   return app;

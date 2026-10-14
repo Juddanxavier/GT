@@ -13,6 +13,7 @@ import {
 } from './schema';
 import { auth } from '../auth';
 import { createUser } from '../auth-api';
+import { logger } from '../logger';
 import { and, eq, sql } from 'drizzle-orm';
 
 async function seed() {
@@ -60,8 +61,8 @@ async function seed() {
     })
     .returning();
 
-  console.log(`  Tenant: ${gajan!.name} (${gajan!.country})`);
-  console.log(`  Tenant: ${lanka!.name} (${lanka!.country})`);
+  logger.info({ tenant: gajan!.name, country: gajan!.country }, 'tenant upserted');
+  logger.info({ tenant: lanka!.name, country: lanka!.country }, 'tenant upserted');
 
   // ── Replace Branches ──
   await db.delete(branches);
@@ -90,8 +91,8 @@ async function seed() {
   const kandy = lBranches[1]!;
   const jaffna = lBranches[2]!;
 
-  console.log(`  Branches for ${gajan!.name}: Mumbai HQ, Delhi, Chennai`);
-  console.log(`  Branches for ${lanka!.name}: Colombo HQ, Kandy, Jaffna`);
+  logger.info({ tenant: gajan!.name }, 'branches upserted: Mumbai HQ, Delhi, Chennai');
+  logger.info({ tenant: lanka!.name }, 'branches upserted: Colombo HQ, Kandy, Jaffna');
 
   // ── Upsert Users ──
   const usersData = [
@@ -109,11 +110,11 @@ async function seed() {
   for (const u of usersData) {
     const existingUsers = await db.select().from(user).where(eq(user.email, u.email)).limit(1);
     if (existingUsers.length > 0) {
-      console.log(`  User exists (skipping): ${u.name} (${u.email})`);
+      logger.info({ email: u.email, name: u.name }, 'user exists, skipping');
       continue;
     }
     await createUser({ email: u.email, password: u.password, name: u.name, role: u.role, tenantId: u.tenantId, branchId: u.branchId });
-    console.log(`  User created: ${u.name} (${u.email}) — ${u.role}`);
+    logger.info({ email: u.email, name: u.name, role: u.role }, 'user created');
   }
 
   // ── Seed Customers, Shipments, Quotations ──
@@ -161,7 +162,7 @@ async function seed() {
     });
   }
   const _customerMap = new Map(insertedCustomerUsers.map((c) => [c.email, c]));
-  console.log(`  Created ${insertedCustomerUsers.length} customer users`);
+  logger.info({ count: insertedCustomerUsers.length }, 'customer users created');
 
   // Clear existing seed data for FK-dependent tables
   await db.delete(quoteItems);
@@ -253,7 +254,7 @@ async function seed() {
       shipmentCount++;
     }
   }
-  console.log(`  Created ${shipmentCount} shipments`);
+  logger.info({ count: shipmentCount }, 'shipments created');
 
   // ── Tracking Events ──
   const statusFlow: Record<string, { status: string; sub: string; desc: string }[]> = {
@@ -315,7 +316,7 @@ async function seed() {
     await db.insert(trackingEvents).values(events as any);
     eventCount += events.length;
   }
-  console.log(`  Created ${eventCount} tracking events`);
+  logger.info({ count: eventCount }, 'tracking events created');
 
   // ── Quotations ──
   const quoteStatuses = ['draft', 'sent', 'accepted', 'rejected', 'converted'];
@@ -358,7 +359,7 @@ async function seed() {
         .returning();
 
       if (!q) {
-        console.error('Failed to create quotation');
+        logger.error('failed to create quotation');
         continue;
       }
 
@@ -377,7 +378,7 @@ async function seed() {
       quoteCount++;
     }
   }
-  console.log(`  Created ${quoteCount} quotations with items`);
+  logger.info({ count: quoteCount }, 'quotations with items created');
 
   // ── Invoices ──
   let invoiceCount = 0;
@@ -401,13 +402,13 @@ async function seed() {
     await db.insert(invoices).values(inv);
     invoiceCount++;
   }
-  console.log(`  Created ${invoiceCount} invoices`);
+  logger.info({ count: invoiceCount }, 'invoices created');
 
-  console.log('\nSeed data complete');
+  logger.info('seed data complete');
   process.exit(0);
 }
 
 seed().catch((error) => {
-  console.error('Seed failed:', error);
+  logger.error({ err: error }, 'seed failed');
   process.exit(1);
 });

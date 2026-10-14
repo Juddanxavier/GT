@@ -317,9 +317,9 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin', 'staff'), async (c) 
       // Revoke all active sessions when role changes, forcing re-login with new permissions
       try {
         await db.delete(session).where(eq(session.userId, id!));
-        console.log(`[security] Sessions revoked for user ${id} due to role change`);
+        c.get('logger').info({ userId: id }, 'sessions revoked due to role change');
       } catch (err) {
-        console.error('[security] Failed to revoke sessions on role change:', err);
+        c.get('logger').error({ err, userId: id }, 'failed to revoke sessions on role change');
       }
     } else {
       await logAudit('USER_UPDATED', id ?? null, changes, c);
@@ -417,7 +417,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     });
 
     if (!createResponse || typeof createResponse !== 'object') {
-      console.error('[users/create] unexpected response type:', typeof createResponse);
+      c.get('logger').error({ responseType: typeof createResponse }, 'user create: unexpected auth response type');
       return c.json({ error: 'Failed to create user: unexpected response from auth service' }, 500);
     }
 
@@ -431,10 +431,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
     ) {
       createdUserId = createResponse.user.id;
     } else {
-      console.error(
-        '[users/create] unexpected response shape:',
-        JSON.stringify(Object.keys(createResponse)),
-      );
+      c.get('logger').error({ keys: Object.keys(createResponse) }, 'user create: unexpected auth response shape');
       return c.json({ error: 'Failed to create user: unexpected response from auth service' }, 500);
     }
 
@@ -461,7 +458,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
   try {
     await banUser({ userId: createdUserId, banReason: 'Activate your account' }, { headers: c.req.raw.headers });
   } catch (err) {
-    console.error('[users/create] banUser error:', err);
+    c.get('logger').error({ err, userId: createdUserId }, 'failed to ban user after create');
   }
 
   // Generate onboard token
@@ -516,7 +513,7 @@ app.post('/create', requireRole('superadmin', 'tenant-admin'), async (c) => {
         </tr>
       </table>`,
     }),
-  });
+  }, c.get('logger'));
 
   await logAudit('NOTIFICATION_SENT', createdUserId, {
     channel: 'email',
@@ -561,7 +558,7 @@ app.post('/:id/ban', requireRole('superadmin', 'tenant-admin'), async (c) => {
   try {
     await banUser({ userId: id!, banReason }, { headers: c.req.raw.headers });
   } catch (err) {
-    console.error('[users/ban] error:', err);
+    c.get('logger').error({ err, userId: id }, 'failed to ban user');
     return c.json({ error: 'Failed to ban user' }, 500);
   }
 
@@ -597,7 +594,7 @@ app.post('/:id/unban', requireRole('superadmin', 'tenant-admin'), async (c) => {
   try {
     await unbanUser({ userId: id! }, { headers: c.req.raw.headers });
   } catch (err) {
-    console.error('[users/unban] error:', err);
+    c.get('logger').error({ err, userId: id }, 'failed to unban user');
     return c.json({ error: 'Failed to unban user' }, 500);
   }
 

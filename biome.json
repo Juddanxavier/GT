@@ -79,6 +79,10 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/api/**/*.ts", "!apps/api/**/*.test.ts", "!apps/api/drizzle/**"],
+      "linter": { "rules": { "suspicious": { "noConsole": "error" } } }
     }
   ]
 }

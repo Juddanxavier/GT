@@ -28,7 +28,19 @@ vi.mock('../auth', () => ({
 }));
 vi.mock('../services/archive', () => ({ runArchive: vi.fn() }));
 vi.mock('../email/provider', () => ({ sendEmail: vi.fn(), getEmailProviderStatus: vi.fn().mockReturnValue({ configured: false }), closeTransport: vi.fn() }));
-vi.mock('../logger', () => ({ childLogger: vi.fn(() => ({ info: vi.fn(), error: vi.fn() })), logger: { info: vi.fn(), error: vi.fn() } }));
+vi.mock('../logger', () => {
+  const mockLogger = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    fatal: vi.fn(),
+    trace: vi.fn(),
+    child: vi.fn(() => mockLogger),
+    flush: vi.fn(),
+  };
+  return { childLogger: vi.fn(() => mockLogger), logger: mockLogger };
+});
 vi.mock('../redis', () => ({ cacheClient: null, connectRedis: vi.fn(), disconnectRedis: vi.fn(), bullConnectionOptions: null, bullConnection: null }));
 vi.mock('../instrument', () => ({}));
 vi.mock('../queues', () => ({ queues: [], notificationQueue: { add: vi.fn(), name: 'notifications' }, runArchive: vi.fn(), isRedisConnected: vi.fn(() => false) }));

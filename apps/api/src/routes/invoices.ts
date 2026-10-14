@@ -134,7 +134,7 @@ app.post(
       emitToTenant(scope.tenantId, 'dashboard:update', {});
       return c.json({ data: inv }, 201);
     } catch (err) {
-      console.error('[invoices] POST /shipment/:shipmentId unhandled error:', err);
+      c.get('logger').error({ err }, 'invoice create failed');
       return c.json({ error: 'Internal server error' }, 500);
     }
   },

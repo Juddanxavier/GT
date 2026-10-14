@@ -6,8 +6,9 @@ import { db } from '../db';
 import { invitation, onboardTokens, user, verification } from '../db/schema';
 import { errorResponse } from '../error-response';
 import { completeOnboardSchema } from '../validators';
+import type { LoggerVariables } from '../logger';
 
-const app = new Hono();
+const app = new Hono<{ Variables: LoggerVariables }>();
 
 app.get('/validate', async (c) => {
   const token = c.req.query('token');
@@ -86,7 +87,7 @@ app.post('/complete', async (c) => {
       });
     } catch (err) {
       const baErr = err as { status?: number; message?: string };
-      console.error('[onboard] resetPassword error:', err);
+      c.get('logger').error({ err }, 'onboard resetPassword failed');
       return c.json(
         { error: baErr.message || 'Failed to set password' },
         (baErr.status ?? 500) as 400 | 500 | 410,
@@ -186,7 +187,7 @@ app.post('/complete', async (c) => {
       .set({ status: 'pending', usedAt: null, updatedAt: now })
       .where(eq(invitation.id, inviteRow.id));
     const baErr = err as { status?: number; message?: string };
-    console.error('[onboard] invitation resetPassword error:', err);
+    c.get('logger').error({ err }, 'invitation resetPassword failed');
     return c.json(
       { error: baErr.message || 'Failed to set password' },
       (baErr.status ?? 500) as 400 | 500 | 410,

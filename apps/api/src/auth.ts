@@ -3,6 +3,7 @@
 import { betterAuth } from 'better-auth';
 import { createAuthConfig, buildEmailHtml, type AuthSchema } from '@repo/auth-config';
 import { sendEmail } from './email/provider';
+import { logger } from './logger';
 import { db } from './db';
 import * as schema from './db/schema';
 import { logAudit as logAuditImpl } from './services/audit';
@@ -42,7 +43,7 @@ export const auth = betterAuth({
       ),
       ...(process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? []),
     ],
-    sendEmail,
+    sendEmail: (opts) => sendEmail(opts, logger),
     buildEmailHtml,
     logAudit,
   }),

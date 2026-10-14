@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { webhookQueue } from '../queues';
 import { getProvider } from '../shipment-providers';
 
@@ -9,7 +10,7 @@ async function handleWebhook(
   rawBody: string,
   parsedBody: unknown,
   signature: string | null,
-  c: { json: (arg: unknown, status?: number) => Response },
+  c: Context,
 ): Promise<Response> {
   try {
     const provider = getProvider();
@@ -33,13 +34,13 @@ async function handleWebhook(
         timestamp: new Date().toISOString(),
       });
     } else {
-      console.error('[webhooks] Redis/BullMQ not available — webhook event SKIPPED');
+      c.get('logger').error('webhook event skipped: Redis/BullMQ not available');
       return c.json({ error: 'Queue unavailable' }, 503);
     }
 
     return c.json({ received: true }, 200);
   } catch (err) {
-    console.error(`[webhooks/${providerName}] error:`, err);
+    c.get('logger').error({ err, provider: providerName }, 'webhook processing failed');
     return c.json({ error: 'Internal error' }, 500);
   }
 }

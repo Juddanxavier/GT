@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { db } from './index';
+import { logger } from '../logger';
 
 async function applyRLS() {
   const sql = readFileSync(
@@ -8,7 +9,9 @@ async function applyRLS() {
     'utf-8',
   );
   await db.execute(sql);
-  console.log('RLS policies applied successfully');
+  logger.info('rls policies applied successfully');
 }
 
-applyRLS().catch(console.error);
+applyRLS().catch((err) => {
+  logger.error({ err }, 'rls apply failed');
+});

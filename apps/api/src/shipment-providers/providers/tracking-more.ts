@@ -1,5 +1,6 @@
 import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent, WebhookResult } from '../types';
 import { normalizeEvent, normalizeTrackResponse } from '../normalizer';
+import type { Logger } from '../../logger';
 
 const BASE = 'https://api.trackingmore.com/v4';
 
@@ -14,7 +15,7 @@ function headers(): Record<string, string> {
 export class TrackingMoreProvider implements ShipmentProvider {
   readonly name = 'trackingmore';
 
-  async detectCarrier(trackingNo: string): Promise<DetectResult | null> {
+  async detectCarrier(trackingNo: string, log: Logger): Promise<DetectResult | null> {
     try {
       const res = await fetch(`${BASE}/couriers/detect`, {
         method: 'POST',
@@ -31,19 +32,22 @@ export class TrackingMoreProvider implements ShipmentProvider {
       }
       return null;
     } catch (err) {
-      console.error('[trackingmore] detect error:', err);
+      log.error({ err, trackingNo }, 'carrier detect failed');
       return null;
     }
   }
 
-  async registerShipment(data: {
-    trackingNo: string;
-    orderNo?: string;
-    courierCode?: string;
-    customerName?: string;
-    email?: string;
-    phone?: string;
-  }): Promise<boolean> {
+  async registerShipment(
+    data: {
+      trackingNo: string;
+      orderNo?: string;
+      courierCode?: string;
+      customerName?: string;
+      email?: string;
+      phone?: string;
+    },
+    log: Logger,
+  ): Promise<boolean> {
     if (!data.courierCode) return false;
 
     try {
@@ -66,21 +70,25 @@ export class TrackingMoreProvider implements ShipmentProvider {
       const errCodes = body.data?.error?.map((e) => e.errorCode) ?? [];
       if (errCodes.includes('4101')) return true;
 
-      console.error(`[trackingmore] create failed (${res.status}):`, JSON.stringify(body).slice(0, 500));
+      log.error({ status: res.status, trackingNo: data.trackingNo, body: JSON.stringify(body).slice(0, 500) }, 'create failed');
       return false;
     } catch (err) {
-      console.error('[trackingmore] create error:', err);
+      log.error({ err, trackingNo: data.trackingNo }, 'create request failed');
       return false;
     }
   }
 
-  async track(trackingNo: string, _carrier?: string): Promise<TrackResult> {
+  async track(
+    trackingNo: string,
+    _carrier: string | undefined,
+    log: Logger,
+  ): Promise<TrackResult> {
     try {
       const url = `${BASE}/trackings/get?tracking_numbers=${encodeURIComponent(trackingNo)}`;
       const res = await fetch(url, { method: 'GET', headers: headers() });
 
       if (!res.ok) {
-        console.error(`[trackingmore] track failed (${res.status})`);
+        log.error({ status: res.status, trackingNo }, 'track request failed');
         return { carrierCode: 'trackingmore', currentStatus: 'exception', events: [] };
       }
 
@@ -150,7 +158,7 @@ export class TrackingMoreProvider implements ShipmentProvider {
 
       return normalizeTrackResponse(courierCode, events);
     } catch (err) {
-      console.error('[trackingmore] track error:', err);
+      log.error({ err, trackingNo }, 'track failed');
       return { carrierCode: 'trackingmore', currentStatus: 'exception', events: [] };
     }
   }
@@ -161,7 +169,7 @@ export class TrackingMoreProvider implements ShipmentProvider {
     return signature === secret;
   }
 
-  async processWebhook(body: unknown): Promise<WebhookResult | null> {
+  async processWebhook(body: unknown, log: Logger): Promise<WebhookResult | null> {
     try {
       const data = body as Record<string, unknown>;
       const trackingNo = data.tracking_number as string | undefined;
@@ -190,7 +198,7 @@ export class TrackingMoreProvider implements ShipmentProvider {
       const result = normalizeTrackResponse(courierCode, events);
       return { trackingNo, events: result.events, currentStatus: result.currentStatus };
     } catch (err) {
-      console.error('[trackingmore] processWebhook error:', err);
+      log.error({ err, provider: this.name }, 'webhook processing failed');
       return null;
     }
   }

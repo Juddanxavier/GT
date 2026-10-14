@@ -1,5 +1,6 @@
 import type { ShipmentProvider, TrackResult, DetectResult, NormalizedEvent, WebhookResult } from '../types';
 import { normalizeEvent, normalizeTrackResponse } from '../normalizer';
+import type { Logger } from '../../logger';
 import { createHmac } from 'node:crypto';
 
 const BASE = 'https://api.17track.net/track/v2.4';
@@ -63,11 +64,14 @@ function parseAccepted(body: { code?: number; data?: { accepted?: AcceptedItem[]
 export class SeventeenTrackProvider implements ShipmentProvider {
   readonly name = '17track';
 
-  async detectCarrier(_trackingNo: string): Promise<DetectResult | null> {
+  async detectCarrier(_trackingNo: string, _log: Logger): Promise<DetectResult | null> {
     return null;
   }
 
-  async stopTracking(data: { trackingNo: string; carrierCode?: string }): Promise<boolean> {
+  async stopTracking(
+    data: { trackingNo: string; carrierCode?: string },
+    log: Logger,
+  ): Promise<boolean> {
     try {
       const payload: Record<string, unknown> = { number: data.trackingNo };
       if (data.carrierCode) payload.carrier = Number(data.carrierCode);
@@ -81,20 +85,23 @@ export class SeventeenTrackProvider implements ShipmentProvider {
       const json = (await res.json()) as { code?: number };
       if (json.code === 0) return true;
 
-      console.error(`[17track] stoptrack failed:`, JSON.stringify(json).slice(0, 500));
+      log.error({ trackingNo: data.trackingNo, body: JSON.stringify(json).slice(0, 500) }, 'stoptrack failed');
       return false;
     } catch (err) {
-      console.error('[17track] stoptrack error:', err);
+      log.error({ err, trackingNo: data.trackingNo }, 'stoptrack request failed');
       return false;
     }
   }
 
-  async registerShipment(data: {
-    trackingNo: string;
-    orderNo?: string;
-    courierCode?: string;
-    email?: string;
-  }): Promise<boolean> {
+  async registerShipment(
+    data: {
+      trackingNo: string;
+      orderNo?: string;
+      courierCode?: string;
+      email?: string;
+    },
+    log: Logger,
+  ): Promise<boolean> {
     try {
       const body: Record<string, unknown> = { number: data.trackingNo };
       if (data.orderNo) body.order_no = data.orderNo;
@@ -117,19 +124,19 @@ export class SeventeenTrackProvider implements ShipmentProvider {
 
       const rejected = json.data?.rejected?.[0];
       if (rejected?.error?.code === -18019901) {
-        console.warn(`[17track] already registered: ${data.trackingNo}`);
+        log.warn({ trackingNo: data.trackingNo }, 'already registered');
         return true;
       }
 
-      console.error(`[17track] register failed:`, JSON.stringify(json).slice(0, 500));
+      log.error({ trackingNo: data.trackingNo, body: JSON.stringify(json).slice(0, 500) }, 'register failed');
       return false;
     } catch (err) {
-      console.error('[17track] register error:', err);
+      log.error({ err, trackingNo: data.trackingNo }, 'register request failed');
       return false;
     }
   }
 
-  async track(trackingNo: string, carrier?: string): Promise<TrackResult> {
+  async track(trackingNo: string, carrier: string | undefined, log: Logger): Promise<TrackResult> {
     try {
       const payload: Record<string, unknown> = { number: trackingNo };
       if (carrier) {
@@ -144,7 +151,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
       });
 
       if (!res.ok) {
-        console.error(`[17track] track failed (${res.status})`);
+        log.error({ status: res.status, trackingNo }, 'track request failed');
         return { carrierCode: '17track', currentStatus: 'exception', events: [] };
       }
 
@@ -155,7 +162,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
 
       const { item, error } = parseAccepted(json);
       if (!item) {
-        console.error(`[17track] track rejected: ${error}`);
+        log.error({ trackingNo, reason: error }, 'track rejected');
         return { carrierCode: '17track', currentStatus: 'pending', events: [] };
       }
 
@@ -198,7 +205,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
       return { ...result, estimatedDelivery, actualDelivery, origin, destination };
 
     } catch (err) {
-      console.error('[17track] track error:', err);
+      log.error({ err, trackingNo }, 'track failed');
       return { carrierCode: '17track', currentStatus: 'exception', events: [] };
     }
   }
@@ -210,7 +217,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
     return hmac === signature;
   }
 
-  async processWebhook(body: unknown): Promise<WebhookResult | null> {
+  async processWebhook(body: unknown, log: Logger): Promise<WebhookResult | null> {
     try {
       // 17TRACK webhooks may wrap the payload in { event: 'tracking', data: { ... } }
       // or send the raw tracking object directly.
@@ -244,7 +251,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
       const result = normalizeTrackResponse(carrierCode, rawEvents);
       return { trackingNo, events: result.events, currentStatus: result.currentStatus };
     } catch (err) {
-      console.error('[17track] processWebhook error:', err);
+      log.error({ err, provider: this.name }, 'webhook processing failed');
       return null;
     }
   }

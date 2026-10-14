@@ -1,4 +1,5 @@
 import { cacheClient } from './redis';
+import { logger } from './logger';
 
 function sanitizeKeyPart(part: string): string {
   // Colons are kept (valid Redis key separators and used in delete patterns);
@@ -41,7 +42,7 @@ export async function cacheSet(
       await cacheClient.set(fullKey, serialized);
     }
   } catch (err) {
-    console.error('[cache] set error:', err);
+    logger.error({ err }, 'cache set failed');
   }
 }
 
@@ -50,7 +51,7 @@ export async function cacheDel(tenantId: string | null, key: string): Promise<vo
   try {
     await cacheClient.del(prefixKey(tenantId, key));
   } catch (err) {
-    console.error('[cache] del error:', err);
+    logger.error({ err }, 'cache del failed');
   }
 }
 
@@ -82,7 +83,7 @@ export async function cacheFlushTenant(tenantId: string): Promise<void> {
       }
     } while (cursor !== '0');
   } catch (err) {
-    console.error('[cache] flush error:', err);
+    logger.error({ err }, 'cache flush failed');
   }
 }
 
@@ -101,6 +102,6 @@ export async function cacheDelPattern(tenantId: string | null, suffix: string): 
       }
     } while (cursor !== '0');
   } catch (err) {
-    console.error('[cache] delPattern error:', err);
+    logger.error({ err }, 'cache del pattern failed');
   }
 }

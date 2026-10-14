@@ -67,7 +67,7 @@ export async function signInHandler(c: Context) {
           return errorResponse(c, 'ACCOUNT_LOCKED', `Account locked due to too many failed attempts. Try again in ${Math.ceil(ttl / 60)} minutes.`, 423);
         }
       } catch (err) {
-        console.error('[lockout] Redis error during lockout check — allowing:', err);
+        c.get('logger').error({ err }, 'lockout redis error during check, allowing request');
       }
     }
   }
@@ -123,7 +123,7 @@ export async function signInHandler(c: Context) {
           }
         }
       } catch (err) {
-        console.error('[lockout] Redis error during attempt tracking:', err);
+        c.get('logger').error({ err }, 'lockout redis error during attempt tracking');
       }
     }
   }

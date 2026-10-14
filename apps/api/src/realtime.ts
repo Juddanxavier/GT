@@ -6,6 +6,7 @@ import { db } from './db';
 import { branches } from './db/schema';
 import { eq, and } from 'drizzle-orm';
 import { cacheGet, cacheSet } from './cache';
+import { logger } from './logger';
 
 let io: SocketIOServer | null = null;
 
@@ -56,7 +57,7 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
     const subClient = bullConnection.duplicate();
     subClient.on('error', () => {}); // suppress — connection errors handled upstream
     io.adapter(createAdapter(pubClient, subClient));
-    console.log('[realtime] Redis adapter attached');
+    logger.info('redis adapter attached');
   }
 
   // Authenticate every connection via Better Auth session cookie
@@ -86,7 +87,7 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
       socket.data.session = session.session;
       next();
     } catch (error) {
-      console.error('[realtime] auth error:', error);
+      logger.error({ err: error }, 'realtime auth error');
       next(new Error('Authentication failed'));
     }
   });
@@ -158,11 +159,11 @@ export function createRealtimeServer(httpServer: Parameters<typeof SocketIOServe
     });
 
     socket.on('disconnect', () => {
-      console.log(`[realtime] socket ${socket.id} disconnected`);
+      logger.info({ socketId: socket.id }, 'socket disconnected');
     });
   });
 
-  console.log('[realtime] server initialized');
+  logger.info('realtime server initialized');
   return io;
 }
 

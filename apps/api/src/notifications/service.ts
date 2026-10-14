@@ -6,6 +6,7 @@ import { cacheClient } from '../redis';
 import { isMajorEvent, statusToEventType } from './event-map';
 import type { InternalStatus } from '@repo/types/status';
 import type { NormalizedEvent } from '../shipment-providers/types';
+import type { Logger } from '../logger';
 
 // In-memory LRU cooldown fallback when Redis is unavailable (D-13)
 class SimpleLRU<K, V> {
@@ -61,6 +62,7 @@ export async function notifyTrackingEvents(
   tenantId: string,
   events: NormalizedEvent[],
   currentStatus: string,
+  log: Logger,
 ): Promise<void> {
   try {
     const [ship] = await db
@@ -127,10 +129,11 @@ export async function notifyTrackingEvents(
         event.status,
         brief,
         `${event.eventTime.toISOString()}:${event.subStatus ?? ''}`,
+        log,
       );
     }
   } catch (err) {
-    console.error('[notifyTrackingEvents] error:', err);
+    log.error({ err, shipmentId }, 'notify tracking events failed');
   }
 }
 
@@ -138,6 +141,7 @@ export async function handleTrackingEvent(
   status: InternalStatus,
   shipment: ShipmentBrief,
   eventId: string,
+  log: Logger,
 ): Promise<void> {
   if (!isMajorEvent(status)) return;
 
@@ -153,7 +157,7 @@ export async function handleTrackingEvent(
       const redisKey = `cooldown:notify:${cooldownKey}`;
       const acquired = await cacheClient.set(redisKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
       if (acquired !== 'OK') {
-        console.log(`[notifications] cooldown active for ${shipment.id} status ${status}`);
+        log.info({ shipmentId: shipment.id, status }, 'cooldown active, notification skipped');
         return;
       }
       cooldownCache.set(cooldownKey, true);
@@ -161,16 +165,16 @@ export async function handleTrackingEvent(
     } else {
       // Redis unavailable — in-memory LRU fallback
       if (cooldownCache.has(cooldownKey)) {
-        console.log(`[notifications] LRU cooldown active for ${shipment.id} status ${status}`);
+        log.info({ shipmentId: shipment.id, status }, 'lru cooldown active, notification skipped');
         return;
       }
       cooldownCache.set(cooldownKey, true);
       setTimeout(() => { cooldownCache.delete(cooldownKey); }, COOLDOWN_SECONDS * 1000);
     }
   } catch (err) {
-    console.error('[notifications] Redis error — falling back to in-memory LRU:', err instanceof Error ? err.message : err);
+    log.error({ err }, 'redis error, falling back to in-memory lru cooldown');
     if (cooldownCache.has(cooldownKey)) {
-      console.log(`[notifications] LRU cooldown active for ${shipment.id} status ${status}`);
+      log.info({ shipmentId: shipment.id, status }, 'lru cooldown active, notification skipped');
       return;
     }
     cooldownCache.set(cooldownKey, true);
@@ -178,7 +182,10 @@ export async function handleTrackingEvent(
   }
 
   if (!notificationQueue) {
-    console.error('[notifications] Redis/BullMQ not available — notification SKIPPED. Customer will NOT receive status update.', shipment.id, shipment.trackingNo);
+    log.error(
+      { shipmentId: shipment.id, trackingNo: shipment.trackingNo },
+      'redis/bullmq not available, notification skipped, customer will not receive status update',
+    );
     return;
   }
 
