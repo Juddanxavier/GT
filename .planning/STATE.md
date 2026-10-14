@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Quick 261005-q2r verified, feature 8 AC-6 closed
-last_updated: "2026-10-05T22:40:00.000Z"
-last_activity: 2026-10-05 -- /check verify UI foundation & tokens PASS
+stopped_at: Feature 8 closed, feature 9 spec 0002 captured and linked
+last_updated: "2026-10-06T00:00:00.000Z"
+last_activity: 2026-10-06 -- /architect accessibility pass (spec 0002) accepted, scope feature 9 in-progress
 progress:
   total_phases: 7
   completed_phases: 6
@@ -22,16 +22,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-02)
 
 **Core value:** A shipment gets added → tracked via 17TRACK → status changes trigger email + WhatsApp to the right customer — without leaking data between tenants.
-**Current focus:** Admin scope feature 8 `UI foundation & tokens` — built, verified, boxes ticked. Next up: feature 9 `Accessibility pass`, then feature 10 `Type safety pass`. Phase 7 plans below are held from the earlier milestone workflow.
+**Current focus:** Admin scope feature 9 `Accessibility pass` — spec 0002 captured, cross checked, scope row linked with 5 milestones. Next: `/develop accessibility pass`, then `/check verify accessibility pass`. Feature 8 `UI foundation & tokens` is `done`.
 
 ## Current Position
 
 Workflow: admin scope driven (`docs/scope/admin/scope.md`), not phase driven
-Feature: 8 of 18 (`UI foundation & tokens`)
-Boxes: all ticked, heading still `in-progress` until the engineer calls `done`
-Last activity: 2026-10-05 — `/check verify UI foundation & tokens` PASS
+Feature: 9 of 18 (`Accessibility pass`) · designing complete, ready to build
+Boxes: Design ticked, Build + 5 milestones and Verify pending
+Last activity: 2026-10-06 — `/architect accessibility pass` accepted (spec `docs/specs/admin/0002-accessibility-pass.md`)
 
-Progress: [####------] 7 `existing` + feature 8 built and verified = 8 of 18
+Progress: [#####-----] 7 `existing` + feature 8 `done` + feature 9 designed = 9 of 18
 
 ## Accumulated Context
 
@@ -69,7 +69,8 @@ Small fixes run outside the phase workflow. Each has a `PLAN.md` and a
 
 ## Session Continuity
 
-Last session: 2026-10-05T22:40:00.000Z
-Stopped at: `/check verify UI foundation & tokens` PASS on quick `261005-q2r`;
-scope feature 8 fully ticked. Next: commit the feature 8 work atomically, then
-route to `/architect Accessibility pass` for feature 9.
+Last session: 2026-10-06
+Stopped at: `/architect accessibility pass` accepted; scope feature 9 linked with
+spec 0002, 5 build milestones and the Alpha `Verify it` box. Feature 8 marked
+`done` in the scope. Next: `/develop accessibility pass` to build spec 0002,
+then `/check verify accessibility pass`.
