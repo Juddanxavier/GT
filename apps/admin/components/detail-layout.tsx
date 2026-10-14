@@ -30,7 +30,7 @@ export function DetailSection({ title, children }: { title: ReactNode; children:
   return (
     <div className="rounded-xl border border-glass glass-panel overflow-hidden">
       <div className="px-5 py-4 border-b border-glass">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
       </div>
       {children}
     </div>

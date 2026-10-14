@@ -6,6 +6,7 @@ import { Button, Card, Select, ListBox, Tabs, Table, Skeleton, Chip } from '@her
 import { FileText, Download, LoaderCircle, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle, Calendar, Building2, X } from 'lucide-react';
 import { KpiCard } from '@/components/kpi-card';
 import { PageHeader } from '@/components/page-header';
+import { StatusBadge } from '@repo/ui/status-badge';
 import { authClient } from '@/lib/auth-client';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { useDashboardBranches, useTenants } from '@/lib/queries';
@@ -50,30 +51,40 @@ type ReportMeta = {
   branchComparison: { name: string; count: number }[];
 };
 
-const STATUS_COLORS: Record<string, 'accent' | 'success' | 'danger' | 'warning' | 'default'> = {
-  delivered: 'success',
-  in_transit: 'accent',
-  exception: 'danger',
-  pending: 'warning',
+type QuotationStatusColor = 'accent' | 'success' | 'danger' | 'warning' | 'default' | 'info';
+
+/** Quotation statuses only. Shipment statuses render <StatusBadge>, which reads
+ * the shared config, so a status color is never invented in a page. */
+const STATUS_COLORS: Record<string, QuotationStatusColor> = {
   accepted: 'success',
   converted: 'warning',
   rejected: 'danger',
-  sent: 'accent',
+  sent: 'info',
   draft: 'default',
+};
+
+/** Shared soft token pairs, so each quotation status gets a distinct pair. */
+const STATUS_SOFT_CLASSES: Record<QuotationStatusColor, string> = {
+  accent: 'bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]',
+  success: 'bg-[var(--success-soft)] text-[var(--success-soft-foreground)]',
+  danger: 'bg-[var(--danger-soft)] text-[var(--danger-soft-foreground)]',
+  warning: 'bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)]',
+  default: 'bg-[var(--default-soft)] text-[var(--default-soft-foreground)]',
+  info: 'bg-[var(--info-soft)] text-[var(--info-soft-foreground)]',
 };
 
 const ROWS_PER_PAGE = 20;
 
 const STATUS_BAR_COLORS: Record<string, string> = {
-  pending: 'bg-amber-500',
-  info_received: 'bg-amber-500',
-  in_transit: 'bg-blue-500',
-  out_for_delivery: 'bg-violet-500',
-  failed_attempt: 'bg-red-500',
-  delivered: 'bg-emerald-500',
-  exception: 'bg-red-500',
-  expired: 'bg-slate-400',
-  available_for_pickup: 'bg-sky-500',
+  pending: 'bg-[#F59E0B]',
+  info_received: 'bg-[#F59E0B]',
+  in_transit: 'bg-[#8B5CF6]',
+  out_for_delivery: 'bg-[#3B82F6]',
+  failed_attempt: 'bg-[#F43F5E]',
+  delivered: 'bg-[#10B981]',
+  exception: 'bg-[#F43F5E]',
+  expired: 'bg-[#94A3B8]',
+  available_for_pickup: 'bg-secondary',
 };
 
 function DistributionCard({ title, items, colorFor }: { title: string; items: { name?: string; status?: string; count: number }[]; colorFor: (key: string) => string }) {
@@ -373,16 +384,16 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
         {(reportType === 'shipments' ? [
-          { key: 'total', color: '#3b82f6', icon: Package },
-          { key: 'delivered', color: '#22c55e', icon: CheckCircle },
-          { key: 'in_transit', color: '#8b5cf6', icon: Truck },
-          { key: 'exceptions', color: '#ef4444', icon: AlertTriangle },
-          { key: 'revenue', color: '#f59e0b', icon: IndianRupee, format: 'currency' as const },
+          { key: 'total', color: '#3B82F6', icon: Package },
+          { key: 'delivered', color: '#10B981', icon: CheckCircle },
+          { key: 'in_transit', color: '#8B5CF6', icon: Truck },
+          { key: 'exceptions', color: '#F43F5E', icon: AlertTriangle },
+          { key: 'revenue', color: '#F59E0B', icon: IndianRupee, format: 'currency' as const },
         ] : [
-          { key: 'total', color: '#3b82f6', icon: Receipt },
-          { key: 'accepted', color: '#22c55e', icon: CheckCircle2 },
-          { key: 'converted', color: '#f59e0b', icon: AlertTriangle },
-          { key: 'rejected', color: '#ef4444', icon: XCircle },
+          { key: 'total', color: '#3B82F6', icon: Receipt },
+          { key: 'accepted', color: '#10B981', icon: CheckCircle2 },
+          { key: 'converted', color: '#F59E0B', icon: AlertTriangle },
+          { key: 'rejected', color: '#F43F5E', icon: XCircle },
         ]).map(({ key, color, icon, format }) => (
           <KpiCard
             key={key}
@@ -406,12 +417,12 @@ export default function ReportsPage() {
           <DistributionCard
             title="Status Distribution"
             items={meta.statusDistribution}
-            colorFor={(s) => STATUS_BAR_COLORS[s] ?? 'bg-accent'}
+            colorFor={(s) => STATUS_BAR_COLORS[s] ?? 'bg-[#94A3B8]'}
           />
           <DistributionCard
             title="Branch Comparison"
             items={meta.branchComparison}
-            colorFor={() => 'bg-accent'}
+            colorFor={() => 'bg-[#3B82F6]'}
           />
         </div>
       )}
@@ -462,7 +473,7 @@ export default function ReportsPage() {
                             <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>
                             <Table.Cell className="text-xs">{r.sender_name ? `${r.sender_name}${r.sender_phone ? ` (${r.sender_phone})` : ''}` : '\u2014'}</Table.Cell>
                             <Table.Cell className="text-xs">{r.recipient_name ? `${r.recipient_name}${r.recipient_phone ? ` (${r.recipient_phone})` : ''}` : '\u2014'}</Table.Cell>
-                            <Table.Cell><Chip size="sm" variant="soft" color={STATUS_COLORS[r.status] ?? 'default'}>{r.status}</Chip></Table.Cell>
+                            <Table.Cell><StatusBadge status={r.status} /></Table.Cell>
                             <Table.Cell className="text-xs text-muted">{r.origin || '\u2014'}</Table.Cell>
                             <Table.Cell className="text-xs text-muted">{r.destination || '\u2014'}</Table.Cell>
                             <Table.Cell className="text-xs">{r.carrier || '\u2014'}</Table.Cell>
@@ -474,7 +485,13 @@ export default function ReportsPage() {
                       <Table.Row key={r.id}>
                         <Table.Cell className="font-mono text-xs font-medium">{r.quote_no}</Table.Cell>
                         <Table.Cell>{r.customer_name || '\u2014'}</Table.Cell>
-                        <Table.Cell><Chip size="sm" variant="soft" color={STATUS_COLORS[r.status] ?? 'default'}>{r.status}</Chip></Table.Cell>
+                        <Table.Cell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_SOFT_CLASSES[STATUS_COLORS[r.status] ?? 'default']}`}
+                          >
+                            {r.status}
+                          </span>
+                        </Table.Cell>
                         <Table.Cell className="font-medium">{formatCurrency(Number(r.total), tenants.find((t) => t.id === tenantFilter)?.currency ?? undefined)}</Table.Cell>
                         <Table.Cell className="text-xs text-muted">{r.valid_until ? new Date(r.valid_until).toLocaleDateString() : '\u2014'}</Table.Cell>
                         <Table.Cell className="text-xs text-muted">{new Date(r.created_at).toLocaleDateString()}</Table.Cell>

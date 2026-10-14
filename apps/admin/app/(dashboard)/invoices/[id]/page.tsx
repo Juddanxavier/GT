@@ -89,19 +89,19 @@ export default function InvoiceDetailPage() {
             <StatCard label="Amount" value={formatCurrency(invoice.amount, currencyCode)} icon={<DollarSign size={14} />} highlighted />
             <StatCard label="Status" value="Paid" icon={<Receipt size={14} />} highlighted />
             <StatCard label="Emails Sent" value={`${emailCount}/2 today`} icon={<Mail size={14} />} />
-            <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Calendar size={14} />} />
+            <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} icon={<Calendar size={14} />} />
           </div>
 
           {/* Details card */}
           <DetailSection title="Invoice Details">
             <div className="p-5 space-y-3">
               <InfoRow label="Invoice No" value={invoice.invoiceNo} />
-              <InfoRow label="Tracking No" value={invoice.trackingNo ?? '—'} />
-              <InfoRow label="Customer" value={invoice.customerName ?? '—'} />
+              <InfoRow label="Tracking No" value={invoice.trackingNo ?? 'ΓÇö'} />
+              <InfoRow label="Customer" value={invoice.customerName ?? 'ΓÇö'} />
               <InfoRow label="Amount" value={formatCurrency(invoice.amount, currencyCode)} />
               <InfoRow label="Emails Sent" value={`${emailCount}/2 today`} />
-              <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
-              <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+              <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
+              <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
             </div>
           </DetailSection>
         </>}

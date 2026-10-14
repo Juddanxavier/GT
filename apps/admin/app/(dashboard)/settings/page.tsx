@@ -147,7 +147,7 @@ export default function SettingsPage() {
 
       {/* Appearance */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted">Appearance</h2>
+        <h2 className="text-sm font-semibold text-muted tracking-tight">Appearance</h2>
         <SectionCard title="Appearance" icon={<Moon size={16} />}>
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
@@ -188,13 +188,13 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {isSuperadmin && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-muted">17TRACK Quota</h2>
+            <h2 className="text-sm font-semibold text-muted tracking-tight">17TRACK Quota</h2>
             <TrackQuotaCard />
           </section>
         )}
 
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted">Branches</h2>
+          <h2 className="text-sm font-semibold text-muted tracking-tight">Branches</h2>
           <Card>
             <Card.Header className="pb-1">
               <Card.Title className="text-sm font-semibold flex items-center gap-2">
@@ -242,7 +242,7 @@ export default function SettingsPage() {
 
       {/* My notification preferences */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted">My Notification Preferences</h2>
+        <h2 className="text-sm font-semibold text-muted tracking-tight">My Notification Preferences</h2>
         <SectionCard title="Notification Preferences" icon={<MessageSquareText size={16} />}>
           {isSuperadmin && !tenantFilter && tenants.length > 0 ? (
             <p className="text-sm text-muted">
@@ -286,7 +286,7 @@ export default function SettingsPage() {
 
       {/* Notification templates */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted">Notification Templates</h2>
+        <h2 className="text-sm font-semibold text-muted tracking-tight">Notification Templates</h2>
         <SectionCard
           title="Status Alert Templates"
           icon={<Mail size={16} />}
@@ -348,7 +348,7 @@ export default function SettingsPage() {
       {/* Integration status (superadmin) */}
       {isSuperadmin && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted">Integration Status</h2>
+          <h2 className="text-sm font-semibold text-muted tracking-tight">Integration Status</h2>
           <SectionCard title="Integration Status" icon={<ShieldCheck size={16} />}>
             {!integrations ? (
               <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />

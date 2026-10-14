@@ -147,24 +147,24 @@ export default function ShipmentDetailPage(): ReactNode {
               {detailsOpen && (
                 <div className="px-5 pb-5 pt-2 border-t border-[var(--ops-border)] space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <InfoRow label="Provider" value={shipment.trackingProvider || '—'} />
-                    <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'} />
-                    <InfoRow label="Est. Delivery" value={shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
-                    <InfoRow label="Actual Delivery" value={shipment.actualDelivery ? new Date(shipment.actualDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                    <InfoRow label="Provider" value={shipment.trackingProvider || 'ΓÇö'} />
+                    <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ΓÇö'} />
+                    <InfoRow label="Est. Delivery" value={shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
+                    <InfoRow label="Actual Delivery" value={shipment.actualDelivery ? new Date(shipment.actualDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Sender</p>
                       <p className="text-sm flex items-start gap-1.5">
                         {originCountry && <Flag country={originCountry} />}
-                        {addressDisplay(shipment.senderAddress) || shipment.origin || '—'}
+                        {addressDisplay(shipment.senderAddress) || shipment.origin || 'ΓÇö'}
                       </p>
                     </div>
                     <div className="space-y-2">
                       <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Recipient</p>
                       <p className="text-sm flex items-start gap-1.5">
                         {destCountry && <Flag country={destCountry} />}
-                        {addressDisplay(shipment.recipientAddress) || shipment.destination || '—'}
+                        {addressDisplay(shipment.recipientAddress) || shipment.destination || 'ΓÇö'}
                       </p>
                     </div>
                   </div>

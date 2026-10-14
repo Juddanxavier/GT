@@ -138,7 +138,7 @@ export function CreateShipmentModal({
       <Modal.Container>
         <Modal.Dialog aria-label="New Shipment" className="max-w-2xl">
           <Modal.Header>
-            <h2 className="text-lg font-semibold">New Shipment</h2>
+            <h2 className="text-lg font-semibold tracking-tight">New Shipment</h2>
             <p className="text-xs text-muted mt-0.5">All fields on one form — addresses optional</p>
           </Modal.Header>
           <Modal.Body className="max-h-[70vh] overflow-y-auto">

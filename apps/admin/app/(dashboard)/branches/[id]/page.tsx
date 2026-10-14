@@ -194,19 +194,19 @@ export default function BranchDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           label="Phone"
-          value={branch.phone || '—'}
+          value={branch.phone || 'ΓÇö'}
           icon={<Phone size={14} />}
           highlighted={!!branch.phone}
         />
         <StatCard
           label="Email"
-          value={branch.email || '—'}
+          value={branch.email || 'ΓÇö'}
           icon={<Mail size={14} />}
           highlighted={!!branch.email}
         />
         <StatCard
           label="Address"
-          value={branch.address || '—'}
+          value={branch.address || 'ΓÇö'}
           icon={<MapPin size={14} />}
           highlighted={!!branch.address}
         />
@@ -230,7 +230,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Phone</p>
-                  <p className="text-sm font-medium">{branch.phone || '—'}</p>
+                  <p className="text-sm font-medium">{branch.phone || 'ΓÇö'}</p>
                 </div>
                 {branch.phone && <CopyButton text={branch.phone} />}
               </div>
@@ -242,7 +242,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Email</p>
-                  <p className="text-sm font-medium break-all">{branch.email || '—'}</p>
+                  <p className="text-sm font-medium break-all">{branch.email || 'ΓÇö'}</p>
                 </div>
                 {branch.email && <CopyButton text={branch.email} />}
               </div>
@@ -254,7 +254,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Address</p>
-                  <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{branch.address || '—'}</p>
+                  <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{branch.address || 'ΓÇö'}</p>
                 </div>
               </div>
             </div>
@@ -274,9 +274,9 @@ export default function BranchDetailPage() {
             <div className="border-t border-border" />
             <Card.Content className="p-0 divide-y divide-border">
               <InfoRow label="Name" value={branch.name} />
-              <InfoRow label="Phone" value={branch.phone || '—'} />
-              <InfoRow label="Email" value={branch.email || '—'} />
-              <InfoRow label="Address" value={branch.address || '—'} />
+              <InfoRow label="Phone" value={branch.phone || 'ΓÇö'} />
+              <InfoRow label="Email" value={branch.email || 'ΓÇö'} />
+              <InfoRow label="Address" value={branch.address || 'ΓÇö'} />
               <InfoRow label="Created" value={new Date(branch.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
               <InfoRow label="Updated" value={new Date(branch.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
             </Card.Content>

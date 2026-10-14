@@ -78,7 +78,7 @@ const GROUP_COLORS: Record<string, string> = {
   invoice: '#8b5cf6',
   user: '#22c55e',
   invitation: '#f59e0b',
-  notification: '#06b6d4',
+  notification: '#F43F5E',
   branch: '#ec4899',
   quotation: '#f97316',
   login: '#6366f1',

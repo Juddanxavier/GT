@@ -2,10 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { Ban, Pencil, RefreshCw, Trash2 } from 'lucide-react';
-import { Button, Chip } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { AssignedTo } from '@/components/assigned-to';
 import { ShipmentInvoicePanel, type ShipmentInvoiceData } from '@/components/shipments/shipment-invoice-panel';
-import { STATUS_META } from '@/lib/status-config';
+import { StatusBadge } from '@repo/ui/status-badge';
 import type { ShipmentDetail } from '@/lib/queries';
 
 interface ShipmentCommandSidebarProps {
@@ -35,11 +35,6 @@ export function ShipmentCommandSidebar({
   onEdit,
   onDelete,
 }: ShipmentCommandSidebarProps): ReactNode {
-  const cfg = STATUS_META[shipment.status as keyof typeof STATUS_META] ?? {
-    label: shipment.status.replace(/_/g, ' '),
-    color: 'default' as const,
-  };
-
   const daysSinceUpdate = shipment.lastTrackedAt
     ? Math.floor((Date.now() - new Date(shipment.lastTrackedAt).getTime()) / 86400000)
     : null;
@@ -48,9 +43,7 @@ export function ShipmentCommandSidebar({
     <aside className="space-y-4 xl:sticky-sidebar xl:sticky-surface">
       <div className="ops-panel-raised p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Chip size="sm" variant="soft" color={cfg.color as 'success' | 'danger' | 'warning' | 'default'}>
-            {cfg.label}
-          </Chip>
+          <StatusBadge status={shipment.status} />
           {shipment.trackingRegistered && (
             <span className="text-xs text-success font-medium">Live tracking</span>
           )}

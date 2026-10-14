@@ -5,7 +5,7 @@ import { MiniChart } from './mini-chart';
 import type { KpiItem } from './types';
 
 export function KpiStatCard({ item }: { item: KpiItem }) {
-  const color = item.color ?? '#6366f1';
+  const color = item.color ?? '#10B981';
   const hasTrend = !!item.trendValue && item.trendValue !== '—';
   const trendClass =
     item.trend === 'up'

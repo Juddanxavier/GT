@@ -676,7 +676,7 @@ function RateTable({ rateCardId }: { rateCardId: string }) {
     <div className="space-y-4">
       {Object.entries(grouped).map(([svc, slabs]) => (
         <div key={svc}>
-          <h3 className="text-sm font-semibold mb-2">{SERVICE_LABELS[svc] ?? svc}</h3>
+          <h3 className="text-sm font-semibold mb-2 tracking-tight">{SERVICE_LABELS[svc] ?? svc}</h3>
           <div className="rounded-sm border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead>

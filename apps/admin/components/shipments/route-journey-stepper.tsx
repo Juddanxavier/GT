@@ -74,7 +74,7 @@ export function RouteJourneyStepper({
                     className={cn(
                       'rounded-full flex items-center justify-center border transition-colors',
                       compact ? 'w-6 h-6' : 'w-8 h-8',
-                      done && 'bg-[var(--ops-accent)] border-[var(--ops-accent)] text-white',
+                      done && 'bg-[var(--ops-accent)] border-[var(--ops-accent)] text-[var(--accent-foreground)]',
                       current && 'bg-[var(--ops-accent-dim)] border-[var(--ops-accent)] text-[var(--ops-accent)]',
                       !done && !current && 'bg-transparent border-[var(--ops-border)] text-muted',
                     )}

@@ -50,7 +50,7 @@ function block(sel) {
 }
 
 const themes = { light: block('[data-theme="default"]'), dark: block('[data-theme="dark"]') };
-const canvas = { light: '#f4f4f5', dark: '#09090b' };
+const canvas = { light: '#F1F5F9', dark: '#0C0F14' };
 
 /* [foreground token, background token, label] — every pair below is rendered
  * text somewhere in the admin or in a shared component. */
@@ -75,13 +75,13 @@ const pairs = [
 
 /* Status soft pairs — every StatusBadge swatch. Rendered from
  * status-config.ts, so these must hold in both themes. */
-for (const st of ['success', 'warning', 'danger', 'info', 'accent', 'primary', 'secondary', 'default']) {
+for (const st of ['success', 'warning', 'danger', 'info', 'accent', 'primary', 'secondary', 'transit', 'default']) {
   pairs.push([`--${st}-soft-foreground`, `--${st}-soft`, `${st} status swatch`]);
 }
 
 /* Strong pairs (white/ink on the solid colour). HeroUI only reaches these for
  * solid chips/badges and the primary/danger buttons. */
-for (const st of ['accent', 'danger', 'success', 'warning', 'info', 'secondary']) {
+for (const st of ['accent', 'danger', 'success', 'warning', 'info', 'secondary', 'transit']) {
   pairs.push([`--${st}-foreground`, `--${st}`, `${st} strong (button/chip)`]);
 }
 
@@ -122,16 +122,22 @@ const dCanvas = parse(canvas.light);
 const p = (h) => parse(h);
 const tint = (hexv, a) => over([p(hexv)[0], p(hexv)[1], p(hexv)[2], a], dCanvas).map(Math.round);
 /* rendered `bg-<token>/10 text-<token>`: text in accent, icon-only elsewhere */
-add('light accent on bg-accent/10 panel (TEXT)', p('#0d6e88'), tint('#0d6e88', 0.1), 4.5);
+add('light accent on bg-accent/10 panel (TEXT)', p('#065F46'), tint('#065F46', 0.1), 4.5);
 add('light danger on bg-danger/10 panel (TEXT)', p('#b91c1c'), tint('#b91c1c', 0.1), 4.5);
 add('light success on bg-success/10 avatar (icon)', p('#047857'), tint('#047857', 0.1), 3);
 add('light warning on bg-warning/10 avatar (icon)', p('#b45309'), tint('#b45309', 0.1), 3);
 /* HeroUI: --default-hover = color-mix(in oklab, --default 96%, --default-foreground 4%) */
-add('secondary button label on hover bg (#e9e9ea)', p('#0d6e88'), p('#e9e9ea'), 4.5);
+add('secondary button label on hover bg (#E8ECF1)', p('#065F46'), p('#E8ECF1'), 4.5);
 /* HeroUI: --<x>-hover = color-mix(in oklab, --<x> 90%, --<x>-foreground 10%) */
 add('white on danger hover (#c33e36)', p('#ffffff'), p('#c33e36'), 4.5);
-add('white on accent hover (#0b657c)', p('#ffffff'), p('#0b657c'), 4.5);
-add('white on accent active (#094f5e)', p('#ffffff'), p('#094f5e'), 4.5);
+add('white on accent hover (#064E3B)', p('#ffffff'), p('#064E3B'), 4.5);
+add('white on accent active (#043F2E)', p('#ffffff'), p('#043F2E'), 4.5);
+/* Dark theme pairs, added with the emerald retheme. */
+const darkCanvas = parse(canvas.dark);
+const darkTint = (hexv, a) =>
+  over([p(hexv)[0], p(hexv)[1], p(hexv)[2], a], darkCanvas).map(Math.round);
+add('dark accent-foreground on accent (#052E1B on #34D399)', p('#052E1B'), p('#34D399'), 4.5);
+add('dark accent on bg-accent/10 over dark canvas (graphic)', p('#34D399'), darkTint('#34D399', 0.1), 3);
 
 console.log('\n=== DERIVED/NON-TEXT FAILURES ===');
 for (const f of extra) console.log(' - ' + f);

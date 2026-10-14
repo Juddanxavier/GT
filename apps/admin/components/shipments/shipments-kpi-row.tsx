@@ -76,7 +76,7 @@ export function ShipmentsKpiRow({ counts, statusFilter, onStatusFilter }: Shipme
       <KpiCard
         label="Delivered"
         count={counts.Delivered ?? 0}
-        color="#22c55e"
+        color="#10B981"
         icon={CheckCircle}
         data={sparklines.delivered}
         trend={trend.delivered}

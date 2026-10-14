@@ -5,7 +5,7 @@
 @custom-variant dark (&:where([data-theme="dark"]));
 
 @theme {
-  --color-brand: #06B6D4;
+  --color-brand: #10B981;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -38,8 +38,8 @@
 .default,
 [data-theme="light"],
 [data-theme="default"] {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-inter);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
 }
 
 .dark,
@@ -160,7 +160,7 @@ html {
 
 /* Logistics ops center — shipments workspace */
 .shipments-ops {
-  --ops-accent: #0ea5e9;
+  --ops-accent: var(--accent);
   --ops-accent-dim: color-mix(in oklab, var(--ops-accent) 18%, transparent);
   --ops-surface: color-mix(in oklab, var(--foreground) 3%, var(--background));
   --ops-surface-raised: color-mix(in oklab, var(--foreground) 5%, var(--background));
@@ -215,7 +215,7 @@ html {
 }
 
 .ops-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   letter-spacing: -0.01em;
 }

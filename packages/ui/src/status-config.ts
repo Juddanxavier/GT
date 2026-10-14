@@ -10,14 +10,15 @@ export type StatusColor =
   | 'success'
   | 'warning'
   | 'danger'
+  | 'transit'
   | 'accent';
 
 /** Canonical color mapping for each shipment status */
 export const STATUS_COLORS: Record<InternalStatus, StatusColor> = {
   pending: 'warning',
   info_received: 'warning',
-  in_transit: 'primary',
-  out_for_delivery: 'primary',
+  in_transit: 'transit',
+  out_for_delivery: 'transit',
   failed_attempt: 'danger',
   delivered: 'success',
   exception: 'danger',
@@ -69,6 +70,11 @@ export const STATUS_TOKEN_TRIPLES: Record<StatusColor, StatusTokenTriple> = {
     dot: 'var(--accent)',
     background: 'var(--accent-soft)',
     foreground: 'var(--accent-soft-foreground)',
+  },
+  transit: {
+    dot: 'var(--transit)',
+    background: 'var(--transit-soft)',
+    foreground: 'var(--transit-soft-foreground)',
   },
 };
 

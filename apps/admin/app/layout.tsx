@@ -1,11 +1,16 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-geist',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
 });
 
 export const metadata: Metadata = {
@@ -18,8 +23,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" className={inter.variable}>
-      <body style={{ fontFamily: 'var(--font-inter)' }}>{children}</body>
+    <html lang="en" data-theme="dark" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body style={{ fontFamily: 'var(--font-geist)' }}>{children}</body>
     </html>
   );
 }

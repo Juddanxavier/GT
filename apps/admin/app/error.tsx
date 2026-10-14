@@ -12,7 +12,7 @@ export default function RootError({
       <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
         <span className="text-2xl font-bold text-danger">!</span>
       </div>
-      <h2 className="text-xl font-semibold">Something went wrong</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Something went wrong</h2>
       <p className="text-sm text-muted max-w-md text-center">
         {error.message || 'An unexpected error occurred'}
       </p>

@@ -20,7 +20,7 @@ interface TrackingTimelineProps {
   events: TrackingEvent[];
 }
 
-/** ponytail: timeline dots use hardcoded color map — pull colors from STATUS_COLORS if the timeline diverges from status badges */
+/** ponytail: timeline dots use hardcoded color map ΓÇö pull colors from STATUS_COLORS if the timeline diverges from status badges */
 const DOT_COLORS: Record<string, string> = {
   delivered: '#22c55e',
   in_transit: '#3b82f6',
@@ -84,7 +84,7 @@ export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
                   <Chip size="sm" variant="soft" color="accent" className="text-[10px] h-5">Latest</Chip>
                 )}
                 {event.subStatus && (
-                  <span className="text-xs text-muted">· {event.subStatus.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-muted">┬╖ {event.subStatus.replace(/_/g, ' ')}</span>
                 )}
               </div>
 

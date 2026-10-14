@@ -149,7 +149,7 @@ export default function InvoicesPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard label="Total" count={kpiTotal} color="#3b82f6" icon={FileText} data={sparklines.total} />
-        <KpiCard label="Paid" count={kpiPaid} color="#22c55e" icon={CheckCircle} data={sparklines.paid} />
+        <KpiCard label="Paid" count={kpiPaid} color="#10B981" icon={CheckCircle} data={sparklines.paid} />
         <KpiCard label="Unpaid" count={kpiPending} color="#f59e0b" icon={Clock} data={sparklines.unpaid} />
       </div>
 

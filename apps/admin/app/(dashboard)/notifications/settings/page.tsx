@@ -53,7 +53,7 @@ export default function NotificationSettingsPage(): ReactNode {
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <h1 className="text-xl font-semibold">Notification Preferences</h1>
+      <h1 className="text-xl font-semibold tracking-tight">Notification Preferences</h1>
       {categories.map((cat) => (
         <Card key={cat.key}>
           <Card.Header><p className="text-sm font-medium">{cat.label}</p></Card.Header>

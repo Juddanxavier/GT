@@ -176,7 +176,7 @@ export default function ProfilePage() {
                 <User size={15} />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Account Information</h2>
+                <h2 className="text-sm font-semibold text-foreground tracking-tight">Account Information</h2>
                 <p className="text-xs text-muted mt-0.5">Update your display name</p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 <Lock size={15} />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Security</h2>
+                <h2 className="text-sm font-semibold text-foreground tracking-tight">Security</h2>
                 <p className="text-xs text-muted mt-0.5">Update your password to keep your account secure</p>
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function ProfilePage() {
                 <Trash2 size={15} />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-danger">Danger Zone</h2>
+                <h2 className="text-sm font-semibold text-danger tracking-tight">Danger Zone</h2>
                 <p className="text-xs text-muted mt-0.5">Permanently delete your account and all associated data</p>
               </div>
             </div>
