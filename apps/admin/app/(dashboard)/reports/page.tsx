@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Select, ListBox, Tabs, Table, Skeleton, Chip } from '@heroui/react';
 import { FileText, Download, LoaderCircle, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle, Calendar, Building2, X } from 'lucide-react';
@@ -123,6 +124,7 @@ function DistributionCard({ title, items, colorFor }: { title: string; items: { 
 
 export default function ReportsPage() {
   usePageTitle('Reports');
+  useTableHeaderScope();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const isStaff = getUser(session)?.role === 'staff';
@@ -348,7 +350,7 @@ export default function ReportsPage() {
             className="w-28 bg-transparent text-sm outline-none border-none p-0 [color-scheme:var(--color-scheme)]" placeholder="End" />
           {!startDate && !endDate && <Chip size="sm" variant="soft" className="text-xs h-6">All time</Chip>}
           {(startDate || endDate) && (
-            <button onClick={() => handleFilterChange(reportType, '', '')} className="text-muted hover:text-foreground ml-1">
+            <button type="button" aria-label="Clear date range" onClick={() => handleFilterChange(reportType, '', '')} className="text-muted hover:text-foreground ml-1">
               <X size={14} />
             </button>
           )}
@@ -435,7 +437,7 @@ export default function ReportsPage() {
       ) : (
         <Table className="table-clickable">
           <Table.ScrollContainer>
-            <Table.Content aria-label="Report records" onRowAction={(key) => {
+            <Table.Content aria-label="Reports table" onRowAction={(key) => {
               if (reportType === 'shipments') router.push(`/shipments/${key}`);
             }}>
               <Table.Header>

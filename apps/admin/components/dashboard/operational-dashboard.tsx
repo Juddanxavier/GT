@@ -87,7 +87,7 @@ export function OperationalDashboard({
       <div className="w-full flex items-center justify-center min-h-[50vh]">
         <div className="text-center max-w-sm content-panel p-8">
           <AlertTriangle size={28} className="text-danger mx-auto mb-3" />
-          <h2 className="text-lg font-semibold mb-2 tracking-tight">Something went wrong</h2>
+          <h1 className="text-lg font-semibold mb-2 tracking-tight">Something went wrong</h1>
           <p className="text-sm text-muted mb-4">{error}</p>
           <Button variant="primary" onPress={() => onRetry()}>Try again</Button>
         </div>

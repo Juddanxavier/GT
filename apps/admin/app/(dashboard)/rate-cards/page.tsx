@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { COUNTRIES } from '@/lib/countries';
 import { ChevronDown, DollarSign, Eye, Pencil, Trash2, MoreVertical, Plus, X, ArrowLeft, ArrowRight, Check, FileText, TableIcon } from 'lucide-react';
 import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Select, Spinner, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
@@ -70,7 +71,7 @@ function CountryInput({ value, onChange, countryList }: { value: string; onChang
       <Select.Trigger className="h-10 content-panel px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
         <Select.Value />
         <Select.Indicator>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
         </Select.Indicator>
       </Select.Trigger>
       <Select.Popover className="min-w-[300px] content-panel p-1">
@@ -99,6 +100,7 @@ function CountryInput({ value, onChange, countryList }: { value: string; onChang
 
 export default function RateCardsPage() {
   usePageTitle('Rate Cards');
+  useTableHeaderScope();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'destinationCountry', direction: 'ascending' });
   const [page, setPage] = useState(1);
@@ -363,7 +365,7 @@ export default function RateCardsPage() {
         </div>
         <Table className="table-clickable">
           <Table.ScrollContainer>
-            <Table.Content aria-label="Rate Cards" className="min-w-[600px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => { const card = rateCards.find((c) => c.id === key); if (card) setDetailTarget(card); }}>
+            <Table.Content aria-label="Rate Cards table" className="min-w-[600px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => { const card = rateCards.find((c) => c.id === key); if (card) setDetailTarget(card); }}>
               <Table.Header>
                 <Table.Column id="#" width={48}>{() => <span className="text-muted text-xs">#</span>}</Table.Column>
                 <Table.Column allowsSorting id="destinationCountry" isRowHeader>{({ sortDirection }) => <SortableHeader sortDirection={sortDirection}>Country</SortableHeader>}</Table.Column>
@@ -391,19 +393,21 @@ export default function RateCardsPage() {
                       </Table.Cell>
                       <Table.Cell className="text-sm text-muted">{new Date(card.updatedAt).toLocaleDateString()}</Table.Cell>
                       <Table.Cell>
-                        <span onClick={(e) => e.stopPropagation()}>
-                          <Dropdown.Root>
-                            <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm"><DotsIcon /></Dropdown.Trigger>
-                            <Dropdown.Popover placement="bottom end">
-                              <Dropdown.Menu onAction={(key) => handleContextAction(key, card)}>
-                                <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
-                                <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><Pencil size={16} /> Edit</span></Dropdown.Item>
-                                <Dropdown.Item id="toggle" textValue="Toggle"><span className="flex items-center gap-2">{card.isActive ? 'Deactivate' : 'Activate'}</span></Dropdown.Item>
-                                <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
-                              </Dropdown.Menu>
-                            </Dropdown.Popover>
-                          </Dropdown.Root>
-                        </span>
+                        <Dropdown.Root>
+                          <Dropdown.Trigger
+                            className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          ><DotsIcon /></Dropdown.Trigger>
+                          <Dropdown.Popover placement="bottom end">
+                            <Dropdown.Menu onAction={(key) => handleContextAction(key, card)}>
+                              <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><EyeIcon /> View</span></Dropdown.Item>
+                              <Dropdown.Item id="edit" textValue="Edit"><span className="flex items-center gap-2"><Pencil size={16} /> Edit</span></Dropdown.Item>
+                              <Dropdown.Item id="toggle" textValue="Toggle"><span className="flex items-center gap-2">{card.isActive ? 'Deactivate' : 'Activate'}</span></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete"><span className="flex items-center gap-2"><TrashIcon /> Delete</span></Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
+                        </Dropdown.Root>
                       </Table.Cell>
                     </Table.Row>
                   );
@@ -427,7 +431,7 @@ export default function RateCardsPage() {
       {/* Create / Edit Modal */}
       <Modal.Backdrop isOpen={formOpen} onOpenChange={(v: boolean) => { if (!v) setFormOpen(false); }}>
         <Modal.Container>
-            <Modal.Dialog className="max-w-2xl max-h-[90vh]">
+            <Modal.Dialog aria-label={isEditing ? 'Edit Rate Card' : 'New Rate Card'} className="max-w-2xl max-h-[90vh]">
             <Modal.Header>
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex items-center justify-between">
@@ -615,7 +619,7 @@ export default function RateCardsPage() {
       {/* Detail/View Modal */}
       <Modal.Backdrop isOpen={!!detailTarget} onOpenChange={(v: boolean) => { if (!v) setDetailTarget(null); }}>
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog aria-label="Rate Card Details" className="max-w-3xl">
             <Modal.Header>
               <div className="flex items-center justify-between w-full">
                 <span>{detailTarget?.destinationCountry} — Rate Card</span>
@@ -644,7 +648,9 @@ export default function RateCardsPage() {
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Delete Rate Card</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Delete Rate Card</Modal.Heading>
+            </Modal.Header>
             <Modal.Body><p className="text-sm text-muted">Are you sure you want to delete the rate card for <strong>{deleteTarget?.destinationCountry}</strong>? All shipping rates will be removed. This action cannot be undone.</p></Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setDeleteTarget(null)}>Cancel</Button>

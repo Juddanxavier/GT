@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PageHeader as SharedPageHeader } from '@repo/ui/page-header';
 
 interface PageHeaderProps {
   title: string;
@@ -7,21 +8,13 @@ interface PageHeaderProps {
   action?: ReactNode;
 }
 
+/**
+ * Thin delegation to `@repo/ui/page-header`, which owns the page `h1` for
+ * every admin route (AC-7). Keep the props admin pages already use and add
+ * nothing here.
+ */
 export function PageHeader({ title, subtitle, icon, action }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-3 flex-wrap">
-      <div className="flex items-center gap-3">
-        {icon && (
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-glass glass-panel text-muted shrink-0 shadow-glow-accent-subtle">
-            {icon}
-          </span>
-        )}
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
-        </div>
-      </div>
-      {action}
-    </div>
+    <SharedPageHeader title={title} description={subtitle} icon={icon} actions={action} />
   );
 }

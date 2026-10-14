@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ const ROLE_COLORS: Record<string, 'accent' | 'success' | 'warning' | 'default'> 
 
 export default function CustomerProfilePage() {
   usePageTitle('Customer Profile');
+  useTableHeaderScope();
   const router = useRouter();
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
@@ -145,7 +147,7 @@ export default function CustomerProfilePage() {
         ) : (
           <Table>
             <Table.ScrollContainer>
-              <Table.Content aria-label="Customer shipments">
+              <Table.Content aria-label="Customer shipments table">
                 <Table.Header>
                   <Table.Column id="trackingNo" isRowHeader>Tracking #</Table.Column>
                   <Table.Column id="carrier">Carrier</Table.Column>
@@ -179,7 +181,7 @@ export default function CustomerProfilePage() {
         ) : (
           <Table>
             <Table.ScrollContainer>
-              <Table.Content aria-label="Customer invoices">
+              <Table.Content aria-label="Customer invoices table">
                 <Table.Header>
                   <Table.Column id="invoiceNo" isRowHeader>Invoice No</Table.Column>
                   <Table.Column id="trackingNo">Tracking</Table.Column>

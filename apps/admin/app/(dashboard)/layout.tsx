@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ToastProvider } from '@/components/toast';
 import { SearchDialog } from '@/components/search-dialog';
@@ -135,6 +135,19 @@ function DashboardLayoutInner({
 
   useIdleTimeout();
 
+  // AC-8: move focus to the new page after a client side navigation so screen
+  // readers announce the change. The first render is skipped, because the
+  // initial focus belongs to the browser.
+  const pathname = usePathname();
+  const skippedFirstRouteFocus = useRef(true);
+  useEffect(() => {
+    if (skippedFirstRouteFocus.current) {
+      skippedFirstRouteFocus.current = false;
+      return;
+    }
+    document.getElementById('main-content')?.focus();
+  }, [pathname]);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -213,7 +226,9 @@ function DashboardLayoutInner({
       </a>
 
       {sidebarOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Close navigation menu"
           className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -231,6 +246,7 @@ function DashboardLayoutInner({
       <div className="flex flex-col flex-1 min-w-0 overflow-auto">
         <DashboardHeader
           collapsed={collapsed}
+          sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           onToggleCollapsed={toggleCollapsed}
           onOpenSearch={() => setSearchOpen(true)}
@@ -264,7 +280,7 @@ function DashboardLayoutInner({
 
         <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <main id="main-content" className="p-4 sm:p-6 lg:p-8">
+        <main id="main-content" tabIndex={-1} aria-label="Main content" className="p-4 sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-7xl dashboard-glass">
             <ErrorBoundary>{children}</ErrorBoundary>
           </div>

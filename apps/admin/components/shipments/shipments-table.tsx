@@ -389,7 +389,7 @@ export function ShipmentsTable({
             ? 'bg-[var(--ops-accent-dim)] shadow-[inset_3px_0_0_0_var(--ops-accent)]'
             : undefined
         }
-        ariaLabel="Shipments"
+        ariaLabel="Shipments table"
       />
       <div className="flex w-full items-center justify-between gap-4 px-4 py-2">
         <div className="flex items-center gap-2 text-xs text-muted">

@@ -153,7 +153,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <nav className="p-2 space-y-0.5">
+          <nav aria-label="Profile sections" className="p-2 space-y-0.5">
             {sections.map((s) => (
               <a
                 key={s.id}

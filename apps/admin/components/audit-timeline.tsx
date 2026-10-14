@@ -198,6 +198,7 @@ export default function AuditTimeline({
             {/* Group header */}
             <button
               type="button"
+              aria-expanded={isOpen}
               className="w-full text-left focus:outline-none"
               onClick={() => toggleGroup(group.key)}
             >
@@ -257,7 +258,7 @@ export default function AuditTimeline({
                         <div
                           className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden="true" focusable="false">
                             <polyline points="6 9 12 15 18 9" />
                           </svg>
                         </div>
@@ -326,7 +327,9 @@ export default function AuditTimeline({
       <Modal.Backdrop isOpen={!!selectedEntry} onOpenChange={(v: boolean) => { if (!v) setSelectedEntry(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Event Details</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Event Details</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               {selectedEntry && (
                 <div className="space-y-4 text-sm">

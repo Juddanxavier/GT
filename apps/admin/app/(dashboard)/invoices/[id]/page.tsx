@@ -168,7 +168,9 @@ export default function InvoiceDetailPage() {
       <Modal.Backdrop isOpen={sendOpen} onOpenChange={(v) => { if (!v) { setSendOpen(false); setSendError(''); setSendSuccess(''); } }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Send Invoice</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Send Invoice</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Send invoice <strong>{invoice.invoiceNo}</strong> via email?</p>
               {sendError && <p className="text-sm text-danger mt-2">{sendError}</p>}

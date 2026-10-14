@@ -49,7 +49,19 @@ export function KpiStatCard({ item }: { item: KpiItem }) {
       {item.sublabel && <span className="mt-0.5 text-[11px] text-muted">{item.sublabel}</span>}
       {item.spark && item.spark.length > 1 && item.chart && (
         <div className="mt-auto pt-1">
-          <MiniChart variant={item.chart} data={item.spark} color={color} />
+          {item.chart === 'donut' ? (
+            <MiniChart variant={item.chart} data={item.spark} color={color} />
+          ) : (
+            <div className="flex items-end justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <MiniChart variant={item.chart} data={item.spark} color={color} />
+              </div>
+              <span className="shrink-0 text-[10px] tabular-nums text-muted">
+                <span className="sr-only">Chart range </span>
+                {Math.min(...item.spark)}–{Math.max(...item.spark)}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </>

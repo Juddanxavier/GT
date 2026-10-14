@@ -1,4 +1,4 @@
-# 0001-a. Shared tokens and admin DESIGN.md
+﻿# 0001-a. Shared tokens and admin DESIGN.md
 
 Part of umbrella [0001](index.md). Supports the token authority and design doc decisions.
 

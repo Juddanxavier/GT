@@ -221,17 +221,27 @@ export function CustomerAssigner({
                 className="w-full h-10 px-9 rounded-sm border border-border bg-background text-sm placeholder:text-muted outline-none focus:border-foreground/30 transition-colors"
                 placeholder="Search customer by name, email, or phone..."
                 value={query}
+                role="combobox"
+                aria-expanded={showResults && !!query.trim()}
+                aria-controls={showResults && query.trim() ? 'customer-assigner-results' : undefined}
+                aria-autocomplete="list"
                 onChange={(e) => { setQuery(e.target.value); setShowResults(true); clearError?.('customerId'); }}
             onFocus={() => query.trim() && setShowResults(true)}
           />
         </div>
         {showResults && query.trim() && (
-          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-sm shadow-lg max-h-64 overflow-y-auto">
+          <div
+            id="customer-assigner-results"
+            role="listbox"
+            aria-label="Matching customers"
+            className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-sm shadow-lg max-h-64 overflow-y-auto"
+          >
             {results.length > 0 ? (
               results.map((c) => (
                 <button
                   key={c.id}
                   type="button"
+                  role="option"
                   onClick={() => selectCustomer(c)}
                   className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/10 text-left transition-colors"
                 >

@@ -7,15 +7,20 @@ interface PageHeaderProps {
   description?: ReactNode;
   breadcrumb?: ReactNode;
   actions?: ReactNode;
+  icon?: ReactNode;
   className?: string;
 }
 
-/** One header per page: title, optional description and breadcrumb, actions slot. */
+/**
+ * One header per page: the single owner of the page `h1`, so every route has
+ * exactly one top level heading no matter which app renders it.
+ */
 export function PageHeader({
   title,
   description,
   breadcrumb,
   actions,
+  icon,
   className,
 }: PageHeaderProps) {
   return (
@@ -24,10 +29,17 @@ export function PageHeader({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="min-w-0">
-        {breadcrumb ? <div className="mb-1">{breadcrumb}</div> : null}
-        <h1 className="text-lg font-bold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
+      <div className="flex min-w-0 items-center gap-3">
+        {icon ? (
+          <span className="inline-flex shrink-0 items-center justify-center w-10 h-10 rounded-xl border border-glass glass-panel text-muted shadow-glow-accent-subtle">
+            {icon}
+          </span>
+        ) : null}
+        <div className="min-w-0 space-y-0.5">
+          {breadcrumb ? <div className="mb-1">{breadcrumb}</div> : null}
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+          {description ? <p className="text-sm text-muted">{description}</p> : null}
+        </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

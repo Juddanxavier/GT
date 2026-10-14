@@ -8,6 +8,7 @@
     "./button": "./src/button.tsx",
     "./card": "./src/card.tsx",
     "./code": "./src/code.tsx",
+    "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./data-table": "./src/data-table.tsx",
     "./empty-state": "./src/empty-state.tsx",
     "./error-state": "./src/error-state.tsx",

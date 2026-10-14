@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useTenants } from '@/lib/queries';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { useRouter } from 'next/navigation';
@@ -30,6 +31,7 @@ const INVOICE_COLUMNS: ColumnDef[] = [
 
 export default function InvoicesPage() {
   usePageTitle('Invoices');
+  useTableHeaderScope();
   const router = useRouter();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -196,7 +198,7 @@ export default function InvoicesPage() {
         ) : (
           <Table className={`table-clickable ${densityClassName(prefs.density)}`}>
             <Table.ScrollContainer>
-              <Table.Content aria-label="Invoices" className="min-w-[950px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/invoices/${key}`)}>
+              <Table.Content aria-label="Invoices table" className="min-w-[950px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/invoices/${key}`)}>
                 <Table.Header>
                   <Table.Column id="#" width={48}>{() => <span className="text-muted text-xs">#</span>}</Table.Column>
                   <Table.Column allowsSorting id="invoiceNo" isRowHeader>Invoice No</Table.Column>
@@ -226,21 +228,23 @@ export default function InvoicesPage() {
                       {prefs.isVisible('emailCount') && <Table.Cell className="text-muted text-xs">{inv.emailCount}/2</Table.Cell>}
                       {prefs.isVisible('createdAt') && <Table.Cell className="text-muted text-xs">{new Date(inv.createdAt).toLocaleDateString()}</Table.Cell>}
                       <Table.Cell>
-                        <span onClick={(e) => e.stopPropagation()}>
-                          <Dropdown.Root>
-                            <Dropdown.Trigger className="inline-flex items-center justify-center rounded-sm min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
-                              <MoreVertical size={16} />
-                            </Dropdown.Trigger>
-                            <Dropdown.Popover placement="bottom end">
-                              <Dropdown.Menu onAction={(key) => handleContextAction(key, inv)}>
-                                <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
-                                <Dropdown.Item id="send" textValue="Send"><span className="flex items-center gap-2"><Send size={16} /> Send Email</span></Dropdown.Item>
-                                <Dropdown.Item id="pdf" textValue="PDF"><span className="flex items-center gap-2"><Download size={16} /> Download PDF</span></Dropdown.Item>
-                                <Dropdown.Item id="delete" textValue="Delete" className="text-danger"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>
-                              </Dropdown.Menu>
-                            </Dropdown.Popover>
-                          </Dropdown.Root>
-                        </span>
+                        <Dropdown.Root>
+                          <Dropdown.Trigger
+                            className="inline-flex items-center justify-center rounded-sm min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical size={16} />
+                          </Dropdown.Trigger>
+                          <Dropdown.Popover placement="bottom end">
+                            <Dropdown.Menu onAction={(key) => handleContextAction(key, inv)}>
+                              <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
+                              <Dropdown.Item id="send" textValue="Send"><span className="flex items-center gap-2"><Send size={16} /> Send Email</span></Dropdown.Item>
+                              <Dropdown.Item id="pdf" textValue="PDF"><span className="flex items-center gap-2"><Download size={16} /> Download PDF</span></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete" className="text-danger"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
+                        </Dropdown.Root>
                       </Table.Cell>
                     </Table.Row>
                   ))}
@@ -292,7 +296,9 @@ export default function InvoicesPage() {
       <Modal.Backdrop isOpen={!!sendTarget} onOpenChange={(v: boolean) => { if (!v) { setSendTarget(null); setSendError(''); setSendSuccess(''); } }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Send Invoice</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Send Invoice</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">
                 Send invoice <strong>{sendTarget?.invoiceNo}</strong> for shipment <strong>{sendTarget?.trackingNo}</strong> to the customer via email?
@@ -314,7 +320,9 @@ export default function InvoicesPage() {
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Delete Invoice</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Delete Invoice</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Delete invoice <strong>{deleteTarget?.invoiceNo}</strong>? This action cannot be undone.</p>
             </Modal.Body>

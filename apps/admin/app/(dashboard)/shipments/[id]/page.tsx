@@ -21,6 +21,7 @@ import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
 import { ArrowLeft, ChevronDown, MapPin, Package } from 'lucide-react';
 import { useToast } from '@/components/toast';
+import { ConfirmDialog } from '@repo/ui/confirm-dialog';
 import { DetailShell } from '@/components/detail-layout';
 import { RouteJourneyStepper } from '@/components/shipments/route-journey-stepper';
 import { ShipmentCommandSidebar } from '@/components/shipments/shipment-command-sidebar';
@@ -46,6 +47,7 @@ export default function ShipmentDetailPage(): ReactNode {
   const deleteMutation = useDeleteShipment();
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [stopOpen, setStopOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const sortedEvents = useMemo(() => {
@@ -138,6 +140,7 @@ export default function ShipmentDetailPage(): ReactNode {
             <section className="ops-panel overflow-hidden">
               <button
                 type="button"
+                aria-expanded={detailsOpen}
                 className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-[var(--ops-surface-raised)] transition-colors"
                 onClick={() => setDetailsOpen((v) => !v)}
               >
@@ -181,39 +184,50 @@ export default function ShipmentDetailPage(): ReactNode {
             tenantCurrency={tenantCurrency}
             onTrack={() => trackMutation.mutate(id)}
             trackPending={trackMutation.isPending}
-            onStopTracking={async () => {
-              if (!window.confirm(`Stop tracking ${shipment.trackingNo}?`)) return;
-              await stopMutation.mutateAsync(id);
-            }}
+            onStopTracking={() => setStopOpen(true)}
             stopPending={stopMutation.isPending}
             onEdit={() => toast('info', 'Edit coming soon')}
             onDelete={() => setDeleteOpen(true)}
           />
         </div>
 
-        {deleteOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <Card className="ops-panel w-full max-w-sm mx-4 p-6 space-y-4">
-              <p className="text-sm">
-                Delete <strong className="ops-mono">{shipment.trackingNo}</strong>? This cannot be undone.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" size="sm" onPress={() => setDeleteOpen(false)}>Cancel</Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  isPending={deleteMutation.isPending}
-                  onPress={async () => {
-                    await deleteMutation.mutateAsync(id);
-                    router.push('/shipments');
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
+        <ConfirmDialog
+          open={deleteOpen}
+          title="Delete Shipment"
+          description={
+            <>
+              Delete <strong className="ops-mono">{shipment.trackingNo}</strong>? This cannot be
+              undone.
+            </>
+          }
+          confirmLabel="Delete"
+          tone="danger"
+          isPending={deleteMutation.isPending}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={async () => {
+            await deleteMutation.mutateAsync(id);
+            router.push('/shipments');
+          }}
+        />
+
+        <ConfirmDialog
+          open={stopOpen}
+          title="Stop Tracking"
+          description={
+            <>
+              Stop tracking <strong className="ops-mono">{shipment.trackingNo}</strong>? Status
+              updates from the carrier will stop until you start tracking again.
+            </>
+          }
+          confirmLabel="Stop Tracking"
+          tone="danger"
+          isPending={stopMutation.isPending}
+          onCancel={() => setStopOpen(false)}
+          onConfirm={async () => {
+            await stopMutation.mutateAsync(id);
+            setStopOpen(false);
+          }}
+        />
       </DetailShell>
     </div>
   );

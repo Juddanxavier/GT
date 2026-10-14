@@ -20,11 +20,12 @@ export default function GlobalError({
         <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
           <span className="text-2xl font-bold text-danger">!</span>
         </div>
-        <h2 className="text-xl font-semibold tracking-tight">Something went wrong</h2>
+        <h1 className="text-xl font-semibold tracking-tight">Something went wrong</h1>
         <p className="text-sm text-muted max-w-md text-center">
           {error.message || 'An unexpected error occurred'}
         </p>
         <button
+          type="button"
           onClick={reset}
           className="inline-flex items-center justify-center h-9 px-4 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity"
         >

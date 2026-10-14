@@ -40,6 +40,7 @@ type Notification = {
 
 type DashboardHeaderProps = {
   collapsed: boolean;
+  sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   onToggleCollapsed: () => void;
   onOpenSearch: () => void;
@@ -64,6 +65,7 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({
   collapsed,
+  sidebarOpen,
   setSidebarOpen,
   onToggleCollapsed,
   onOpenSearch,
@@ -96,6 +98,7 @@ export function DashboardHeader({
             variant="ghost"
             className="hidden md:inline-flex"
             onPress={onToggleCollapsed}
+            aria-expanded={!collapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -105,6 +108,7 @@ export function DashboardHeader({
             variant="ghost"
             className="md:hidden"
             onPress={() => setSidebarOpen(true)}
+            aria-expanded={sidebarOpen}
             aria-label="Open menu"
           >
             <Menu size={18} />
@@ -234,7 +238,9 @@ export function DashboardHeader({
           <Dropdown>
             <Dropdown.Trigger
               className="text-muted hover:text-foreground relative p-1.5 rounded-lg hover:bg-sidebar-hover"
-              aria-label="Notifications"
+              aria-label={
+                unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'
+              }
             >
               <Bell size={16} />
               {unreadCount > 0 && (

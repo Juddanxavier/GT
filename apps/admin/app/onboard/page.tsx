@@ -164,7 +164,7 @@ function OnboardForm() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-6">
             <span className="text-emerald-400 text-3xl font-bold tracking-tight">GT</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Gajan Traders</h1>
+          <p className="text-2xl font-bold text-white tracking-tight">Gajan Traders</p>
           <p className="text-sm text-zinc-500 mt-2">Shipment Tracking Platform</p>
           <div className="my-8 mx-auto w-12 h-px bg-emerald-500/30" />
           <p className="text-sm text-zinc-400 leading-relaxed">
@@ -181,13 +181,13 @@ function OnboardForm() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-4">
               <span className="text-emerald-400 text-xl font-bold tracking-tight">GT</span>
             </div>
-            <h1 className="text-xl font-semibold text-white tracking-tight">Gajan Traders</h1>
+            <p className="text-xl font-semibold text-white tracking-tight">Gajan Traders</p>
             <p className="text-sm text-zinc-500 mt-1">Set up your password</p>
           </div>
 
-          {/* Desktop heading */}
-          <div className="hidden lg:block mb-8">
-            <h2 className="text-2xl font-semibold text-white tracking-tight">Activate your account</h2>
+          {/* Page heading: the single h1 for this route, shown at every size */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">Activate your account</h1>
             <p className="text-sm text-zinc-500 mt-1">Choose a password to get started</p>
           </div>
 

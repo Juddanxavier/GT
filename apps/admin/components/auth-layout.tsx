@@ -43,9 +43,9 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
           </div>
 
           <div className="mt-auto mb-auto pt-10">
-            <h2 className="text-4xl font-bold tracking-tight leading-[1.15] text-sidebar-foreground max-w-md">
+            <p className="text-4xl font-bold tracking-tight leading-[1.15] text-sidebar-foreground max-w-md">
               Shipments, quotes, and invoicing — under one roof.
-            </h2>
+            </p>
             <p className="text-sidebar-muted mt-4 max-w-sm text-sm leading-relaxed">
               Manage every parcel across branches and organizations without leaking data between tenants.
             </p>

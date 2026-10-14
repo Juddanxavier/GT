@@ -5,7 +5,9 @@
       ".planning/**",
       "additional_parameters.json",
       "**/*.pdf",
-      "apps/api/drizzle/**"
+      "apps/api/drizzle/**",
+      "**/.next/**",
+      "**/dist/**"
     ]
   },
   "vcs": {
@@ -45,6 +47,11 @@
       "semicolons": "always"
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "assist": {
     "actions": {
       "source": {
@@ -53,6 +60,24 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["apps/admin/**", "**/apps/admin/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "warn",
+            "noUnusedVariables": "warn"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "warn",
+            "useIterableCallbackReturn": "warn"
+          },
+          "style": {
+            "useTemplate": "warn"
+          }
+        }
+      }
+    },
     {
       "includes": ["**/*.test.ts", "**/*.test.tsx"],
       "linter": {

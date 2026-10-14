@@ -34,7 +34,14 @@ export function Sparkline({ data, color }: { data: number[]; color: string }) {
 
   return (
     <div className="w-full h-8 mt-2">
-      <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${w} ${h}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
         <defs>
           <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.35" />
@@ -86,7 +93,7 @@ export function MiniDonut({ data, color }: { data: number[]; color: string }) {
 
   return (
     <div className="flex items-center justify-between mt-2 gap-2">
-      <svg width="32" height="32" viewBox="0 0 32 32" className="shrink-0">
+      <svg width="32" height="32" viewBox="0 0 32 32" className="shrink-0" aria-hidden="true" focusable="false">
         <circle cx="16" cy="16" r={r} fill="none" stroke={color} strokeOpacity="0.15" strokeWidth="4" />
         <circle
           cx="16"

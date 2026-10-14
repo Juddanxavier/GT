@@ -74,6 +74,59 @@ Every dashboard, reports, and KPI series color comes from this one six step ramp
 ### Empty / Error / Loading
 - `EmptyState`: message plus one optional action. `ErrorState`: message plus optional retry. `LoadingState`: skeleton shaped like the table.
 
+## Accessibility
+
+Feature 9 set the bar for everything built after it. The spec is `docs/specs/admin/0002-accessibility-pass.md`; this section is the durable version of the rules plus the checklist the verify walkthrough runs.
+
+### Rules
+
+**Colour is never the only signal.** `@repo/ui/status-badge` prints its label next to the dot, `kpi-card` shows a trend glyph and a percentage, `dashboard/status-breakdown` prints name and value as text, every dashboard sparkline shows a text range beside the chart (closes WR-19), and the notifications trigger's accessible name carries the unread count (`Notifications, N unread`). A new indicator that only changes colour is not done.
+
+**One `h1` per route.** `packages/ui/src/page-header.tsx` owns it. `apps/admin/components/page-header.tsx` only maps the admin props (`subtitle`, `icon`, `action`) onto it and emits no heading of its own. Pages without a PageHeader (detail pages, login, unauthorized, error and not-found) declare their own single `h1`. Nothing may be the first heading on a page while sitting below `h1`; a heading that is only supporting copy (the auth panel tagline) is a `p`, not an `h2`.
+
+**Landmarks are named.** `main#main-content` is `Main content`, the sidebar is `Main navigation`, the profile rail is `Profile sections`, breadcrumbs are `Breadcrumb`. Add a label to any new `nav`.
+
+**Dialogs name themselves and hold focus.** Prefer a `Modal.Heading` inside `Modal.Header`; where the header is built by hand, put `aria-label` on `Modal.Dialog`. HeroUI's Modal already traps focus, closes on Escape, and returns focus to the trigger, so do not add those by hand. Every confirmation goes through `packages/ui/src/confirm-dialog.tsx` (cancel first for initial focus, `isPending` blocks dismissal). `window.confirm` and hand drawn overlay dialogs are gone; do not reintroduce them.
+
+**Toasts announce once.** Each toast item carries `role="alert"`, the container stays `aria-live="polite"`, the dismiss control is a real button with `type="button"` and `aria-label="Dismiss"`. Never put `role="alert"` on the container: it would ask for attention and patience on the same node.
+
+**Keyboard.** Every control is a button, link, or field, and a button that does not submit says `type="button"`. Hand written disclosures carry `aria-expanded`: the shipment details expander, the audit timeline group headers, and the sidebar collapse and menu buttons. HeroUI and react-aria emit `aria-expanded` themselves on dropdowns, selects, and menus: never hand add it there, and confirm on the rendered DOM.
+
+**Typeaheads** (`assigned-to.tsx`, `customer-assigner.tsx`) use `role="combobox"` on the input with `aria-expanded` and `aria-controls`, and `role="listbox"` with `role="option"` rows. They do not implement `aria-activedescendant` arrow navigation: options are real buttons, so Tab walks them.
+
+**Tables.** Accessible name follows `<Page name> table` (`Branches table`, `Customers table`, `Shipments table`). react-aria renders the `<th>` itself and filters `scope` out of props, so list pages call `useTableHeaderScope()` from `components/use-table-header-scope.ts`, which stamps `scope="col"` after every render. Call it on any new HeroUI table page. The shared `DataTable` emits `scope`, `aria-sort`, and its selection labels in its own markup and needs no call. Pagination shows `Prev`/`Next` text and the page size select says `aria-label="Rows per page"`.
+
+**Decorative graphics.** Any svg that only sits beside text gets `aria-hidden="true" focusable="false"`. A meaningful svg gets a `<title>`.
+
+**Motion.** The `prefers-reduced-motion: reduce` block at the bottom of `app/globals.css` collapses animation and transition durations for the whole admin app: HeroUI's animations, the dashboard skeleton, the `@repo/ui` `loading-state` shimmer, and `animate-spin` loaders. It is admin only; the portals keep their own behaviour.
+
+**Focus on navigation.** `app/(dashboard)/layout.tsx` focuses `main#main-content` (`tabIndex={-1}`) on every pathname change except the first render, so the new page is announced. The skip link lands on the same element and becomes visible through the shared `:focus-visible` ring in `@repo/ui/tokens.css`.
+
+**Search palette.** `components/search-dialog.tsx` is built on HeroUI ComboBox: the input gets `role="combobox"`, `aria-expanded`, and `aria-activedescendant` from react-aria, rows are `listbox`/`option`, and a `role="status"` region announces the result count. Feature 15 (global search) must keep these semantics.
+
+### The gate
+
+- `pnpm lint` runs `biome lint apps/api/src packages` and then `pnpm --filter admin lint`. The a11y group is at `error` everywhere, and both runs must report zero errors.
+- The root script is not `turbo run lint` even though AC-10 asked for it: the portals' `next lint` scripts are broken on Next 16, so a turbo-wide lint run fails on work this feature does not own. The admin app is covered explicitly instead. If the portals are fixed, move the root script to `turbo run lint`.
+- Baseline, `apps/admin/**` only, all at `warn`: `useHookAtTopLevel`, `noUnusedVariables`, `noArrayIndexKey`, `useIterableCallbackReturn`, `useTemplate`. These are ~119 pre-existing warnings that this feature did not create. The a11y group is not downgraded anywhere, and warnings in other groups are still debt to burn down.
+- `biome.json` is strict JSON. **Never add a comment to it.** A single `// probe` line makes Biome silently ignore the entire config: the run then reports 158 files and 22 errors as if they were new, or worse, reports nothing and exits 0. Rationale belongs here, not in the config.
+- `css.parser.tailwindDirectives` is on so Biome can parse `app/globals.css`.
+
+### Verify checklist
+
+| AC | Walkthrough |
+|----|-------------|
+| AC-1 | Status badge shows a label, KPI cards show a glyph plus a percentage, status breakdown prints names and values, each dashboard sparkline has a text range beside it, the notifications trigger's name contains the unread count. Spot check a table and a chart with a colour filter (or grayscale) and confirm the meaning survives. |
+| AC-2 | Tab into every button that opens a dialog: focus lands inside, Tab cycles inside, Escape closes and focus returns to the trigger. Every dialog announces a name. No `window.confirm` in the bundle and no bare `fixed inset-0 z-50` overlay in source. |
+| AC-3 | Trigger a success and an error toast. With a screen reader or the a11y tree, the item is announced once, the container is polite, and the dismiss button reads `Dismiss`. |
+| AC-4 | Keyboard only pass over the shell: sidebar links, header buttons, dropdowns, filter selects. Active sidebar link reports `aria-current="page"`, the sidebar buttons report `aria-expanded`, the mobile backdrop is a button named `Close navigation menu`, every icon only button has a name, and no element has an `onClick` without a role. |
+| AC-5 | Press Cmd/Ctrl+K: the input reports `combobox` with `aria-expanded`, rows report `option`, arrow keys and mouse highlight the same row, Enter opens it, and the result count is announced politely. |
+| AC-6 | Each list page's table reports its `<Page name> table` name, header cells carry `scope="col"` on the rendered DOM, pagination reads `Prev`/`Next`, and rows per page says `Rows per page`. |
+| AC-7 | Exactly one `h1` per route (detail, login, unauthorized, error, not-found included), no page starts below `h1`, the skip link appears on focus and jumps to `main#main-content`, and `nav` and `main` report names. |
+| AC-8 | Navigate between routes: focus lands on `main#main-content` every time except the first render, and the page heading is announced. |
+| AC-9 | Enable reduce motion in the OS, reload: no shimmer, no spinner rotation, no modal or dropdown animation, no skeleton sweep. |
+| AC-10 | `pnpm lint` exits 0 with zero a11y errors in `apps/admin` and `packages/ui`; `pnpm --filter admin check-types` and `pnpm --filter @repo/ui check-types` pass; this section and its checklist exist. |
+
 ## Do / Don't
 - DO read every color from a token; DON'T paste hex in a component (the chart ramp above is the one exception, written as literals).
 - DO pick chart colors from the six step ramp; DON'T introduce a seventh hue for a new series.

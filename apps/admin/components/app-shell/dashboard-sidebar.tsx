@@ -54,7 +54,7 @@ export function DashboardSidebar({
         )}
       </div>
 
-      <nav className="flex-1 p-2 overflow-y-auto space-y-1">
+      <nav aria-label="Main navigation" className="flex-1 p-2 overflow-y-auto space-y-1">
         {navGroups.map((group) => {
           if (group.items.length === 0) return null;
           return (
@@ -71,6 +71,7 @@ export function DashboardSidebar({
                   <Button
                     key={item.href}
                     variant="ghost"
+                    aria-current={active ? 'page' : undefined}
                     className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start px-3'} h-9 ${active ? 'bg-sidebar-active-bg text-sidebar-active-fg font-medium' : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground'} rounded-lg border border-transparent transition-all relative`}
                     onPress={() => {
                       router.push(item.href);

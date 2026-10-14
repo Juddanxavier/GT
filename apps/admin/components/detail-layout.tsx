@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 export function DetailBack({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent transition-colors"
     >

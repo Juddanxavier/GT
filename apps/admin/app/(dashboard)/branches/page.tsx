@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Eye, Pencil, Trash2, MoreVertical, Phone, Building2 } from 'lucide-react';
 import { Button, Dropdown, Form, Input, Label, ListBox, Modal, Pagination, Select, Spinner, Table, cn, type Key, type SortDescriptor } from '@heroui/react';
@@ -48,6 +49,7 @@ function DotsIcon() { return <MoreVertical size={16} />; }
 
 export default function BranchesPage() {
   usePageTitle('Branches');
+  useTableHeaderScope();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: 'name', direction: 'ascending' });
@@ -130,7 +132,7 @@ export default function BranchesPage() {
         </div>
         <Table className="table-clickable">
           <Table.ScrollContainer>
-            <Table.Content aria-label="Branches" className="min-w-[650px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/branches/${key}`)}>
+            <Table.Content aria-label="Branches table" className="min-w-[650px]" sortDescriptor={sortDescriptor} onSortChange={(d) => { setSortDescriptor(d); setPage(1); }} onRowAction={(key) => router.push(`/branches/${key}`)}>
               <Table.Header>
                 <Table.Column id="#" width={48}>
                   {() => <span className="text-muted text-xs">#</span>}
@@ -164,9 +166,12 @@ export default function BranchesPage() {
                     <Table.Cell>{branch.email}</Table.Cell>
                     <Table.Cell className="max-w-40 truncate">{branch.address}</Table.Cell>
                     <Table.Cell>
-                      <span onClick={(e) => e.stopPropagation()}>
                         <Dropdown.Root>
-                          <Dropdown.Trigger className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm">
+                          <Dropdown.Trigger
+                            className="inline-flex items-center justify-center rounded-md min-w-0 px-1 h-7 text-muted hover:text-foreground hover:bg-muted transition-colors outline-none text-sm"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <DotsIcon />
                           </Dropdown.Trigger>
                           <Dropdown.Popover placement="bottom end">
@@ -177,7 +182,6 @@ export default function BranchesPage() {
                             </Dropdown.Menu>
                           </Dropdown.Popover>
                         </Dropdown.Root>
-                      </span>
                     </Table.Cell>
                   </Table.Row>
                 ))}
@@ -212,7 +216,9 @@ export default function BranchesPage() {
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(v: boolean) => { if (!v) setCreateOpen(false); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>New Branch</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>New Branch</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <Form.Root id="create-form" onSubmit={async (e) => {
                 e.preventDefault();
@@ -252,7 +258,7 @@ export default function BranchesPage() {
                       <Select.Trigger className="h-10 content-panel px-3 text-sm text-foreground data-[pressed]:bg-muted/40 outline-none transition-colors">
                         <Select.Value />
                         <Select.Indicator>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
                         </Select.Indicator>
                       </Select.Trigger>
                       <Select.Popover className="min-w-[200px] content-panel p-1">
@@ -303,7 +309,9 @@ export default function BranchesPage() {
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Delete Branch</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Delete Branch</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.</p>
             </Modal.Body>

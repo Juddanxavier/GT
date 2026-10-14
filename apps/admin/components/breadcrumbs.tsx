@@ -25,7 +25,7 @@ export function Breadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted">
-      <Link href="/" className="hover:text-foreground transition-colors">
+      <Link href="/" className="hover:text-foreground transition-colors" aria-label="Home">
         <LayoutDashboard size={14} />
       </Link>
       {segments.map((seg, i) => {

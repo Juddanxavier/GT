@@ -255,7 +255,9 @@ export default function InvitationsPage() {
       <Modal.Backdrop isOpen={inviteOpen} onOpenChange={(v) => { if (!v) setInviteOpen(false); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Invite User</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Invite User</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <form id="invite-form" onSubmit={handleInvite} className="space-y-4">
                 {inviteError && <p className="text-sm text-danger">{inviteError}</p>}

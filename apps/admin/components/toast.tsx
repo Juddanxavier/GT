@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm" role="alert" aria-live="polite">
+      <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm" aria-live="polite">
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDismiss={() => removeToast(t.id)} />
         ))}
@@ -59,13 +59,21 @@ const borders: Record<ToastType, string> = {
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 rounded-sm bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}>
+    <div
+      role="alert"
+      className={`flex items-start gap-3 px-4 py-3 rounded-sm bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}
+    >
       <span className="shrink-0 mt-0.5">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">{toast.title}</p>
         {toast.message && <p className="text-xs text-muted mt-0.5">{toast.message}</p>}
       </div>
-      <button onClick={onDismiss} className="shrink-0 text-muted hover:text-foreground transition-colors">
+      <button
+        type="button"
+        aria-label="Dismiss"
+        onClick={onDismiss}
+        className="shrink-0 text-muted hover:text-foreground transition-colors"
+      >
         <X size={14} />
       </button>
     </div>

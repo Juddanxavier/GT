@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:clean": "node -e \"require('node:fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
     "build": "next build",
-    "lint": "biome lint .",
+    "lint": "biome lint app components lib types __tests__ instrumentation.ts next.config.ts proxy.ts sentry.client.config.ts vitest.config.ts postcss.config.mjs",
     "check-types": "tsc --noEmit",
     "test": "vitest run"
   },

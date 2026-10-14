@@ -219,3 +219,21 @@ html {
   font-size: 0.8125rem;
   letter-spacing: -0.01em;
 }
+
+/* Reduced motion (AC-9)
+ *
+ * When the system asks for less movement, animations and transitions collapse
+ * to their end state instead of playing. This one block covers everything the
+ * admin renders: the HeroUI animations that ship in @heroui/styles, the
+ * dashboard skeleton, the @repo/ui loading-state shimmer, and the animate-spin
+ * loaders. Admin only, the portals keep their own behaviour. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

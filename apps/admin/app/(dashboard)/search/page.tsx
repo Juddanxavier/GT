@@ -42,6 +42,7 @@ export default function SearchPage() {
   function ResultCard({ icon: Icon, href, label, subtitle }: { icon: typeof Package; href: string; label: string; subtitle: string }) {
     return (
       <button
+        type="button"
         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border hover:bg-muted/5 transition-colors text-left"
         onClick={() => router.push(href)}
       >

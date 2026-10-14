@@ -30,7 +30,9 @@ export function FilterConfirmModals({
       >
         <Modal.Container>
           <Modal.Dialog className="glass-panel">
-            <Modal.Header>Switch Tenant</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Switch Tenant</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">
                 Switch to <strong>{confirmTenant?.name}</strong>? Data on all pages will refresh.
@@ -60,7 +62,9 @@ export function FilterConfirmModals({
       >
         <Modal.Container>
           <Modal.Dialog className="glass-panel">
-            <Modal.Header>Switch Branch</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Switch Branch</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">
                 Switch to <strong>{confirmBranch?.name}</strong>? Data on all pages will refresh.

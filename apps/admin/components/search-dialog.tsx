@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Kbd } from '@heroui/react';
-import { SearchField } from '@heroui/react/search-field';
+import { Button, Header, Input, ListBox, type Key } from '@heroui/react';
+import { ComboBox } from '@heroui/react/combo-box';
 import { Modal } from '@heroui/react/modal';
 import {
   Search, Package, Users, Receipt, ArrowRight,
@@ -22,18 +22,28 @@ interface SearchResults {
 
 type ResultType = 'shipment' | 'customer' | 'invoice';
 
-interface FlatResult {
-  type: ResultType;
-  id: string;
-  label: string;
-  subtitle: string;
-}
-
 interface NavItem {
   id: string;
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
+}
+
+/** One selectable row. The same shape feeds navigation shortcuts and search hits. */
+interface Option {
+  key: string;
+  label: string;
+  subtitle?: string;
+  icon: typeof LayoutDashboard;
+  href?: string;
+  type?: ResultType;
+  id?: string;
+  hint?: string;
+}
+
+interface OptionGroup {
+  title: string;
+  items: Option[];
 }
 
 // ─── Static data ───────────────────────────────────────────────────────
@@ -52,7 +62,15 @@ const QUICK_ACTIONS: NavItem[] = [
   { id: 'profile', label: 'Go to Profile', href: '/profile', icon: User },
 ];
 
+const NAV_HINTS: Record<string, string> = { dashboard: '⌘1', shipments: '⌘2', customers: '⌘3' };
+
 const ICONS: Record<ResultType, typeof Package> = { shipment: Package, customer: Users, invoice: Receipt };
+
+const SECTION_PATH: Record<ResultType, string> = {
+  shipment: 'shipments',
+  customer: 'customers',
+  invoice: 'invoices',
+};
 
 // ─── Component ─────────────────────────────────────────────────────────
 
@@ -61,31 +79,43 @@ export function SearchDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedKey, setSelectedKey] = useState<Key | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const allItems = useMemo(() => {
-    const items: { kind: 'nav'; icon: typeof LayoutDashboard; label: string; href: string; id: string }[] = [];
-    if (!query.trim()) {
-      NAV_ITEMS.forEach((n) => items.push({ ...n, kind: 'nav' }));
-      QUICK_ACTIONS.forEach((a) => items.push({ ...a, kind: 'nav' }));
-    }
-    return items;
-  }, [query]);
+  const inputWrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setQuery('');
       setResults(null);
-      setSelectedIndex(-1);
+      setSelectedKey(null);
     }
   }, [isOpen]);
+
+  // react-aria builds its option collection a moment after mount, so the focus
+  // that lands from autoFocus is too early for menuTrigger="focus" to open the
+  // listbox, and it never retries. Re-focus until the menu is up or the visitor
+  // starts typing.
+  useEffect(() => {
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const input = inputWrapRef.current?.querySelector('input');
+      const open = input?.getAttribute('aria-expanded') === 'true';
+      if (!open && input && !input.value) {
+        input.blur();
+        input.focus();
+      }
+      if (!open && tries++ < 12) timer = setTimeout(tick, 150);
+    };
+    timer = setTimeout(tick, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!query.trim()) { setResults(null); return; }
     setLoading(true);
-    setSelectedIndex(-1);
+    setResults(null);
     debounceRef.current = setTimeout(async () => {
       try {
         const data = await api.get<SearchResults>(`/api/search?q=${encodeURIComponent(query)}`);
@@ -96,190 +126,181 @@ export function SearchDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
-  const flatResults: FlatResult[] = [];
-  if (results) {
-    results.shipments.forEach((r) => flatResults.push({ type: 'shipment', id: r.id, label: r.trackingNo, subtitle: r.carrier ?? r.status }));
-    results.customers.forEach((r) => flatResults.push({ type: 'customer', id: r.id, label: r.name, subtitle: r.email ?? '' }));
-    results.invoices.forEach((r) => flatResults.push({ type: 'invoice', id: r.id, label: r.invoiceNo, subtitle: `${r.amount} · ${r.status}` }));
-  }
+  const flatResults: Option[] = useMemo(() => {
+    if (!results) return [];
+    const items: Option[] = [];
+    results.shipments.forEach((r) => items.push({
+      key: `shipment:${r.id}`, type: 'shipment', id: r.id,
+      label: r.trackingNo, subtitle: r.carrier ?? r.status, icon: ICONS.shipment,
+    }));
+    results.customers.forEach((r) => items.push({
+      key: `customer:${r.id}`, type: 'customer', id: r.id,
+      label: r.name, subtitle: r.email ?? '', icon: ICONS.customer,
+    }));
+    results.invoices.forEach((r) => items.push({
+      key: `invoice:${r.id}`, type: 'invoice', id: r.id,
+      label: r.invoiceNo, subtitle: `${r.amount} · ${r.status}`, icon: ICONS.invoice,
+    }));
+    return items;
+  }, [results]);
 
-  const totalSelectable = query.trim() ? flatResults.length : allItems.length;
+  const groups: OptionGroup[] = useMemo(() => {
+    // Shortcuts stay in the collection until the search lands. An empty
+    // collection makes react-aria close the listbox mid search.
+    if (!results) {
+      return [
+        { title: 'Navigate', items: NAV_ITEMS.map((n) => ({ key: `nav:${n.id}`, label: n.label, href: n.href, icon: n.icon, hint: NAV_HINTS[n.id] })) },
+        { title: 'Quick Actions', items: QUICK_ACTIONS.map((a) => ({ key: `quick:${a.id}`, label: a.label, href: a.href, icon: a.icon })) },
+      ];
+    }
+    const g: OptionGroup[] = [];
+    const shipments = flatResults.filter((o) => o.type === 'shipment');
+    const customers = flatResults.filter((o) => o.type === 'customer');
+    const invoices = flatResults.filter((o) => o.type === 'invoice');
+    if (shipments.length) g.push({ title: 'Shipments', items: shipments });
+    if (customers.length) g.push({ title: 'Customers', items: customers });
+    if (invoices.length) g.push({ title: 'Invoices', items: invoices });
+    return g;
+  }, [results, flatResults]);
 
-  const navigate = useCallback((item: { kind?: string; type?: string; href?: string; id: string }) => {
-    if (item.kind === 'nav' && item.href) {
-      router.push(item.href);
-    } else if (item.type) {
-      const t = item.type as ResultType;
-      router.push(`/${t === 'shipment' ? 'shipments' : t === 'customer' ? 'customers' : 'invoices'}/${item.id}`);
+  const options = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
+  // A new query or a new result set invalidates whatever was highlighted.
+  useEffect(() => {
+    setSelectedKey(null);
+  }, [query, results]);
+
+  const showingEmpty = !query.trim();
+  const showingLoading = loading && !!query.trim();
+  const showingNoResults = !loading && !!results && flatResults.length === 0 && !!query.trim();
+  const showingResults = !!results && !loading && !!query.trim() && flatResults.length > 0;
+  const showMenu = showingEmpty || showingResults;
+
+  const announcement = showingLoading
+    ? 'Searching'
+    : showingNoResults
+      ? 'No results found'
+      : showingResults
+        ? `${flatResults.length} results`
+        : `${options.length} shortcuts`;
+
+  const openOption = useCallback((option: Option) => {
+    if (option.href) {
+      router.push(option.href);
+    } else if (option.type && option.id) {
+      router.push(`/${SECTION_PATH[option.type]}/${option.id}`);
     }
     onClose();
   }, [router, onClose]);
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'ArrowDown') {
+  // Enter opens the highlighted row; react-aria fires this for arrow key and
+  // mouse selection alike, so both land on the same option.
+  const handleSelectionChange = useCallback((key: Key | null) => {
+    setSelectedKey(key);
+    if (key == null) return;
+    const option = options.find((o) => o.key === String(key));
+    if (option) openOption(option);
+  }, [options, openOption]);
+
+  const viewAll = useCallback(() => {
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+    onClose();
+  }, [router, query, onClose]);
+
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    if (selectedKey != null) return;
+    const first = options[0];
+    if (first && showMenu) {
       e.preventDefault();
-      setSelectedIndex((p) => (p + 1) % Math.max(totalSelectable, 1));
-    } else if (e.key === 'ArrowUp') {
+      openOption(first);
+    } else if (query.trim()) {
       e.preventDefault();
-      setSelectedIndex((p) => (p - 1 + Math.max(totalSelectable, 1)) % Math.max(totalSelectable, 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!query.trim()) {
-        const item = allItems[selectedIndex];
-        if (item) navigate(item);
-      } else if (selectedIndex >= 0 && flatResults[selectedIndex]) {
-        navigate(flatResults[selectedIndex]);
-      } else {
-        router.push(`/search?q=${encodeURIComponent(query)}`);
-        onClose();
-      }
+      viewAll();
     }
   }
-
-  const grouped = useMemo(() => {
-    if (!results) return [];
-    const groups: { title: string; items: FlatResult[] }[] = [];
-    if (results.shipments.length) groups.push({ title: 'Shipments', items: flatResults.slice(0, results.shipments.length) });
-    if (results.customers.length) groups.push({ title: 'Customers', items: flatResults.slice(results.shipments.length, results.shipments.length + results.customers.length) });
-    if (results.invoices.length) groups.push({ title: 'Invoices', items: flatResults.slice(results.shipments.length + results.customers.length) });
-    return groups;
-  }, [results, flatResults]);
-
-  const showingEmpty = !query.trim();
-  const showingResults = !!results && !loading && !!query.trim();
-  const showingNoResults = !loading && results && flatResults.length === 0 && !!query.trim();
-  const showingLoading = loading && !!query.trim();
 
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Modal.Container>
-        <Modal.Dialog className="max-w-2xl glass-panel border-glass">
-          <div className="px-5 pt-5 pb-3">
-            <SearchField value={query} onChange={setQuery} autoFocus aria-label="Search">
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="Search or navigate..." onKeyDown={handleKeyDown} />
-                <SearchField.ClearButton />
-                <Kbd className="hidden sm:inline-flex ml-auto">
-                  <Kbd.Abbr keyValue="command" />
-                  <Kbd.Content>K</Kbd.Content>
-                </Kbd>
-              </SearchField.Group>
-            </SearchField>
-          </div>
+        <Modal.Dialog className="max-w-2xl glass-panel border-glass" aria-label="Search">
+          <Modal.Body className="p-0">
+            <ComboBox.Root
+              inputValue={query}
+              onInputChange={setQuery}
+              selectedKey={selectedKey}
+              onSelectionChange={handleSelectionChange}
+              menuTrigger="focus"
+              // Server side search: react-aria would filter out results that
+              // matched on email or tracking number only.
+              defaultFilter={() => true}
+            >
+              <div className="px-5 pt-5 pb-3" ref={inputWrapRef}>
+                <ComboBox.InputGroup className="w-full">
+                  <Input
+                    autoFocus
+                    aria-label="Search"
+                    placeholder="Search or navigate..."
+                    onKeyDown={handleInputKeyDown}
+                    className="w-full"
+                  />
+                </ComboBox.InputGroup>
+              </div>
 
-          <Modal.Body className="p-0 max-h-[min(480px,60vh)] overflow-y-auto border-t border-border">
-            {showingEmpty && (
-              <div className="pb-2">
-                <div className="px-5 py-2.5 text-[11px] font-semibold text-muted uppercase tracking-widest">Navigate</div>
-                <div className="px-2">
-                  {NAV_ITEMS.map((item, i) => (
-                    <button
-                      key={item.id}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm
-                        ${selectedIndex === i ? 'bg-accent/10 text-accent' : 'hover:bg-muted/10 text-foreground'}`}
-                      onClick={() => navigate({ ...item, kind: 'nav' })}
-                      onMouseEnter={() => setSelectedIndex(i)}
-                    >
-                      <item.icon size={16} className="shrink-0 text-muted" />
-                      <span className="flex-1 truncate">{item.label}</span>
-                      <span className="text-[11px] text-muted/50 font-mono hidden sm:inline">
-                        {item.id === 'dashboard' ? '⌘1' : item.id === 'shipments' ? '⌘2' : item.id === 'customers' ? '⌘3' : ''}
-                      </span>
-                    </button>
-                  ))}
+              <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+
+              {showingLoading && (
+                <div className="flex items-center justify-center gap-2 py-8">
+                  <span className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                  <span className="text-sm text-muted">Searching...</span>
                 </div>
-                <div className="mt-1 px-5 py-2.5 text-[11px] font-semibold text-muted uppercase tracking-widest">Quick Actions</div>
-                <div className="px-2">
-                  {QUICK_ACTIONS.map((item) => {
-                    const idx = NAV_ITEMS.length + QUICK_ACTIONS.indexOf(item);
-                    return (
-                      <button
-                        key={item.id}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm
-                          ${selectedIndex === idx ? 'bg-accent/10 text-accent' : 'hover:bg-muted/10 text-foreground'}`}
-                        onClick={() => navigate({ ...item, kind: 'nav' })}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                      >
-                        <item.icon size={16} className="shrink-0 text-muted" />
-                        <span className="flex-1 truncate">{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              )}
 
-            {showingLoading && (
-              <div className="flex items-center justify-center gap-2 py-8">
-                <span className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-                <span className="text-sm text-muted">Searching...</span>
-              </div>
-            )}
-
-            {showingNoResults && (
-              <div className="py-12 text-center">
-                <Search size={28} className="mx-auto text-muted/40 mb-3" />
-                <p className="text-sm text-muted">No results found</p>
-                <button
-                  className="mt-3 text-xs text-accent hover:text-accent/80 transition-colors"
-                  onClick={() => { router.push(`/search?q=${encodeURIComponent(query)}`); onClose(); }}
-                >
-                  Search all fields on full page &rarr;
-                </button>
-              </div>
-            )}
-
-            {showingResults && (
-              <div className="pb-3">
-                {grouped.map((group) => (
-                  <div key={group.title}>
-                    <div className="px-5 py-2.5 text-[11px] font-semibold text-muted uppercase tracking-widest">
-                      {group.title}
-                      <span className="ml-2 text-muted/40 font-normal normal-case">{group.items.length}</span>
-                    </div>
-                    <div className="px-2">
-                      {group.items.map((item) => {
-                        const globalIdx = flatResults.indexOf(item);
-                        const Icon = ICONS[item.type];
-                        return (
-                          <button
-                            key={`${item.type}-${item.id}`}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm
-                              ${selectedIndex === globalIdx ? 'bg-accent/10 text-accent' : 'hover:bg-muted/10 text-foreground'}`}
-                            onClick={() => navigate(item)}
-                            onMouseEnter={() => setSelectedIndex(globalIdx)}
-                          >
-                            <Icon size={16} className="shrink-0 text-muted" />
-                            <div className="min-w-0 flex-1">
-                              <span className="truncate block">{item.label}</span>
-                            </div>
-                            <span className="text-xs text-muted truncate max-w-[200px]">{item.subtitle}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-1 px-5 pt-2.5 border-t border-border">
-                  <button
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted hover:text-foreground hover:bg-muted/5 transition-colors"
-                    onClick={() => { router.push(`/search?q=${encodeURIComponent(query)}`); onClose(); }}
+              {showingNoResults && (
+                <div className="py-10 text-center">
+                  <Search size={28} className="mx-auto text-muted/40 mb-3" aria-hidden="true" />
+                  <p className="text-sm text-muted">No results found</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs text-accent"
+                    onPress={viewAll}
                   >
-                    <ArrowRight size={14} />
-                    View all results on Search page
-                  </button>
+                    Search all fields on full page &rarr;
+                  </Button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {showingLoading || showingNoResults || showingEmpty || showingResults ? null : (
-              !query.trim() ? null : !loading && !results ? (
-                <div className="py-8 text-center text-sm text-muted">
-                  Type to start searching
-                </div>
-              ) : null
-            )}
+              <ComboBox.Popover className="max-h-[min(420px,50vh)]">
+                  <ListBox aria-label="Search results" className="p-1">
+                    {groups.map((group) => (
+                      <ListBox.Section key={group.title}>
+                        <Header className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-widest">
+                          {group.title}
+                          <span className="ml-2 text-muted/40 font-normal normal-case">{group.items.length}</span>
+                        </Header>
+                        {group.items.map((option) => (
+                          <ListBox.Item
+                            key={option.key}
+                            id={option.key}
+                            textValue={option.label}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground cursor-pointer transition-colors data-[focused]:bg-accent/10 data-[focused]:text-accent data-[hovered]:bg-accent/10 data-[hovered]:text-accent"
+                          >
+                            <option.icon size={16} className="shrink-0 text-muted" />
+                            <span className="flex-1 truncate">{option.label}</span>
+                            {option.subtitle && (
+                              <span className="text-xs text-muted truncate max-w-[200px]">{option.subtitle}</span>
+                            )}
+                            {option.hint && (
+                              <span className="text-[11px] text-muted/50 font-mono hidden sm:inline">{option.hint}</span>
+                            )}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox.Section>
+                    ))}
+                  </ListBox>
+              </ComboBox.Popover>
+            </ComboBox.Root>
           </Modal.Body>
 
           <div className="flex items-center justify-between px-5 py-2.5 border-t border-border bg-muted/5 text-[11px] text-muted/60 rounded-b-xl">
@@ -288,8 +309,19 @@ export function SearchDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               <span className="flex items-center gap-1"><CornerDownLeft size={10} /> open</span>
               <span className="flex items-center gap-1">esc close</span>
             </div>
-            {showingEmpty && <span className="text-muted/40">{allItems.length} shortcuts</span>}
-            {showingResults && <span className="text-muted/40">{flatResults.length} results</span>}
+            <div className="flex items-center gap-3">
+              {showingResults && (
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-accent hover:text-accent/80 transition-colors"
+                  onClick={viewAll}
+                >
+                  View all <ArrowRight size={12} />
+                </button>
+              )}
+              {showingEmpty && <span className="text-muted/40">{options.length} shortcuts</span>}
+              {showingResults && <span className="text-muted/40">{flatResults.length} results</span>}
+            </div>
           </div>
         </Modal.Dialog>
       </Modal.Container>

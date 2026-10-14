@@ -74,7 +74,14 @@ export function KpiCard({
             const area = `0,${h} ${pts} ${w},${h}`;
             return (
               <div className="w-20 h-8">
-                <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${w} ${h}`}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  focusable="false"
+                >
                   <defs>
                     <linearGradient id={`fill-${label.replace(/\s/g, '')}`} x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor={color} stopOpacity="0.3" />

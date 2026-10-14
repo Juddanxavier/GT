@@ -114,13 +114,22 @@ export function AssignedTo({ shipmentId, customerId, customerName, customerEmail
                 className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted"
                 placeholder="Search name, email, or phone..."
                 value={search}
+                role="combobox"
+                aria-expanded={open && search.length >= 2}
+                aria-controls={open && search.length >= 2 ? 'assigned-to-results' : undefined}
+                aria-autocomplete="list"
                 onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
                 onFocus={() => setOpen(true)}
               />
             </div>
             {open && search.length >= 2 && (
               <Card className="absolute z-50 w-full mt-1 max-h-48 overflow-auto">
-                <div className="py-1">
+                <div
+                  className="py-1"
+                  id="assigned-to-results"
+                  role="listbox"
+                  aria-label="Matching customers"
+                >
                   {customers.length === 0 ? (
                     <p className="px-3 py-4 text-xs text-muted text-center">No customers match "{search}"</p>
                   ) : (
@@ -128,6 +137,8 @@ export function AssignedTo({ shipmentId, customerId, customerName, customerEmail
                       <button
                         key={c.id}
                         type="button"
+                        role="option"
+                        aria-selected={selected === c.id}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/10 transition-colors ${selected === c.id ? 'bg-primary/10' : ''}`}
                         onClick={() => {
                           setSelected(c.id);

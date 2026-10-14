@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useRouter } from 'next/navigation';
 import {
   Button, Card, Chip, Input, Label, ListBox, Modal, Select, Table,
@@ -61,6 +62,7 @@ const ROWS_PER_PAGE = 25;
 
 export default function AuditLogPage() {
   usePageTitle('Audit Log');
+  useTableHeaderScope();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const { tenantFilter } = useTenantFilter();
@@ -431,7 +433,7 @@ export default function AuditLogPage() {
           ) : (
             <Table className="table-clickable">
               <Table.ScrollContainer>
-                <Table.Content aria-label="Audit log entries" onRowAction={(key) => {
+                <Table.Content aria-label="Audit table" onRowAction={(key) => {
                   const entry = entries?.find((e) => e.id === key);
                   if (entry) setSelectedEntry(entry);
                 }}>
@@ -571,7 +573,9 @@ export default function AuditLogPage() {
       <Modal.Backdrop isOpen={!!selectedEntry} onOpenChange={(v) => { if (!v) setSelectedEntry(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Event Details</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Event Details</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               {selectedEntry && (
                 <div className="space-y-4 text-sm">

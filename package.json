@@ -5,7 +5,7 @@
     "build": "turbo run build --concurrency=4",
     "predev": "powershell -NoProfile -File scripts/kill-ports.ps1",
     "dev": "turbo run dev",
-    "lint": "biome lint apps/api packages",
+    "lint": "biome lint apps/api packages && pnpm --filter admin lint",
     "format": "biome format --write .",
     "check-types": "turbo run check-types",
     "test": "turbo run test"

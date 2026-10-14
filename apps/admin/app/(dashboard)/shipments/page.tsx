@@ -6,6 +6,7 @@ import { STATUS_GROUPS, STATUS_META, statusGroupCounts } from '@/lib/status-conf
 import { Plus } from 'lucide-react';
 import { Button, Modal, type Key, type SortDescriptor } from '@heroui/react';
 import { PageHeader } from '@repo/ui/page-header';
+import { ConfirmDialog } from '@repo/ui/confirm-dialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AddressData } from '@/components/address-form';
 import { useTablePreferences } from '@/components/table-preferences';
@@ -112,21 +113,28 @@ export default function ShipmentsPage() {
   const { data: newBranches = [] } = useBranches();
   const queryClient = useQueryClient();
 
-  const handleBulkDelete = useCallback(async () => {
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const confirmBulkDelete = useCallback(async () => {
     if (selected.size === 0) return;
-    if (!window.confirm(`Delete ${selected.size} selected shipment(s)? This cannot be undone.`)) return;
     setBulkDeleting(true);
     try {
       await Promise.all(Array.from(selected).map((id) => api.delete(`/api/shipments/${id}`)));
       toast('success', 'Shipments deleted', `${selected.size} shipment(s) removed`);
       setSelected(new Set());
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      setBulkDeleteOpen(false);
     } catch (e) {
       toast('error', 'Failed to delete shipments', e instanceof Error ? e.message : 'Unknown error');
     } finally {
       setBulkDeleting(false);
     }
   }, [selected, toast, queryClient]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selected.size === 0) return;
+    setBulkDeleteOpen(true);
+  }, [selected]);
 
   const [bulkStatusUpdating, setBulkStatusUpdating] = useState(false);
   const statusLabel = (s: string) => STATUS_META[s as keyof typeof STATUS_META]?.label ?? s;
@@ -375,7 +383,9 @@ export default function ShipmentsPage() {
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v: boolean) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog aria-label="Delete Shipment">
-            <Modal.Header>Delete Shipment</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Delete Shipment</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Are you sure you want to delete shipment <strong>{deleteTarget?.trackingNumber}</strong>? This action cannot be undone.</p>
             </Modal.Body>
@@ -388,6 +398,17 @@ export default function ShipmentsPage() {
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete Shipments"
+        description={`Delete ${selected.size} selected shipment(s)? This cannot be undone.`}
+        confirmLabel="Delete"
+        tone="danger"
+        isPending={bulkDeleting}
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={confirmBulkDelete}
+      />
     </div>
   );
 }

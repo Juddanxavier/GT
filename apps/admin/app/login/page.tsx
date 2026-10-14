@@ -55,7 +55,7 @@ function LoginForm() {
     <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
       {submitError && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger mb-6">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7"/><path d="M8 5v3M8 10.5v.5"/></svg>
           {submitError}
         </div>
       )}

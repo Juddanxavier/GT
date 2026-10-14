@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTableHeaderScope } from '@/components/use-table-header-scope';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUsers, useBranches, useDeleteUser, type UserRecord, type PaginatedResult } from '@/lib/queries';
@@ -39,6 +40,7 @@ const USER_COLUMNS: ColumnDef[] = [
 
 export default function UsersPage() {
   usePageTitle('Users');
+  useTableHeaderScope();
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -212,7 +214,7 @@ export default function UsersPage() {
         ) : (
           <Table className={densityClassName(prefs.density)}>
             <Table.ScrollContainer>
-              <Table.Content aria-label="Users" className="min-w-[950px]"
+              <Table.Content aria-label="Customers table" className="min-w-[950px]"
                 sortDescriptor={sortDescriptor}
                 onSortChange={(d) => { setSortDescriptor(d); setPage(1); }}>
                 <Table.Header>
@@ -338,7 +340,9 @@ export default function UsersPage() {
       <Modal.Backdrop isOpen={!!banTarget} onOpenChange={(v) => { if (!v) setBanTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>{banTarget?.banned ? 'Unban User' : 'Ban User'}</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>{banTarget?.banned ? 'Unban User' : 'Ban User'}</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">
                 {banTarget?.banned
@@ -360,7 +364,9 @@ export default function UsersPage() {
       <Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
         <Modal.Container>
           <Modal.Dialog>
-            <Modal.Header>Delete User</Modal.Header>
+            <Modal.Header>
+              <Modal.Heading>Delete User</Modal.Heading>
+            </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Are you sure you want to delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.email})? This will permanently remove their account and all associated data.</p>
             </Modal.Body>
