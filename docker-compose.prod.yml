@@ -7,6 +7,27 @@ services:
     ports:
       - '3001:3001'
     env_file: .env.production
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   admin:
@@ -16,6 +37,7 @@ services:
       target: admin
       args:
         - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+        - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
     ports:
       - '3000:3000'
     environment:
@@ -26,7 +48,14 @@ services:
       - BETTER_AUTH_URL=https://admin.gajantraders.com
       - DB_SSL
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   customer:
@@ -34,8 +63,48 @@ services:
       context: .
       dockerfile: Dockerfile
       target: customer
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+        - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
     ports:
       - '3002:3002'
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+      - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3002/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
+
+  lanka-mahal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: lanka-mahal
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+        - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
+    ports:
+      - '3003:3003'
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.gajantraders.com
+      - NEXT_PUBLIC_SOCKET_URL=https://api.gajantraders.com
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3003/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  redis-data:
