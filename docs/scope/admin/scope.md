@@ -133,7 +133,7 @@ Redesign reports with status and branch charts plus CSV export, so the numbers c
 ## Slice 5: Global search (Cmd+K)
 
 ### 15. Global search (Cmd+K) · needs a decision
-A global command palette that searches shipments, customers, and invoices from anywhere, replacing the need to navigate first.
+A global command palette that searches shipments, customers, and invoices from anywhere, replacing the need to navigate first. Note from the Oct 15 replan: a working palette already ships (`apps/admin/app/(dashboard)/search/page.tsx`, `apps/admin/components/search-dialog.tsx`, rebuilt on the HeroUI ComboBox during spec 0002), so this feature is a redesign and extension of it, and it must keep the combobox semantics from spec 0002 AC-5.
 **Done when:** Cmd+K opens a palette, typing queries across the three entity types, results are keyboard navigable, and selecting one routes to its page.
 - [ ] Design it (spec): `/architect global search (Cmd+K)`
 
