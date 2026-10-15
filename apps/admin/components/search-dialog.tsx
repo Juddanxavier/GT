@@ -208,6 +208,16 @@ export function SearchDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   }, [router, query, onClose]);
 
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // react-aria's ComboBox owns Escape and does not hand it on: it reverts the
+    // input value and only continues propagation when a row is highlighted, the
+    // input is empty, or allowsCustomValue is set. Nested in our Modal that means
+    // Escape would never reach the backdrop's onOpenChange, so with a query typed
+    // the palette could not be dismissed at all. Take Escape here and close it.
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onClose();
+      return;
+    }
     if (e.key !== 'Enter') return;
     if (selectedKey != null) return;
     const first = options[0];
