@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bento B — Ribbon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="preview.css" />
+<link rel="stylesheet" href="bento.css" />
+</head>
+<body>
+<div class="page">
+  <div class="dir-head">
+    <div class="kicker">Bento B</div>
+    <h1>Ribbon</h1>
+    <p>The headline metric runs as a full-width strip — number and trend on the left, the area chart stretching to the right. Below it, four equal tiles and a wide breakdown footer. Reads like a header band over a board.</p>
+  </div>
+
+  <div class="bento">
+    <!-- Total — full-width ribbon -->
+    <a class="bt k-ribbon" style="--c:var(--lime); grid-column:1 / span 4; grid-row:1;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="lead">
+          <span class="k-name" style="font-weight:700">Total Shipments</span>
+          <div class="k-num">1,284</div>
+          <span class="pill up"><span class="tri">&#9650;</span> +8.2%</span>
+        </div>
+        <div class="plot">
+          <div class="k-chart">
+            <svg viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
+              <defs><linearGradient id="bb1" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#8dc63f" stop-opacity="0.4"/><stop offset="100%" stop-color="#8dc63f" stop-opacity="0.02"/>
+              </linearGradient></defs>
+              <g stroke="rgba(17,17,17,.07)" stroke-width="0.5"><line x1="0" y1="11" x2="100" y2="11"/><line x1="0" y1="22" x2="100" y2="22"/><line x1="0" y1="33" x2="100" y2="33"/></g>
+              <polygon fill="url(#bb1)" points="0,44 0,28 10,24 20,27 30,18 40,21 50,13 60,16 70,9 80,13 90,6 100,10 100,44"/>
+              <polyline fill="none" stroke="#8dc63f" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="0,28 10,24 20,27 30,18 40,21 50,13 60,16 70,9 80,13 90,6 100,10"/>
+              <circle cx="100" cy="10" r="2.8" fill="#8dc63f" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="k-range" style="text-align:right">14d &middot; 62 &ndash; 148 &middot; peak 148</div>
+        </div>
+      </div>
+    </a>
+
+    <!-- Band of four -->
+    <a class="bt" style="--c:var(--olive); grid-column:1; grid-row:2;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="k-hdr"><span class="k-mark">&#9633;</span><span class="k-name">In Transit</span><span class="pill up"><span class="tri">&#9650;</span> +12.4%</span></div>
+        <div class="k-num">312</div>
+        <div class="k-chart"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#a2d145" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" points="0,30 14,24 28,27 42,18 56,20 70,11 84,15 100,7"/><circle cx="100" cy="7" r="2.4" fill="#a2d145" stroke="#fff" stroke-width="1.25"/></svg></div>
+      </div>
+    </a>
+
+    <a class="bt" style="--c:var(--orange); grid-column:2; grid-row:2;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="k-hdr"><span class="k-mark">&#9633;</span><span class="k-name">Out for Delivery</span><span class="pill down"><span class="tri">&#9660;</span> -3.1%</span></div>
+        <div class="k-num">86</div>
+        <div class="k-chart"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#fba95b" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" points="0,12 14,16 28,11 42,19 56,15 70,23 84,19 100,26"/><circle cx="100" cy="26" r="2.4" fill="#fba95b" stroke="#fff" stroke-width="1.25"/></svg></div>
+      </div>
+    </a>
+
+    <a class="bt" style="--c:var(--green); grid-column:3; grid-row:2;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="k-hdr"><span class="k-mark">&#10003;</span><span class="k-name">Delivered Today</span><span class="pill up"><span class="tri">&#9650;</span> +5.6%</span></div>
+        <div class="k-num">145</div>
+        <div class="k-chart"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#7cb342" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" points="0,28 14,22 28,24 42,16 56,20 70,13 84,16 100,10"/><circle cx="100" cy="10" r="2.4" fill="#7cb342" stroke="#fff" stroke-width="1.25"/></svg></div>
+      </div>
+    </a>
+
+    <a class="bt" style="--c:var(--red); grid-column:4; grid-row:2;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="k-hdr"><span class="k-mark">!</span><span class="k-name">Exceptions</span><span class="pill up"><span class="tri">&#9660;</span> -18.0%</span></div>
+        <div class="k-num">12</div>
+        <div class="k-chart"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#e5484d" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" points="0,8 14,12 28,9 42,15 56,12 70,20 84,18 100,26"/><circle cx="100" cy="26" r="2.4" fill="#e5484d" stroke="#fff" stroke-width="1.25"/></svg></div>
+      </div>
+    </a>
+
+    <!-- Wide footer widgets -->
+    <div class="bt widget" style="grid-column:1 / span 2; grid-row:3;">
+      <div class="body">
+        <div class="w-head"><span class="ic">&#9678;</span>Status Distribution</div>
+        <div class="w-rows">
+          <div class="w-row"><div class="t"><span class="n">Delivered</span><span class="v">612 &middot; 48%</span></div><div class="w-track"><div class="w-fill stripe-lime" style="width:48%"></div></div></div>
+          <div class="w-row"><div class="t"><span class="n">In Transit</span><span class="v">312 &middot; 24%</span></div><div class="w-track"><div class="w-fill stripe-lime" style="width:24%"></div></div></div>
+          <div class="w-row"><div class="t"><span class="n">Pending</span><span class="v">274 &middot; 21%</span></div><div class="w-track"><div class="w-fill stripe-lime" style="width:21%"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bt widget" style="grid-column:3 / span 2; grid-row:3;">
+      <div class="body">
+        <div class="w-head"><span class="ic">&#9636;</span>By Carrier</div>
+        <div class="w-rows">
+          <div class="w-row"><div class="t"><span class="n">DHL Express</span><span class="v">214</span></div><div class="w-track"><div class="w-fill" style="width:100%;background:#8dc63f"></div></div></div>
+          <div class="w-row"><div class="t"><span class="n">FedEx</span><span class="v">161</span></div><div class="w-track"><div class="w-fill" style="width:75%;background:#a2d145"></div></div></div>
+          <div class="w-row"><div class="t"><span class="n">Aramex</span><span class="v">98</span></div><div class="w-track"><div class="w-fill" style="width:46%;background:#fba95b"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h">Same grammar on a list row — Shipments filter</div>
+  <div class="bento">
+    <a class="bt k-ribbon" style="--c:var(--lime); grid-column:1 / span 4; grid-row:1;">
+      <div class="band"></div>
+      <div class="body">
+        <div class="lead"><span class="k-name" style="font-weight:700">Total</span><div class="k-num">1,284</div><span class="pill up"><span class="tri">&#9650;</span> +4.0%</span></div>
+        <div class="plot"><div class="k-chart"><svg viewBox="0 0 100 44" preserveAspectRatio="none"><polyline fill="none" stroke="#8dc63f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="0,28 10,24 20,27 30,18 40,21 50,13 60,16 70,9 80,13 90,6 100,10"/></svg></div></div>
+      </div>
+    </a>
+    <a class="bt" style="--c:var(--olive); grid-column:1; grid-row:2;">
+      <div class="band"></div><div class="body">
+        <div class="k-hdr"><span class="k-mark">&#9633;</span><span class="k-name">In Transit</span><span class="pill up"><span class="tri">&#9650;</span> +9.0%</span></div>
+        <div class="k-num">312</div>
+      </div>
+    </a>
+    <a class="bt" style="--c:var(--green); grid-column:2; grid-row:2;">
+      <div class="band"></div><div class="body">
+        <div class="k-hdr"><span class="k-mark">&#10003;</span><span class="k-name">Delivered</span><span class="pill up"><span class="tri">&#9650;</span> +5.6%</span></div>
+        <div class="k-num">612</div>
+      </div>
+    </a>
+    <a class="bt" style="--c:var(--amber); grid-column:3 / span 2; grid-row:2;">
+      <div class="band"></div><div class="body">
+        <div class="k-hdr"><span class="k-mark">&#9203;</span><span class="k-name">Pending</span><span class="pill down"><span class="tri">&#9660;</span> -2.2%</span></div>
+        <div class="k-num">274</div>
+        <div class="k-chart"><svg viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#f59e42" stroke-width="1.75" points="0,20 14,24 28,18 42,26 56,22 70,28 84,24 100,30"/></svg></div>
+      </div>
+    </a>
+  </div>
+
+  <div class="note"><b>Best when</b> the dashboard is a daily briefing — the ribbon gives the headline a wide canvas and the uniform band below keeps scanning easy. Least "boxy" of the three.</div>
+</div>
+</body></html>
