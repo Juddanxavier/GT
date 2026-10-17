@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Out for delivery">
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#F6D8B4"/><stop offset="1" stop-color="#E6B47F"/>
+    </linearGradient>
+    <linearGradient id="left" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#DDAA70"/><stop offset="1" stop-color="#C88E50"/>
+    </linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#C08A52"/><stop offset="1" stop-color="#A5703B"/>
+    </linearGradient>
+    <linearGradient id="tape" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCEEDB"/><stop offset="1" stop-color="#F1D8B2"/>
+    </linearGradient>
+    <radialGradient id="floor" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#000" stop-opacity="0.20"/>
+      <stop offset="0.7" stop-color="#000" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="badge" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#39a7c1"/><stop offset="1" stop-color="#07809d"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="128" cy="200" rx="88" ry="19" fill="url(#floor)"/>
+  
+  <g>
+    
+    <polygon points="64,94 128,130 128,192 64,156" fill="url(#left)"/>
+    <polygon points="192,94 128,130 128,192 192,156" fill="url(#right)"/>
+    <polygon points="128,58 192,94 128,130 64,94" fill="url(#top)"/>
+    <polygon points="74.67,88 181.33,88 192,94 181.33,100 74.67,100 64,94" fill="url(#tape)" opacity="0.97"/>
+    <g fill="none" stroke="rgba(112,66,16,.22)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+      <polygon points="128,58 192,94 192,156 128,192 64,156 64,94"/>
+      <line x1="64" y1="94" x2="128" y2="130"/>
+      <line x1="192" y1="94" x2="128" y2="130"/>
+      <line x1="128" y1="130" x2="128" y2="192"/>
+      <line x1="74.67" y1="88" x2="74.67" y2="100"/>
+      <line x1="181.33" y1="88" x2="181.33" y2="100"/>
+    </g>
+  </g>
+  
+    <g>
+      <circle cx="198" cy="72" r="35" fill="url(#badge)"/>
+      <circle cx="198" cy="72" r="35" fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="5"/>
+      <g transform="translate(198 72)" fill="none" stroke="#FFFFFF" stroke-width="4"
+         stroke-linecap="round" stroke-linejoin="round">
+        
+        <path d="M0 -13 C-6.5 -13 -11 -8.6 -11 -3.2 C-11 4.4 0 14 0 14 S11 4.4 11 -3.2 C11 -8.6 6.5 -13 0 -13 Z"
+              fill="#FFFFFF" stroke="none"/>
+      </g>
+    </g>
+</svg>

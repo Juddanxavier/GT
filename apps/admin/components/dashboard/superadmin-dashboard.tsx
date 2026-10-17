@@ -1,30 +1,25 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  AlertTriangle,
-  CheckCircle,
-  Hourglass,
-  Package,
-  Truck,
-  WifiOff,
-} from 'lucide-react';
+import { BentoBoard } from '@/components/bento';
+import { KpiCard } from '@/components/kpi-card';
 import { TrackQuotaCard } from '@/components/track-quota-card';
-import { AlertsPanel } from './alerts-panel';
+import { AttentionPanel } from './attention-panel';
 import { CommandHeader } from './command-header';
-import { KpiGroup } from './kpi-stat-card';
 import { PerEntityTable } from './per-entity-table';
+import { RangeControl } from './range-control';
 import { ShipmentTrendChart } from './shipment-trend-chart';
-import { StatusBreakdown } from './status-breakdown';
-import { KPI_COLORS } from './kpi-colors';
-import type { KpiItem, Stats, TickerItem } from './types';
+import { StatusDonut } from './status-donut';
+import { KPI_ICONS } from './kpi-icons';
+import type { ChartRange, KpiItem, Stats } from './types';
 import {
+  chartRangeDays,
   chartVolumeData,
-  formatCurrency,
+  deliverySeries,
   pctStr,
-  periodTrend,
   resolveShipments,
   resolveSparklines,
+  seriesTrend,
   statusLabel,
   trendDir,
 } from './utils';
@@ -33,96 +28,73 @@ export function SuperadminDashboard({
   stats,
   onRetry,
   isTenantScoped,
+  range,
+  onRangeChange,
 }: {
   stats: Stats;
   onRetry: () => void;
   isTenantScoped?: boolean;
+  range: ChartRange;
+  onRangeChange: (range: ChartRange) => void;
 }) {
   const t = stats.total!;
   const shipments = resolveShipments(stats);
   const rawPerDay = stats.perDay ?? shipments.perDay ?? [];
-  const perDayForChart = chartVolumeData(rawPerDay, 30);
-  const trendPct = useMemo(() => periodTrend(perDayForChart), [perDayForChart]);
+  const days = chartRangeDays(range);
+  const perDayForChart = chartVolumeData(rawPerDay, days);
   const sparks = useMemo(
-    () => resolveSparklines(stats.shipmentTrend, rawPerDay),
-    [stats.shipmentTrend, rawPerDay],
+    () => resolveSparklines(stats.shipmentTrend, rawPerDay, days),
+    [stats.shipmentTrend, rawPerDay, days],
   );
 
-  const ticker: TickerItem[] = [
-    { label: 'in transit', value: t.shipments.inTransit },
-    { label: 'delivered today', value: t.shipments.deliveredToday },
-    { label: 'exceptions', value: t.shipments.exceptions },
-    { label: 'revenue this month', value: formatCurrency(t?.invoices?.revenueThisMonth ?? '0') },
-  ];
+  // Deliveries are a flow, so they get their own series instead of a created-cohort bucket.
+  const deliverySpark = useMemo(() => deliverySeries(stats.deliveryFlow, days), [stats.deliveryFlow, days]);
 
-  const activeKpis: KpiItem[] = [
-    {
-      icon: <Truck size={18} />,
+  // One delta per tile, each from that tile's own series.
+  const trends = useMemo(
+    () => ({
+      inTransit: seriesTrend(sparks.inTransit),
+      delivered: seriesTrend(deliverySpark),
+      total: seriesTrend(sparks.total),
+      exceptions: seriesTrend(sparks.exceptions),
+    }),
+    [sparks, deliverySpark],
+  );
+
+  // Bento Column, superadmin edition: Total takes the 2x2 square, In Transit and
+  // Delivered Today take the middle column, and the status rail runs tall.
+  const tiles = {
+    total: {
+      label: 'Total Shipments',
+      value: t.shipments.total,
+      image: KPI_ICONS.total.src,
+      color: KPI_ICONS.total.accent,
+      spark: sparks.total,
+      trend: trendDir(trends.total),
+      trendValue: pctStr(trends.total),
+      sublabel: isTenantScoped ? 'across all branches' : 'across all tenants',
+    },
+    inTransit: {
+      image: KPI_ICONS.inTransit.src,
       label: 'In Transit',
       value: t.shipments.inTransit,
-      color: KPI_COLORS.inTransit,
-      trend: trendDir(trendPct),
-      trendValue: pctStr(trendPct),
+      color: KPI_ICONS.inTransit.accent,
+      trend: trendDir(trends.inTransit),
+      trendValue: pctStr(trends.inTransit),
       spark: sparks.inTransit,
       chart: 'line',
     },
-    {
-      icon: <CheckCircle size={18} />,
+    delivered: {
+      image: KPI_ICONS.delivered.src,
       label: 'Delivered Today',
       value: t.shipments.deliveredToday,
-      color: KPI_COLORS.delivered,
-      trend: trendDir(trendPct),
-      trendValue: pctStr(trendPct),
-      spark: sparks.delivered,
+      color: KPI_ICONS.delivered.accent,
+      trend: trendDir(trends.delivered),
+      trendValue: pctStr(trends.delivered),
+      spark: deliverySpark,
       chart: 'bars',
     },
-    {
-      icon: <Package size={18} />,
-      label: 'Total Shipments',
-      value: t.shipments.total,
-      color: KPI_COLORS.total,
-      sublabel: isTenantScoped ? 'all branches' : 'all tenants',
-      trend: 'neutral',
-      trendValue: '—',
-      spark: sparks.total,
-      chart: 'line',
-    },
-  ];
-
-  const problemKpis: KpiItem[] = [
-    {
-      icon: <AlertTriangle size={18} />,
-      label: 'Exceptions',
-      value: t.shipments.exceptions,
-      color: KPI_COLORS.exceptions,
-      trend: 'neutral',
-      trendValue: '—',
-      spark: sparks.exceptions,
-      chart: 'bars',
-    },
-    {
-      icon: <Hourglass size={18} />,
-      label: 'Overdue',
-      value: shipments.overdue,
-      color: KPI_COLORS.overdue,
-      sublabel: 'past ETA',
-      trend: 'neutral',
-      trendValue: '—',
-      spark: [shipments.overdue, Math.max(t.shipments.total - shipments.overdue, 1)],
-      chart: 'donut',
-    },
-    {
-      icon: <WifiOff size={18} />,
-      label: 'Not Tracked',
-      value: shipments.notTracked,
-      color: KPI_COLORS.notTracked,
-      sublabel: 'not registered',
-      trend: 'neutral',
-      trendValue: '—',
-      spark: [shipments.notTracked, Math.max(t.shipments.total - shipments.notTracked, 1)],
-      chart: 'donut',
-    },
-  ];
+  } satisfies Record<string, KpiItem>;
 
   const donutData = Object.entries(shipments.byStatus)
     .filter(([, v]) => v > 0)
@@ -131,36 +103,43 @@ export function SuperadminDashboard({
   const tableMode = isTenantScoped ? 'branch' : 'tenant';
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-7">
       <CommandHeader
         title={isTenantScoped ? 'Admin Overview' : 'Super Admin'}
         roleLabel={isTenantScoped ? 'tenant-admin' : 'superadmin'}
-        ticker={ticker}
         onRefresh={onRetry}
       />
 
-      <KpiGroup title="Active Shipments" items={activeKpis} />
-      <KpiGroup title="Needs Attention" items={problemKpis} />
+      <RangeControl value={range} onChange={onRangeChange} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8">
-          <ShipmentTrendChart
-            data={perDayForChart}
-            title={isTenantScoped ? 'Shipments — All Branches' : 'Shipments — All Tenants'}
-          />
-        </div>
-        <div className="lg:col-span-4">
-          <StatusBreakdown data={donutData} />
-        </div>
-      </div>
+      <AttentionPanel
+        exceptions={shipments.exceptions}
+        overdue={shipments.overdue}
+        notTracked={shipments.notTracked}
+        exceptionsDelta={trends.exceptions}
+      />
+
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted/70 px-0.5">
+        Shipment Overview
+      </h2>
+
+      <BentoBoard>
+        <KpiCard size="feature" {...tiles.total} revealDelay={180} />
+        <KpiCard {...tiles.inTransit} revealDelay={240} />
+        <StatusDonut data={donutData} total={t.shipments.total} />
+        <KpiCard {...tiles.delivered} revealDelay={300} />
+      </BentoBoard>
+
+      <ShipmentTrendChart
+        data={perDayForChart}
+        title={isTenantScoped ? 'Shipments — All Branches' : 'Shipments — All Tenants'}
+      />
 
       <PerEntityTable
         mode={tableMode}
         perBranch={stats.perBranch}
         perTenant={stats.perTenant}
       />
-
-      <AlertsPanel alerts={stats.alerts ?? []} />
 
       <div className="max-w-md">
         <TrackQuotaCard />

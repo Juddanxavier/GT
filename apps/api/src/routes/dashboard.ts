@@ -14,6 +14,7 @@ import {
   queryByCarrier,
   queryCustomerCount,
   queryCustomerCountRaw,
+  queryDeliveryFlow,
   queryPerBranchBreakdown,
   queryPerDayShipments,
   queryPerDayShipmentsRaw,
@@ -74,10 +75,11 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
   if (!scope.tenantId) throw new Error('tenantId required for tenant stats');
   const filter: StatsFilter = { tenantId: scope.tenantId, branchId: scope.branchId };
 
-  const [s, pdVal, trendVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow] = await Promise.all([
+  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow] = await Promise.all([
     queryShipmentDetailed(filter),
     queryPerDayShipments(filter),
     queryShipmentTrend(filter),
+    queryDeliveryFlow(filter),
     queryByCarrier(filter),
     queryCustomerCount(filter),
     queryQuotationCount(filter),
@@ -145,6 +147,7 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
     revenuePerMonth: rmVal,
     perDay: pdVal,
     shipmentTrend: trendVal,
+    deliveryFlow: dfVal,
     branches: { total: bRow.length },
     alerts: alVal,
     total: {
@@ -192,7 +195,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
   const tWhere = makeRawShipmentWhere(tenantId!);
 
   const branchFilter: StatsFilter = { tenantId };
-  const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, trendVal, alVal] = await Promise.all([
+  const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, trendVal, dfVal, alVal] = await Promise.all([
     queryShipmentSummary(tenantId),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
@@ -201,6 +204,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
     queryRevenuePerMonthRaw(tFilter),
     queryPerDayShipmentsRaw(tFilter),
     queryShipmentTrend(branchFilter),
+    queryDeliveryFlow(branchFilter),
     queryAlertsRaw(tFilter),
   ]);
 
@@ -254,6 +258,7 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
     perBranch: pbVal,
     perDay: pdVal,
     shipmentTrend: trendVal,
+    deliveryFlow: dfVal,
     revenuePerMonth: rmVal,
     alerts: alVal,
   };
@@ -264,10 +269,11 @@ async function buildSuperadminStats(filterTenantId: string | null) {
   const tWhere = makeRawShipmentWhere(filterTenantId ?? undefined);
   const statsFilter: StatsFilter = { tenantId: filterTenantId ?? undefined };
 
-  const [s, pdVal, trendVal, bcVal, cRow, qRow, iRow, ptVal, rmVal, alVal] = await Promise.all([
+  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, iRow, ptVal, rmVal, alVal] = await Promise.all([
     queryShipmentDetailed(statsFilter),
     queryPerDayShipmentsRaw(tFilter),
     queryShipmentTrend(statsFilter),
+    queryDeliveryFlow(statsFilter),
     queryByCarrier(statsFilter),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
@@ -329,6 +335,7 @@ async function buildSuperadminStats(filterTenantId: string | null) {
     perTenant: ptVal,
     perDay: pdVal,
     shipmentTrend: trendVal,
+    deliveryFlow: dfVal,
     revenuePerMonth: rmVal,
     alerts: alVal,
   };

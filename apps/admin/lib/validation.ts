@@ -90,6 +90,8 @@ export const dashboardStatsSchema = z.object({
         inTransit: z.number(),
         deliveredToday: z.number(),
         exceptions: z.number(),
+        overdue: z.number().optional(),
+        notTracked: z.number().optional(),
       }),
       customers: z.object({ total: z.number(), active: z.number() }),
       quotations: z.object({ total: z.number(), conversionRate: z.number() }),
@@ -133,6 +135,7 @@ export const dashboardStatsSchema = z.object({
     )
     .optional(),
   perDay: z.array(perDaySchema).optional(),
+  deliveryFlow: z.array(perDaySchema).optional(),
 });
 
 export function validateResponse<T>(schema: z.ZodType<T>, data: unknown, label: string): T {

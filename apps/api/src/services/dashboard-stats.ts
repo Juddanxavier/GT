@@ -256,6 +256,43 @@ export async function queryPerDayShipmentsRaw(filter: SQL | undefined): Promise<
   return (row?.val as unknown[]) ?? [];
 }
 
+/**
+ * Completed deliveries per calendar day, keyed by `actual_delivery`.
+ *
+ * This is a true flow: it counts what was delivered on each day. `queryShipmentTrend`
+ * instead groups by `created_at` and reports each cohort's *current* status, which
+ * drifts with cohort age and is therefore not a delivery trend.
+ */
+export async function queryDeliveryFlow(filter: StatsFilter): Promise<unknown[]> {
+  const w = makeShipmentWhere(filter);
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val
+      FROM (
+        SELECT DATE(actual_delivery)::text AS d, COUNT(*)::int AS c
+        FROM shipment${w ? sql` WHERE ${w} AND` : sql` WHERE`} status='delivered' AND actual_delivery IS NOT NULL AND actual_delivery>=NOW()-INTERVAL '1 year'
+        GROUP BY DATE(actual_delivery)
+      ) sub
+    `,
+  );
+  return (row?.val as unknown[]) ?? [];
+}
+
+export async function queryDeliveryFlowRaw(filter: SQL | undefined): Promise<unknown[]> {
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COALESCE(json_agg(json_build_object('date',d,'count',c) ORDER BY d),'[]'::json) AS val
+      FROM (
+        SELECT DATE(actual_delivery)::text AS d, COUNT(*)::int AS c
+        FROM shipment
+        WHERE archived_at IS NULL AND status='delivered' AND actual_delivery IS NOT NULL AND actual_delivery>=NOW()-INTERVAL '1 year' ${filter ?? sql``}
+        GROUP BY DATE(actual_delivery)
+      ) sub
+    `,
+  );
+  return (row?.val as unknown[]) ?? [];
+}
+
 export type ShipmentTrendRow = {
   date: string;
   total: number;

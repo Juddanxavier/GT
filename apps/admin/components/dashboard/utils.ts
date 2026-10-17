@@ -1,5 +1,5 @@
 import { getCurrencySymbol } from '@/lib/currency';
-import type { ShipmentTrendRow, Stats } from './types';
+import type { ChartRange, ShipmentTrendRow, Stats } from './types';
 
 const EMPTY_SHIPMENTS: Stats['shipments'] = {
   total: 0,
@@ -20,7 +20,20 @@ const EMPTY_SHIPMENTS: Stats['shipments'] = {
 
 const SPARKLINE_POINTS = 14;
 
-/** Superadmin aggregate responses may omit `shipments` — normalize before use. */
+/** Days in the dashboard window — the one place a `ChartRange` maps to a number. */
+const RANGE_DAYS: Record<ChartRange, number> = { '1w': 7, '2w': 14, '1m': 30 };
+
+/** The window a `ChartRange` control selects, in days. */
+export function chartRangeDays(range: ChartRange): number {
+  return RANGE_DAYS[range];
+}
+
+/**
+ * Superadmin aggregate responses may omit the detailed `shipments` block.
+ * Prefer that block; when it is missing, carry every value the total exposes
+ * (including overdue and not tracked) so the attention panel cannot be
+ * silently zeroed by the fallback.
+ */
 export function resolveShipments(stats: Stats): Stats['shipments'] {
   if (stats.shipments) return stats.shipments;
   const t = stats.total?.shipments;
@@ -30,6 +43,8 @@ export function resolveShipments(stats: Stats): Stats['shipments'] {
     inTransit: t?.inTransit ?? 0,
     deliveredToday: t?.deliveredToday ?? 0,
     exceptions: t?.exceptions ?? 0,
+    overdue: t?.overdue ?? 0,
+    notTracked: t?.notTracked ?? 0,
     perDay: stats.perDay ?? [],
   };
 }
@@ -54,6 +69,16 @@ export function seriesDateKey(d: Date): string {
 
 function hasSignal(data: number[]) {
   return data.some((v) => v > 0);
+}
+
+/**
+ * Whether a KPI card should draw its chart: a real count over a series that
+ * carries any signal. A zero count, or every point zero, means no signal
+ * (AC-11) — the card shows the number and drops the chart.
+ */
+export function hasSeriesSignal(count: number, series: number[]): boolean {
+  if (count === 0) return false;
+  return hasSignal(series);
 }
 
 function padSeries(values: number[], length: number): number[] {
@@ -117,6 +142,22 @@ export function volumeSeries(
   return recentVolumeSeries(perDay ?? [], days);
 }
 
+/**
+ * Daily completed deliveries, keyed by actual delivery date.
+ *
+ * Use this — not `sparks.delivered` — for the Delivered card. The trend series groups
+ * by `created_at`, so its "delivered" bucket counts a cohort's current status and
+ * falls off for recent days simply because those shipments have not arrived yet.
+ */
+export function deliverySeries(
+  deliveryFlow: { date: string; count: number }[] | undefined,
+  days = SPARKLINE_POINTS,
+): number[] {
+  const calendar = fillDays(deliveryFlow ?? [], days).map((d) => d.shipments);
+  if (hasSignal(calendar)) return calendar;
+  return recentVolumeSeries(deliveryFlow ?? [], days);
+}
+
 type TrendField = 'total' | 'intransit' | 'outfordelivery' | 'delivered' | 'pending' | 'exception';
 
 function recentTrendField(
@@ -168,7 +209,14 @@ function pickTrendSeries(
   return volume;
 }
 
-/** Build KPI sparkline series from dashboard stats (trend + per-day volume fallback). */
+/**
+ * Build KPI sparkline series from dashboard stats (trend + per-day volume fallback).
+ *
+ * These series group by `created_at`, so each bucket reports a cohort's *current*
+ * status. That is fine for stock metrics but wrong for deliveries — `delivered` here
+ * counts "shipments created that day that have since arrived", which sags on recent
+ * days purely because they are young. Use `deliverySeries` for the Delivered card.
+ */
 export function resolveSparklines(
   trendData: ShipmentTrendRow[] | undefined,
   perDay: { date: string; count: number }[] | undefined,
@@ -204,11 +252,17 @@ export function pctStr(pct: number | null): string {
   return `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
 }
 
-export function periodTrend(data: { shipments: number }[]): number | null {
-  if (data.length < 4) return null;
-  const half = Math.floor(data.length / 2);
-  const prev = data.slice(0, half).reduce((s, d) => s + d.shipments, 0);
-  const curr = data.slice(-half).reduce((s, d) => s + d.shipments, 0);
-  if (prev === 0) return null;
+/**
+ * Percent change between the two halves of a sparkline series (oldest first).
+ *
+ * Each KPI card reports its own metric's movement. Do not feed a card the total
+ * volume trend: it describes shipments created, not the number on the card.
+ */
+export function seriesTrend(series: number[]): number | null {
+  if (series.length < 4) return null;
+  const half = Math.floor(series.length / 2);
+  const prev = series.slice(0, half).reduce((s, v) => s + v, 0);
+  const curr = series.slice(-half).reduce((s, v) => s + v, 0);
+  if (prev === 0) return curr > 0 ? 100 : null;
   return ((curr - prev) / prev) * 100;
 }

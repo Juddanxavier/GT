@@ -14,6 +14,8 @@ import { formatCurrency } from '@/lib/currency';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useQueryClient } from '@tanstack/react-query';
 import { KpiCard } from '@/components/kpi-card';
+import { BentoBoard } from '@/components/bento';
+import { pctStr, seriesTrend, trendDir } from '@/components/dashboard/utils';
 import { TablePreferences, useTablePreferences, densityClassName, type ColumnDef } from '@/components/table-preferences';
 import { PageHeader } from '@/components/page-header';
 
@@ -111,6 +113,15 @@ export default function InvoicesPage() {
     return { total, paid, unpaid };
   }, [trendData]);
 
+  const trends = useMemo(
+    () => ({
+      total: seriesTrend(sparklines.total),
+      paid: seriesTrend(sparklines.paid),
+      unpaid: seriesTrend(sparklines.unpaid),
+    }),
+    [sparklines],
+  );
+
   function handleSearch() {
     setPage(1);
     setSearchQuery(search);
@@ -146,14 +157,44 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader title="Invoices" subtitle="View and send invoices to customers" icon={<FileText size={18} />} />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Total" count={kpiTotal} color="#3b82f6" icon={FileText} data={sparklines.total} />
-        <KpiCard label="Paid" count={kpiPaid} color="#10B981" icon={CheckCircle} data={sparklines.paid} />
-        <KpiCard label="Unpaid" count={kpiPending} color="#f59e0b" icon={Clock} data={sparklines.unpaid} />
-      </div>
+      <BentoBoard>
+        <KpiCard
+          size="feature"
+          label="Total"
+          value={kpiTotal}
+          color="#8DC63F"
+          icon={FileText}
+          spark={sparklines.total}
+          chart="line"
+          trend={trendDir(trends.total)}
+          trendValue={pctStr(trends.total)}
+        />
+        <KpiCard
+          size="wide"
+          label="Paid"
+          value={kpiPaid}
+          color="#7CB342"
+          icon={CheckCircle}
+          spark={sparklines.paid}
+          chart="line"
+          trend={trendDir(trends.paid)}
+          trendValue={pctStr(trends.paid)}
+        />
+        <KpiCard
+          size="wide"
+          label="Unpaid"
+          value={kpiPending}
+          color="#F59E42"
+          icon={Clock}
+          spark={sparklines.unpaid}
+          chart="line"
+          trend={trendDir(trends.unpaid)}
+          trendValue={pctStr(trends.unpaid)}
+        />
+      </BentoBoard>
 
       <div className="content-panel overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -190,7 +231,7 @@ export default function InvoicesPage() {
           <div className="p-8 flex items-center justify-center"><Spinner /></div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <p className="text-danger text-sm">Failed to load invoices</p>
+            <p className="text-danger-soft-foreground text-sm">Failed to load invoices</p>
             <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
           </div>
         ) : paginated.length === 0 ? (
@@ -241,7 +282,7 @@ export default function InvoicesPage() {
                               <Dropdown.Item id="view" textValue="View"><span className="flex items-center gap-2"><Eye size={16} /> View</span></Dropdown.Item>
                               <Dropdown.Item id="send" textValue="Send"><span className="flex items-center gap-2"><Send size={16} /> Send Email</span></Dropdown.Item>
                               <Dropdown.Item id="pdf" textValue="PDF"><span className="flex items-center gap-2"><Download size={16} /> Download PDF</span></Dropdown.Item>
-                              <Dropdown.Item id="delete" textValue="Delete" className="text-danger"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>
+                              <Dropdown.Item id="delete" textValue="Delete" className="text-danger-soft-foreground"><span className="flex items-center gap-2"><Trash2 size={16} /> Delete</span></Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown.Popover>
                         </Dropdown.Root>
@@ -304,8 +345,8 @@ export default function InvoicesPage() {
                 Send invoice <strong>{sendTarget?.invoiceNo}</strong> for shipment <strong>{sendTarget?.trackingNo}</strong> to the customer via email?
               </p>
               <p className="text-xs text-muted mt-1">({sendTarget?.emailCount}/2 emails sent today)</p>
-              {sendError && <p className="text-sm text-danger mt-2">{sendError}</p>}
-              {sendSuccess && <p className="text-sm text-success mt-2">{sendSuccess}</p>}
+              {sendError && <p className="text-sm text-danger-soft-foreground mt-2">{sendError}</p>}
+              {sendSuccess && <p className="text-sm text-success-soft-foreground mt-2">{sendSuccess}</p>}
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => { setSendTarget(null); setSendError(''); setSendSuccess(''); }}>Cancel</Button>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Select, ListBox, Tabs, Table, Skeleton, Chip } from '@heroui/react';
 import { FileText, Download, LoaderCircle, Package, Receipt, Truck, CheckCircle, AlertTriangle, IndianRupee, Send, CheckCircle2, XCircle, Calendar, Building2, X } from 'lucide-react';
 import { KpiCard } from '@/components/kpi-card';
+import { BentoBoard, bentoRowSpans } from '@/components/bento';
 import { PageHeader } from '@/components/page-header';
 import { StatusBadge } from '@repo/ui/status-badge';
 import { authClient } from '@/lib/auth-client';
@@ -77,14 +78,14 @@ const STATUS_SOFT_CLASSES: Record<QuotationStatusColor, string> = {
 const ROWS_PER_PAGE = 20;
 
 const STATUS_BAR_COLORS: Record<string, string> = {
-  pending: 'bg-[#F59E0B]',
-  info_received: 'bg-[#F59E0B]',
-  in_transit: 'bg-[#8B5CF6]',
-  out_for_delivery: 'bg-[#3B82F6]',
-  failed_attempt: 'bg-[#F43F5E]',
-  delivered: 'bg-[#10B981]',
-  exception: 'bg-[#F43F5E]',
-  expired: 'bg-[#94A3B8]',
+  pending: 'bg-[#F59E42]',
+  info_received: 'bg-[#F59E42]',
+  in_transit: 'bg-[#A2D145]',
+  out_for_delivery: 'bg-[#FBA95B]',
+  failed_attempt: 'bg-[#E5484D]',
+  delivered: 'bg-[#7CB342]',
+  exception: 'bg-[#E5484D]',
+  expired: 'bg-[#9A9A9A]',
   available_for_pickup: 'bg-secondary',
 };
 
@@ -310,7 +311,7 @@ export default function ReportsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Reports"
         subtitle="View and export reports"
@@ -382,31 +383,33 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {error && <Card><Card.Content><p className="text-sm text-danger">{error}</p></Card.Content></Card>}
+      {error && <Card><Card.Content><p className="text-sm text-danger-soft-foreground">{error}</p></Card.Content></Card>}
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
+      <BentoBoard>
         {(reportType === 'shipments' ? [
-          { key: 'total', color: '#3B82F6', icon: Package },
-          { key: 'delivered', color: '#10B981', icon: CheckCircle },
-          { key: 'in_transit', color: '#8B5CF6', icon: Truck },
-          { key: 'exceptions', color: '#F43F5E', icon: AlertTriangle },
-          { key: 'revenue', color: '#F59E0B', icon: IndianRupee, format: 'currency' as const },
+          { key: 'total', color: '#8DC63F', icon: Package },
+          { key: 'delivered', color: '#7CB342', icon: CheckCircle },
+          { key: 'in_transit', color: '#A2D145', icon: Truck },
+          { key: 'exceptions', color: '#E5484D', icon: AlertTriangle },
+          { key: 'revenue', color: '#F59E42', icon: IndianRupee, format: 'currency' as const },
         ] : [
-          { key: 'total', color: '#3B82F6', icon: Receipt },
-          { key: 'accepted', color: '#10B981', icon: CheckCircle2 },
-          { key: 'converted', color: '#F59E0B', icon: AlertTriangle },
-          { key: 'rejected', color: '#F43F5E', icon: XCircle },
-        ]).map(({ key, color, icon, format }) => (
+          { key: 'total', color: '#8DC63F', icon: Receipt },
+          { key: 'accepted', color: '#7CB342', icon: CheckCircle2 },
+          { key: 'converted', color: '#F59E42', icon: AlertTriangle },
+          { key: 'rejected', color: '#E5484D', icon: XCircle },
+        ]).map(({ key, color, icon, format }, i, arr) => (
           <KpiCard
             key={key}
+            size={bentoRowSpans(arr.length)[i] ?? 'base'}
             label={key.replace(/_/g, ' ')}
-            count={meta && key === 'revenue' ? Number(meta.revenue || 0) : Number(meta?.summary[key as keyof typeof meta.summary] ?? 0)}
+            value={meta && key === 'revenue' ? Number(meta.revenue || 0) : Number(meta?.summary[key as keyof typeof meta.summary] ?? 0)}
             color={color}
             icon={icon}
             format={format}
+            currencyCode={tenants.find((t) => t.id === tenantFilter)?.currency ?? undefined}
           />
         ))}
-      </div>
+      </BentoBoard>
 
       <p className="text-sm text-muted">
         {reportType === 'shipments' ? 'Shipment' : 'Quotation'} report
@@ -419,12 +422,12 @@ export default function ReportsPage() {
           <DistributionCard
             title="Status Distribution"
             items={meta.statusDistribution}
-            colorFor={(s) => STATUS_BAR_COLORS[s] ?? 'bg-[#94A3B8]'}
+            colorFor={(s) => STATUS_BAR_COLORS[s] ?? 'bg-[#9A9A9A]'}
           />
           <DistributionCard
             title="Branch Comparison"
             items={meta.branchComparison}
-            colorFor={() => 'bg-[#3B82F6]'}
+            colorFor={() => 'bg-[#8DC63F]'}
           />
         </div>
       )}
