@@ -67,6 +67,7 @@ Small fixes run outside the phase workflow. Each has a `PLAN.md` and a
 | `261004-wf6` | 2026-10-04 | Fix production blockers + inverted error ternary | complete — task 1 applied 2026-10-04, tasks 2–4 applied 2026-10-05 |
 | `261005-q2r` | 2026-10-05 | Feature 8 AC-6 accessibility + light/dark pass, plus pending production blockers | complete — verified, scope boxes ticked, awaiting commit |
 | `261017-e9u` | 2026-10-17 | Redesign admin KPI cards and mini charts (richer, real data) | complete — code applied in working tree, commit deferred (tree already dirty) |
+| `261017-luz` | 2026-10-17 | Fix notification pipeline bugs (idempotency, Redis reconnect, prefs table, WhatsApp visibility) | complete — 5 fixes applied, 453 tests pass, commit deferred (tree already dirty) |
 
 ## Session Continuity
 
