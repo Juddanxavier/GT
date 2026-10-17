@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Feature 8 closed, feature 9 spec 0002 captured and linked
 last_updated: "2026-10-06T00:00:00.000Z"
-last_activity: 2026-10-06 -- /architect accessibility pass (spec 0002) accepted, scope feature 9 in-progress
+last_activity: 2026-10-17 — /gsd-quick 261017-e9u admin KPI card + mini chart redesign (code in working tree)
 progress:
   total_phases: 7
   completed_phases: 6
@@ -66,6 +66,7 @@ Small fixes run outside the phase workflow. Each has a `PLAN.md` and a
 |----------|------|-------|--------|
 | `261004-wf6` | 2026-10-04 | Fix production blockers + inverted error ternary | complete — task 1 applied 2026-10-04, tasks 2–4 applied 2026-10-05 |
 | `261005-q2r` | 2026-10-05 | Feature 8 AC-6 accessibility + light/dark pass, plus pending production blockers | complete — verified, scope boxes ticked, awaiting commit |
+| `261017-e9u` | 2026-10-17 | Redesign admin KPI cards and mini charts (richer, real data) | complete — code applied in working tree, commit deferred (tree already dirty) |
 
 ## Session Continuity
 
