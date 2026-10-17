@@ -21,7 +21,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 8 | UI foundation & tokens | Foundation | done |
 | 9 | Accessibility pass | Foundation | in-progress |
 | 10 | Type safety pass | Foundation | planned |
-| 11 | Dashboard & analytics redesign | Slice 1 | planned |
+| 11 | Dashboard & analytics redesign | Slice 1 | in-progress |
 | 12 | Shipments & detail redesign | Slice 2 | planned |
 | 13 | Customers, profiles & bulk actions | Slice 3 | planned |
 | 14 | Reports & exports redesign | Slice 4 | planned |
@@ -91,23 +91,31 @@ Replace the remaining `Record<string, unknown>` casts on session user and mutati
 - [ ] Design it (spec): `/architect type safety pass`
 
 ### 19. Admin retheme · in-progress
-Move the admin off its cyan accent and zinc neutrals onto an emerald accent over slate blue gray, give in transit its own blue status so it stops colliding with delivered, put every chart series on one six step ramp, and swap Inter for Geist with Geist Mono for tracking numbers and label codes.
-**Done when:** both themes are emerald on blue gray with Geist rendering, no two shipment statuses share a color, every chart color comes from the one ramp, and the contrast verifier passes with zero failures in both themes.
+Move the admin off its cyan accent and zinc neutrals onto flat, opaque graphite surfaces with one signal violet accent ("Graphite & Signal"), give in transit its own blue status so it stops colliding with delivered, put every chart series on one six step ramp, swap Inter for IBM Plex Sans with IBM Plex Mono for tracking numbers and label codes, and drop the glass, shadow, and glow layer entirely. (The first cut of this retheme was emerald on slate blue gray, then Octet, then Graphite & Signal with a cyan-teal accent; the cyan was moved to `--info` once the accent became violet.)
+**Done when:** both themes are flat graphite with the signal violet accent and IBM Plex rendering, no two shipment statuses share a color, every chart color comes from the one ramp, and the contrast verifier passes with zero failures in both themes.
 - [x] Design it (spec): `/architect admin retheme`
 - [ ] Build it: /develop Admin retheme
    - [x] Emerald accent and blue gray neutrals in both theme blocks, plus the `--transit` pair and the `status-config.ts` remap (`0001-a` tasks 5, 6) (AC-A5, AC-A6, AC-A7)
    - [x] App wiring: `--color-brand`, `--ops-accent`, `.ops-mono`, Geist and Geist Mono in `layout.tsx`, and the stepper foreground fix (tasks 7, 8) (AC-A5, AC-A9)
    - [x] Every chart, KPI, and status color moved onto the six step ramp, and the two reports status cells split (tasks 9, 10) (AC-A7, AC-A8)
-   - [ ] Heading tracking, contrast verifier run clean, DESIGN.md rebuilt, then lint, type check, build, and the visual pass (tasks 11 to 14) (AC-A9, AC-A10, AC-A11)
+   - [x] Heading tracking, contrast verifier run clean, DESIGN.md rebuilt, then lint, type check, and build (tasks 11 to 14) (AC-A9, AC-A10, AC-A11)
+   - [ ] By eye visual pass on the dashboard, shipments list, and shipment detail in both themes — the only item left before `/check verify`
 - [ ] Verify it: /check verify Admin retheme
 Spec [0001-a](../../specs/admin/0001-ui-foundation-tokens/0001-a-shared-tokens-and-designmd.md) · code in `packages/ui/src/tokens.css`, `packages/ui/src/status-config.ts`, `apps/admin/app/layout.tsx`, `apps/admin/app/globals.css`, `apps/admin/app/icon.svg`, `apps/admin/DESIGN.md`
 
 ## Slice 1: Dashboard & analytics redesign
 
-### 11. Dashboard & analytics redesign · needs a decision
-Rework the operational and superadmin dashboards so KPIs, alerts, charts, and the per-entity breakdown are fast, dark-mode correct, and readable at a glance.
-**Done when:** the dashboard loads without layout shift, KPI sparklines render distinct gradients, dark mode holds contrast, and a loading and an error state render.
-- [ ] Design it (spec): `/architect dashboard & analytics redesign`
+### 11. Dashboard & analytics redesign · in-progress
+Rework the operational and superadmin dashboards so KPIs, alerts, charts, and the per-entity breakdown are fast, dark-mode correct, and readable at a glance. The Oct 2026 refinement leads with problems: exceptions, overdue, and not tracked sit in a distinct attention panel above the active-flow KPIs, summarized in plain words. It also unifies the two KPI card components (`apps/admin/components/dashboard/kpi-stat-card.tsx` and `apps/admin/components/kpi-card.tsx`) onto one shared visual grammar while keeping each KPI's parcel illustration, so the dashboard, shipments, invoices, and reports read as one system.
+**Done when:** the dashboard leads with a plain-language attention panel above the active-flow KPIs, the dashboard and list KPI cards share one grammar, the dashboard loads without layout shift, KPI sparklines render distinct gradients, dark mode holds contrast, and a loading and an error state render.
+- [x] Design it (spec): `/architect dashboard & analytics redesign`
+- [ ] Build it: /develop Dashboard & analytics redesign
+   - [x] One shared KPI card primitive, every call site migrated, and the shipment filter links repaired (AC-1, AC-2, AC-3, AC-4, AC-8)
+   - [x] Attention panel built, the Needs Attention group replaced on both dashboards, and the header ticker removed (AC-5, AC-6, AC-7, AC-9)
+   - [x] Shared window and signal helpers, one range control driving the sparklines, the deltas, and the trend chart, and no signal card handling (AC-10, AC-11)
+   - [x] Skeleton mirrors the layout, plus the light and dark, contrast, motion, and keyboard pass with DESIGN.md updated (AC-12, AC-13, AC-14)
+- [ ] Verify it: /check verify Dashboard & analytics redesign
+Spec [0003](../../specs/admin/0003-dashboard-refresh-unified-kpi-cards.md) · code in `apps/admin/components/kpi-card.tsx`, `apps/admin/components/dashboard/` (incl. `attention-panel.tsx`, `range-control.tsx`, `utils.ts`), `apps/admin/components/shipments/shipments-kpi-row.tsx`, `apps/admin/app/(dashboard)/invoices/page.tsx`, `apps/admin/app/(dashboard)/reports/page.tsx`, `apps/admin/app/(dashboard)/page.tsx`, `apps/admin/lib/validation.ts`, `apps/admin/DESIGN.md`
 
 ## Slice 2: Shipments & detail redesign
 

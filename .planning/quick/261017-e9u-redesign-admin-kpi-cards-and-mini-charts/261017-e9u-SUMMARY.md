@@ -82,3 +82,12 @@ Three passes, each rejected as too quiet:
 The working tree still carries the large uncommitted admin retheme, so the code
 changes are left unstaged to avoid sweeping unrelated work in. Only the
 quick-task planning artifacts and previews are committed.
+
+## Follow-up refinement — status donut layout (2026-10-17)
+
+Requested after review: the Status tile now always stacks — ring on top, legend
+below. It previously switched to `sm:flex-row`, which put the legend beside the
+ring and forced it to stay small. Ring grew 104 → 132px, legend is full-width
+beneath it.
+
+Gates re-run after the change: `check-types` passes, `lint` still 119 warnings.
