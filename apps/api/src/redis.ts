@@ -23,7 +23,14 @@ function createCacheClient(): Redis | null {
   const client = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 20,
     lazyConnect: true,
-    retryStrategy: () => null, // don't retry — fail fast so lazyConnect surfaces the error immediately
+    // Keep retrying so a boot-time Redis outage does not permanently disable
+    // dedup, cooldown and caching.
+    retryStrategy: (times) => Math.min(times * 200, 2000),
+    // But never park commands in the offline queue waiting for that
+    // reconnection — callers must fail fast. With the queue enabled, any cache
+    // call issued while Redis is unreachable blocks until the connection
+    // retries, which hangs every request that passes through the rate limiter.
+    enableOfflineQueue: false,
   });
   client.on('error', (err) => logger.error({ err }, 'cache client error'));
   return client;

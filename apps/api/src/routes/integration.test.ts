@@ -43,7 +43,7 @@ vi.mock('../logger', () => {
 });
 vi.mock('../redis', () => ({ cacheClient: null, connectRedis: vi.fn(), disconnectRedis: vi.fn(), bullConnectionOptions: null, bullConnection: null }));
 vi.mock('../instrument', () => ({}));
-vi.mock('../queues', () => ({ queues: [], notificationQueue: { add: vi.fn(), name: 'notifications' }, runArchive: vi.fn(), isRedisConnected: vi.fn(() => false) }));
+vi.mock('../queues', () => ({ queues: [], notificationQueue: { add: vi.fn(), name: 'notifications' }, runArchive: vi.fn(), isRedisConnected: vi.fn(() => false), isRedisConfigured: vi.fn(() => false) }));
 vi.mock('@repo/auth-config', () => ({ buildEmailHtml: vi.fn(() => '<html/>') }));
 
 const mockOtp = vi.hoisted(() => ({ generateOtp: vi.fn(() => '123456'), verifyOtp: vi.fn(() => true), maskEmail: vi.fn((e: string) => e!.substring(0, 3) + '***') }));

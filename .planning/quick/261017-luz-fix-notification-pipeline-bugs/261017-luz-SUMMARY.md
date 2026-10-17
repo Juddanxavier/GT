@@ -28,9 +28,35 @@ worker modules threw at import. With the mocks updated, all 25 files run.
 
 ## Task 1 — Cache client survives a Redis outage
 
-`apps/api/src/redis.ts`: replaced `retryStrategy: () => null` with a bounded
-backoff (`Math.min(times * 200, 2000)`). `maxRetriesPerRequest: 20` is kept so
-commands still fail fast instead of hanging.
+`apps/api/src/redis.ts`: this took **two** changes, because the first one caused
+an outage (see below).
+
+1. Replaced `retryStrategy: () => null` with a bounded backoff
+   (`Math.min(times * 200, 2000)`) so the client reconnects after a boot-time
+   Redis outage.
+2. Added `enableOfflineQueue: false`.
+
+Step 2 is not optional. With the offline queue left at its default `true`, the
+reconnect strategy makes every command **wait** for the reconnection instead of
+failing. `globalRateLimit` (`middleware/rate-limit.ts:69`) calls
+`await cacheClient.incr()` on every request, so with Redis unreachable every
+request parked there and hung — the admin dashboard died with
+`Failed to load dashboard`. The original `retryStrategy: () => null` had been
+load-bearing precisely because it made those calls reject instantly and fall
+through the middleware's `catch`, which fails open.
+
+The two settings together give the behaviour actually wanted: commands fail fast
+while Redis is down (measured 0 ms), and the client still heals when Redis
+returns (measured 3 s, 28 clients reattached).
+
+### Regression and correction (2026-10-17)
+
+The first version of this task shipped only step 1 and claimed
+`maxRetriesPerRequest: 20` kept commands fail-fast. That was wrong — it bounds
+retries, it does not prevent queueing. The fault surfaced when the Docker daemon
+died and Redis became unreachable: `/api/dashboard/stats` timed out at 12 s+.
+Fixed with step 2; re-verified with Redis down (0 ms reject, no hang) and Redis
+restored (heal to `ready` in 3 s).
 
 **Before:** a boot-time Redis outage left the cache client dead forever, so
 `checkAndSetIdempotency` threw, the error was swallowed, and the same event

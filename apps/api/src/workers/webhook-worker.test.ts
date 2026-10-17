@@ -33,7 +33,10 @@ const mockNotifyTrackingEvents = vi.hoisted(() => vi.fn());
 const mockEmitToTenant = vi.hoisted(() => vi.fn());
 
 vi.mock('../db', () => ({ db: mockDb }));
-vi.mock('../queues', () => ({ isRedisConnected: vi.fn().mockReturnValue(true) }));
+vi.mock('../queues', () => ({
+  isRedisConnected: vi.fn().mockReturnValue(true),
+  isRedisConfigured: vi.fn().mockReturnValue(true),
+}));
 vi.mock('../redis', () => ({ bullConnectionOptions: {} }));
 vi.mock('../realtime', () => ({ emitToTenant: mockEmitToTenant }));
 vi.mock('../shipment-providers', () => ({

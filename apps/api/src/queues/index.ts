@@ -1,13 +1,10 @@
 import { Queue, type ConnectionOptions, type JobsOptions } from 'bullmq';
-import { bullConnectionOptions } from '../redis';
-
-let connected = false;
+import { bullConnection, bullConnectionOptions } from '../redis';
 
 function createOrSkip(name: string, opts?: Partial<QueueOptions>): Queue | null {
   if (!bullConnectionOptions) {
     return null;
   }
-  connected = true;
   return new Queue(name, { connection: bullConnectionOptions as ConnectionOptions, ...opts });
 }
 
@@ -79,8 +76,17 @@ export const queues = [
 
 export type QueueName = string;
 
+export function isRedisConfigured(): boolean {
+  return !!bullConnectionOptions;
+}
+
+/**
+ * True only when the shared Redis connection is actually established.
+ * `REDIS_URL` being present is not the same as Redis being reachable — do not
+ * report readiness off the env var alone.
+ */
 export function isRedisConnected(): boolean {
-  return connected;
+  return bullConnection?.status === 'ready';
 }
 
 export async function closeQueues(): Promise<void> {

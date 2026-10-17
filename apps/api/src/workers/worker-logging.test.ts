@@ -60,6 +60,7 @@ vi.mock('../queues', () => ({
   pdfQueue: null,
   whatsappQueue: null,
   isRedisConnected: vi.fn().mockReturnValue(true),
+  isRedisConfigured: vi.fn().mockReturnValue(true),
 }));
 vi.mock('../redis', () => ({ bullConnectionOptions: {}, cacheClient: null }));
 

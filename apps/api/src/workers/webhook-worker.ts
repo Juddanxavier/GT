@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { type ConnectionOptions, Worker } from 'bullmq';
 import { db } from '../db';
 import { shipments } from '../db/schema';
-import { isRedisConnected } from '../queues';
+import { isRedisConfigured } from '../queues';
 import { bullConnectionOptions } from '../redis';
 import { emitToTenant } from '../realtime';
 import { getProvider } from '../shipment-providers';
@@ -12,8 +12,8 @@ import { childLogger } from '../logger';
 
 export const webhookWorker: Worker | null = (() => {
   const queue = 'webhook-events';
-  if (!isRedisConnected()) {
-    childLogger({ queue }).warn('redis not available, worker not started');
+  if (!isRedisConfigured()) {
+    childLogger({ queue }).warn('redis not configured, worker not started');
     return null;
   }
 

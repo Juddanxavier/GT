@@ -29,7 +29,7 @@ import {
   archiveQueue,
   deadLetterQueue,
   emailQueue,
-  isRedisConnected,
+  isRedisConfigured,
   notificationQueue,
   pdfQueue,
   shipmentQueue,
@@ -53,7 +53,7 @@ function createWorker<T extends Record<string, unknown> = Record<string, unknown
   processor: (data: T, log: Logger) => Promise<void>,
   concurrency: number,
 ): Worker | null {
-  if (!isRedisConnected()) {
+  if (!isRedisConfigured()) {
     return null;
   }
   const worker = new Worker<T>(
@@ -120,6 +120,10 @@ type NotifyJobData = {
   customerUserId?: string;
 };
 
+// WhatsApp is skipped entirely when MSG91 is not configured. Warn once per
+// process so the gap is visible instead of silent.
+let warnedWhatsAppUnconfigured = false;
+
 export async function notificationProcessor(job: NotifyJobData, log: Logger): Promise<void> {
   const {
     shipmentId,
@@ -141,15 +145,20 @@ export async function notificationProcessor(job: NotifyJobData, log: Logger): Pr
   // In-app notification for the linked customer (admin app stays quote-only)
   if (customerUserId && tenantId) {
     try {
-      await db.insert(notifications).values({
-        tenantId,
-        userId: customerUserId,
-        type: 'status_update',
-        title: `Shipment ${trackingNo} ${statusLabel(eventType)}`,
-        message: `Your shipment ${trackingNo} status changed to ${statusLabel(eventType)}.`,
-        link: '/my-shipments',
-      });
-      emitToUser(customerUserId, 'notification:new', {});
+      const alreadyNotified = await checkAndSetIdempotency(eventId, shipmentId, 'in_app', log);
+      if (alreadyNotified) {
+        log.info({ eventId, shipmentId }, 'skipping duplicate in-app notification');
+      } else {
+        await db.insert(notifications).values({
+          tenantId,
+          userId: customerUserId,
+          type: 'status_update',
+          title: `Shipment ${trackingNo} ${statusLabel(eventType)}`,
+          message: `Your shipment ${trackingNo} status changed to ${statusLabel(eventType)}.`,
+          link: '/my-shipments',
+        });
+        emitToUser(customerUserId, 'notification:new', {});
+      }
     } catch (err) {
       log.error({ err, shipmentId, eventId }, 'failed to create in-app notification');
     }
@@ -220,6 +229,12 @@ export async function notificationProcessor(job: NotifyJobData, log: Logger): Pr
   }
 
   // Fan out: WhatsApp (queued)
+  if (customerPhone && !isWhatsAppConfigured() && !warnedWhatsAppUnconfigured) {
+    warnedWhatsAppUnconfigured = true;
+    log.warn(
+      'whatsapp not configured (MSG91_AUTH_KEY / MSG91_WHATSAPP_SENDER unset) — WhatsApp notifications are being skipped',
+    );
+  }
   if (customerPhone && isWhatsAppConfigured() && whatsappQueue && whatsappOn) {
     const waAlreadySent = await checkAndSetIdempotency(eventId, shipmentId, 'whatsapp', log);
     if (!waAlreadySent) {

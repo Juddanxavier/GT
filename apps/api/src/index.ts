@@ -32,6 +32,7 @@ import { createUser } from './auth-api';
 import { db } from './db';
 import { branches as branchTable, tenants as tenantTable, user as userTable } from './db/schema';
 import { closeTransport, getEmailProviderStatus } from './email/provider';
+import { isWhatsAppConfigured } from './notifications/whatsapp/config';
 
 // Global crash handlers (before any other code)
 process.on('unhandledRejection', (reason) => {
@@ -683,6 +684,11 @@ app.get('/api/diagnostics/email', sessionMiddleware, (c) => {
   const email = getEmailProviderStatus();
   return c.json({
     email,
+    whatsapp: {
+      configured: isWhatsAppConfigured(),
+      authKey: !!process.env.MSG91_AUTH_KEY,
+      sender: !!process.env.MSG91_WHATSAPP_SENDER,
+    },
     redis: {
       connected: isRedisConnected(),
       urlConfigured: !!process.env.REDIS_URL,
