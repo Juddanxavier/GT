@@ -13,20 +13,20 @@ export function TrackQuotaCard() {
       .catch(() => setErr(true));
   }, []);
   if (err) return null;
-  if (!quota) return <div className="h-24 rounded-xl glass-panel border border-glass animate-pulse" />;
+  if (!quota) return <div className="h-24 rounded-lg glass-panel border-0 animate-pulse" />;
   const pct = quota.quota_total > 0 ? Math.round((quota.quota_used / quota.quota_total) * 100) : 0;
   return (
-    <Card>
+    <Card className="content-panel border-0 p-5">
       <Card.Header className="pb-1">
-        <Card.Title className="text-sm font-semibold">17TRACK Quota</Card.Title>
+        <Card.Title className="text-base font-medium text-foreground">17TRACK Quota</Card.Title>
       </Card.Header>
       <Card.Content className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">Used</span>
           <span className="font-semibold text-foreground">{quota.quota_used} / {quota.quota_total}</span>
         </div>
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-default-100">
+          <div className="stripe-lime h-full rounded-full" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">Remaining</span>

@@ -63,6 +63,19 @@ type DashboardHeaderProps = {
   onSignOut: () => void;
 };
 
+/** Square icon control — one white, lightly-bordered shape for every header action. */
+const ICON_BUTTON =
+  'size-9 min-w-0 shrink-0 justify-center rounded-xl border border-border bg-content1 text-muted shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:bg-content2 hover:text-foreground';
+
+/** Same square shape for elements that are not HeroUI Buttons (dropdown triggers). */
+const ICON_TRIGGER =
+  'inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-content1 text-muted shadow-[0_1px_2px_rgba(0,0,0,0.03)] outline-none transition-colors hover:bg-content2 hover:text-foreground';
+
+/** Hairline divider between header clusters. */
+function HeaderDivider() {
+  return <span aria-hidden="true" className="mx-0.5 hidden h-5 w-px bg-border sm:block" />;
+}
+
 export function DashboardHeader({
   collapsed,
   sidebarOpen,
@@ -90,89 +103,104 @@ export function DashboardHeader({
   const router = useRouter();
 
   return (
-    <header className="glass-topbar border-b border-glass sticky top-0 z-30 shrink-0">
-      <div className="flex items-center justify-between h-14 px-4 sm:px-6">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background">
+      <div className="flex h-16 items-center gap-2 px-4 sm:px-6">
+        {/* ── Left: navigation + breadcrumbs ── */}
+        <div className="flex min-w-0 items-center gap-1">
           <Button
             size="sm"
             variant="ghost"
-            className="hidden md:inline-flex"
+            className={`${ICON_BUTTON} hidden md:inline-flex`}
             onPress={onToggleCollapsed}
             aria-expanded={!collapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="md:hidden"
+            className={`${ICON_BUTTON} md:hidden`}
             onPress={() => setSidebarOpen(true)}
             aria-expanded={sidebarOpen}
             aria-label="Open menu"
           >
-            <Menu size={18} />
+            <Menu size={17} />
           </Button>
-          <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shrink-0 md:hidden">
-            GT
+
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              GT
+            </div>
+            <p className="text-sm font-semibold">Gajan Traders</p>
           </div>
-          <p className="text-sm font-semibold md:hidden">Gajan Traders</p>
-          <div className="hidden md:block">
+
+          <div className="hidden min-w-0 md:block">
             <Breadcrumbs />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex-1" />
+
+        {/* ── Right: search, tenant context, account ── */}
+        <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="ghost"
-            className="hidden sm:inline-flex items-center gap-2 text-muted hover:text-foreground glass-search-trigger h-8 px-2.5 rounded-lg border border-glass"
+            className="hidden h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-content1 px-3 text-muted shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:bg-content2 hover:text-foreground sm:inline-flex"
             onPress={onOpenSearch}
+            aria-label="Search"
           >
-            <Search size={16} />
-            <Kbd className="hidden lg:inline-flex scale-90">
+            <Search size={15} />
+            <span className="hidden text-xs lg:inline">Search</span>
+            <Kbd className="hidden scale-90 lg:inline-flex">
               <Kbd.Abbr keyValue="command" />
               <Kbd.Content>K</Kbd.Content>
             </Kbd>
           </Button>
 
           {isSuperadmin ? (
-            <Select
-              selectedKey={tenantFilter}
-              onSelectionChange={(k) => {
-                const id = k as string;
-                if (id === tenantFilter) return;
-                const name = tenants.find((t) => t.id === id)?.name ?? 'this tenant';
-                onRequestTenantSwitch(id, name);
-              }}
-              className="w-auto min-w-0"
-              placeholder="Select tenant"
-              aria-label="Filter by tenant"
-              variant="secondary"
-            >
-              <Select.Trigger className="h-8 text-xs border-glass">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {tenants.map((t) => (
-                    <ListBox.Item key={t.id} id={t.id} textValue={t.name}>
-                      <div className="flex items-center gap-2">
-                        <Building2 size={16} className="text-muted" />
-                        {t.name}
-                      </div>
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
+            <>
+              <HeaderDivider />
+              <Select
+                selectedKey={tenantFilter}
+                onSelectionChange={(k) => {
+                  const id = k as string;
+                  if (id === tenantFilter) return;
+                  const name = tenants.find((t) => t.id === id)?.name ?? 'this tenant';
+                  onRequestTenantSwitch(id, name);
+                }}
+                className="w-auto min-w-0"
+                placeholder="Select tenant"
+                aria-label="Filter by tenant"
+                variant="secondary"
+              >
+                <Select.Trigger className="h-9 gap-1.5 rounded-xl border-border text-xs">
+                  <Building2 size={14} className="shrink-0 text-muted" />
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover className="border border-border bg-surface">
+                  <ListBox>
+                    {tenants.map((t) => (
+                      <ListBox.Item key={t.id} id={t.id} textValue={t.name}>
+                        <div className="flex items-center gap-2">
+                          <Building2 size={16} className="text-muted" />
+                          {t.name}
+                        </div>
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </>
           ) : null}
 
           {userRole === 'tenant-admin' && (
             <>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-glass glass-search-trigger whitespace-nowrap">
-                <Building2 size={14} className="text-muted" />
+              <HeaderDivider />
+              <span className="hidden items-center gap-1.5 rounded-xl border border-border bg-content1 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:inline-flex">
+                <Building2 size={14} className="shrink-0 text-muted" />
                 {sessionUser?.tenantName ?? 'Tenant'}
               </span>
               <Select
@@ -190,11 +218,11 @@ export function DashboardHeader({
                 aria-label="Filter by branch"
                 variant="secondary"
               >
-                <Select.Trigger className="h-8 text-xs border-glass">
+                <Select.Trigger className="h-9 gap-1.5 rounded-xl border-border text-xs">
                   <Select.Value />
                   <Select.Indicator />
                 </Select.Trigger>
-                <Select.Popover>
+                <Select.Popover className="border border-border bg-surface">
                   <ListBox>
                     <ListBox.Item id="" textValue="All Branches">
                       <div className="flex items-center gap-2">
@@ -217,40 +245,45 @@ export function DashboardHeader({
           )}
 
           {userRole === 'staff' && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-glass glass-search-trigger whitespace-nowrap">
-              <Building2 size={14} className="text-muted" />
-              {sessionUser?.tenantName ?? 'Tenant'}
-              <span className="text-muted">&rarr;</span>
-              {sessionUser?.branchName ?? 'Branch'}
-            </span>
+            <>
+              <HeaderDivider />
+              <span className="hidden items-center gap-1.5 rounded-xl border border-border bg-content1 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:inline-flex">
+                <Building2 size={14} className="shrink-0 text-muted" />
+                {sessionUser?.tenantName ?? 'Tenant'}
+                <span className="text-muted">&rarr;</span>
+                {sessionUser?.branchName ?? 'Branch'}
+              </span>
+            </>
           )}
+
+          <HeaderDivider />
 
           <Button
             size="sm"
             variant="ghost"
+            className={ICON_BUTTON}
             onPress={onThemeChange}
             aria-label="Toggle theme"
-            className="text-muted hover:text-foreground"
           >
-            {resolved === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {resolved === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
           </Button>
 
           <Dropdown>
             <Dropdown.Trigger
-              className="text-muted hover:text-foreground relative p-1.5 rounded-lg hover:bg-sidebar-hover"
+              className={`relative ${ICON_TRIGGER}`}
               aria-label={
                 unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'
               }
             >
-              <Bell size={16} />
+              <Bell size={17} />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-danger rounded-full">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </Dropdown.Trigger>
-            <Dropdown.Popover className="w-80 p-0 glass-panel">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-glass">
+            <Dropdown.Popover className="w-80 border border-border bg-surface p-0">
+              <div className="flex items-center justify-between border-b border-border px-3 py-2">
                 <span className="text-xs font-semibold">Notifications</span>
                 {unreadCount > 0 && (
                   <button
@@ -264,24 +297,24 @@ export function DashboardHeader({
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {notifs.length === 0 ? (
-                  <p className="text-xs text-muted px-3 py-4 text-center">No notifications</p>
+                  <p className="px-3 py-4 text-center text-xs text-muted">No notifications</p>
                 ) : (
                   notifs.map((n) => (
                     <button
                       key={n.id}
                       type="button"
-                      className={`w-full text-left px-3 py-2 text-xs border-b border-glass hover:bg-sidebar-hover flex items-start gap-2 ${n.read ? '' : 'font-semibold'}`}
+                      className={`flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left text-xs hover:bg-surface-tertiary ${n.read ? '' : 'font-semibold'}`}
                       onClick={() => {
                         if (!n.read) onMarkRead([n.id]);
                         if (n.link) router.push(n.link);
                       }}
                     >
                       <span
-                        className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-accent'}`}
+                        className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-primary'}`}
                       />
                       <div className="min-w-0">
                         <p className="truncate">{n.title}</p>
-                        <p className="text-muted font-normal truncate">{n.message}</p>
+                        <p className="truncate font-normal text-muted">{n.message}</p>
                       </div>
                     </button>
                   ))
@@ -291,17 +324,20 @@ export function DashboardHeader({
           </Dropdown>
 
           <Dropdown>
-            <Dropdown.Trigger className="flex items-center gap-2 rounded-lg outline-none hover:bg-sidebar-hover transition-colors px-1 py-1">
-              <Avatar size="md" className="rounded-lg">
+            <Dropdown.Trigger className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-content1 px-2 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] outline-none transition-colors hover:bg-content2">
+              <Avatar size="sm" className="rounded-full">
                 <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:inline">{session.user.name}</span>
-              <ChevronDown size={14} className="text-muted hidden sm:block" />
+              <div className="hidden text-left leading-tight sm:block">
+                <p className="text-xs font-medium text-foreground">{session.user.name}</p>
+                <p className="text-[10px] text-muted">{session.user.email}</p>
+              </div>
+              <ChevronDown size={14} className="hidden text-muted sm:block" />
             </Dropdown.Trigger>
-            <Dropdown.Popover className="glass-panel">
+            <Dropdown.Popover className="border border-border bg-surface">
               <div className="px-3 pt-3 pb-1">
                 <div className="flex items-center gap-2">
-                  <Avatar size="md" className="rounded-lg">
+                  <Avatar size="md" className="rounded-md">
                     <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
                   </Avatar>
                   <div className="flex flex-col gap-0">
@@ -318,7 +354,7 @@ export function DashboardHeader({
                 <Dropdown.Item id="signout" textValue="Sign out" variant="danger" onPress={onSignOut}>
                   <div className="flex w-full items-center justify-between gap-2">
                     <Label>Sign out</Label>
-                    <LogOut size={14} className="text-danger" />
+                    <LogOut size={14} className="text-danger-soft-foreground" />
                   </div>
                 </Dropdown.Item>
               </Dropdown.Menu>

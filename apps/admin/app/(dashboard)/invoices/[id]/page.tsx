@@ -33,7 +33,7 @@ export default function InvoiceDetailPage() {
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Spinner /></div>;
   if (!invoice) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-      <p className="text-danger text-sm">Invoice not found</p>
+      <p className="text-danger-soft-foreground text-sm">Invoice not found</p>
       <Button variant="secondary" size="sm" onPress={() => router.push('/invoices')}>Back</Button>
     </div>
   );
@@ -54,13 +54,13 @@ export default function InvoiceDetailPage() {
             <div className="relative px-6 py-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-sm flex items-center justify-center shrink-0 bg-success/15 text-success">
+                  <div className="w-12 h-12 rounded-sm flex items-center justify-center shrink-0 bg-success/15 text-success-soft-foreground">
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Chip size="sm" variant="soft" color="success">Paid</Chip>
-                      <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
+                      <span className="text-xs text-success-soft-foreground flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight">{invoice.invoiceNo}</h1>
                     {invoice.customerName && (
@@ -89,19 +89,19 @@ export default function InvoiceDetailPage() {
             <StatCard label="Amount" value={formatCurrency(invoice.amount, currencyCode)} icon={<DollarSign size={14} />} highlighted />
             <StatCard label="Status" value="Paid" icon={<Receipt size={14} />} highlighted />
             <StatCard label="Emails Sent" value={`${emailCount}/2 today`} icon={<Mail size={14} />} />
-            <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} icon={<Calendar size={14} />} />
+            <StatCard label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} icon={<Calendar size={14} />} />
           </div>
 
           {/* Details card */}
           <DetailSection title="Invoice Details">
             <div className="p-5 space-y-3">
               <InfoRow label="Invoice No" value={invoice.invoiceNo} />
-              <InfoRow label="Tracking No" value={invoice.trackingNo ?? 'ΓÇö'} />
-              <InfoRow label="Customer" value={invoice.customerName ?? 'ΓÇö'} />
+              <InfoRow label="Tracking No" value={invoice.trackingNo ?? '—'} />
+              <InfoRow label="Customer" value={invoice.customerName ?? '—'} />
               <InfoRow label="Amount" value={formatCurrency(invoice.amount, currencyCode)} />
               <InfoRow label="Emails Sent" value={`${emailCount}/2 today`} />
-              <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
-              <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
+              <InfoRow label="Created" value={invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+              <InfoRow label="Paid At" value={invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
             </div>
           </DetailSection>
         </>}
@@ -114,7 +114,7 @@ export default function InvoiceDetailPage() {
             <div className="p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Chip size="sm" variant="soft" color="success">Paid</Chip>
-                <span className="text-xs text-success flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
+                <span className="text-xs text-success-soft-foreground flex items-center gap-1"><CheckCircle2 size={12} />Paid</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <Clock size={14} className="text-muted" />
@@ -173,8 +173,8 @@ export default function InvoiceDetailPage() {
             </Modal.Header>
             <Modal.Body>
               <p className="text-sm text-muted">Send invoice <strong>{invoice.invoiceNo}</strong> via email?</p>
-              {sendError && <p className="text-sm text-danger mt-2">{sendError}</p>}
-              {sendSuccess && <p className="text-sm text-success mt-2">{sendSuccess}</p>}
+              {sendError && <p className="text-sm text-danger-soft-foreground mt-2">{sendError}</p>}
+              {sendSuccess && <p className="text-sm text-success-soft-foreground mt-2">{sendSuccess}</p>}
             </Modal.Body>
             <Modal.Footer className="flex gap-2">
               <Button variant="secondary" onPress={() => setSendOpen(false)}>Cancel</Button>
@@ -216,7 +216,7 @@ function StatCard({ label, value, icon, highlighted }: {
         <span className="text-muted">{icon}</span>
         <span className="text-[11px] text-muted font-medium uppercase tracking-wider">{label}</span>
       </div>
-      <p className={cn('text-sm font-semibold truncate', highlighted && 'text-success')}>{value}</p>
+      <p className={cn('text-sm font-semibold truncate', highlighted && 'text-success-soft-foreground')}>{value}</p>
     </Card>
   );
 }

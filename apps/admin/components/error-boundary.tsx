@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
           <div className="text-center space-y-4 max-w-md">
             <div className="w-14 h-14 mx-auto rounded-full bg-danger/10 flex items-center justify-center">
-              <span className="text-danger text-xl font-bold">!</span>
+              <span className="text-danger-soft-foreground text-xl font-bold">!</span>
             </div>
             <h1 className="text-lg font-semibold text-foreground tracking-tight">Something went wrong</h1>
             <p className="text-sm text-muted">

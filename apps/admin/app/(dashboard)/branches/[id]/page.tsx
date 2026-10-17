@@ -194,19 +194,19 @@ export default function BranchDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           label="Phone"
-          value={branch.phone || 'ΓÇö'}
+          value={branch.phone || '—'}
           icon={<Phone size={14} />}
           highlighted={!!branch.phone}
         />
         <StatCard
           label="Email"
-          value={branch.email || 'ΓÇö'}
+          value={branch.email || '—'}
           icon={<Mail size={14} />}
           highlighted={!!branch.email}
         />
         <StatCard
           label="Address"
-          value={branch.address || 'ΓÇö'}
+          value={branch.address || '—'}
           icon={<MapPin size={14} />}
           highlighted={!!branch.address}
         />
@@ -230,7 +230,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Phone</p>
-                  <p className="text-sm font-medium">{branch.phone || 'ΓÇö'}</p>
+                  <p className="text-sm font-medium">{branch.phone || '—'}</p>
                 </div>
                 {branch.phone && <CopyButton text={branch.phone} />}
               </div>
@@ -242,7 +242,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Email</p>
-                  <p className="text-sm font-medium break-all">{branch.email || 'ΓÇö'}</p>
+                  <p className="text-sm font-medium break-all">{branch.email || '—'}</p>
                 </div>
                 {branch.email && <CopyButton text={branch.email} />}
               </div>
@@ -254,7 +254,7 @@ export default function BranchDetailPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-muted font-medium uppercase tracking-wider mb-0.5">Address</p>
-                  <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{branch.address || 'ΓÇö'}</p>
+                  <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{branch.address || '—'}</p>
                 </div>
               </div>
             </div>
@@ -274,9 +274,9 @@ export default function BranchDetailPage() {
             <div className="border-t border-border" />
             <Card.Content className="p-0 divide-y divide-border">
               <InfoRow label="Name" value={branch.name} />
-              <InfoRow label="Phone" value={branch.phone || 'ΓÇö'} />
-              <InfoRow label="Email" value={branch.email || 'ΓÇö'} />
-              <InfoRow label="Address" value={branch.address || 'ΓÇö'} />
+              <InfoRow label="Phone" value={branch.phone || '—'} />
+              <InfoRow label="Email" value={branch.email || '—'} />
+              <InfoRow label="Address" value={branch.address || '—'} />
               <InfoRow label="Created" value={new Date(branch.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
               <InfoRow label="Updated" value={new Date(branch.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
             </Card.Content>
@@ -315,12 +315,12 @@ export default function BranchDetailPage() {
               <Modal.Heading>Edit Branch</Modal.Heading>
             </Modal.Header>
             <Modal.Body>
-              {editErrors.form && <p className="text-sm text-danger">{editErrors.form}</p>}
+              {editErrors.form && <p className="text-sm text-danger-soft-foreground">{editErrors.form}</p>}
               <Form.Root id="edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-name">Name</Label>
                   <Input id="edit-name" variant="secondary" placeholder="Branch name" value={editName} onChange={(e) => setEditName(e.target.value)} required fullWidth />
-                  {editErrors.name && <p className="text-xs text-danger">{editErrors.name}</p>}
+                  {editErrors.name && <p className="text-xs text-danger-soft-foreground">{editErrors.name}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-phone">Phone</Label>
@@ -331,17 +331,17 @@ export default function BranchDetailPage() {
                     </div>
                     <Input id="edit-phone" variant="secondary" placeholder="Phone number" value={editPhoneLocal} onChange={(e) => setEditPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
                   </div>
-                  {editErrors.phone && <p className="text-xs text-danger">{editErrors.phone}</p>}
+                  {editErrors.phone && <p className="text-xs text-danger-soft-foreground">{editErrors.phone}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-email">Email</Label>
                   <Input id="edit-email" variant="secondary" type="email" placeholder="branch@example.com" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} fullWidth />
-                  {editErrors.email && <p className="text-xs text-danger">{editErrors.email}</p>}
+                  {editErrors.email && <p className="text-xs text-danger-soft-foreground">{editErrors.email}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="edit-address">Address</Label>
                   <Input id="edit-address" variant="secondary" placeholder="Full street address" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} fullWidth />
-                  {editErrors.address && <p className="text-xs text-danger">{editErrors.address}</p>}
+                  {editErrors.address && <p className="text-xs text-danger-soft-foreground">{editErrors.address}</p>}
                 </div>
               </Form.Root>
             </Modal.Body>

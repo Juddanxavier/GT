@@ -286,7 +286,7 @@ export default function ShipmentsPage() {
   }
 
   return (
-    <div className="shipments-ops space-y-4">
+    <div className="shipments-ops space-y-5">
       <div className="ops-header-bar px-5 py-4">
         <PageHeader
           title="Operations Board"

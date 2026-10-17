@@ -65,7 +65,7 @@ export default function CustomerProfilePage() {
   if (isError || !user)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <p className="text-danger text-sm">Failed to load customer</p>
+        <p className="text-danger-soft-foreground text-sm">Failed to load customer</p>
         <Button variant="secondary" size="sm" onPress={() => router.back()}>Go back</Button>
       </div>
     );
@@ -73,7 +73,7 @@ export default function CustomerProfilePage() {
   const initials = (user.name || user.email).charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title={user.name || 'Customer'}
         subtitle={user.email}
@@ -100,11 +100,11 @@ export default function CustomerProfilePage() {
             <p className="flex items-center gap-2 text-muted"><Mail size={14} className="shrink-0" /> {user.email}</p>
             <p className="flex items-center gap-2 text-muted">
               <Phone size={14} className="shrink-0" />
-              {user.phone ? `${phoneFlag ? `${phoneFlag} ` : ''}${user.phone.startsWith('+') ? user.phone : `${phoneDial} ${user.phone}`}` : 'ΓÇö'}
+              {user.phone ? `${phoneFlag ? `${phoneFlag} ` : ''}${user.phone.startsWith('+') ? user.phone : `${phoneDial} ${user.phone}`}` : '—'}
             </p>
             <p className="flex items-center gap-2 text-muted">
               <Building2 size={14} className="shrink-0" />
-              {branch?.name ?? 'ΓÇö'}
+              {branch?.name ?? '—'}
             </p>
             <p className="flex items-center gap-2 text-muted">
               <CalendarDays size={14} className="shrink-0" />
@@ -159,8 +159,8 @@ export default function CustomerProfilePage() {
                   {shipments.map((s) => (
                     <Table.Row key={s.id} onAction={() => router.push(`/shipments/${s.trackingNo}`)} className="cursor-pointer">
                       <Table.Cell><span className="font-mono text-xs font-medium">{s.trackingNo}</span></Table.Cell>
-                      <Table.Cell>{s.carrier || 'ΓÇö'}</Table.Cell>
-                      <Table.Cell>{s.billAmount ? formatCurrency(s.billAmount, tenantCurrency) : 'ΓÇö'}</Table.Cell>
+                      <Table.Cell>{s.carrier || '—'}</Table.Cell>
+                      <Table.Cell>{s.billAmount ? formatCurrency(s.billAmount, tenantCurrency) : '—'}</Table.Cell>
                       <Table.Cell><ShipmentStatusBadge status={s.status} /></Table.Cell>
                       <Table.Cell><span className="text-xs text-muted">{new Date(s.createdAt).toLocaleDateString()}</span></Table.Cell>
                     </Table.Row>
@@ -193,7 +193,7 @@ export default function CustomerProfilePage() {
                   {invoices.map((inv: Invoice) => (
                     <Table.Row key={inv.id} onAction={() => router.push(`/invoices/${inv.invoiceNo}`)} className="cursor-pointer">
                       <Table.Cell><span className="font-mono text-xs font-medium">{inv.invoiceNo}</span></Table.Cell>
-                      <Table.Cell className="font-mono text-xs">{inv.trackingNo || 'ΓÇö'}</Table.Cell>
+                      <Table.Cell className="font-mono text-xs">{inv.trackingNo || '—'}</Table.Cell>
                       <Table.Cell>{formatCurrency(inv.amount, tenantCurrency)}</Table.Cell>
                       <Table.Cell>
                         <Chip size="sm" variant="soft" color={INVOICE_STATUS_COLORS[inv.status] ?? 'default'} className="capitalize">{inv.status}</Chip>

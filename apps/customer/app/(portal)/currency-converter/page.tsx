@@ -225,7 +225,7 @@ export default function CurrencyConverterPage(): ReactNode {
                     type="button"
                     onClick={() => fetchRates(from)}
                     disabled={loading}
-                    className="px-4 py-2 rounded-xl border border-border text-foreground/85 text-sm font-semibold hover:text-foreground hover:bg-surface/50 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="min-h-11 px-4 py-2 rounded-xl border border-border text-foreground/85 text-sm font-semibold hover:text-foreground hover:bg-surface/50 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCcw size={14} /> Refresh Rates
                   </button>

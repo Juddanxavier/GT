@@ -136,7 +136,7 @@ export function CustomerAssigner({
         <div className="rounded-sm border border-success/30 bg-success/[0.02] overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div className="w-10 h-10 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-10 h-10 rounded-full bg-success/10 text-success-soft-foreground flex items-center justify-center shrink-0 mt-0.5">
                 <User size={18} />
               </div>
               <div className="min-w-0 flex-1">
@@ -149,7 +149,7 @@ export function CustomerAssigner({
                 </div>
                 <p className="text-xs text-muted flex items-center gap-1 mt-1"><Mail size={11} />{selectedCustomer.email ?? '—'}</p>
                 <p className="text-xs text-muted flex items-center gap-1 mt-0.5"><Phone size={11} />{selectedCustomer.phone ?? '—'}</p>
-                <p className="text-[11px] text-success flex items-center gap-1 mt-1.5"><Check size={10} />Will receive tracking notifications</p>
+                <p className="text-[11px] text-success-soft-foreground flex items-center gap-1 mt-1.5"><Check size={10} />Will receive tracking notifications</p>
               </div>
             </div>
             <button type="button" onClick={clearSelection}
@@ -190,7 +190,7 @@ export function CustomerAssigner({
         <div className="rounded-sm border border-warning/30 bg-warning/[0.02] overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div className="w-10 h-10 rounded-full bg-warning/10 text-warning flex items-center justify-center shrink-0 mt-0.5"><UserX size={18} /></div>
+              <div className="w-10 h-10 rounded-full bg-warning/10 text-warning-soft-foreground flex items-center justify-center shrink-0 mt-0.5"><UserX size={18} /></div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Self — no notifications</p>
                 <p className="text-xs text-muted mt-1">The shipment will not send email or WhatsApp updates</p>
@@ -234,7 +234,7 @@ export function CustomerAssigner({
             id="customer-assigner-results"
             role="listbox"
             aria-label="Matching customers"
-            className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-sm shadow-lg max-h-64 overflow-y-auto"
+            className="absolute z-50 top-full mt-1 left-0 right-0 bg-background border border-border rounded-sm max-h-64 overflow-y-auto"
           >
             {results.length > 0 ? (
               results.map((c) => (
@@ -270,7 +270,7 @@ export function CustomerAssigner({
           <Button size="sm" variant="outline" onPress={selectSelf}>Self (No Notifications)</Button>
         )}
       </div>
-      {errors.customerId && <p className="text-xs text-danger">{errors.customerId}</p>}
+      {errors.customerId && <p className="text-xs text-danger-soft-foreground">{errors.customerId}</p>}
     </div>
   );
 }

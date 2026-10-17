@@ -87,7 +87,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                         setUnit('metric');
                         clearAll();
                       }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${unit === 'metric' ? 'bg-white text-foreground shadow-sm border border-border' : 'text-foreground/80 hover:text-foreground'}`}
+                      className={`min-h-11 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${unit === 'metric' ? 'bg-white text-foreground shadow-sm border border-border' : 'text-foreground/80 hover:text-foreground'}`}
                     >
                       CM / KG
                     </button>
@@ -97,7 +97,7 @@ export default function VolumetricCalculatorPage(): ReactNode {
                         setUnit('imperial');
                         clearAll();
                       }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${unit === 'imperial' ? 'bg-white text-foreground shadow-sm border border-border' : 'text-foreground/80 hover:text-foreground'}`}
+                      className={`min-h-11 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${unit === 'imperial' ? 'bg-white text-foreground shadow-sm border border-border' : 'text-foreground/80 hover:text-foreground'}`}
                     >
                       Inches / Lbs
                     </button>

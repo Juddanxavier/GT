@@ -235,7 +235,7 @@ export default function FaqPage(): ReactNode {
                 <button
                   type="button"
                   onClick={() => setActiveCategory(null)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`min-h-11 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                     activeCategory === null
                       ? 'bg-brand-accent text-white'
                       : 'bg-brand-cream text-foreground/70 hover:bg-brand-accent/10 hover:text-brand-accent'
@@ -248,7 +248,7 @@ export default function FaqPage(): ReactNode {
                     key={cat.label}
                     type="button"
                     onClick={() => setActiveCategory(cat.label)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 min-h-11 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                       activeCategory === cat.label
                         ? 'bg-brand-accent text-white'
                         : 'bg-brand-cream text-foreground/70 hover:bg-brand-accent/10 hover:text-brand-accent'
@@ -279,7 +279,7 @@ export default function FaqPage(): ReactNode {
                     <button
                       type="button"
                       onClick={() => setSearch('')}
-                      className="mt-6 text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
+                      className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
                     >
                       Clear search
                     </button>
@@ -295,7 +295,7 @@ export default function FaqPage(): ReactNode {
                     <button
                       type="button"
                       onClick={() => setSearch('')}
-                      className="mt-6 text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
+                      className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
                     >
                       Clear search & browse all FAQs
                     </button>
@@ -344,7 +344,7 @@ export default function FaqPage(): ReactNode {
                         .getElementById(`cat-${cat.label}`)
                         ?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors ${
+                    className={`flex w-full cursor-pointer items-center gap-2 min-h-11 rounded-lg px-2 py-2 text-left text-sm transition-colors ${
                       activeCategory === cat.label
                         ? 'bg-brand-accent/10 font-semibold text-brand-accent'
                         : 'text-foreground/70 hover:bg-brand-cream hover:text-foreground'

@@ -56,7 +56,7 @@ export function ShipmentPreviewPanel({
             <Spinner />
           </div>
         ) : error || !shipment ? (
-          <p className="text-sm text-danger text-center py-8">{error?.message ?? 'Failed to load'}</p>
+          <p className="text-sm text-danger-soft-foreground text-center py-8">{error?.message ?? 'Failed to load'}</p>
         ) : (
           <>
             <div className="space-y-2">

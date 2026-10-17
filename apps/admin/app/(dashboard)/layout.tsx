@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (isPending)
     return (
-      <div className="flex items-center justify-center min-h-screen app-mesh-bg">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <p className="text-muted">Loading...</p>
       </div>
     );
@@ -217,79 +217,81 @@ function DashboardLayoutInner({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden app-mesh-bg text-foreground">
+    <div className="flex h-[100dvh] flex-col bg-page text-foreground">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:glass-panel focus:text-foreground focus:rounded-lg focus:text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-surface focus:border focus:border-border focus:text-foreground focus:rounded-lg focus:text-sm"
       >
         Skip to content
       </a>
 
-      {sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close navigation menu"
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <div className="relative flex min-h-0 flex-1 overflow-hidden bg-background md:m-3 md:rounded-[28px] md:shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+        {sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="fixed inset-0 z-30 bg-black/50 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-      <DashboardSidebar
-        collapsed={collapsed}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        navGroups={navGroups}
-        userRole={userRole}
-        session={session}
-      />
-
-      <div className="flex flex-col flex-1 min-w-0 overflow-auto">
-        <DashboardHeader
+        <DashboardSidebar
           collapsed={collapsed}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
-          onToggleCollapsed={toggleCollapsed}
-          onOpenSearch={() => setSearchOpen(true)}
-          isSuperadmin={isSuperadmin}
+          navGroups={navGroups}
           userRole={userRole}
-          tenantFilter={tenantFilter}
-          branchFilter={branchFilter}
-          tenants={tenants}
-          branches={branches}
-          onRequestTenantSwitch={(id, name) => setConfirmTenant({ id, name })}
-          onRequestBranchSwitch={(id, name) => setConfirmBranch({ id, name })}
           session={session}
-          sessionUser={sessionUser}
-          resolved={resolved}
-          onThemeChange={handleThemeChange}
-          unreadCount={unreadCount}
-          notifs={notifs}
-          onMarkRead={(ids) => markRead.mutate({ ids })}
-          onMarkAllRead={() => markAllRead.mutate()}
-          onSignOut={handleSignOut}
         />
 
-        <FilterConfirmModals
-          confirmTenant={confirmTenant}
-          setConfirmTenant={setConfirmTenant}
-          onConfirmTenant={setTenant}
-          confirmBranch={confirmBranch}
-          setConfirmBranch={setConfirmBranch}
-          onConfirmBranch={setBranch}
-        />
+        <div className="flex flex-col flex-1 min-w-0 overflow-auto">
+          <DashboardHeader
+            collapsed={collapsed}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            onToggleCollapsed={toggleCollapsed}
+            onOpenSearch={() => setSearchOpen(true)}
+            isSuperadmin={isSuperadmin}
+            userRole={userRole}
+            tenantFilter={tenantFilter}
+            branchFilter={branchFilter}
+            tenants={tenants}
+            branches={branches}
+            onRequestTenantSwitch={(id, name) => setConfirmTenant({ id, name })}
+            onRequestBranchSwitch={(id, name) => setConfirmBranch({ id, name })}
+            session={session}
+            sessionUser={sessionUser}
+            resolved={resolved}
+            onThemeChange={handleThemeChange}
+            unreadCount={unreadCount}
+            notifs={notifs}
+            onMarkRead={(ids) => markRead.mutate({ ids })}
+            onMarkAllRead={() => markAllRead.mutate()}
+            onSignOut={handleSignOut}
+          />
 
-        <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+          <FilterConfirmModals
+            confirmTenant={confirmTenant}
+            setConfirmTenant={setConfirmTenant}
+            onConfirmTenant={setTenant}
+            confirmBranch={confirmBranch}
+            setConfirmBranch={setConfirmBranch}
+            onConfirmBranch={setBranch}
+          />
 
-        <main id="main-content" tabIndex={-1} aria-label="Main content" className="p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-7xl dashboard-glass">
-            <ErrorBoundary>{children}</ErrorBoundary>
-          </div>
-        </main>
+          <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        <footer className="border-t border-glass px-6 py-2.5 text-[11px] text-muted flex items-center justify-between shrink-0 glass-topbar">
-          <span>© {new Date().getFullYear()} Gajan Traders. All rights reserved.</span>
-          <span>v1.0.0</span>
-        </footer>
+          <main id="main-content" tabIndex={-1} aria-label="Main content" className="p-5 sm:p-7 lg:p-10">
+            <div className="mx-auto w-full max-w-7xl">
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </div>
+          </main>
+
+          <footer className="px-5 sm:px-7 lg:px-10 py-3 text-[11px] text-muted flex items-center justify-between shrink-0">
+            <span>© {new Date().getFullYear()} Gajan Traders. All rights reserved.</span>
+            <span>v1.0.0</span>
+          </footer>
+        </div>
       </div>
     </div>
   );

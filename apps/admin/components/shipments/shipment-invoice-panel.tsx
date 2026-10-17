@@ -24,6 +24,8 @@ interface ShipmentInvoicePanelProps {
   loading?: boolean;
   tenantCurrency?: string;
   compact?: boolean;
+  /** Set false when the caller already renders a section heading for it. */
+  showHeader?: boolean;
 }
 
 export function ShipmentInvoicePanel({
@@ -32,6 +34,7 @@ export function ShipmentInvoicePanel({
   loading,
   tenantCurrency,
   compact = false,
+  showHeader = true,
 }: ShipmentInvoicePanelProps): ReactNode {
   const { toast } = useToast();
   const { tenantFilter } = useTenantFilter();
@@ -63,10 +66,12 @@ export function ShipmentInvoicePanel({
 
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
-      <div className="flex items-center gap-2">
-        <FileText size={14} className="text-[var(--ops-accent)]" />
-        <span className="ops-label">Invoice</span>
-      </div>
+      {showHeader && (
+        <div className="flex items-center gap-2">
+          <FileText size={14} className="text-[var(--ops-accent)]" />
+          <span className="ops-label">Invoice</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-4">

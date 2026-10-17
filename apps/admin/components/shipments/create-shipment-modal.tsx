@@ -164,7 +164,7 @@ export function CreateShipmentModal({
                       }}
                       required
                     />
-                    {errors.trackingNo && <p className="text-xs text-danger">{errors.trackingNo}</p>}
+                    {errors.trackingNo && <p className="text-xs text-danger-soft-foreground">{errors.trackingNo}</p>}
                   </div>
                   <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
                     <label htmlFor="new-billAmount" className="text-xs font-medium text-muted">Bill Amount *</label>
@@ -184,7 +184,7 @@ export function CreateShipmentModal({
                         <NumberField.IncrementButton />
                       </NumberField.Group>
                     </NumberField.Root>
-                    {errors.billAmount && <p className="text-xs text-danger">{errors.billAmount}</p>}
+                    {errors.billAmount && <p className="text-xs text-danger-soft-foreground">{errors.billAmount}</p>}
                   </div>
                 </div>
                 {branchVisible && (
@@ -216,7 +216,7 @@ export function CreateShipmentModal({
                         </ListBox>
                       </Select.Popover>
                     </Select>
-                    {errors.branchId && <p className="text-xs text-danger">{errors.branchId}</p>}
+                    {errors.branchId && <p className="text-xs text-danger-soft-foreground">{errors.branchId}</p>}
                   </div>
                 )}
               </section>

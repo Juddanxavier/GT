@@ -226,7 +226,7 @@ export default function CheckPricePage(): ReactNode {
                                key={name}
                                type="button"
                                onMouseDown={(e) => { e.preventDefault(); setCountryInput(name); setSelectedCountry(name); setCountryOpen(false); }}
-                               className={`w-full px-4 py-2.5 text-sm text-left rounded-lg cursor-pointer transition-colors ${selectedCountry === name ? 'bg-brand-accent/10 text-brand-accent font-medium' : 'text-foreground/70 hover:bg-brand-accent/5'}`}
+                               className={`min-h-11 w-full px-4 py-2.5 text-sm text-left rounded-lg cursor-pointer transition-colors ${selectedCountry === name ? 'bg-brand-accent/10 text-brand-accent font-medium' : 'text-foreground/70 hover:bg-brand-accent/5'}`}
                              >
                                {name}
                              </button>
@@ -358,7 +358,7 @@ export default function CheckPricePage(): ReactNode {
                           <div className="mt-4 flex justify-end">
                             <a
                               href={`/contact?service=${encodeURIComponent(meta?.label ?? svcType)}&country=${encodeURIComponent(priceData.destinationCountry)}&weight=${weightNum}`}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-accent text-white text-xs font-semibold hover:bg-brand-accent-hover transition-colors whitespace-nowrap"
+                              className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-accent text-white text-xs font-semibold hover:bg-brand-accent-hover transition-colors whitespace-nowrap"
                             >
                               Book Now
                             </a>

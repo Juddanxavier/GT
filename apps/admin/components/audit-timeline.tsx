@@ -76,7 +76,7 @@ const GROUP_ICONS: Record<string, typeof Package> = {
 const GROUP_COLORS: Record<string, string> = {
   shipment: '#3b82f6',
   invoice: '#8b5cf6',
-  user: '#22c55e',
+  user: '#7CB342',
   invitation: '#f59e0b',
   notification: '#F43F5E',
   branch: '#ec4899',

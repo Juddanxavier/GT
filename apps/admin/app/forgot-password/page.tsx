@@ -39,7 +39,7 @@ function ForgotPasswordForm() {
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 ring-1 ring-success/20">
-            <CheckCircle size={28} className="text-success" />
+            <CheckCircle size={28} className="text-success-soft-foreground" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Check your email</p>
@@ -53,7 +53,7 @@ function ForgotPasswordForm() {
   return (
     <AuthLayout title="Forgot password" subtitle="Enter your email and we'll send you a reset link." backHref="/login" backLabel="Back to sign in">
       {error && (
-        <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>
+        <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger-soft-foreground">{error}</div>
       )}
 
       <form onSubmit={handleSend} className="space-y-6" noValidate>

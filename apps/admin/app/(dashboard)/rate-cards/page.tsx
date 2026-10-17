@@ -344,7 +344,7 @@ export default function RateCardsPage() {
   const stepTitles = ['Country', 'Plans', 'Rates'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {loading ? (
         <div className="flex items-center justify-center min-h-[60vh]"><Spinner /></div>
       ) : (
@@ -477,7 +477,7 @@ export default function RateCardsPage() {
                     <Label>CSV Data</Label>
                     <p className="text-xs text-muted mb-1">Format: serviceType,weight,rate (one row per slab)</p>
                     <textarea className="h-48 content-panel p-3 text-sm font-mono outline-none focus:ring-1 focus:ring-ring" placeholder={`express-priority,0.5,1250\nexpress-priority,1,1450\neconomy,1,1800`} value={csvText} onChange={(e) => setCsvText(e.target.value)} />
-                    {csvError && <p className="text-xs text-danger">{csvError}</p>}
+                    {csvError && <p className="text-xs text-danger-soft-foreground">{csvError}</p>}
                   </div>
                 </div>
               )}
@@ -491,7 +491,7 @@ export default function RateCardsPage() {
                       <div className="flex flex-col gap-1">
                         <Label>Destination Country</Label>
                         <CountryInput value={newCountry} onChange={setNewCountry} countryList={countryList} />
-                        {formErrors.destinationCountry && <p className="text-xs text-danger">{formErrors.destinationCountry}</p>}
+                        {formErrors.destinationCountry && <p className="text-xs text-danger-soft-foreground">{formErrors.destinationCountry}</p>}
                       </div>
                     </Form.Root>
                   )}
@@ -500,13 +500,13 @@ export default function RateCardsPage() {
                   {step === 2 && (
                     <div className="flex flex-col gap-4">
                       <p className="text-sm text-muted">Select plans for {newCountry}.</p>
-                      {formErrors.plans && <p className="text-xs text-danger">{formErrors.plans}</p>}
+                      {formErrors.plans && <p className="text-xs text-danger-soft-foreground">{formErrors.plans}</p>}
                       <div className="flex flex-wrap gap-2">
                         {PLAN_OPTIONS.map((plan) => {
                           const isActive = selectedPlans.includes(plan.key);
                           return (
                             <button key={plan.key} type="button" onClick={() => togglePlan(plan.key)}
-                              className={cn('inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all', isActive ? 'bg-[#E8621A] text-white shadow-sm' : 'bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/[0.1]')}>
+                              className={cn('inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all', isActive ? 'bg-[#E8621A] text-white' : 'bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/[0.1]')}>
                               {plan.label}
                               <span className={cn('text-xs', isActive ? 'text-white/70' : 'text-foreground/40')}>{plan.desc}</span>
                             </button>
@@ -530,7 +530,7 @@ export default function RateCardsPage() {
                           <button type="button" onClick={() => setRateInputMode('paste')} className={cn('px-3 py-1 text-xs font-medium transition-colors', rateInputMode === 'paste' ? 'bg-[#E8621A] text-white' : 'bg-surface text-foreground/60')}><FileText size={11} className="inline mr-1" />Paste</button>
                         </div>
                       </div>
-                      {formErrors.rates && <p className="text-xs text-danger">{formErrors.rates}</p>}
+                      {formErrors.rates && <p className="text-xs text-danger-soft-foreground">{formErrors.rates}</p>}
 
                       {rateInputMode === 'table' && selectedPlans.map((svc) => {
                         const label = SERVICE_LABELS[svc] ?? svc;
@@ -540,7 +540,7 @@ export default function RateCardsPage() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-semibold text-foreground">{label}</span>
-                                <button type="button" onClick={() => removePlan(svc)} className="text-foreground/30 hover:text-danger transition-colors"><X size={14} /></button>
+                                <button type="button" onClick={() => removePlan(svc)} className="text-foreground/30 hover:text-danger-soft-foreground transition-colors"><X size={14} /></button>
                               </div>
                               <Button size="sm" variant="secondary" onPress={() => addRow(svc)}><Plus size={12} /> Add Row</Button>
                             </div>

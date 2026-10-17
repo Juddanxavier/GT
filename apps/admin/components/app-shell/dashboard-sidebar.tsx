@@ -33,13 +33,12 @@ export function DashboardSidebar({
 
   return (
     <aside
-      className={`relative fixed md:static inset-y-0 left-0 z-40 border-r border-sidebar-border bg-sidebar flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-14' : 'w-60'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      className={`relative fixed md:static inset-y-0 left-0 z-40 border-r border-sidebar-border bg-sidebar flex flex-col transition-all md:translate-x-0 ${collapsed ? 'w-16' : 'w-[190px]'} ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
     >
       <div
-        className={`relative flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'}`}
-        style={{ borderBottom: '1px solid var(--sidebar-border)' }}
+        className={`relative flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-4'}`}
       >
-        <div className="relative w-9 h-9 rounded-lg bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold shrink-0 shadow-glow-accent">
+        <div className="relative w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-bold shrink-0">
           GT
         </div>
         {!collapsed && (
@@ -54,13 +53,13 @@ export function DashboardSidebar({
         )}
       </div>
 
-      <nav aria-label="Main navigation" className="flex-1 p-2 overflow-y-auto space-y-1">
+      <nav aria-label="Main navigation" className="flex-1 px-2.5 py-3 overflow-y-auto space-y-4">
         {navGroups.map((group) => {
           if (group.items.length === 0) return null;
           return (
             <div key={group.section} className="space-y-0.5">
               {!collapsed && (
-                <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/60">
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-muted/70">
                   {group.section}
                 </p>
               )}
@@ -72,17 +71,21 @@ export function DashboardSidebar({
                     key={item.href}
                     variant="ghost"
                     aria-current={active ? 'page' : undefined}
-                    className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start px-3'} h-9 ${active ? 'bg-sidebar-active-bg text-sidebar-active-fg font-medium' : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground'} rounded-lg border border-transparent transition-all relative`}
+                    className={`${collapsed ? 'w-full justify-center px-0 min-w-0' : 'w-full justify-start px-3'} h-10 text-sm ${
+                      active
+                        ? 'bg-sidebar-active-bg text-sidebar-active-fg font-medium'
+                        : 'text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground'
+                    } rounded-xl border-0 transition-all relative`}
                     onPress={() => {
                       router.push(item.href);
                       setSidebarOpen(false);
                     }}
                   >
                     {active && !collapsed && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-sidebar-active-fg" />
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-foreground" />
                     )}
                     <span className={`${collapsed ? '' : 'mr-2.5'} ${active ? 'text-sidebar-active-fg' : ''}`}>
-                      <Icon size={18} />
+                      <Icon size={20} strokeWidth={1.5} />
                     </span>
                     {!collapsed && <span>{item.label}</span>}
                   </Button>
@@ -103,7 +106,7 @@ export function DashboardSidebar({
         })}
       </nav>
 
-      <div className="p-2" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+      <div className="border-t border-sidebar-border p-3">
         {collapsed ? (
           <Tooltip>
             <Tooltip.Trigger className="flex w-full">
@@ -112,7 +115,7 @@ export function DashboardSidebar({
                 className="w-full justify-center px-0 min-w-0 text-sidebar-foreground"
                 onPress={() => router.push('/profile')}
               >
-                <Avatar size="sm" className="rounded-lg">
+                <Avatar size="sm" className="rounded-full">
                   <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
                 </Avatar>
               </Button>
@@ -122,10 +125,10 @@ export function DashboardSidebar({
         ) : (
           <Button
             variant="ghost"
-            className="w-full justify-start gap-2.5 px-2 py-1.5 h-auto text-sidebar-foreground"
+            className="w-full justify-start gap-2.5 px-2 py-1.5 h-auto rounded-xl text-sidebar-foreground hover:bg-sidebar-hover"
             onPress={() => router.push('/profile')}
           >
-            <Avatar size="sm" className="rounded-lg shrink-0">
+            <Avatar size="sm" className="rounded-full shrink-0">
               <Avatar.Fallback>{session.user.name.charAt(0).toUpperCase()}</Avatar.Fallback>
             </Avatar>
             <div className="text-left min-w-0">

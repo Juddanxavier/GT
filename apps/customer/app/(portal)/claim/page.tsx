@@ -243,7 +243,7 @@ export default function ClaimShipmentPage(): ReactNode {
                             setOtp('');
                             setError('');
                           }}
-                          className="inline-flex items-center gap-1 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                          className="min-h-11 inline-flex items-center gap-1 text-sm text-foreground/70 hover:text-foreground transition-colors"
                         >
                           <ArrowLeft size={14} /> Change tracking number
                         </button>
@@ -251,7 +251,7 @@ export default function ClaimShipmentPage(): ReactNode {
                           type="button"
                           disabled={resendTimer > 0 || resendClaim.isPending}
                           onClick={() => resendClaim.mutate(trackingNo)}
-                          className="inline-flex items-center gap-1 text-sm text-foreground/70 hover:text-foreground transition-colors disabled:opacity-50"
+                          className="min-h-11 inline-flex items-center gap-1 text-sm text-foreground/70 hover:text-foreground transition-colors disabled:opacity-50"
                         >
                           <RefreshCw size={14} className={resendClaim.isPending ? 'animate-spin' : ''} />
                           {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}

@@ -46,8 +46,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 const icons: Record<ToastType, ReactNode> = {
-  success: <CheckCircle size={16} className="text-success" />,
-  error: <AlertTriangle size={16} className="text-danger" />,
+  success: <CheckCircle size={16} className="text-success-soft-foreground" />,
+  error: <AlertTriangle size={16} className="text-danger-soft-foreground" />,
   info: <Info size={16} className="text-accent" />,
 };
 
@@ -61,7 +61,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   return (
     <div
       role="alert"
-      className={`flex items-start gap-3 px-4 py-3 rounded-sm bg-surface border ${borders[toast.type]} shadow-lg animate-in slide-in-from-right`}
+      className={`flex items-start gap-3 px-4 py-3 rounded-sm bg-surface border ${borders[toast.type]} animate-in slide-in-from-right`}
     >
       <span className="shrink-0 mt-0.5">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">

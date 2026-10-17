@@ -227,7 +227,7 @@ export function ShipmentsTable({
             <StatusBadge status={row.original.status} />
             {row.original.stale && (
               <span
-                className="ml-1.5 inline-flex items-center gap-1 text-xs text-danger"
+                className="ml-1.5 inline-flex items-center gap-1 text-xs text-danger-soft-foreground"
                 title={`Last tracked ${row.original.lastTrackedAt ? new Date(row.original.lastTrackedAt).toLocaleDateString() : 'unknown'}`}
               >
                 <Clock size={10} /> stale

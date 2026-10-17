@@ -92,7 +92,7 @@ export default function ProfilePage() {
     return (
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         <Skeleton className="h-64 w-full rounded-sm" />
-        <div className="space-y-6">
+        <div className="space-y-8">
           <Skeleton className="h-40 w-full rounded-sm" />
           <Skeleton className="h-64 w-full rounded-sm" />
         </div>
@@ -212,7 +212,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 {nameMessage && (
-                  <div className={`flex items-center gap-1.5 text-xs ${nameMessage === 'Name updated' ? 'text-success' : 'text-danger'}`}>
+                  <div className={`flex items-center gap-1.5 text-xs ${nameMessage === 'Name updated' ? 'text-success-soft-foreground' : 'text-danger-soft-foreground'}`}>
                     {nameMessage === 'Name updated' ? <Check size={12} /> : <X size={12} />}
                     {nameMessage}
                   </div>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                     Change Password
                   </Button>
                   {passwordMessage && (
-                    <span className={`flex items-center gap-1.5 text-xs ${passwordMessage === 'Password changed' ? 'text-success' : 'text-danger'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs ${passwordMessage === 'Password changed' ? 'text-success-soft-foreground' : 'text-danger-soft-foreground'}`}>
                       {passwordMessage === 'Password changed' ? <Check size={12} /> : <X size={12} />}
                       {passwordMessage}
                     </span>
@@ -294,28 +294,28 @@ export default function ProfilePage() {
           {/* Danger Zone */}
           <section id="danger" className="scroll-mt-6 content-panel border-danger/25">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-danger/20">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-danger/10 text-danger shrink-0">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-danger/10 text-danger-soft-foreground shrink-0">
                 <Trash2 size={15} />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-danger tracking-tight">Danger Zone</h2>
+                <h2 className="text-sm font-semibold text-danger-soft-foreground tracking-tight">Danger Zone</h2>
                 <p className="text-xs text-muted mt-0.5">Permanently delete your account and all associated data</p>
               </div>
             </div>
             <div className="p-5 space-y-4">
               {role === 'superadmin' ? (
                 <div className="flex items-center gap-2 p-3 rounded-sm bg-warning/10 border border-warning/20">
-                  <AlertTriangle size={16} className="text-warning shrink-0" />
+                  <AlertTriangle size={16} className="text-warning-soft-foreground shrink-0" />
                   <p className="text-xs text-muted">
-                    <span className="font-medium text-warning">Super admin accounts cannot be deleted.</span> Contact another super admin to manage this account.
+                    <span className="font-medium text-warning-soft-foreground">Super admin accounts cannot be deleted.</span> Contact another super admin to manage this account.
                   </p>
                 </div>
               ) : deleteConfirm === 'confirm' ? (
                 <div className="space-y-3">
                   <div className="flex items-start gap-2 p-3 rounded-sm bg-danger/10 border border-danger/20">
-                    <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
+                    <AlertTriangle size={16} className="text-danger-soft-foreground shrink-0 mt-0.5" />
                     <div className="text-xs text-muted">
-                      <p className="font-medium text-danger mb-1">This action cannot be undone.</p>
+                      <p className="font-medium text-danger-soft-foreground mb-1">This action cannot be undone.</p>
                       <p>Your account, sessions, and all associated data will be permanently deleted. You will be signed out immediately.</p>
                     </div>
                   </div>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
                     <Button variant="ghost" onPress={() => { setDeleteConfirm('idle'); setDeletePassword(''); setDeleteError(''); }}>Cancel</Button>
                   </div>
                   {deleteError && (
-                    <div className="flex items-center gap-1.5 text-xs text-danger">
+                    <div className="flex items-center gap-1.5 text-xs text-danger-soft-foreground">
                       <X size={12} />{deleteError}
                     </div>
                   )}

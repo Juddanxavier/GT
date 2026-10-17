@@ -1,9 +1,17 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { MapPin, Clock, Info } from 'lucide-react';
 import { Chip } from '@heroui/react';
 import { STATUS_META } from '@/lib/status-config';
+
+/** The timeline reads top down: each event arrives just after the one above. */
+const ROW_BASE_MS = 300;
+const ROW_STEP_MS = 60;
+
+function delay(ms: number): CSSProperties {
+  return { '--reveal-delay': `${ms}ms` } as CSSProperties;
+}
 
 interface TrackingEvent {
   id?: string;
@@ -20,17 +28,17 @@ interface TrackingTimelineProps {
   events: TrackingEvent[];
 }
 
-/** ponytail: timeline dots use hardcoded color map ΓÇö pull colors from STATUS_COLORS if the timeline diverges from status badges */
+/** ponytail: timeline dots use hardcoded color map — pull colors from STATUS_COLORS if the timeline diverges from status badges */
 const DOT_COLORS: Record<string, string> = {
-  delivered: '#22c55e',
-  in_transit: '#3b82f6',
-  out_for_delivery: '#3b82f6',
-  exception: '#ef4444',
-  expired: '#ef4444',
-  failed_attempt: '#ef4444',
-  pending: '#9ca3af',
-  info_received: '#9ca3af',
-  available_for_pickup: '#f59e0b',
+  delivered: '#7CB342',
+  in_transit: '#A2D145',
+  out_for_delivery: '#FBA95B',
+  exception: '#E5484D',
+  expired: '#9A9A9A',
+  failed_attempt: '#E5484D',
+  pending: '#F59E42',
+  info_received: '#F59E42',
+  available_for_pickup: '#111111',
 };
 
 function elapsedSince(prev: string, curr: string): string {
@@ -47,7 +55,7 @@ function elapsedSince(prev: string, curr: string): string {
 export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
   if (!events?.length) {
     return (
-      <div className="text-center py-12 animate-in fade-in">
+      <div className="reveal text-center py-12">
         <Clock size={24} className="mx-auto mb-2 opacity-40 text-muted" />
         <p className="text-sm text-muted">No tracking events yet</p>
       </div>
@@ -58,22 +66,32 @@ export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
     <div className="space-y-0">
       {events.map((event, idx) => {
         const meta = STATUS_META[event.status as keyof typeof STATUS_META];
-        const dotColor = DOT_COLORS[event.status] ?? '#9ca3af';
+        const dotColor = DOT_COLORS[event.status] ?? '#9A9A9A';
         const isLatest = idx === 0;
         const hasTips = event.providerTips && Object.keys(event.providerTips).length > 0;
 
         return (
-          <div key={event.id ?? idx} className="flex gap-4 animate-in fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
+          <div
+            key={event.id ?? idx}
+            className="reveal flex gap-4"
+            style={delay(ROW_BASE_MS + idx * ROW_STEP_MS)}
+          >
             {/* Timeline dot + connector */}
             <div className="flex flex-col items-center">
               <div
-                className={`rounded-full shrink-0 ${isLatest ? 'w-4 h-4 ring-2 ring-offset-2 ring-[var(--dot-ring)]' : 'w-3 h-3'}`}
+                className={`rounded-full shrink-0 ${isLatest ? 'reveal-pop w-4 h-4 ring-2 ring-offset-2 ring-[var(--dot-ring)]' : 'w-3 h-3'}`}
                 style={{
                   backgroundColor: dotColor,
                   '--dot-ring': isLatest ? dotColor : undefined,
-                } as React.CSSProperties}
+                  '--reveal-delay': `${ROW_BASE_MS}ms`,
+                } as CSSProperties}
               />
-              {idx < events.length - 1 && <div className="w-0.5 flex-1 bg-border/50" />}
+              {idx < events.length - 1 && (
+                <div
+                  className="draw-y w-0.5 flex-1 bg-border/50"
+                  style={delay(ROW_BASE_MS + idx * ROW_STEP_MS + 80)}
+                />
+              )}
             </div>
 
             {/* Event content */}
@@ -84,7 +102,7 @@ export function TrackingTimeline({ events }: TrackingTimelineProps): ReactNode {
                   <Chip size="sm" variant="soft" color="accent" className="text-[10px] h-5">Latest</Chip>
                 )}
                 {event.subStatus && (
-                  <span className="text-xs text-muted">┬╖ {event.subStatus.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-muted">· {event.subStatus.replace(/_/g, ' ')}</span>
                 )}
               </div>
 

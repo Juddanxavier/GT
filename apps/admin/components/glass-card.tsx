@@ -25,7 +25,7 @@ export function GlassCard({
   const Tag = as;
   return (
     <Tag
-      className={`glass-panel rounded-xl border ${paddingMap[padding]} ${hover ? 'glass-panel-hover' : ''} ${className}`}
+      className={`glass-panel rounded-lg border-0 ${paddingMap[padding]} ${hover ? 'glass-panel-hover' : ''} ${className}`}
     >
       {children}
     </Tag>

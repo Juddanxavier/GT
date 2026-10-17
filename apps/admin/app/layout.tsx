@@ -1,16 +1,18 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
+const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-geist',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jakarta',
 });
 
-const geistMono = Geist_Mono({
+const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
-  variable: '--font-geist-mono',
+  weight: ['400', '500', '600'],
+  variable: '--font-plex-mono',
 });
 
 export const metadata: Metadata = {
@@ -23,8 +25,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body style={{ fontFamily: 'var(--font-geist)' }}>{children}</body>
+    <html lang="en" data-theme="light" className={`${jakartaSans.variable} ${plexMono.variable}`}>
+      <body style={{ fontFamily: 'var(--font-sans)' }}>{children}</body>
     </html>
   );
 }

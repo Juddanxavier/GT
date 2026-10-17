@@ -46,7 +46,7 @@ function ResetPasswordForm() {
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-warning/10 ring-1 ring-warning/20">
-            <AlertTriangle size={28} className="text-warning" />
+            <AlertTriangle size={28} className="text-warning-soft-foreground" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Invalid or expired reset link</p>
@@ -63,7 +63,7 @@ function ResetPasswordForm() {
       <AuthLayout backHref="/login" backLabel="Back to sign in">
         <div className="flex flex-col items-center gap-4 text-center pt-4">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-success/10 ring-1 ring-success/20">
-            <Lock size={24} className="text-success" />
+            <Lock size={24} className="text-success-soft-foreground" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Password reset successfully!</p>
@@ -76,7 +76,7 @@ function ResetPasswordForm() {
 
   return (
     <AuthLayout title="Set new password" subtitle="Enter your new password below." backHref="/login" backLabel="Back to sign in">
-      {error && <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger">{error}</div>}
+      {error && <div className="px-4 py-3 rounded-sm bg-danger/10 border border-danger/20 text-sm text-danger-soft-foreground">{error}</div>}
 
       <form onSubmit={handleReset} className="space-y-5" noValidate>
         <TextField fullWidth name="password" type="password" value={password} onChange={(v) => setPassword(v)}>
