@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KPI overhaul — directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="preview.css" />
+<style>
+  .card { display:block; text-decoration:none; color:inherit; background:#fff; border-radius:20px; padding:24px; box-shadow:0 1px 2px rgba(0,0,0,.05); margin-bottom:16px; transition:transform .15s, box-shadow .15s; }
+  .card:hover { transform:translateY(-2px); box-shadow:0 20px 40px -28px rgba(0,0,0,.35); }
+  .card h2 { margin:0 0 4px; font-size:19px; letter-spacing:-.02em; }
+  .card p { margin:0; color:var(--muted); font-size:13.5px; }
+  .card .tag { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .swatch { display:inline-flex; gap:6px; margin-top:12px; }
+  .swatch i { width:16px; height:16px; border-radius:5px; display:block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="dir-head">
+    <div class="kicker">Admin KPI overhaul</div>
+    <h1>Three directions — pick one</h1>
+    <p>All three use the hero card + tile roster model, soft per-metric colour fills, and live-shaped data (In Transit / Out for Delivery / Delivered Today). Open each, then tell me the letter.</p>
+  </div>
+
+  <a class="card" href="a-hero-soft-wash.html">
+    <div class="tag">Direction A</div>
+    <h2>Soft Wash</h2>
+    <p>Gradient-washed cards, watermark parcel, tinted sparklines. Calmest and most cohesive.</p>
+    <div class="swatch"><i style="background:#8dc63f"></i><i style="background:#a2d145"></i><i style="background:#fba95b"></i><i style="background:#7cb342"></i></div>
+  </a>
+
+  <a class="card" href="b-ink-hero.html">
+    <div class="tag">Direction B</div>
+    <h2>Ink Hero</h2>
+    <p>Near-black hero readout with a lime signal chart over soft tiles. Boldest, instrument-panel feel.</p>
+    <div class="swatch"><i style="background:#111"></i><i style="background:#a2d145"></i><i style="background:#a2d145"></i><i style="background:#f6f23f"></i></div>
+  </a>
+
+  <a class="card" href="c-radio-band.html">
+    <div class="tag">Direction C</div>
+    <h2>Radio Band</h2>
+    <p>Split hero + a coloured signal band on every tile. Crisp, structured, closest to lime/paper.</p>
+    <div class="swatch"><i style="background:#8dc63f"></i><i style="background:#a2d145"></i><i style="background:#fba95b"></i><i style="background:#e5484d"></i></div>
+  </a>
+
+  <div class="note">These are throwaway mockups — not wired into the app. Once you pick, I rewire <b>kpi-card.tsx</b> + <b>mini-chart.tsx</b> for real and delete this folder.</div>
+</div>
+</body></html>
