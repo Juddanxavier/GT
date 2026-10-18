@@ -68,6 +68,7 @@ Small fixes run outside the phase workflow. Each has a `PLAN.md` and a
 | `261005-q2r` | 2026-10-05 | Feature 8 AC-6 accessibility + light/dark pass, plus pending production blockers | complete — verified, scope boxes ticked, awaiting commit |
 | `261017-e9u` | 2026-10-17 | Redesign admin KPI cards and mini charts (richer, real data) | complete — code applied in working tree, commit deferred (tree already dirty) |
 | `261017-luz` | 2026-10-17 | Fix notification pipeline bugs (idempotency, Redis reconnect, prefs table, WhatsApp visibility) | complete — 5 fixes applied, 453 tests pass, commit deferred (tree already dirty) |
+| `261018-d0z` | 2026-10-18 | Fix CI build: absolute auth base URL fallback for customer + lanka-mahal | complete — both portal builds pass with no env; unblocks CI (red on main since 2026-09-24) |
 
 ## Session Continuity
 
