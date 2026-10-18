@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Ban, Pencil, RefreshCw, Trash2 } from 'lucide-react';
-import { Button } from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 import { AssignedTo } from '@/components/assigned-to';
 import { ShipmentInvoicePanel, type ShipmentInvoiceData } from '@/components/shipments/shipment-invoice-panel';
 import { StatusBadge } from '@repo/ui/status-badge';
@@ -20,6 +20,18 @@ interface ShipmentCommandSidebarProps {
   stopPending?: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  className?: string;
+}
+
+/** One section of the command rail. The rail is a single panel divided by
+ * hairlines, not a stack of bordered boxes. */
+function RailSection({ title, children }: { title: string; children: ReactNode }): ReactNode {
+  return (
+    <section className="border-b border-border last:border-b-0">
+      <h2 className="ops-label px-4 pt-4">{title}</h2>
+      <div className="px-4 py-3">{children}</div>
+    </section>
+  );
 }
 
 export function ShipmentCommandSidebar({
@@ -34,76 +46,74 @@ export function ShipmentCommandSidebar({
   stopPending,
   onEdit,
   onDelete,
+  className,
 }: ShipmentCommandSidebarProps): ReactNode {
   const daysSinceUpdate = shipment.lastTrackedAt
     ? Math.floor((Date.now() - new Date(shipment.lastTrackedAt).getTime()) / 86400000)
     : null;
 
   return (
-    <aside className="space-y-4 xl:sticky-sidebar xl:sticky-surface">
-      <div className="ops-panel-raised p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <StatusBadge status={shipment.status} />
-          {shipment.trackingRegistered && (
-            <span className="text-xs text-success font-medium">Live tracking</span>
-          )}
-        </div>
-        {shipment.estimatedDelivery && (
-          <div className="flex justify-between text-xs">
-            <span className="text-muted">Est. delivery</span>
-            <span className="font-medium">
-              {new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </span>
+    <aside className={cn('xl:sticky-sidebar', className)}>
+      <div className="overflow-hidden rounded-md border border-border bg-surface">
+        <RailSection title="Tracking">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={shipment.status} />
+              {shipment.trackingRegistered && (
+                <span className="text-xs font-medium text-success-soft-foreground">Live tracking</span>
+              )}
+            </div>
+            <div className="flex justify-between gap-3 text-xs">
+              <span className="text-muted">Last update</span>
+              <span className="font-medium tabular-nums">
+                {daysSinceUpdate === null
+                  ? '—'
+                  : daysSinceUpdate === 0
+                    ? 'Today'
+                    : `${daysSinceUpdate}d ago`}
+              </span>
+            </div>
+            <Button variant="secondary" size="sm" fullWidth onPress={onTrack} isPending={trackPending}>
+              <RefreshCw size={14} /> Track Now
+            </Button>
           </div>
-        )}
-        {daysSinceUpdate !== null && (
-          <div className="flex justify-between text-xs">
-            <span className="text-muted">Last update</span>
-            <span className="font-medium">{daysSinceUpdate === 0 ? 'Today' : `${daysSinceUpdate}d ago`}</span>
+        </RailSection>
+
+        <RailSection title="Invoice">
+          <ShipmentInvoicePanel
+            shipmentId={shipmentId}
+            invoice={invoice}
+            loading={invoiceLoading}
+            tenantCurrency={tenantCurrency}
+            showHeader={false}
+          />
+        </RailSection>
+
+        <RailSection title="Actions">
+          <div className="space-y-2">
+            <Button variant="secondary" size="sm" fullWidth onPress={onEdit}>
+              <Pencil size={14} /> Edit
+            </Button>
+            {shipment.trackingRegistered && (
+              <Button variant="ghost" size="sm" fullWidth onPress={onStopTracking} isPending={stopPending}>
+                <Ban size={14} /> Stop Tracking
+              </Button>
+            )}
+            <Button variant="danger" size="sm" fullWidth onPress={onDelete}>
+              <Trash2 size={14} /> Delete
+            </Button>
           </div>
-        )}
-      </div>
+        </RailSection>
 
-      <div className="ops-panel-raised p-4">
-        <ShipmentInvoicePanel
-          shipmentId={shipmentId}
-          invoice={invoice}
-          loading={invoiceLoading}
-          tenantCurrency={tenantCurrency}
-        />
-      </div>
-
-      <div className="ops-panel-raised p-4 space-y-2">
-        <p className="ops-label mb-2">Actions</p>
-        <Button variant="secondary" size="sm" fullWidth onPress={onTrack} isPending={trackPending}>
-          <RefreshCw size={14} /> Track Now
-        </Button>
-        <Button variant="secondary" size="sm" fullWidth onPress={onEdit}>
-          <Pencil size={14} /> Edit
-        </Button>
-        {shipment.trackingRegistered && (
-          <Button variant="ghost" size="sm" fullWidth onPress={onStopTracking} isPending={stopPending}>
-            <Ban size={14} /> Stop Tracking
-          </Button>
-        )}
-        <Button variant="danger" size="sm" fullWidth onPress={onDelete}>
-          <Trash2 size={14} /> Delete
-        </Button>
-      </div>
-
-      <div className="ops-panel-raised p-4">
-        <p className="ops-label mb-3">Customer</p>
-        <AssignedTo
-          shipmentId={shipmentId}
-          customerId={shipment.customerId}
-          customerName={shipment.customerName}
-          customerEmail={shipment.contactEmail}
-          customerPhone={shipment.contactPhone}
-        />
+        <RailSection title="Customer">
+          <AssignedTo
+            shipmentId={shipmentId}
+            customerId={shipment.customerId}
+            customerName={shipment.customerName}
+            customerEmail={shipment.contactEmail}
+            customerPhone={shipment.contactPhone}
+          />
+        </RailSection>
       </div>
     </aside>
   );

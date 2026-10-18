@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction B — Ink Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="preview.css" />
+</head>
+<body>
+<div class="page">
+  <div class="dir-head">
+    <div class="kicker">Direction B</div>
+    <h1>Ink Hero</h1>
+    <p>A near-black hero card anchors the section with a lime signal chart, and the roster tiles stay soft and light. Maximum contrast between "today" and "the fleet" — the hero feels like a readout, not a tile.</p>
+  </div>
+
+  <div class="grid-b">
+    <!-- HERO (ink) -->
+    <div class="hero-b">
+      <div class="split">
+        <div>
+          <span class="label">Total Shipments</span>
+          <div class="val tabular">1,284</div>
+          <span class="pill up"><span class="tri">&#9650;</span> +8.2%</span>
+          <div class="sub">All branches &middot; last 14 days</div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--lime)"></i> Created</span>
+            <span><i class="dot" style="background:var(--yellow)"></i> Peak day 148</span>
+          </div>
+        </div>
+        <div>
+          <svg class="spark" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="gb" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#a2d145" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#a2d145" stop-opacity="0.02"/>
+            </linearGradient></defs>
+            <g stroke="rgba(255,255,255,0.07)" stroke-width="0.5">
+              <line x1="0" y1="11" x2="100" y2="11"/><line x1="0" y1="22" x2="100" y2="22"/><line x1="0" y1="33" x2="100" y2="33"/>
+            </g>
+            <polygon fill="url(#gb)" points="0,44 0,28 10,24 20,27 30,18 40,21 50,13 60,16 70,9 80,13 90,6 100,10 100,44"/>
+            <polyline fill="none" stroke="#a2d145" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"
+              points="0,28 10,24 20,27 30,18 40,21 50,13 60,16 70,9 80,13 90,6 100,10"/>
+            <circle cx="100" cy="10" r="2.8" fill="#f6f23f" stroke="#111" stroke-width="1.6"/>
+          </svg>
+          <div class="foot" style="display:flex;justify-content:space-between;margin-top:10px">
+            <span class="range">14d &middot; 62 &ndash; 148</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TILES (soft) -->
+    <div class="card-b" style="--c:var(--olive)">
+      <div class="top" style="display:flex;align-items:center;justify-content:space-between">
+        <span class="label">In Transit</span>
+        <span class="chip" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in oklab,var(--c) 20%,#fff);color:color-mix(in oklab,var(--c) 70%,#111)">&#9633;</span>
+      </div>
+      <div class="val tabular">312</div>
+      <span class="pill up"><span class="tri">&#9650;</span> +12.4%</span>
+      <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#a2d145" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="0,30 14,24 28,27 42,18 56,20 70,11 84,15 100,7"/></svg>
+    </div>
+
+    <div class="card-b" style="--c:var(--orange)">
+      <div class="top" style="display:flex;align-items:center;justify-content:space-between">
+        <span class="label">Out for Delivery</span>
+        <span class="chip" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in oklab,var(--c) 20%,#fff);color:color-mix(in oklab,var(--c) 70%,#111)">&#9633;</span>
+      </div>
+      <div class="val tabular">86</div>
+      <span class="pill down"><span class="tri">&#9660;</span> -3.1%</span>
+      <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#fba95b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="0,12 14,16 28,11 42,19 56,15 70,23 84,19 100,26"/></svg>
+    </div>
+
+    <div class="card-b" style="--c:var(--green)">
+      <div class="top" style="display:flex;align-items:center;justify-content:space-between">
+        <span class="label">Delivered Today</span>
+        <span class="chip" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in oklab,var(--c) 20%,#fff);color:color-mix(in oklab,var(--c) 70%,#111)">&#9633;</span>
+      </div>
+      <div class="val tabular">145</div>
+      <span class="pill up"><span class="tri">&#9650;</span> +5.6%</span>
+      <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#7cb342" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="0,28 14,22 28,24 42,16 56,20 70,13 84,16 100,10"/></svg>
+    </div>
+  </div>
+
+  <div class="note"><b>Best when</b> the dashboard is the first thing staff open each morning — the ink hero reads like an instrument and makes the numbers feel authoritative. Heaviest of the three.</div>
+</div>
+</body></html>

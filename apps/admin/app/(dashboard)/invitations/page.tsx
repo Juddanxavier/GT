@@ -145,7 +145,7 @@ export default function InvitationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Invitations"
         subtitle="Invite users to join your organization"
@@ -163,15 +163,15 @@ export default function InvitationsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{invitations.length}</p>
           <p className="text-sm text-muted mt-1">Total Invitations</p>
         </div>
-        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
-          <p className="text-4xl font-bold tracking-tight text-success">{pendingInvitations.length}</p>
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
+          <p className="text-4xl font-bold tracking-tight text-success-soft-foreground">{pendingInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Pending</p>
         </div>
-        <div className="content-panel glass-panel-hover hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-muted">{otherInvitations.length}</p>
           <p className="text-sm text-muted mt-1">Accepted / Cancelled</p>
         </div>
@@ -210,7 +210,7 @@ export default function InvitationsPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-danger"
+                    className="text-danger-soft-foreground"
                     isDisabled={cancellingId === inv.id}
                     onPress={() => cancelInvitation(inv.id)}
                   >
@@ -260,7 +260,7 @@ export default function InvitationsPage() {
             </Modal.Header>
             <Modal.Body>
               <form id="invite-form" onSubmit={handleInvite} className="space-y-4">
-                {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
+                {inviteError && <p className="text-sm text-danger-soft-foreground">{inviteError}</p>}
                 <div className="space-y-1">
                   <Label htmlFor="invite-email">Email *</Label>
                   <Input id="invite-email" type="email" variant="secondary" placeholder="colleague@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required fullWidth />

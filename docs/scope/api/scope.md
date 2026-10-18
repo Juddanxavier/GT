@@ -22,7 +22,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 9 | Middleware, rate limits & security headers | existing | existing |
 | 10 | Redis caching layer | existing | existing |
 | 11 | Vitest test suite | existing | existing |
-| 12 | Logging adoption & request correlation | Foundation | in-progress |
+| 12 | Logging adoption & request correlation | Foundation | done |
 | 13 | Error response unification | Foundation | planned |
 | 14 | Production lockdown of seed & debug routes | Foundation | planned |
 | 15 | Index & query review | Slice 1 | planned |
@@ -77,8 +77,8 @@ Pino already exists but roughly 140 `console.*` calls (38 in `index.ts`, the res
    - [x] Convert every remaining console area: routes, services, middleware, providers, email, workers, cache, redis, realtime, seed and migration scripts, root scripts (AC-1, AC-3)
    - [x] Flip `noConsole` on with lint green (lint task widened) and mint ids in the admin proxy (AC-1, AC-7)
 - [x] Verify it: /check verify logging adoption & request correlation
-- [ ] Test it: /test logging adoption & request correlation
-Spec [0001](../../specs/api/0001-logging-request-correlation.md)
+- [x] Test it: /test logging adoption & request correlation
+Spec [0001](../../specs/api/0001-logging-request-correlation.md) · code in `apps/api/src/logger.ts`, `apps/api/src/logging-guard.test.ts`, `apps/api/src/index.ts`
 
 ### 13. Error response unification · needs a decision
 Two error shapes coexist: the `errorResponse` helper with a code and request ID (27 uses) and about 276 hand rolled `c.json({ error: ... })` bodies, so clients must parse both and codes drift per route.
@@ -86,7 +86,7 @@ Two error shapes coexist: the `errorResponse` helper with a code and request ID 
 - [ ] Design it (spec): `/architect error response unification`
 
 ### 14. Production lockdown of seed & debug routes · needs a decision
-`/api/seed/superadmin` and `/api/seed/tenant` are guarded only by a shared secret that can be left set in production, and seed credentials default to a real looking email; debug routes are already gated but the pattern needs one rule.
+`/api/seed/superadmin` and `/api/seed/tenant` are guarded only by a shared secret that can be left set in production, and seed credentials default to a real looking email; debug routes are already gated but the pattern needs one rule. Note from the Oct 15 replan: the production refusal already ships (both seed routes return `CONFIG_ERROR` when `NODE_ENV` is production and the `SEED_*` password or email env vars are unset, and the CLI seeder exits instead of using fallbacks), so the spec only owes the single rule, its test, and the debug route pattern. code in `apps/api/src/index.ts`, `apps/api/src/db/seed-superadmin.ts`
 **Done when:** seed routes refuse to run when `NODE_ENV` is production, no credential defaults exist, and the rule is stated once and tested.
 - [ ] Design it (spec): `/architect production lockdown of seed & debug routes`
 

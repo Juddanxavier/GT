@@ -25,6 +25,10 @@ EXPOSE 3000
 CMD npx next start
 
 FROM base AS customer
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.gajantraders.com}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-https://api.gajantraders.com}
 COPY apps/customer/package.json apps/customer/
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
@@ -32,4 +36,18 @@ COPY . .
 RUN pnpm --filter=customer build
 WORKDIR /app/apps/customer
 EXPOSE 3002
+CMD npx next start
+
+FROM base AS lanka-mahal
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.gajantraders.com}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-https://api.gajantraders.com}
+COPY apps/lanka-mahal/package.json apps/lanka-mahal/
+COPY packages/ packages/
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm --filter=lanka-mahal build
+WORKDIR /app/apps/lanka-mahal
+EXPOSE 3003
 CMD npx next start

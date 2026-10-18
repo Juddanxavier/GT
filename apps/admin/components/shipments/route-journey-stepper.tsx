@@ -1,8 +1,17 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { AlertTriangle, Check, MapPin, Package, Truck } from 'lucide-react';
 import { cn } from '@heroui/react';
+
+/** The ticket around this settles first, then the journey draws in. */
+const DRAW_BASE_MS = 260;
+const DRAW_STEP_MS = 90;
+
+/** Stagger an entrance utility by scrolling the delay into a custom property. */
+function delay(ms: number): CSSProperties {
+  return { '--reveal-delay': `${ms}ms` } as CSSProperties;
+}
 
 const JOURNEY_STEPS = [
   { key: 'created', label: 'Created', icon: Package, statuses: ['pending', 'info_received'] },
@@ -46,9 +55,9 @@ export function RouteJourneyStepper({
             {origin || 'Origin TBD'}
           </span>
           <div className="flex-1 flex items-center gap-1 min-w-[60px]">
-            <div className="h-px flex-1 bg-[var(--ops-border)]" />
+            <div className="h-px flex-1 bg-[var(--ops-border)] draw-x" style={delay(DRAW_BASE_MS)} />
             <Truck size={compact ? 12 : 14} className="text-[var(--ops-accent)] shrink-0" />
-            <div className="h-px flex-1 bg-[var(--ops-border)]" />
+            <div className="h-px flex-1 bg-[var(--ops-border)] draw-x" style={delay(DRAW_BASE_MS)} />
           </div>
           <span className="font-medium truncate max-w-[40%] text-right" title={destination ?? undefined}>
             {destination || 'Destination TBD'}
@@ -57,7 +66,7 @@ export function RouteJourneyStepper({
       )}
 
       {isException ? (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-danger/30 bg-danger/10 text-danger text-xs font-medium">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-danger/30 bg-danger/10 text-danger-soft-foreground text-xs font-medium">
           <AlertTriangle size={14} />
           Exception — requires attention
         </div>
@@ -75,9 +84,10 @@ export function RouteJourneyStepper({
                       'rounded-full flex items-center justify-center border transition-colors',
                       compact ? 'w-6 h-6' : 'w-8 h-8',
                       done && 'bg-[var(--ops-accent)] border-[var(--ops-accent)] text-[var(--accent-foreground)]',
-                      current && 'bg-[var(--ops-accent-dim)] border-[var(--ops-accent)] text-[var(--ops-accent)]',
+                      current && 'reveal-pop bg-[var(--ops-accent-dim)] border-[var(--ops-accent)] text-[var(--ops-accent)]',
                       !done && !current && 'bg-transparent border-[var(--ops-border)] text-muted',
                     )}
+                    style={current ? delay(DRAW_BASE_MS + DRAW_STEP_MS) : undefined}
                   >
                     {done ? <Check size={compact ? 10 : 12} /> : <Icon size={compact ? 10 : 14} />}
                   </div>
@@ -95,9 +105,10 @@ export function RouteJourneyStepper({
                 {i < JOURNEY_STEPS.length - 1 && (
                   <div
                     className={cn(
-                      'h-px flex-1 mx-0.5',
+                      'h-px flex-1 mx-0.5 draw-x',
                       i < active ? 'bg-[var(--ops-accent)]' : 'bg-[var(--ops-border)]',
                     )}
+                    style={delay(DRAW_BASE_MS + i * DRAW_STEP_MS)}
                   />
                 )}
               </div>

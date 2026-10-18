@@ -32,6 +32,7 @@ import { createUser } from './auth-api';
 import { db } from './db';
 import { branches as branchTable, tenants as tenantTable, user as userTable } from './db/schema';
 import { closeTransport, getEmailProviderStatus } from './email/provider';
+import { isWhatsAppConfigured } from './notifications/whatsapp/config';
 
 // Global crash handlers (before any other code)
 process.on('unhandledRejection', (reason) => {
@@ -247,7 +248,19 @@ app.post('/api/seed/superadmin', async (c) => {
   if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
     return errorResponse(c, 'UNAUTHORIZED', 'Unauthorized', 401);
   }
-  const email = process.env.SEED_SUPERADMIN_EMAIL || 'juddan2008@gmail.com';
+  const email =
+    process.env.SEED_SUPERADMIN_EMAIL ||
+    (process.env.NODE_ENV === 'production'
+      ? null
+      : 'juddan2008@gmail.com');
+  if (!email) {
+    return errorResponse(
+      c,
+      'CONFIG_ERROR',
+      'SEED_SUPERADMIN_EMAIL environment variable is required in production',
+      500,
+    );
+  }
   const password = process.env.SEED_SUPERADMIN_PASSWORD;
   if (!password) {
     return errorResponse(
@@ -277,6 +290,17 @@ app.post('/api/seed/tenant', async (c) => {
   const secret = c.req.header('X-Seed-Secret');
   if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
     return errorResponse(c, 'UNAUTHORIZED', 'Unauthorized', 401);
+  }
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_STAFF_PASSWORD)
+  ) {
+    return errorResponse(
+      c,
+      'CONFIG_ERROR',
+      'SEED_ADMIN_PASSWORD and SEED_STAFF_PASSWORD environment variables are required in production',
+      500,
+    );
   }
 
   // ── Tenants ──
@@ -660,6 +684,11 @@ app.get('/api/diagnostics/email', sessionMiddleware, (c) => {
   const email = getEmailProviderStatus();
   return c.json({
     email,
+    whatsapp: {
+      configured: isWhatsAppConfigured(),
+      authKey: !!process.env.MSG91_AUTH_KEY,
+      sender: !!process.env.MSG91_WHATSAPP_SENDER,
+    },
     redis: {
       connected: isRedisConnected(),
       urlConfigured: !!process.env.REDIS_URL,

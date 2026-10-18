@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
+import type { ChartRange } from '@/components/dashboard/types';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { OperationalDashboard } from '@/components/dashboard/operational-dashboard';
 import { SuperadminDashboard } from '@/components/dashboard/superadmin-dashboard';
@@ -8,6 +10,9 @@ import { useDashboardData } from '@/components/dashboard/use-dashboard-data';
 
 export default function DashboardPage() {
   usePageTitle('Dashboard');
+
+  // AC-10: one window, held here, driving the sparklines, the deltas, and the trend chart.
+  const [range, setRange] = useState<ChartRange>('2w');
 
   const {
     session,
@@ -19,7 +24,6 @@ export default function DashboardPage() {
     branchFilter,
     setBranchFilter,
     fetchStats,
-    tenantCurrency,
     user,
   } = useDashboardData();
 
@@ -42,6 +46,8 @@ export default function DashboardPage() {
         stats={stats}
         onRetry={() => fetchStats()}
         isTenantScoped={!isSuperadmin}
+        range={range}
+        onRangeChange={setRange}
       />
     );
   }
@@ -60,7 +66,8 @@ export default function DashboardPage() {
       branchFilter={branchFilter}
       onBranchChange={setBranchFilter}
       onRetry={() => fetchStats()}
-      currencyCode={tenantCurrency ?? undefined}
+      range={range}
+      onRangeChange={setRange}
     />
   );
 }

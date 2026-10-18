@@ -20,20 +20,20 @@ const brandPanel = [
 
 export function AuthLayout({ children, backHref, backLabel = 'Back', title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2 app-mesh-bg">
+    <div className="min-h-screen lg:grid lg:grid-cols-2 bg-background">
       <aside className="hidden lg:flex flex-col bg-rail text-sidebar-foreground relative overflow-hidden border-r border-glass">
         <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-info/5 pointer-events-none" />
         <div
           className="absolute inset-0 opacity-30 pointer-events-none"
           style={{
-            backgroundImage: 'radial-gradient(rgba(167,139,250,0.15) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(color-mix(in oklab, var(--info) 15%, transparent) 1px, transparent 1px)',
             backgroundSize: '24px 24px',
           }}
         />
 
         <div className="relative flex flex-col h-full p-10 xl:p-14">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent text-accent-foreground shadow-glow-accent">
+            <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary text-primary-foreground">
               <span className="text-base font-bold tracking-tight">GT</span>
             </div>
             <div className="text-left">
@@ -85,7 +85,7 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
           )}
 
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent text-accent-foreground shadow-glow-accent">
+            <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary text-primary-foreground">
               <span className="text-base font-bold tracking-tight">GT</span>
             </div>
             <div className="text-left">
@@ -94,7 +94,7 @@ export function AuthLayout({ children, backHref, backLabel = 'Back', title, subt
             </div>
           </div>
 
-          <div className="glass-panel rounded-2xl border border-glass p-6 sm:p-8">
+          <div className="glass-panel rounded-lg border border-glass p-6 sm:p-8">
             <div className="mb-6">
               {title && <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>}
               {subtitle && <p className="text-sm text-muted mt-1.5">{subtitle}</p>}

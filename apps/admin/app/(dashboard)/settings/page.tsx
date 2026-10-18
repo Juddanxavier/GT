@@ -138,7 +138,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-8 max-w-4xl">
       <PageHeader
         title="Settings"
         subtitle="Appearance, integration status, and notification configuration."
@@ -202,7 +202,7 @@ export default function SettingsPage() {
               </Card.Title>
             </Card.Header>
             <Card.Content>
-              {branchesLoading && <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />}
+              {branchesLoading && <div className="h-24 rounded-md content-panel animate-pulse opacity-60" />}
               {branchesError && (
                 <div className="py-8 text-center space-y-2">
                   <p className="text-sm text-muted">Failed to load branches.</p>
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                     <li key={b.id} className="py-2.5 first:pt-0 last:pb-0">
                       <p className="text-sm font-medium">{b.name}</p>
                       <p className="text-xs text-muted truncate">
-                        {[b.phone, b.email, b.address].filter(Boolean).join(' · ') ||
+                        {[b.phone, b.email, b.address].filter(Boolean).join(' Â· ') ||
                           'No contact info'}
                       </p>
                     </li>
@@ -297,7 +297,7 @@ export default function SettingsPage() {
           }
         >
           {!previews ? (
-            <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />
+            <div className="h-24 rounded-md content-panel animate-pulse opacity-60" />
           ) : (
             <ul className="divide-y divide-border">
               {previews.map((t) => (
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                         {t.whatsapp ? (
                           <p>
                             <span className="font-medium">WhatsApp:</span>{' '}
-                            <span className="font-mono">Template {t.whatsapp.templateId}</span> ·{' '}
+                            <span className="font-mono">Template {t.whatsapp.templateId}</span> Â·{' '}
                             {Object.entries(t.whatsapp.variables)
                               .map(([k, v]) => `${k}=${v || '(empty)'}`)
                               .join(', ')}
@@ -351,14 +351,14 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-muted tracking-tight">Integration Status</h2>
           <SectionCard title="Integration Status" icon={<ShieldCheck size={16} />}>
             {!integrations ? (
-              <div className="h-24 rounded-xl content-panel animate-pulse opacity-60" />
+              <div className="h-24 rounded-md content-panel animate-pulse opacity-60" />
             ) : (
               <ul className="divide-y divide-border">
                 <li className="flex items-center justify-between py-2.5 first:pt-0">
                   <span className="text-sm">Email (status notifications)</span>
                   {integrations.email.configured ? (
                     <Chip size="sm" variant="soft" color="success">
-                      Configured · {integrations.email.provider ?? 'mail'}
+                      Configured Â· {integrations.email.provider ?? 'mail'}
                     </Chip>
                   ) : (
                     <Chip size="sm" variant="soft" color="danger">

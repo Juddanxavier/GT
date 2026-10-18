@@ -419,7 +419,7 @@ export default function PickupPage(): ReactNode {
                                 key={slot.id}
                                 type="button"
                                 onClick={() => update('timeSlot', slot.id)}
-                                className={`flex items-center justify-between rounded-2xl border px-4 py-2.5 text-sm transition-all ${
+                                className={`min-h-11 flex items-center justify-between rounded-2xl border px-4 py-2.5 text-sm transition-all ${
                                   form.timeSlot === slot.id
                                     ? 'border-brand-accent bg-brand-accent/5 font-semibold text-brand-accent'
                                     : 'border-border/60 text-foreground/70 hover:border-brand-accent/30'

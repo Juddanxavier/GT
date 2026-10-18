@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { KpiCardProps } from '@/components/kpi-card';
 
 export type Stats = {
   role: string;
@@ -30,6 +30,8 @@ export type Stats = {
   perBranch?: PerBranch[];
   perDay?: { date: string; count: number }[];
   shipmentTrend?: ShipmentTrendRow[];
+  /** Completed deliveries per day, keyed by actual delivery date. */
+  deliveryFlow?: { date: string; count: number }[];
 };
 
 export type PerBranch = {
@@ -41,7 +43,15 @@ export type PerBranch = {
 };
 
 export type SuperTotal = {
-  shipments: { total: number; inTransit: number; deliveredToday: number; exceptions: number };
+  shipments: {
+    total: number;
+    inTransit: number;
+    deliveredToday: number;
+    exceptions: number;
+    /** Present when the aggregate carries the detailed shipment block. */
+    overdue?: number;
+    notTracked?: number;
+  };
   customers: { total: number; active: number };
   quotations: { total: number; conversionRate: number };
   invoices: { total: number; revenueThisMonth: string; revenueTotal: string };
@@ -79,21 +89,5 @@ export type ShipmentTrendRow = {
   exception?: number;
 };
 
-export type KpiItem = {
-  icon: ReactNode;
-  label: string;
-  value: string | number;
-  color?: string;
-  sublabel?: string;
-  href?: string;
-  trend?: 'up' | 'down' | 'neutral';
-  trendValue?: string;
-  spark?: number[];
-  chart?: 'line' | 'bars' | 'donut';
-};
-
-export type TickerItem = {
-  label: string;
-  value: string | number;
-  tone?: 'default' | 'success' | 'warning' | 'danger' | 'accent';
-};
+/** A dashboard KPI item is exactly the shared card's props — one card grammar. */
+export type KpiItem = KpiCardProps;

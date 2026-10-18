@@ -57,7 +57,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-8">
       <div>
         <h1 className="text-xl font-semibold mb-1 tracking-tight">Search</h1>
         <p className="text-sm text-muted">Find shipments, customers, and invoices across your organization.</p>

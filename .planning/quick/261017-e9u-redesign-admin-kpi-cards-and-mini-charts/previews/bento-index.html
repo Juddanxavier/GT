@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KPI bento — layouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="preview.css" />
+<style>
+  .card { display:block; text-decoration:none; color:inherit; background:#fff; border-radius:20px; padding:24px; box-shadow:0 1px 2px rgba(0,0,0,.05); margin-bottom:16px; transition:transform .15s, box-shadow .15s; }
+  .card:hover { transform:translateY(-2px); box-shadow:0 20px 40px -28px rgba(0,0,0,.35); }
+  .card h2 { margin:0 0 4px; font-size:19px; letter-spacing:-.02em; }
+  .card p { margin:0; color:var(--muted); font-size:13.5px; }
+  .card .tag { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .mini { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:14px; max-width:190px; }
+  .mini i { display:block; height:16px; border-radius:4px; background:rgba(141,198,63,.35); }
+  .mini i.s { background:rgba(141,198,63,.22); }
+  .mini i.b { background:rgba(17,17,17,.14); }
+  .mini i.b2 { background:rgba(17,17,17,.09); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="dir-head">
+    <div class="kicker">Admin KPI overhaul</div>
+    <h1>Bento layouts — pick one</h1>
+    <p>All three fuse the KPIs with the status breakdown and the carrier/branch lists into one board. Same tile grammar, different mosaic. Each page also shows the layout applied to a Shipments filter row.</p>
+  </div>
+
+  <a class="card" href="bento-a-anchor.html">
+    <div class="tag">Layout A</div>
+    <h2>Anchor</h2>
+    <p>One dominant 2×2 square + four satellites + wide breakdown footer. Safest, clearest hierarchy.</p>
+    <div class="mini"><i style="grid-row:span 2; grid-column:span 2; height:37px"></i><i></i><i></i><i></i><i></i><i class="b" style="grid-column:span 2"></i><i class="b2" style="grid-column:span 2"></i></div>
+  </a>
+
+  <a class="card" href="bento-b-ribbon.html">
+    <div class="tag">Layout B</div>
+    <h2>Ribbon</h2>
+    <p>Full-width hero strip, a uniform band of four, wide widgets below. Most scannable, least boxy.</p>
+    <div class="mini"><i style="grid-column:span 4"></i><i></i><i></i><i></i><i></i><i class="b" style="grid-column:span 2"></i><i class="b2" style="grid-column:span 2"></i></div>
+  </a>
+
+  <a class="card" href="bento-c-column.html">
+    <div class="tag">Layout C</div>
+    <h2>Column</h2>
+    <p>2×2 square + tall status rail + small-tile row. The true mosaic — most editorial.</p>
+    <div class="mini"><i style="grid-row:span 2; grid-column:span 2; height:37px"></i><i></i><i style="grid-row:span 2; height:37px"></i><i></i><i></i><i></i><i></i><i class="b"></i><i class="b2"></i></div>
+  </a>
+
+  <div class="note">These are throwaway mockups — not wired into the app. Once you pick, I rebuild <b>KpiGroup</b> as a bento board and rewire the two dashboards, the shipments row, invoices, and reports.</div>
+</div>
+</body></html>

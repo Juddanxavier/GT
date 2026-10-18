@@ -89,7 +89,7 @@ export function DataTable<T>({
   ariaLabel,
   className,
 }: DataTableProps<T>) {
-  const cellPadding = density === 'compact' ? 'px-4 py-1' : 'px-4 py-2';
+  const cellPadding = density === 'compact' ? 'px-4 py-2' : 'px-4 py-3.5';
   const pageCount = useMemo(
     () => Math.max(1, Math.ceil(total / Math.max(1, pagination.pageSize))),
     [total, pagination.pageSize],
@@ -318,9 +318,9 @@ export function DataTable<T>({
                     onKeyDown={onRowClick ? (e) => handleRowKeyDown(e, row.original) : undefined}
                     tabIndex={onRowClick ? 0 : undefined}
                     className={[
-                      'border-b transition-colors',
+                      'transition-colors',
                       onRowClick ? 'cursor-pointer' : '',
-                      selected ? 'bg-accent/[0.06]' : '',
+                      selected ? 'bg-accent/[0.08]' : 'hover:bg-content2',
                       extra ?? '',
                     ]
                       .filter(Boolean)

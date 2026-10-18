@@ -25,17 +25,17 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header
-      className={['flex flex-wrap items-center justify-between gap-4', className ?? '']
+      className={['flex flex-wrap items-center justify-between gap-6', className ?? '']
         .filter(Boolean)
         .join(' ')}
     >
       <div className="flex min-w-0 items-center gap-3">
         {icon ? (
-          <span className="inline-flex shrink-0 items-center justify-center w-10 h-10 rounded-xl border border-glass glass-panel text-muted shadow-glow-accent-subtle">
+          <span className="inline-flex shrink-0 items-center justify-center w-10 h-10 rounded-xl border border-glass glass-panel text-muted">
             {icon}
           </span>
         ) : null}
-        <div className="min-w-0 space-y-0.5">
+        <div className="min-w-0 space-y-1">
           {breadcrumb ? <div className="mb-1">{breadcrumb}</div> : null}
           <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
           {description ? <p className="text-sm text-muted">{description}</p> : null}

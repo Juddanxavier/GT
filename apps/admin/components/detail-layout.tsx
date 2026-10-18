@@ -15,21 +15,21 @@ export function DetailBack({ onClick, label }: { onClick: () => void; label: str
 }
 
 export function DetailShell({ children }: { children: ReactNode }) {
-  return <div className="max-w-6xl mx-auto space-y-6">{children}</div>;
+  return <div className="max-w-6xl mx-auto space-y-8">{children}</div>;
 }
 
 export function DetailGrid({ main, aside }: { main: ReactNode; aside: ReactNode }) {
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
-      <div className="space-y-5 min-w-0">{main}</div>
-      <aside className="space-y-5 xl:sticky-sidebar">{aside}</aside>
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="space-y-6 min-w-0">{main}</div>
+      <aside className="space-y-6 xl:sticky-sidebar">{aside}</aside>
     </div>
   );
 }
 
 export function DetailSection({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-glass glass-panel overflow-hidden">
+    <div className="rounded-md border border-glass glass-panel overflow-hidden">
       <div className="px-5 py-4 border-b border-glass">
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
       </div>

@@ -36,7 +36,7 @@ export default function NotificationsPage(): ReactNode {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Notifications"
         subtitle="Alerts and updates across your shipments"

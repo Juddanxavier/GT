@@ -112,7 +112,7 @@ function OnboardForm() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0c0c12]">
-        <LoaderCircle size={24} className="animate-spin text-emerald-400" />
+        <LoaderCircle size={24} className="animate-spin text-accent" />
       </div>
     );
   }
@@ -121,8 +121,8 @@ function OnboardForm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0c0c12] px-6">
         <div className="text-center max-w-sm">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
-            <CheckCircle2 size={32} className="text-emerald-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 border border-accent/20 mb-6">
+            <CheckCircle2 size={32} className="text-accent" />
           </div>
           <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">All set!</h1>
           <p className="text-sm text-zinc-400 mb-4">Your account has been configured. Redirecting to login...</p>
@@ -151,8 +151,6 @@ function OnboardForm() {
     <div className="flex min-h-screen bg-[#0c0c12]">
       {/* ── Left Brand Panel ── */}
       <div className="hidden lg:flex lg:w-[45%] relative flex-col items-center justify-center bg-[#07070b] overflow-hidden p-12">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-emerald-500/8 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -161,12 +159,12 @@ function OnboardForm() {
           }}
         />
         <div className="relative z-10 text-center max-w-sm">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-6">
-            <span className="text-emerald-400 text-3xl font-bold tracking-tight">GT</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-sm bg-accent/10 border border-accent/20 mb-6">
+            <span className="text-accent text-3xl font-bold tracking-tight">GT</span>
           </div>
           <p className="text-2xl font-bold text-white tracking-tight">Gajan Traders</p>
           <p className="text-sm text-zinc-500 mt-2">Shipment Tracking Platform</p>
-          <div className="my-8 mx-auto w-12 h-px bg-emerald-500/30" />
+          <div className="my-8 mx-auto w-12 h-px bg-accent/40" />
           <p className="text-sm text-zinc-400 leading-relaxed">
             One last step — set up your password and you&apos;ll be ready to start tracking shipments.
           </p>
@@ -178,8 +176,8 @@ function OnboardForm() {
         <div className="w-full max-w-sm">
           {/* Mobile brand */}
           <div className="lg:hidden text-center mb-10">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-sm bg-emerald-500/10 border border-emerald-500/20 mb-4">
-              <span className="text-emerald-400 text-xl font-bold tracking-tight">GT</span>
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-sm bg-accent/10 border border-accent/20 mb-4">
+              <span className="text-accent text-xl font-bold tracking-tight">GT</span>
             </div>
             <p className="text-xl font-semibold text-white tracking-tight">Gajan Traders</p>
             <p className="text-sm text-zinc-500 mt-1">Set up your password</p>
@@ -326,7 +324,7 @@ export default function OnboardPage() {
       <Suspense
         fallback={
           <div className="flex min-h-screen items-center justify-center bg-[#0c0c12]">
-            <LoaderCircle size={24} className="animate-spin text-emerald-400" />
+            <LoaderCircle size={24} className="animate-spin text-accent" />
           </div>
         }
       >

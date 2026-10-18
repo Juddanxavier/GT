@@ -120,6 +120,7 @@ vi.mock('./queues', () => ({
   notificationQueue: { add: vi.fn(), name: 'notifications' },
   runArchive: vi.fn(),
   isRedisConnected: vi.fn(() => false),
+  isRedisConfigured: vi.fn(() => false),
 }));
 vi.mock('@repo/auth-config', () => ({ buildEmailHtml: vi.fn(() => '<html/>') }));
 

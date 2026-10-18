@@ -232,6 +232,13 @@
       "when": 1784100000000,
       "tag": "0033_add_rate_cards",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792230000000,
+      "tag": "0034_add_notification_preferences",
+      "breakpoints": true
     }
   ]
 }

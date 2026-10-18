@@ -112,7 +112,7 @@ export default function BranchesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {branchesLoading ? (
         <div className="flex items-center justify-center min-h-[60vh]">
           <Spinner />
@@ -274,7 +274,7 @@ export default function BranchesPage() {
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="new-name">Name</Label>
                   <Input id="new-name" variant="secondary" placeholder="Branch name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                  {formErrors.name && <p className="text-xs text-danger">{formErrors.name}</p>}
+                  {formErrors.name && <p className="text-xs text-danger-soft-foreground">{formErrors.name}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="new-phone">Phone</Label>
@@ -285,12 +285,12 @@ export default function BranchesPage() {
                     </div>
                     <Input id="new-phone" variant="secondary" placeholder="Phone number" value={newPhoneLocal} onChange={(e) => setNewPhoneLocal(e.target.value.replace(/\D/g, ''))} className="rounded-l-none border-l-0 flex-1 min-w-0" />
                   </div>
-                  {formErrors.phone && <p className="text-xs text-danger">{formErrors.phone}</p>}
+                  {formErrors.phone && <p className="text-xs text-danger-soft-foreground">{formErrors.phone}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="new-email">Email</Label>
                   <Input id="new-email" variant="secondary" type="email" placeholder="Email address" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-                  {formErrors.email && <p className="text-xs text-danger">{formErrors.email}</p>}
+                  {formErrors.email && <p className="text-xs text-danger-soft-foreground">{formErrors.email}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="new-address">Address</Label>

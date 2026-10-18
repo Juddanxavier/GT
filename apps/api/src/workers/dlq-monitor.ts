@@ -1,13 +1,13 @@
 import * as Sentry from '@sentry/hono/node';
 import { type ConnectionOptions, Worker } from 'bullmq';
 import { childLogger } from '../logger';
-import { isRedisConnected } from '../queues';
+import { isRedisConfigured } from '../queues';
 import { bullConnectionOptions } from '../redis';
 
 const QUEUE = 'dead-letter';
 
 export function startDlqMonitor(): void {
-  if (!isRedisConnected() || !bullConnectionOptions) return;
+  if (!isRedisConfigured() || !bullConnectionOptions) return;
 
   const worker = new Worker(
     QUEUE,

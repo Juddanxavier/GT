@@ -77,3 +77,9 @@ dump.rdb
 
 # Windows reserved names
 nul
+
+# Local agent/tool runtime state (not project content)
+/hive/
+/roster.json
+/roster-backups/
+/restore-gate.json

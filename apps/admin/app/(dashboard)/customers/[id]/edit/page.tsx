@@ -110,7 +110,7 @@ export default function EditUserPage() {
   const isSelf = sessionUser?.id === u.id;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title={`Edit ${user.name}`}
         subtitle="Manage user account details and permissions"

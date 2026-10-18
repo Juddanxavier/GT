@@ -25,9 +25,9 @@ export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   };
 
   return (
-    <Card className="content-panel border-glass">
+    <Card className="content-panel border-0">
       <Card.Header>
-        <Card.Title className="text-sm font-semibold">Alerts</Card.Title>
+        <Card.Title className="text-base font-medium text-foreground">Alerts</Card.Title>
         <Card.Description className="text-xs text-muted">
           {alerts.length > 0
             ? `${alerts.length} shipment${alerts.length > 1 ? 's' : ''} need attention`
@@ -53,9 +53,9 @@ export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
                 <a
                   key={a.shipmentId}
                   href={`/shipments/${a.trackingNo}`}
-                  className="flex items-center gap-3 text-sm px-4 py-3 rounded-lg border border-glass bg-muted/[0.03] hover:bg-muted/10 transition-colors"
+                  className="flex items-center gap-3 text-sm px-4 py-3 rounded-xl border border-divider bg-content2 hover:bg-content3 transition-colors"
                 >
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-muted/10 text-muted shrink-0">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-default-100 text-muted shrink-0">
                     {iconMap[a.type] ?? <AlertTriangle size={14} />}
                   </span>
                   <div className="flex-1 min-w-0">

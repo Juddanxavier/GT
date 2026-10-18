@@ -149,7 +149,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
         <PageHeader
           title="Users"
           subtitle="Manage user accounts and permissions"
@@ -160,16 +160,16 @@ export default function UsersPage() {
         />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
           <p className="text-4xl font-bold tracking-tight text-foreground">{totalCount}</p>
           <p className="text-sm text-muted mt-1">Total Users</p>
         </div>
-        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
-          <p className="text-4xl font-bold tracking-tight text-success">{activeCount}</p>
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
+          <p className="text-4xl font-bold tracking-tight text-success-soft-foreground">{activeCount}</p>
           <p className="text-sm text-muted mt-1">Active</p>
         </div>
-        <div className="content-panel glass-panel-hover hover:border-accent/30 hover:-translate-y-0.5 transition-all duration-300 p-5">
-          <p className="text-4xl font-bold tracking-tight text-danger">{bannedCount}</p>
+        <div className="content-panel glass-panel-hover transition-colors duration-300 p-5">
+          <p className="text-4xl font-bold tracking-tight text-danger-soft-foreground">{bannedCount}</p>
           <p className="text-sm text-muted mt-1">Banned</p>
         </div>
       </div>
@@ -258,12 +258,12 @@ export default function UsersPage() {
                       {prefs.isVisible('banned') && (
                         <Table.Cell>
                           {user.banned ? (
-                            <span className="text-xs text-danger flex items-center gap-1">
+                            <span className="text-xs text-danger-soft-foreground flex items-center gap-1">
                               <CircleX size={10} />
                               Banned
                             </span>
                           ) : (
-                            <span className="text-xs text-success flex items-center gap-1">
+                            <span className="text-xs text-success-soft-foreground flex items-center gap-1">
                               <Check size={10} />
                               Active
                             </span>
@@ -273,14 +273,14 @@ export default function UsersPage() {
                       {userRole !== 'staff' && (
                         <Table.Cell>
                           <div className="flex items-center gap-0.5">
-                            <Button size="sm" variant="ghost" className="text-warning" onPress={() => router.push(`/customers/${user.id}/edit`)}>
+                            <Button size="sm" variant="ghost" className="text-warning-soft-foreground" onPress={() => router.push(`/customers/${user.id}/edit`)}>
                               <Pencil size={16} />
                             </Button>
-                            <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger'} onPress={() => openBan(user)}>
+                            <Button size="sm" variant="ghost" className={user.banned ? 'text-default-500' : 'text-danger-soft-foreground'} onPress={() => openBan(user)}>
                               {user.banned ? <ShieldOff size={16} /> : <Ban size={16} />}
                             </Button>
                             {canDeleteTarget(user) && (
-                              <Button size="sm" variant="ghost" className="text-danger" onPress={() => openDelete(user)}>
+                              <Button size="sm" variant="ghost" className="text-danger-soft-foreground" onPress={() => openDelete(user)}>
                                 <Trash2 size={16} />
                               </Button>
                             )}

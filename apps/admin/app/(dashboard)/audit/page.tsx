@@ -249,7 +249,7 @@ export default function AuditLogPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Audit Log"
         subtitle="Track all system events and changes"
@@ -416,7 +416,7 @@ export default function AuditLogPage() {
       {error && (
         <Card>
           <Card.Content>
-            <p className="text-sm text-danger">{error}</p>
+            <p className="text-sm text-danger-soft-foreground">{error}</p>
           </Card.Content>
         </Card>
       )}

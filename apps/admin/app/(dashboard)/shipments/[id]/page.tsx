@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, Card, Skeleton, Spinner, cn } from '@heroui/react';
+import { Button, Card, Skeleton, Spinner } from '@heroui/react';
 import {
   useDeleteShipment,
   useShipment,
@@ -14,18 +14,17 @@ import {
   useTrackShipment,
 } from '@/lib/queries';
 import { TrackingTimeline } from './tracking-timeline';
-import { CopyButton, Flag, countryFromString } from '@/components/copy-button';
+import { Flag, countryFromString } from '@/components/copy-button';
 import { addressDisplay } from '@/components/address-form';
-import { formatCurrency } from '@/lib/currency';
 import { usePageTitle } from '@/lib/use-page-title';
 import { useTenantFilter } from '@/lib/tenant-filter-context';
-import { ArrowLeft, ChevronDown, MapPin, Package } from 'lucide-react';
+import { shortDate, shortDateTime } from '@/lib/format-date';
+import { ArrowLeft, CalendarCheck, CalendarClock, Clock, MapPin, Package, Radar } from 'lucide-react';
 import { useToast } from '@/components/toast';
 import { ConfirmDialog } from '@repo/ui/confirm-dialog';
 import { DetailShell } from '@/components/detail-layout';
-import { RouteJourneyStepper } from '@/components/shipments/route-journey-stepper';
 import { ShipmentCommandSidebar } from '@/components/shipments/shipment-command-sidebar';
-import { ShipmentStatusBadge } from '@/components/shipment-status-badge';
+import { ShipmentTicket } from '@/components/shipments/shipment-ticket';
 
 export default function ShipmentDetailPage(): ReactNode {
   const router = useRouter();
@@ -48,7 +47,6 @@ export default function ShipmentDetailPage(): ReactNode {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [stopOpen, setStopOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const sortedEvents = useMemo(() => {
     const events = trackingData?.events ?? [];
@@ -62,11 +60,16 @@ export default function ShipmentDetailPage(): ReactNode {
   if (error || !shipment) {
     return (
       <DetailShell>
-        <Button variant="ghost" size="sm" onPress={() => router.push('/shipments')} className="mb-4 -ml-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push('/shipments')}
+          className="reveal -ml-2"
+        >
           <ArrowLeft size={14} /> Back to Shipments
         </Button>
-        <Card className="ops-panel p-12 text-center">
-          <p className="text-danger text-sm mb-3">{error?.message ?? 'Failed to load shipment'}</p>
+        <Card className="reveal [--reveal-delay:60ms] ops-panel p-12 text-center">
+          <p className="text-danger-soft-foreground text-sm mb-3">{error?.message ?? 'Failed to load shipment'}</p>
           <Button variant="secondary" size="sm" onPress={() => refetch()}>Retry</Button>
         </Card>
       </DetailShell>
@@ -76,105 +79,94 @@ export default function ShipmentDetailPage(): ReactNode {
   const originCountry = shipment.origin ? countryFromString(shipment.origin) : null;
   const destCountry = shipment.destination ? countryFromString(shipment.destination) : null;
 
+  const stats = [
+    { icon: Radar, label: 'Provider', value: shipment.trackingProvider || '—' },
+    {
+      icon: Clock,
+      label: 'Last tracked',
+      value: shipment.lastTrackedAt ? shortDateTime(shipment.lastTrackedAt) : '—',
+    },
+    {
+      icon: CalendarClock,
+      label: 'Est. delivery',
+      value: shipment.estimatedDelivery ? shortDate(shipment.estimatedDelivery) : '—',
+    },
+    {
+      icon: CalendarCheck,
+      label: 'Actual delivery',
+      value: shipment.actualDelivery ? shortDate(shipment.actualDelivery) : '—',
+    },
+  ];
+
   return (
     <div className="shipments-ops">
       <DetailShell>
-        <Button variant="ghost" size="sm" onPress={() => router.push('/shipments')} className="mb-4 -ml-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push('/shipments')}
+          className="reveal -ml-2"
+        >
           <ArrowLeft size={14} /> Operations Board
         </Button>
 
-        <header className="ops-header-bar ops-grid-bg sticky-below-header sticky-surface px-5 py-4 mb-5 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <ShipmentStatusBadge status={shipment.status} />
-                <span className="text-xs text-muted">{shipment.carrier || 'Unknown carrier'}</span>
-              </div>
-              <h1 className="ops-mono text-xl font-bold flex items-center gap-2">
-                {shipment.trackingNo}
-                <CopyButton text={shipment.trackingNo} />
-              </h1>
-              {shipment.labelCode && (
-                <p className="text-xs text-muted ops-mono">Label: {shipment.labelCode}</p>
-              )}
-            </div>
-            <div className="text-right text-sm">
-              {shipment.billAmount && (
-                <p className="font-semibold">{formatCurrency(shipment.billAmount, tenantCurrency)}</p>
-              )}
-              <p className="text-xs text-muted">
-                Created {new Date(shipment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {/* The waybill — identity on the body, identifiers on the stub. */}
+        <ShipmentTicket
+          shipment={shipment}
+          tenantCurrency={tenantCurrency}
+          className="reveal [--reveal-delay:60ms]"
+        />
+
+        {/* At a glance — the four facts an operator checks first. */}
+        <section className="reveal [--reveal-delay:120ms] grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-md border border-border bg-border">
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-surface px-4 py-3 space-y-1">
+              <p className="ops-label flex items-center gap-1.5">
+                <stat.icon size={12} aria-hidden="true" />
+                {stat.label}
+              </p>
+              <p className="text-sm font-medium truncate" title={stat.value}>
+                {stat.value}
               </p>
             </div>
-          </div>
-          <RouteJourneyStepper
-            status={shipment.status}
-            origin={shipment.origin}
-            destination={shipment.destination}
+          ))}
+        </section>
+
+        {/* Route — the two addresses the journey connects. */}
+        <section className="reveal [--reveal-delay:180ms] grid grid-cols-1 sm:grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border">
+          <AddressCell
+            label="Sender"
+            flag={originCountry}
+            address={addressDisplay(shipment.senderAddress) || shipment.origin}
           />
-        </header>
+          <AddressCell
+            label="Recipient"
+            flag={destCountry}
+            address={addressDisplay(shipment.recipientAddress) || shipment.destination}
+          />
+        </section>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
-          <div className="space-y-5 min-w-0">
-            <section className="ops-panel-raised overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--ops-border)] flex items-center justify-between">
-                <h2 className="text-sm font-semibold flex items-center gap-2">
-                  <Package size={14} className="text-[var(--ops-accent)]" />
-                  Tracking Timeline
-                </h2>
-                {sortedEvents.length > 0 && (
-                  <span className="text-xs text-muted bg-[var(--ops-surface)] px-2 py-0.5 rounded-full border border-[var(--ops-border)]">
-                    {sortedEvents.length} events
-                  </span>
-                )}
-              </div>
-              <div className="p-5">
-                {trackingLoading ? (
-                  <div className="flex justify-center py-12"><Spinner /></div>
-                ) : (
-                  <TrackingTimeline events={sortedEvents} />
-                )}
-              </div>
-            </section>
-
-            <section className="ops-panel overflow-hidden">
-              <button
-                type="button"
-                aria-expanded={detailsOpen}
-                className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-[var(--ops-surface-raised)] transition-colors"
-                onClick={() => setDetailsOpen((v) => !v)}
-              >
-                <span className="text-sm font-semibold">Shipment Details</span>
-                <ChevronDown size={16} className={cn('text-muted transition-transform', detailsOpen && 'rotate-180')} />
-              </button>
-              {detailsOpen && (
-                <div className="px-5 pb-5 pt-2 border-t border-[var(--ops-border)] space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <InfoRow label="Provider" value={shipment.trackingProvider || 'ΓÇö'} />
-                    <InfoRow label="Last Tracked" value={shipment.lastTrackedAt ? new Date(shipment.lastTrackedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ΓÇö'} />
-                    <InfoRow label="Est. Delivery" value={shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
-                    <InfoRow label="Actual Delivery" value={shipment.actualDelivery ? new Date(shipment.actualDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ΓÇö'} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Sender</p>
-                      <p className="text-sm flex items-start gap-1.5">
-                        {originCountry && <Flag country={originCountry} />}
-                        {addressDisplay(shipment.senderAddress) || shipment.origin || 'ΓÇö'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="ops-label flex items-center gap-1"><MapPin size={12} /> Recipient</p>
-                      <p className="text-sm flex items-start gap-1.5">
-                        {destCountry && <Flag country={destCountry} />}
-                        {addressDisplay(shipment.recipientAddress) || shipment.destination || 'ΓÇö'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
+          <section className="overflow-hidden min-w-0 rounded-md border border-border bg-surface">
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Package size={14} className="text-accent" />
+                Tracking Timeline
+              </h2>
+              {sortedEvents.length > 0 && (
+                <span className="text-xs text-muted px-2 py-0.5 rounded-full border border-border">
+                  {sortedEvents.length} events
+                </span>
               )}
-            </section>
-          </div>
+            </div>
+            <div className="p-5">
+              {trackingLoading ? (
+                <div className="flex justify-center py-12"><Spinner /></div>
+              ) : (
+                <TrackingTimeline events={sortedEvents} />
+              )}
+            </div>
+          </section>
 
           <ShipmentCommandSidebar
             shipment={shipment}
@@ -233,21 +225,36 @@ export default function ShipmentDetailPage(): ReactNode {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }): ReactNode {
+function AddressCell({
+  label,
+  flag,
+  address,
+}: {
+  label: string;
+  flag: string | null;
+  address: string | null | undefined;
+}): ReactNode {
   return (
-    <div className="flex justify-between gap-3 py-1">
-      <span className="text-muted">{label}</span>
-      <span className="font-medium text-right truncate">{value}</span>
+    <div className="bg-surface px-4 py-3 space-y-1.5">
+      <p className="ops-label flex items-center gap-1">
+        <MapPin size={12} /> {label}
+      </p>
+      <p className="text-sm flex items-start gap-1.5">
+        {flag && <Flag country={flag} />}
+        <span className="min-w-0">{address || '—'}</span>
+      </p>
     </div>
   );
 }
 
 function DetailLoadingSkeleton(): ReactNode {
   return (
-    <div className="shipments-ops max-w-6xl mx-auto space-y-5">
+    <div className="shipments-ops max-w-6xl mx-auto space-y-8">
       <Skeleton className="h-4 w-36" />
-      <Skeleton className="h-32 w-full rounded-md" />
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
+      <Skeleton className="h-52 w-full rounded-md" />
+      <Skeleton className="h-16 w-full rounded-md" />
+      <Skeleton className="h-20 w-full rounded-md" />
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <Skeleton className="h-96 w-full rounded-md" />
         <Skeleton className="h-80 w-full rounded-md" />
       </div>

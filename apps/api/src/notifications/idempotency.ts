@@ -7,7 +7,7 @@ const NOTIFICATION_TTL = 7 * 24 * 3600;
 export async function checkAndSetIdempotency(
   eventId: string,
   shipmentId: string,
-  channel: 'email' | 'whatsapp',
+  channel: 'email' | 'whatsapp' | 'in_app',
   log: Logger,
 ): Promise<boolean> {
   if (!cacheClient) {

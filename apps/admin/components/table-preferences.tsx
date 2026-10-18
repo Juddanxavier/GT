@@ -58,7 +58,7 @@ export function TablePreferences({ storageKey: _storageKey, columns, hidden, onH
                   key={d}
                   type="button"
                   onClick={() => onDensityChange(d)}
-                  className={`flex-1 py-1.5 capitalize transition-colors ${density === d ? 'bg-accent text-[var(--accent-contrast)]' : 'hover:bg-muted'}`}
+                  className={`flex-1 py-1.5 capitalize transition-colors ${density === d ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
                 >
                   {d}
                 </button>
