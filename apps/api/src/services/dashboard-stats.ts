@@ -198,6 +198,125 @@ export async function queryQuotationCountRaw(where: SQL | undefined): Promise<Ro
   return row ?? {};
 }
 
+export async function queryRateCardCount(tenantId?: string): Promise<Row> {
+  const where = tenantId ? sql` WHERE tenant_id=${tenantId}` : sql``;
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COUNT(*)::int AS total,
+        COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END),0)::int AS active
+      FROM rate_card${where}
+    `,
+  );
+  return row ?? {};
+}
+
+export async function queryBranchCount(tenantId?: string): Promise<Row> {
+  const where = tenantId ? sql` WHERE tenant_id=${tenantId}` : sql``;
+  const [row] = await db.execute<Row>(sql`SELECT COUNT(*)::int AS total FROM branch${where}`);
+  return row ?? {};
+}
+
+/**
+ * The invoice book: rows in `invoice`, tenant scoped.
+ *
+ * `queryRevenueStats` below reads `shipment.bill_amount`, a different number
+ * (billed shipments, not invoices). The two are never interchangeable, so
+ * anything a user reads as "invoices" must come from here.
+ */
+export async function queryInvoiceStats(tenantId?: string): Promise<Row> {
+  const where = tenantId
+    ? sql` WHERE archived_at IS NULL AND tenant_id=${tenantId}`
+    : sql` WHERE archived_at IS NULL`;
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COUNT(*)::int AS total,
+        COALESCE(SUM(amount),0)::text AS "revenueTotal",
+        COALESCE(SUM(amount) FILTER (WHERE created_at>=date_trunc('month',CURRENT_DATE)),0)::text AS "revenueThisMonth"
+      FROM invoice${where}
+    `,
+  );
+  return row ?? {};
+}
+
+// ── Per-Month Business Growth ──
+
+/**
+ * New customer rows per calendar month over the last six months, oldest first.
+ *
+ * The business tiles are standing totals, so their charts show the flow that
+ * builds them (rows created per month). Six months is the shortest window that
+ * reaches real activity; a per day series over the shared dashboard range would
+ * be all zeros on live data. Months with no rows come back as `0`, so the client
+ * renders the six points directly with no filling or slicing.
+ */
+export async function queryCustomerPerMonth(filter: StatsFilter): Promise<number[]> {
+  const conditions: SQL[] = [eq(user.role, 'customer')];
+  if (filter.tenantId) conditions.push(eq(user.tenantId, filter.tenantId));
+  if (filter.branchId) conditions.push(eq(user.branchId, filter.branchId));
+  const w = and(...conditions);
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COALESCE(json_agg(c ORDER BY m), '[]'::json) AS val
+      FROM (
+        SELECT months.m AS m, COUNT("user".id)::int AS c
+        FROM generate_series(
+          date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
+          date_trunc('month', CURRENT_DATE),
+          INTERVAL '1 month'
+        ) AS months(m)
+        LEFT JOIN "user" ON date_trunc('month', "user".created_at) = months.m ${w ? sql`AND ${w}` : sql``}
+        GROUP BY months.m
+      ) sub
+    `,
+  );
+  return (row?.val as number[]) ?? [];
+}
+
+/** Raw-filter variant of {@link queryCustomerPerMonth} for the superadmin and branch-admin paths. */
+export async function queryCustomerPerMonthRaw(where: SQL | undefined): Promise<number[]> {
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COALESCE(json_agg(c ORDER BY m), '[]'::json) AS val
+      FROM (
+        SELECT months.m AS m, COUNT("user".id)::int AS c
+        FROM generate_series(
+          date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
+          date_trunc('month', CURRENT_DATE),
+          INTERVAL '1 month'
+        ) AS months(m)
+        LEFT JOIN "user" ON date_trunc('month', "user".created_at) = months.m AND "user".role = 'customer' ${where ?? sql``}
+        GROUP BY months.m
+      ) sub
+    `,
+  );
+  return (row?.val as number[]) ?? [];
+}
+
+/**
+ * New invoice rows per calendar month over the last six months, oldest first,
+ * excluding archived invoices so the series matches the tile count and the
+ * `/invoices` page.
+ */
+export async function queryInvoicePerMonth(tenantId?: string): Promise<number[]> {
+  const where = tenantId ? sql` AND tenant_id=${tenantId}` : sql``;
+  const [row] = await db.execute<Row>(
+    sql`
+      SELECT COALESCE(json_agg(c ORDER BY m), '[]'::json) AS val
+      FROM (
+        SELECT months.m AS m, COUNT(invoice.id)::int AS c
+        FROM generate_series(
+          date_trunc('month', CURRENT_DATE) - INTERVAL '5 months',
+          date_trunc('month', CURRENT_DATE),
+          INTERVAL '1 month'
+        ) AS months(m)
+        LEFT JOIN invoice ON date_trunc('month', invoice.created_at) = months.m AND invoice.archived_at IS NULL${where}
+        GROUP BY months.m
+      ) sub
+    `,
+  );
+  return (row?.val as number[]) ?? [];
+}
+
 // ── Revenue Queries ──
 
 export async function queryRevenueStats(filter: StatsFilter): Promise<Row> {

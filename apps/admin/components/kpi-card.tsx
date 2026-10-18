@@ -41,6 +41,16 @@ export interface KpiCardProps {
   invertTrend?: boolean;
   /** Sparkline series, oldest first. */
   spark?: number[];
+  /**
+   * The window the spark covers, used in the chart footer. `day` reads `6d`,
+   * `month` reads `6mo`.
+   */
+  sparkUnit?: 'day' | 'month';
+  /**
+   * The numeric used to decide whether a chart has signal, when it differs from
+   * `value` (a tile whose value is a formatted currency string). Display only.
+   */
+  signalCount?: number;
   chart?: 'line' | 'bars' | 'donut';
   format?: 'number' | 'currency';
   /** Preserves the tenant currency sign (`LKR` → `Rs`) — never a hardcoded symbol. */
@@ -65,6 +75,8 @@ export function KpiCard({
   trendValue = '\u2014',
   invertTrend,
   spark,
+  sparkUnit = 'day',
+  signalCount,
   chart,
   format = 'number',
   currencyCode,
@@ -74,9 +86,10 @@ export function KpiCard({
   const numeric = typeof value === 'number' ? value : Number(value);
   const count = Number.isFinite(numeric) ? numeric : 0;
   const feature = size === 'feature';
+  const windowUnit = sparkUnit === 'month' ? 'mo' : 'd';
 
   // AC-11: a zero count or an all-zero series drops the chart and tones the delta neutral.
-  const signal = hasSeriesSignal(count, spark ?? []);
+  const signal = hasSeriesSignal(signalCount ?? count, spark ?? []);
   const showChart = signal && (spark?.length ?? 0) > 1 && (feature || !!chart);
 
   const placeholder = !signal || trend === 'neutral' || trendValue === '\u2014';
@@ -162,7 +175,7 @@ export function KpiCard({
               <div className="mt-2 flex items-center justify-between text-[11px] text-muted tabular-nums">
                 <span>
                   <span className="sr-only">Chart range </span>
-                  {spark.length}d &middot; {Math.min(...spark)}&ndash;{Math.max(...spark)}
+                  {spark.length}{windowUnit} &middot; {Math.min(...spark)}&ndash;{Math.max(...spark)}
                 </span>
                 <span>peak {Math.max(...spark)}</span>
               </div>
@@ -176,7 +189,7 @@ export function KpiCard({
               </div>
               <span className="shrink-0 text-[11px] tabular-nums text-muted">
                 <span className="sr-only">Chart range </span>
-                {spark.length}d &middot; {Math.min(...spark)}&ndash;{Math.max(...spark)}
+                {spark.length}{windowUnit} &middot; {Math.min(...spark)}&ndash;{Math.max(...spark)}
               </span>
             </div>
           )}

@@ -20,10 +20,14 @@ export function useDashboardData() {
   const [branches, setBranches] = useState<Branch[]>([]);
 
   const sessionUser = getUser(session);
-  const tenantCurrency = useMemo(() => {
-    const tid = tenantFilter || sessionUser?.tenantId || '';
-    return tenantsData.find((t) => t.id === tid)?.currency;
-  }, [tenantFilter, sessionUser?.tenantId, tenantsData]);
+  // The tenant whose data backs the page: an explicit filter for a superadmin,
+  // otherwise the caller's own tenant. Empty when neither resolves (an
+  // unfiltered superadmin), which is what the business tiles key off.
+  const resolvedTenantId = tenantFilter || sessionUser?.tenantId || '';
+  const tenantCurrency = useMemo(
+    () => tenantsData.find((t) => t.id === resolvedTenantId)?.currency ?? undefined,
+    [resolvedTenantId, tenantsData],
+  );
 
   const fetchStats = useCallback(async () => {
     try {
@@ -75,6 +79,7 @@ export function useDashboardData() {
     setBranchFilter: setBranch,
     fetchStats,
     tenantCurrency,
+    resolvedTenantId,
     user: sessionUser,
   };
 }

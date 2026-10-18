@@ -12,4 +12,10 @@ export const KPI_COLORS = {
   overdue: '#F59E42',
   notTracked: '#9A9A9A',
   total: '#8DC63F',
+  // Business overview tiles. Semantic names, existing ramp steps: no new hue is
+  // introduced, so the seven step ramp in DESIGN.md is unchanged.
+  customers: '#8DC63F',
+  invoices: '#7CB342',
+  rateCards: '#F59E42',
+  branches: '#A2D145',
 } as const;

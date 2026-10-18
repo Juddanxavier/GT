@@ -33,6 +33,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 20 | Server rendering pass | Slice 7 | planned |
 | 21 | Query caching & session resilience | Slice 7 | planned |
 | 22 | End to end smoke tests | Slice 8 | planned |
+| 23 | Business overview KPI cards | Slice 1 | in-progress |
 
 ## Existing
 
@@ -117,6 +118,20 @@ Rework the operational and superadmin dashboards so KPIs, alerts, charts, and th
 - [ ] Verify it: /check verify Dashboard & analytics redesign
 Spec [0003](../../specs/admin/0003-dashboard-refresh-unified-kpi-cards.md) · code in `apps/admin/components/kpi-card.tsx`, `apps/admin/components/dashboard/` (incl. `attention-panel.tsx`, `range-control.tsx`, `utils.ts`), `apps/admin/components/shipments/shipments-kpi-row.tsx`, `apps/admin/app/(dashboard)/invoices/page.tsx`, `apps/admin/app/(dashboard)/reports/page.tsx`, `apps/admin/app/(dashboard)/page.tsx`, `apps/admin/lib/validation.ts`, `apps/admin/DESIGN.md`
 
+### 23. Business overview KPI cards · in-progress (verified) · from spec 0004
+Add a second board to the dashboard that shows the size of the business rather than the shipment flow: customers, invoices with this month's revenue, rate cards, and branches. The numbers come from the dashboard endpoint the page already reads, with new counts for rate cards, branches, and the invoice book, and the invoice tile is corrected to read the invoice table so it matches the page it links to. Staff keep the customer tile only, and the dashboard component that never renders is removed.
+**Done when:** the dashboard shows a Business Overview board with the four tiles for tenant admins and superadmins, staff see only Customers, no tile links to a page that returns 400 without a tenant, the invoice tile matches the `/invoices` page, and the unreachable dashboard component is gone.
+- [x] Design it (spec): `/architect dashboard business KPIs`
+- [x] Build it: /develop Dashboard business KPIs
+   - [x] Rate card, branch, and corrected invoice counts in the stats payload, with the response schema tightened (AC-11)
+   - [x] Business Overview component carrying the role gate, the tenant link gate, and the revenue formatting (AC-2, AC-3, AC-4, AC-5, AC-6, AC-8, AC-10, AC-14)
+   - [x] Wire the live dashboard, delete the unreachable component, and mirror the board in the skeleton (AC-1, AC-7, AC-9, AC-12, AC-15)
+   - [x] Component tests for the role gate, the link gate, and the zero case, plus lint, type check, and build (AC-7, AC-8, AC-10, AC-13)
+   - [x] Six month growth charts on the Customers and Invoices tiles: a `perMonth` series in the stats payload, `sparkUnit` and `signalCount` on `KpiCard`, both tiles wired, the window fixed and independent of the range control, with tests (AC-11, AC-16, AC-17, AC-18)
+   - [x] Invoices read path on the same rows as the tile: exclude archived invoices from the list, counts, and trend, clear `invoice.archived_at` on shipment restore, and invalidate the dashboard cache on invoice writes (AC-4, AC-19, AC-20)
+- [x] Verify it: /check verify Dashboard business KPIs
+Spec [0004](../../specs/admin/0004-dashboard-business-kpis.md) · code in `apps/api/src/services/dashboard-stats.ts`, `apps/api/src/routes/dashboard.ts`, `apps/api/src/routes/invoices.ts`, `apps/api/src/routes/shipments.ts`, `apps/admin/components/kpi-card.tsx`, `apps/admin/components/dashboard/business-overview.tsx`, `apps/admin/components/dashboard/mini-chart.tsx`, `apps/admin/components/dashboard/superadmin-dashboard.tsx`, `apps/admin/components/dashboard/types.ts`, `apps/admin/app/(dashboard)/page.tsx`, `apps/admin/lib/validation.ts`
+
 ## Slice 2: Shipments & detail redesign
 
 ### 12. Shipments & detail redesign · needs a decision
@@ -189,6 +204,9 @@ Out of scope for this pass, kept so the plan stays honest.
 - **Tenant landing pages**: brand imagery and landing work stays in Phase 4.
 - **Socket.IO to SSE migration**: considered for bundle size, deferred until measured.
 - **Nonce based CSP**: stronger script policy, deferred until Next.js middleware work is scheduled.
+- **Dashboard staff cache key** (from spec 0004): `dashboard:stats:staff` omits the branch, so two staff in different branches of one tenant can share a cached payload for up to 120 seconds.
+- **Archived invoice detail paths** (from spec 0004): the invoice detail, PDF, and send endpoints still serve an invoice whose `archived_at` is set, by direct link, now that the list and the tile hide it.
+- **Dashboard scope and validation rough edges** (from spec 0004): the Invoices tile is tenant level while the `/invoices` page is branch filtered; `validateResponse` only fails a missing `perMonth` in production; `RangeControl` sits above the board but drives only the shipment tiles; and the per tenant and per branch tables still print the rupee symbol for LKR revenue.
 
 ## Legend
 

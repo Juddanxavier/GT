@@ -23,6 +23,19 @@ export function DashboardSkeleton() {
         </div>
       </div>
 
+      {/* Business overview — bento board (accent feature + wide + two base). */}
+      <div className="space-y-4">
+        <div className="h-3 w-28 rounded bg-default-100 animate-pulse" />
+        <div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          style={{ gridAutoRows: 'minmax(156px, auto)' }}
+        >
+          {['lg:col-span-2 lg:row-span-2', 'lg:col-span-2', '', ''].map((span, i) => (
+            <div key={i} className={`${span} rounded-lg content-panel animate-pulse opacity-60`} />
+          ))}
+        </div>
+      </div>
+
       {/* Trend chart and status breakdown. */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="h-72 rounded-lg content-panel animate-pulse opacity-60 lg:col-span-8" />

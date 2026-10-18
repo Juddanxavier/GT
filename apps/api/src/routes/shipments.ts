@@ -594,9 +594,16 @@ app.post(
       .set({ archivedAt: null, updatedAt: new Date() })
       .where(eq(shipments.id, resolvedId));
 
+    // The invoice was archived with its shipment, so it comes back with it.
+    await db
+      .update(invoices)
+      .set({ archivedAt: null })
+      .where(eq(invoices.shipmentId, resolvedId));
+
     await cacheDel(scope.tenantId!, `shipments:${resolvedId}`);
     await cacheDelPattern(scope.tenantId!, 'shipments:list:*');
     await cacheDelPattern(scope.tenantId!, 'dashboard:*');
+    await cacheDelPattern(scope.tenantId!, 'invoices:list:*');
 
     logAudit('SHIPMENT_UPDATED', c.get('user')?.id ?? null, {
       shipmentId: shipment.id,

@@ -5,6 +5,7 @@ import { BentoBoard } from '@/components/bento';
 import { KpiCard } from '@/components/kpi-card';
 import { TrackQuotaCard } from '@/components/track-quota-card';
 import { AttentionPanel } from './attention-panel';
+import { BusinessOverview } from './business-overview';
 import { CommandHeader } from './command-header';
 import { PerEntityTable } from './per-entity-table';
 import { RangeControl } from './range-control';
@@ -30,12 +31,18 @@ export function SuperadminDashboard({
   isTenantScoped,
   range,
   onRangeChange,
+  tenantCurrency,
+  isSingleTenant,
 }: {
   stats: Stats;
   onRetry: () => void;
   isTenantScoped?: boolean;
   range: ChartRange;
   onRangeChange: (range: ChartRange) => void;
+  /** Tenant currency code for the business revenue tile. */
+  tenantCurrency?: string;
+  /** True when one tenant backs the page, so the business tiles can link. */
+  isSingleTenant?: boolean;
 }) {
   const t = stats.total!;
   const shipments = resolveShipments(stats);
@@ -129,6 +136,12 @@ export function SuperadminDashboard({
         <StatusDonut data={donutData} total={t.shipments.total} />
         <KpiCard {...tiles.delivered} revealDelay={300} />
       </BentoBoard>
+
+      <BusinessOverview
+        stats={stats}
+        tenantCurrency={tenantCurrency}
+        isSingleTenant={!!isSingleTenant}
+      />
 
       <ShipmentTrendChart
         data={perDayForChart}

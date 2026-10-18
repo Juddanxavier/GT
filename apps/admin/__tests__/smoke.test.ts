@@ -103,4 +103,79 @@ describe('validation', () => {
   });
 });
 
+// ── Dashboard stats contract ──
+
+// Spec 0004 AC-11: the business counts ride the `total` block, and the schema is
+// what makes a builder that forgets one fail loudly instead of dropping the key
+// silently (zod strips unknown keys, it does not keep them).
+const dashboardTotal = {
+  shipments: { total: 10, inTransit: 2, deliveredToday: 0, exceptions: 0 },
+  customers: { total: 42, active: 30, perMonth: [0, 0, 42, 0, 0, 0] },
+  quotations: { total: 5, conversionRate: 40 },
+  invoices: {
+    total: 7,
+    revenueThisMonth: '23726.91',
+    revenueTotal: '38890.67',
+    perMonth: [0, 0, 0, 2, 1, 0],
+  },
+  rateCards: { total: 4, active: 3 },
+  branches: { total: 6 },
+};
+
+const dashboardStatsPayload = {
+  role: 'tenant-admin',
+  scope: { tenantId: 't1', branchId: null },
+  shipments: {
+    total: 10,
+    inTransit: 2,
+    outForDelivery: 1,
+    deliveredToday: 0,
+    deliveredThisMonth: 3,
+    exceptions: 0,
+    pending: 1,
+    stale: 0,
+    overdue: 0,
+    notTracked: 0,
+    byStatus: {},
+    perDay: [],
+    byCarrier: [],
+    byBranch: [],
+  },
+  revenuePerMonth: [],
+  alerts: [],
+  total: dashboardTotal,
+};
+
+describe('dashboard stats schema', () => {
+  it('keeps total.rateCards and total.branches through validation', async () => {
+    const { dashboardStatsSchema } = await import('@/lib/validation');
+    const result = dashboardStatsSchema.safeParse(dashboardStatsPayload);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.total?.rateCards).toEqual({ total: 4, active: 3 });
+      expect(result.data.total?.branches).toEqual({ total: 6 });
+      expect(result.data.total?.invoices).toEqual({
+        total: 7,
+        revenueThisMonth: '23726.91',
+        revenueTotal: '38890.67',
+        perMonth: [0, 0, 0, 2, 1, 0],
+      });
+      // The growth series survive validation too (spec 0004 AC-11).
+      expect(result.data.total?.customers?.perMonth).toEqual([0, 0, 42, 0, 0, 0]);
+    }
+  });
+
+  it('rejects a total that is missing a business count', async () => {
+    const { dashboardStatsSchema } = await import('@/lib/validation');
+    const { rateCards, ...totalWithoutRateCards } = dashboardTotal;
+    const result = dashboardStatsSchema.safeParse({
+      ...dashboardStatsPayload,
+      total: totalWithoutRateCards,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
 

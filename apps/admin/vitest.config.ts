@@ -7,6 +7,11 @@ export default defineConfig({
       '@': path.resolve(__dirname),
     },
   },
+  // The app tsconfig sets `jsx: preserve` for Next, which leaves JSX untransformed
+  // and breaks any test that renders a component. Tests do not go through Next's
+  // compiler, so the transform is turned on here for tests only. Vitest runs the
+  // `oxc` transformer, so the option belongs there (`esbuild` is ignored).
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     environment: 'jsdom',
     globals: true,

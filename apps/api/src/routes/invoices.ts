@@ -1,4 +1,4 @@
-import { and, desc, eq, like, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, like, type SQL, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cacheDel, cacheDelPattern, withCache } from '../cache';
 import { db } from '../db';
@@ -119,6 +119,7 @@ app.post(
 
       await cacheDel(scope.tenantId!, `invoices:shipment:${shipmentId}`);
       await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+      await cacheDelPattern(scope.tenantId, 'dashboard:*');
       logAudit(
         'INVOICE_CREATED',
         c.get('user')?.id ?? null,
@@ -157,7 +158,7 @@ app.get(
     const status = c.req.query('status');
     const userId = c.req.query('userId');
 
-    const conditions: ReturnType<typeof eq>[] = [eq(invoices.tenantId, scope.tenantId)];
+    const conditions: SQL[] = [eq(invoices.tenantId, scope.tenantId), isNull(invoices.archivedAt)];
     if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
     if (search) conditions.push(sql`${like(invoices.invoiceNo, `%${search}%`)}`);
     if (status) conditions.push(eq(invoices.status, status!));
@@ -197,7 +198,7 @@ app.get(
           .offset(offset);
 
         // Compute status counts from ALL matching records (ignoring status filter)
-          const countConditions: SQL[] = [eq(invoices.tenantId, scope.tenantId!)];
+          const countConditions: SQL[] = [eq(invoices.tenantId, scope.tenantId!), isNull(invoices.archivedAt)];
           if (scope.branchId) countConditions.push(eq(shipments.branchId, scope.branchId));
           if (userId) countConditions.push(eq(invoices.userId, userId!));
           // search filter is intentionally excluded from counts
@@ -240,7 +241,7 @@ app.get(
     const scope = getQueryScope(c);
     if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
 
-    const conditions: SQL[] = [eq(invoices.tenantId, scope.tenantId)];
+    const conditions: SQL[] = [eq(invoices.tenantId, scope.tenantId), isNull(invoices.archivedAt)];
     if (scope.branchId) conditions.push(eq(shipments.branchId, scope.branchId));
 
     const rows = await db
@@ -397,6 +398,7 @@ app.post(
 
     await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
     await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
+    await cacheDelPattern(scope.tenantId, 'dashboard:*');
     logAudit(
       'INVOICE_SENT',
       c.get('user')?.id ?? null,
@@ -444,6 +446,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
   await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
   await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+  await cacheDelPattern(scope.tenantId, 'dashboard:*');
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
   for (const key of Object.keys(filtered)) {
@@ -489,6 +492,7 @@ app.delete('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope
   await cacheDel(scope.tenantId!, `invoices:${resolvedId}`);
   await cacheDel(scope.tenantId!, `invoices:${resolvedId}:data`);
   await cacheDelPattern(scope.tenantId, 'invoices:list:*');
+  await cacheDelPattern(scope.tenantId, 'dashboard:*');
   logAudit(
     'INVOICE_DELETED',
     c.get('user')?.id ?? null,

@@ -52,9 +52,17 @@ export type SuperTotal = {
     overdue?: number;
     notTracked?: number;
   };
-  customers: { total: number; active: number };
+  customers: { total: number; active: number; perMonth: number[] };
   quotations: { total: number; conversionRate: number };
-  invoices: { total: number; revenueThisMonth: string; revenueTotal: string };
+  /** The invoice book (`invoice` rows), not billed shipments. */
+  invoices: {
+    total: number;
+    revenueThisMonth: string;
+    revenueTotal: string;
+    perMonth: number[];
+  };
+  rateCards: { total: number; active: number };
+  branches: { total: number };
 };
 
 export type PerTenant = {

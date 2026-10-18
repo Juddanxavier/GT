@@ -93,13 +93,20 @@ export const dashboardStatsSchema = z.object({
         overdue: z.number().optional(),
         notTracked: z.number().optional(),
       }),
-      customers: z.object({ total: z.number(), active: z.number() }),
+      customers: z.object({
+        total: z.number(),
+        active: z.number(),
+        perMonth: z.array(z.number()),
+      }),
       quotations: z.object({ total: z.number(), conversionRate: z.number() }),
       invoices: z.object({
         total: z.number(),
         revenueThisMonth: z.string(),
         revenueTotal: z.string(),
+        perMonth: z.array(z.number()),
       }),
+      rateCards: z.object({ total: z.number(), active: z.number() }),
+      branches: z.object({ total: z.number() }),
     })
     .optional(),
   perTenant: z

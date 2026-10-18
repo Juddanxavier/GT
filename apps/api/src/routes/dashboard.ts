@@ -10,11 +10,16 @@ import {
   makeRawShipmentWhere,
   queryAlerts,
   queryAlertsRaw,
+  queryBranchCount,
   queryBranchShipmentCounts,
   queryByCarrier,
   queryCustomerCount,
   queryCustomerCountRaw,
+  queryCustomerPerMonth,
+  queryCustomerPerMonthRaw,
   queryDeliveryFlow,
+  queryInvoicePerMonth,
+  queryInvoiceStats,
   queryPerBranchBreakdown,
   queryPerDayShipments,
   queryPerDayShipmentsRaw,
@@ -22,10 +27,10 @@ import {
   queryPerTenantBreakdown,
   queryQuotationCount,
   queryQuotationCountRaw,
+  queryRateCardCount,
   queryRevenuePerMonth,
   queryRevenuePerMonthRaw,
   queryRevenueStats,
-  queryRevenueStatsRaw,
   queryShipmentDetailed,
   queryShipmentSummary,
   type StatsFilter,
@@ -75,7 +80,7 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
   if (!scope.tenantId) throw new Error('tenantId required for tenant stats');
   const filter: StatsFilter = { tenantId: scope.tenantId, branchId: scope.branchId };
 
-  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow] = await Promise.all([
+  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, iRow, rmVal, alVal, bRow, ibRow, rcRow, cpmVal, ipmVal] = await Promise.all([
     queryShipmentDetailed(filter),
     queryPerDayShipments(filter),
     queryShipmentTrend(filter),
@@ -91,6 +96,10 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
       .from(branches)
       .where(eq(branches.tenantId, scope.tenantId!))
       .orderBy(branches.name),
+    queryInvoiceStats(scope.tenantId),
+    queryRateCardCount(scope.tenantId),
+    queryCustomerPerMonth(filter),
+    queryInvoicePerMonth(scope.tenantId),
   ]);
 
   // Per-branch shipment counts
@@ -140,9 +149,9 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
     customers: { total: Number(cRow.total ?? 0), active: Number(cRow.active ?? 0) },
     quotations: { total: qt, converted: qc, conversionRate },
     invoices: {
-      total: Number(iRow.total ?? 0),
-      revenueThisMonth: (iRow.revenueThisMonth as string) ?? '0',
-      revenueTotal: (iRow.revenueTotal as string) ?? '0',
+      total: Number(ibRow.total ?? 0),
+      revenueThisMonth: (ibRow.revenueThisMonth as string) ?? '0',
+      revenueTotal: (ibRow.revenueTotal as string) ?? '0',
     },
     revenuePerMonth: rmVal,
     perDay: pdVal,
@@ -157,13 +166,20 @@ async function buildTenantStats(scope: { tenantId?: string; branchId?: string },
         deliveredToday: Number(s.deliveredToday ?? 0),
         exceptions: Number(s.exceptions ?? 0),
       },
-      customers: { total: Number(cRow.total ?? 0), active: Number(cRow.active ?? 0) },
+      customers: {
+        total: Number(cRow.total ?? 0),
+        active: Number(cRow.active ?? 0),
+        perMonth: cpmVal,
+      },
       quotations: { total: qt, conversionRate },
       invoices: {
-        total: Number(iRow.total ?? 0),
-        revenueThisMonth: (iRow.revenueThisMonth as string) ?? '0',
-        revenueTotal: (iRow.revenueTotal as string) ?? '0',
+        total: Number(ibRow.total ?? 0),
+        revenueThisMonth: (ibRow.revenueThisMonth as string) ?? '0',
+        revenueTotal: (ibRow.revenueTotal as string) ?? '0',
+        perMonth: ipmVal,
       },
+      rateCards: { total: Number(rcRow.total ?? 0), active: Number(rcRow.active ?? 0) },
+      branches: { total: bRow.length },
     },
     perBranch:
       scope.branchId && branchName
@@ -195,17 +211,21 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
   const tWhere = makeRawShipmentWhere(tenantId!);
 
   const branchFilter: StatsFilter = { tenantId };
-  const [s, cRow, qRow, iRow, pbVal, rmVal, pdVal, trendVal, dfVal, alVal] = await Promise.all([
+  const [s, cRow, qRow, ibRow, pbVal, rmVal, pdVal, trendVal, dfVal, alVal, rcRow, brRow, cpmVal, ipmVal] = await Promise.all([
     queryShipmentSummary(tenantId),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
-    queryRevenueStatsRaw(tFilter),
+    queryInvoiceStats(tenantId),
     queryPerBranchBreakdown(tenantId),
     queryRevenuePerMonthRaw(tFilter),
     queryPerDayShipmentsRaw(tFilter),
     queryShipmentTrend(branchFilter),
     queryDeliveryFlow(branchFilter),
     queryAlertsRaw(tFilter),
+    queryRateCardCount(tenantId),
+    queryBranchCount(tenantId),
+    queryCustomerPerMonthRaw(tFilter),
+    queryInvoicePerMonth(tenantId),
   ]);
 
   const qt = Number(qRow.total ?? 0);
@@ -247,13 +267,20 @@ async function buildBranchAdminStats(tenantId: string | undefined) {
         deliveredToday: Number(s.deliveredToday ?? 0),
         exceptions: Number(s.exceptions ?? 0),
       },
-      customers: { total: Number(cRow.total ?? 0), active: Number(cRow.active ?? 0) },
+      customers: {
+        total: Number(cRow.total ?? 0),
+        active: Number(cRow.active ?? 0),
+        perMonth: cpmVal,
+      },
       quotations: { total: qt, conversionRate },
       invoices: {
-        total: Number(iRow.total ?? 0),
-        revenueThisMonth: (iRow.revenueThisMonth as string) ?? '0',
-        revenueTotal: (iRow.revenueTotal as string) ?? '0',
+        total: Number(ibRow.total ?? 0),
+        revenueThisMonth: (ibRow.revenueThisMonth as string) ?? '0',
+        revenueTotal: (ibRow.revenueTotal as string) ?? '0',
+        perMonth: ipmVal,
       },
+      rateCards: { total: Number(rcRow.total ?? 0), active: Number(rcRow.active ?? 0) },
+      branches: { total: Number(brRow.total ?? 0) },
     },
     perBranch: pbVal,
     perDay: pdVal,
@@ -269,7 +296,7 @@ async function buildSuperadminStats(filterTenantId: string | null) {
   const tWhere = makeRawShipmentWhere(filterTenantId ?? undefined);
   const statsFilter: StatsFilter = { tenantId: filterTenantId ?? undefined };
 
-  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, iRow, ptVal, rmVal, alVal] = await Promise.all([
+  const [s, pdVal, trendVal, dfVal, bcVal, cRow, qRow, ibRow, ptVal, rmVal, alVal, rcRow, brRow, cpmVal, ipmVal] = await Promise.all([
     queryShipmentDetailed(statsFilter),
     queryPerDayShipmentsRaw(tFilter),
     queryShipmentTrend(statsFilter),
@@ -277,10 +304,14 @@ async function buildSuperadminStats(filterTenantId: string | null) {
     queryByCarrier(statsFilter),
     queryCustomerCountRaw(tFilter),
     queryQuotationCountRaw(tWhere),
-    queryRevenueStatsRaw(tFilter),
+    queryInvoiceStats(filterTenantId ?? undefined),
     queryPerTenantBreakdown(filterTenantId),
     queryRevenuePerMonthRaw(tFilter),
     queryAlertsRaw(tFilter),
+    queryRateCardCount(filterTenantId ?? undefined),
+    queryBranchCount(filterTenantId ?? undefined),
+    queryCustomerPerMonthRaw(tFilter),
+    queryInvoicePerMonth(filterTenantId ?? undefined),
   ]);
 
   const qt = Number(qRow.total ?? 0);
@@ -324,13 +355,20 @@ async function buildSuperadminStats(filterTenantId: string | null) {
         deliveredToday: Number(s.deliveredToday ?? 0),
         exceptions: Number(s.exceptions ?? 0),
       },
-      customers: { total: Number(cRow.total ?? 0), active: Number(cRow.active ?? 0) },
+      customers: {
+        total: Number(cRow.total ?? 0),
+        active: Number(cRow.active ?? 0),
+        perMonth: cpmVal,
+      },
       quotations: { total: qt, conversionRate },
       invoices: {
-        total: Number(iRow.total ?? 0),
-        revenueThisMonth: (iRow.revenueThisMonth as string) ?? '0',
-        revenueTotal: (iRow.revenueTotal as string) ?? '0',
+        total: Number(ibRow.total ?? 0),
+        revenueThisMonth: (ibRow.revenueThisMonth as string) ?? '0',
+        revenueTotal: (ibRow.revenueTotal as string) ?? '0',
+        perMonth: ipmVal,
       },
+      rateCards: { total: Number(rcRow.total ?? 0), active: Number(rcRow.active ?? 0) },
+      branches: { total: Number(brRow.total ?? 0) },
     },
     perTenant: ptVal,
     perDay: pdVal,
