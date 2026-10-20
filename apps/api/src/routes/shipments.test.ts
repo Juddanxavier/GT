@@ -7,7 +7,7 @@ vi.mock('../db', () => {
   const db = {
     select: vi.fn(() => {
       const limitFn = vi.fn();
-      const whereFn = vi.fn(() => ({ limit: limitFn }));
+      const whereFn = vi.fn(() => ({ limit: limitFn, orderBy: vi.fn(() => ({ limit: limitFn })) }));
       const fromFn = vi.fn(() => ({ where: whereFn }));
       return { from: fromFn };
     }),
@@ -59,7 +59,7 @@ function mockFoundShipment(id = 's1', trackingNo = 'TN001') {
   // We need to access the inner fns via the getModule mock helper
   // Instead, rebuild via the direct mock import
   const limitFn = vi.fn().mockResolvedValue([{ id, trackingNo, archivedAt: null }]);
-  const whereFn = vi.fn(() => ({ limit: limitFn }));
+  const whereFn = vi.fn(() => ({ limit: limitFn, orderBy: vi.fn(() => ({ limit: limitFn })) }));
   const fromFn = vi.fn(() => ({ where: whereFn }));
   const returningFn = vi.fn().mockResolvedValue([{ id, trackingNo, archivedAt: null, updatedAt: new Date() }]);
   const updateWhereFn = vi.fn().mockResolvedValue(undefined);
@@ -96,7 +96,7 @@ describe('DELETE /api/shipments/:id', () => {
   it('returns 404 when shipment not found by select query', async () => {
     const { db } = vi.mocked(await import('../db'));
     const limitFn = vi.fn().mockResolvedValue([]);
-    const whereFn = vi.fn(() => ({ limit: limitFn }));
+    const whereFn = vi.fn(() => ({ limit: limitFn, orderBy: vi.fn(() => ({ limit: limitFn })) }));
     const fromFn = vi.fn(() => ({ where: whereFn }));
     (db.select as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromFn });
 
@@ -113,7 +113,7 @@ describe('DELETE /api/shipments/:id', () => {
   it('returns 200 for superadmin (found shipment)', async () => {
     const { db } = vi.mocked(await import('../db'));
     const limitFn = vi.fn().mockResolvedValue([{ id: 's1', trackingNo: 'TN001', archivedAt: null }]);
-    const whereFn = vi.fn(() => ({ limit: limitFn }));
+    const whereFn = vi.fn(() => ({ limit: limitFn, orderBy: vi.fn(() => ({ limit: limitFn })) }));
     const fromFn = vi.fn(() => ({ where: whereFn }));
     (db.select as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromFn });
 
@@ -135,7 +135,7 @@ describe('DELETE /api/shipments/:id', () => {
   it('returns 404 when tenant scope does not match', async () => {
     const { db } = vi.mocked(await import('../db'));
     const limitFn = vi.fn().mockResolvedValue([]);
-    const whereFn = vi.fn(() => ({ limit: limitFn }));
+    const whereFn = vi.fn(() => ({ limit: limitFn, orderBy: vi.fn(() => ({ limit: limitFn })) }));
     const fromFn = vi.fn(() => ({ where: whereFn }));
     (db.select as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromFn });
 

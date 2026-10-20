@@ -14,7 +14,7 @@ vi.mock('../queues', () => ({
   isRedisConnected: vi.fn().mockReturnValue(true),
   isRedisConfigured: vi.fn().mockReturnValue(true),
 }));
-vi.mock('../redis', () => ({ bullConnectionOptions: {}, cacheClient: null }));
+vi.mock('../redis', () => ({ bullConnectionOptions: {}, bullConnection: null, cacheClient: null }));
 vi.mock('bullmq', () => ({ Worker: function() { return { on: vi.fn(), close: vi.fn() }; } }));
 
 import { retrackActiveShipments } from './index';

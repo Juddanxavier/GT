@@ -21,6 +21,7 @@ import { invoices, shipments, tenants } from '../db/schema';
 import { cacheDel, cacheDelPattern } from '../cache';
 import { notifyTrackingEvents } from '../notifications/service';
 import { pdfQueue, shipmentQueue } from '../queues';
+import { enqueueJob } from '../queues/enqueue';
 import { emitToTenant } from '../realtime';
 import { getProvider } from '../shipment-providers';
 import { insertEvents } from '../shipment-providers/dedup';
@@ -104,10 +105,15 @@ export async function createShipment(
     if (!row) throw new Error('Failed to insert shipment');
 
     labelCode = `GT-${row.id.slice(0, 7).toUpperCase()}`;
-    await tx
+    // Return the updated row, not the pre-update insert result, so the create
+    // response already carries labelCode.
+    [row] = await tx
       .update(shipments)
       .set({ labelCode, updatedAt: new Date() })
-      .where(eq(shipments.id, row.id));
+      .where(eq(shipments.id, row.id))
+      .returning();
+
+    if (!row) throw new Error('Failed to apply label code');
     });
   } catch (err) {
     // Postgres unique_violation (23505) on the tracking number index.
@@ -122,13 +128,25 @@ export async function createShipment(
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const created = row!;
 
+  // A new row changes every list page and the dashboard counts. Unscoped
+  // superadmin views are cached under the "__all__" pseudo-tenant, so bust
+  // that namespace too or the table keeps serving a list without the row.
+  await Promise.all([
+    cacheDelPattern(input.tenantId, 'shipments:list:*'),
+    cacheDelPattern(input.tenantId, 'dashboard:*'),
+    cacheDelPattern('__all__', 'shipments:list:*'),
+    cacheDelPattern('__all__', 'dashboard:*'),
+  ]);
+
   // ── Async operations ──
   // These are fire-and-forget from the request perspective.
   // BullMQ retries them automatically on failure (3 attempts, exponential backoff).
 
   if (shipmentQueue) {
-    // Redis available — enqueue background jobs
-    await shipmentQueue.add('track', {
+    // Redis configured — enqueue background jobs. enqueueJob bounds the wait:
+    // if Redis is unreachable the shipment is still returned to the caller and
+    // the 2-hourly retrack sweep picks it up.
+    const queued = await enqueueJob(shipmentQueue, 'track', {
       type: 'track',
       shipmentId: created.id,
       tenantId: input.tenantId,
@@ -141,16 +159,23 @@ export async function createShipment(
       labelCode,
       origin: input.origin,
       destination: input.destination,
-    });
+    }, log);
+
+    if (!queued) {
+      log.error(
+        { shipmentId: created.id, trackingNo: input.trackingNo },
+        'tracking job not queued; shipment saved, retrack sweep will pick it up',
+      );
+    }
 
     if (input.billAmount != null && input.billAmount > 0) {
-      await shipmentQueue.add('invoice', {
+      await enqueueJob(shipmentQueue, 'invoice', {
         type: 'invoice',
         shipmentId: created.id,
         tenantId: input.tenantId,
         userId: input.userId,
         billAmount: input.billAmount,
-      });
+      }, log);
     }
   } else {
     // No Redis — run synchronously (current behavior)
@@ -257,6 +282,14 @@ export async function performTracking(
       notifyTrackingEvents(shipment.id, tenantId, trackResult.events, trackResult.currentStatus, log);
     }
 
+    // Admin-entered origin/destination win; carrier metadata only fills gaps.
+    // Read the current row because job data can predate an admin edit.
+    const [current] = await db
+      .select({ origin: shipments.origin, destination: shipments.destination })
+      .from(shipments)
+      .where(eq(shipments.id, shipment.id))
+      .limit(1);
+
     // 5. Update shipment with tracking data
     const updateData: Record<string, unknown> = {
       status: trackResult.currentStatus,
@@ -264,8 +297,8 @@ export async function performTracking(
       lastTrackedAt: new Date(),
       trackingRegistered: inserted > 0,
       updatedAt: new Date(),
-      origin: trackResult.origin ?? extra.origin ?? null,
-      destination: trackResult.destination ?? extra.destination ?? null,
+      origin: current?.origin ?? extra.origin ?? trackResult.origin ?? null,
+      destination: current?.destination ?? extra.destination ?? trackResult.destination ?? null,
       estimatedDelivery: trackResult.estimatedDelivery
         ? new Date(trackResult.estimatedDelivery)
         : null,
@@ -344,9 +377,9 @@ export async function autoCreateInvoice(
         userId: userId ?? null,
         invoiceNo,
         amount: String(billAmount),
-        status: 'paid',
+        // New invoices start unpaid; paidAt is set when payment is recorded.
+        status: 'unpaid',
         emailCount: 0, // Fixed: no email sent on auto-creation
-        paidAt: now,
         lastEmailSentAt: now,
       })
       .returning();

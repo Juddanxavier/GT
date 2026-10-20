@@ -189,19 +189,24 @@ export async function handleTrackingEvent(
     return;
   }
 
-  await notificationQueue.add('notify', {
-    shipmentId: shipment.id,
-    eventId,
-    eventType,
-    tenantId: shipment.tenantId,
-    trackingNo: shipment.trackingNo,
-    carrier: shipment.carrier ?? undefined,
-    origin: shipment.origin ?? undefined,
-    destination: shipment.destination ?? undefined,
-    estimatedDelivery: shipment.estimatedDelivery ?? undefined,
-    customerName: shipment.customerName ?? undefined,
-    customerEmail: shipment.customerEmail ?? undefined,
-    customerPhone: shipment.customerPhone ?? undefined,
-    customerUserId: shipment.customerUserId ?? undefined,
-  });
+  try {
+    await notificationQueue.add('notify', {
+      shipmentId: shipment.id,
+      eventId,
+      eventType,
+      tenantId: shipment.tenantId,
+      trackingNo: shipment.trackingNo,
+      carrier: shipment.carrier ?? undefined,
+      origin: shipment.origin ?? undefined,
+      destination: shipment.destination ?? undefined,
+      estimatedDelivery: shipment.estimatedDelivery ?? undefined,
+      customerName: shipment.customerName ?? undefined,
+      customerEmail: shipment.customerEmail ?? undefined,
+      customerPhone: shipment.customerPhone ?? undefined,
+      customerUserId: shipment.customerUserId ?? undefined,
+    });
+  } catch (err) {
+    // Producers fail fast when Redis is unreachable; tracking must still finish.
+    log.error({ err, shipmentId: shipment.id, eventId }, 'failed to enqueue notification');
+  }
 }

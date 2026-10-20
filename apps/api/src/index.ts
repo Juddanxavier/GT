@@ -667,6 +667,15 @@ import { forgotPasswordSchema } from './validators';
 app.onError((err, c) => {
   const requestId = c.get('requestId');
   const log = c.get('logger') ?? logger;
+
+  // A body that is not valid JSON is a client mistake, not a server fault.
+  // Without this, `await c.req.json()` threw a SyntaxError that the handler
+  // below reported as 500 and sent to Sentry.
+  if (err instanceof SyntaxError) {
+    log.warn({ requestId, err }, 'invalid JSON body');
+    return errorResponse(c, 'INVALID_JSON', 'Request body is not valid JSON', 400);
+  }
+
   log.error({ err, requestId }, 'Unhandled error');
   Sentry.captureException(err, {
     contexts: { request: { request_id: requestId } },

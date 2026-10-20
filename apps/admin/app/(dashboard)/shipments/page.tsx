@@ -63,6 +63,7 @@ export default function ShipmentsPage() {
   useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [createdTracking, setCreatedTracking] = useState<string | null>(null);
   const [previewTracking, setPreviewTracking] = useState<string | null>(null);
   const isDesktop = useMediaQuery('(min-width: 1280px)');
   const [assignerData, setAssignerData] = useState<{ customerId: string | null; contactEmail: string; contactPhone: string }>({
@@ -74,6 +75,14 @@ export default function ShipmentsPage() {
   const [billAmount, setBillAmount] = useState(0);
   const [senderAddress, setSenderAddress] = useState<AddressData>({});
   const [recipientAddress, setRecipientAddress] = useState<AddressData>({});
+
+  // Hold the "just created" class long enough for the row entrance to finish,
+  // then release it so normal hover/selection states take over again.
+  useEffect(() => {
+    if (!createdTracking) return;
+    const timer = setTimeout(() => setCreatedTracking(null), 2400);
+    return () => clearTimeout(timer);
+  }, [createdTracking]);
 
   const { data: session } = authClient.useSession();
   const userData = getUser(session);
@@ -275,6 +284,8 @@ export default function ShipmentsPage() {
 
   function handleCreateSuccess(trackingNo: string) {
     toast('success', 'Shipment created', `Tracking #${trackingNo}`);
+    setCreatedTracking(trackingNo);
+    setPage(1);
     setCreateOpen(false);
     setNewTrackingNumber('');
     setBillAmount(0);
@@ -316,6 +327,7 @@ export default function ShipmentsPage() {
         sortDescriptor={sortDescriptor}
         onSortChange={setSortDescriptor}
         previewTrackingId={previewTracking}
+        createdTrackingNumber={createdTracking}
         onRowPreview={handleRowPreview}
         onRowOpen={(trackingNumber) => router.push(`/shipments/${trackingNumber}`)}
         onContextAction={handleContextAction}

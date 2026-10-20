@@ -56,6 +56,7 @@ interface ShipmentsTableProps {
   sortDescriptor: SortDescriptor;
   onSortChange: (descriptor: SortDescriptor) => void;
   previewTrackingId?: string | null;
+  createdTrackingNumber?: string | null;
   onRowPreview: (trackingNumber: string) => void;
   onRowOpen: (trackingNumber: string) => void;
   onContextAction: (key: Key, shipment: ShipmentTableRow) => void;
@@ -90,6 +91,7 @@ export function ShipmentsTable({
   sortDescriptor,
   onSortChange,
   previewTrackingId,
+  createdTrackingNumber,
   onRowPreview,
   onRowOpen,
   onContextAction,
@@ -384,11 +386,18 @@ export function ShipmentsTable({
         }
         onRowClick={(row) => live.current.onRowPreview(row.trackingNumber)}
         onRowDoubleClick={(row) => live.current.onRowOpen(row.trackingNumber)}
-        getRowClassName={(row) =>
-          row.trackingNumber === previewTrackingId
-            ? 'bg-[var(--ops-accent-dim)] shadow-[inset_3px_0_0_0_var(--ops-accent)]'
-            : undefined
-        }
+        getRowClassName={(row) => {
+          const classes: string[] = [];
+          if (row.trackingNumber === previewTrackingId) {
+            classes.push(
+              'bg-[var(--ops-accent-dim)] shadow-[inset_3px_0_0_0_var(--ops-accent)]',
+            );
+          }
+          if (createdTrackingNumber && row.trackingNumber === createdTrackingNumber) {
+            classes.push('shipment-created');
+          }
+          return classes.length > 0 ? classes.join(' ') : undefined;
+        }}
         ariaLabel="Shipments table"
       />
       <div className="flex w-full items-center justify-between gap-4 px-4 py-2">

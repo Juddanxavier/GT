@@ -25,6 +25,7 @@ interface CustomerAssignerProps {
   phoneFlag?: string;
   errors?: Record<string, string>;
   clearError?: (field: string) => void;
+  onFieldBlur?: (field: string) => void;
   showSelf?: boolean;
   loading?: boolean;
 }
@@ -43,6 +44,7 @@ export function CustomerAssigner({
   phoneFlag,
   errors = {},
   clearError,
+  onFieldBlur,
   showSelf = true,
   loading,
 }: CustomerAssignerProps) {
@@ -162,19 +164,44 @@ export function CustomerAssigner({
         </button>
         {overrideActive && (
           <div className="grid grid-cols-2 gap-2">
-            <Input variant="secondary" placeholder="Email" aria-label="Override email"
-              value={overrideEmail}
-              onChange={(e) => { setOverrideEmail(e.target.value); }}
-              onBlur={handleOverrideChange} />
-            <div className="flex">
-              <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
-                {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+            <div className="flex flex-col gap-1">
+              <Input
+                id="contact-email-input"
+                variant="secondary"
+                placeholder="Email"
+                aria-label="Override email"
+                value={overrideEmail}
+                aria-invalid={!!errors.contactEmail}
+                aria-describedby={errors.contactEmail ? 'override-email-error' : undefined}
+                className={errors.contactEmail ? 'border-danger' : undefined}
+                onChange={(e) => { setOverrideEmail(e.target.value); }}
+                onBlur={() => { handleOverrideChange(); onFieldBlur?.('contactEmail'); }}
+              />
+              {errors.contactEmail && (
+                <p id="override-email-error" className="text-[11px] text-danger-soft-foreground">{errors.contactEmail}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex">
+                <div className="flex items-center gap-1 px-2.5 border border-r-0 border-border rounded-l-lg bg-muted/10 text-xs text-muted font-medium shrink-0">
+                  {phoneFlag && <span>{phoneFlag}</span>}{phoneDialCode}
+                </div>
+                <Input
+                  id="contact-phone-input"
+                  variant="secondary"
+                  placeholder="Phone"
+                  aria-label="Override phone"
+                  value={overridePhone}
+                  aria-invalid={!!errors.contactPhone}
+                  aria-describedby={errors.contactPhone ? 'override-phone-error' : undefined}
+                  onChange={(e) => { setOverridePhone(e.target.value.replace(/\D/g, '')); }}
+                  onBlur={() => { handleOverrideChange(); onFieldBlur?.('contactPhone'); }}
+                  className={`rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none ${errors.contactPhone ? 'border-danger' : ''}`}
+                />
               </div>
-              <Input variant="secondary" placeholder="Phone" aria-label="Override phone"
-                value={overridePhone}
-                onChange={(e) => { setOverridePhone(e.target.value.replace(/\D/g, '')); }}
-                onBlur={handleOverrideChange}
-                className="rounded-l-none border-l-0 flex-1 min-w-0 [&_input]:rounded-l-none" />
+              {errors.contactPhone && (
+                <p id="override-phone-error" className="text-[11px] text-danger-soft-foreground">{errors.contactPhone}</p>
+              )}
             </div>
           </div>
         )}
@@ -218,6 +245,7 @@ export function CustomerAssigner({
           )}
               <input
                 ref={inputRef}
+                id="customer-assigner-input"
                 className="w-full h-10 px-9 rounded-sm border border-border bg-background text-sm placeholder:text-muted outline-none focus:border-foreground/30 transition-colors"
                 placeholder="Search customer by name, email, or phone..."
                 value={query}

@@ -338,7 +338,9 @@ app.get('/my-invoices/:id/pdf', async (c) => {
 
 const adminCreateCustomerSchema = z.object({
   name: z.string().min(1).max(255).transform((v) => v.replace(/<[^>]*>/g, '')),
-  email: z.string().email().max(255).optional(),
+  // Better Auth requires an email to create a user, so require it here too
+  // instead of failing deeper in the auth layer.
+  email: z.string().email().max(255),
   phone: z.string().regex(/^\+[\d\s-]{4,20}$/, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).optional().or(z.literal('')),
   address: addressSchema,
   branchId: z.string().uuid().optional(),
@@ -467,22 +469,34 @@ app.post('/', requireRole('superadmin', 'tenant-admin'), async (c) => {
   const randomPwd = crypto.randomUUID();
   const created = await createUser({ email: parsed.data.email, password: randomPwd, name: parsed.data.name, role: 'customer', tenantId, branchId: parsed.data.branchId });
 
+  // phone/address are custom user columns, not Better Auth additional fields,
+  // so createUser() does not persist them. Save them right after creation.
+  const profile: Record<string, unknown> = { updatedAt: new Date() };
+  if (parsed.data.phone) profile.phone = parsed.data.phone;
+  if (parsed.data.address) profile.address = parsed.data.address;
+
+  const [row] = await db
+    .update(user)
+    .set(profile)
+    .where(eq(user.id, created.user.id))
+    .returning({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      branchId: user.branchId,
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+
+  if (!row) return c.json({ error: 'Failed to load created customer' }, 500);
+
   await cacheDel(tenantId, 'customers:list');
-  return c.json({
-    data: {
-      id: created.user.id,
-      name: created.user.name,
-      email: created.user.email,
-      phone: created.user.phone ?? null,
-      address: created.user.address ?? null,
-      branchId: created.user.branchId ?? null,
-      isActive: created.user.isActive ?? true,
-      tenantId: created.user.tenantId ?? null,
-      role: 'customer',
-      createdAt: created.user.createdAt,
-      updatedAt: created.user.updatedAt,
-    },
-  }, 201);
+  return c.json({ data: row }, 201);
 });
 
 app.get(
@@ -536,6 +550,7 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
   const scope = getQueryScope(c);
   const { id } = c.req.param();
   if (!scope.tenantId) return c.json({ error: 'Tenant required' }, 400);
+  if (!id) return c.json({ error: 'Customer id required' }, 400);
 
   const body = await c.req.json();
   const parsed = adminUpdateCustomerSchema.safeParse(body);

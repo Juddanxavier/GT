@@ -6,6 +6,7 @@ const INTERNAL_SET = new Set<string>(INTERNAL_STATUSES);
 const STATUS_MAP: Record<string, InternalStatus> = {
   NotFound: 'pending',
   InfoReceived: 'info_received',
+  PickedUp: 'in_transit', // 17TRACK emits this granular stage alongside InTransit_* sub-stages
   InTransit: 'in_transit',
   Expired: 'expired',
   AvailableForPickup: 'available_for_pickup',
@@ -26,7 +27,24 @@ const STATUS_MAP: Record<string, InternalStatus> = {
 
 export function normalizeStatus(status: string): InternalStatus {
   if (INTERNAL_SET.has(status)) return status as InternalStatus;
-  return STATUS_MAP[status] ?? 'exception';
+
+  const direct = STATUS_MAP[status];
+  if (direct) return direct;
+
+  // 17TRACK reports a base stage plus a sub-stage, and the carrier events only
+  // carry `sub_status` ("InTransit_PickedUp", "InTransit_CustomsReleased",
+  // "DeliveryFailure_AddressIssue"). Match the longest known stage prefix so a
+  // sub-stage inherits its parent instead of falling through to the default.
+  const base = Object.keys(STATUS_MAP)
+    .filter((key) => status.startsWith(`${key}_`))
+    .sort((a, b) => b.length - a.length)[0];
+  const mapped = base ? STATUS_MAP[base] : undefined;
+  if (mapped) return mapped;
+
+  // Unknown stages are not exceptions. Defaulting them to `exception` raised
+  // false exception alerts (in-app, email, WhatsApp) for ordinary scans;
+  // `pending` is neutral and never triggers a major-event notification.
+  return 'pending';
 }
 
 export function parseDate(input: string | Date | undefined | null): Date {

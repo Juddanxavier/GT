@@ -629,8 +629,12 @@ app.put(
     const body = await c.req.json().catch(() => ({}));
     const { customerId } = body as { customerId?: string | null };
 
-    if (customerId !== undefined && customerId !== null && typeof customerId !== 'string') {
-      return c.json({ error: 'customerId must be a valid UUID or null' }, 400);
+    if (
+      customerId !== undefined &&
+      customerId !== null &&
+      (typeof customerId !== 'string' || customerId.trim() === '')
+    ) {
+      return c.json({ error: 'customerId must be a customer ID or null' }, 400);
     }
 
     const resolvedId = await resolveShipmentId(id, scope);
@@ -828,8 +832,9 @@ app.post(
         lastTrackedAt: new Date(),
         trackingRegistered: true,
         updatedAt: new Date(),
-        origin: result.origin ?? shipment.origin ?? null,
-        destination: result.destination ?? shipment.destination ?? null,
+        // Keep admin-entered values; carrier data only fills empty fields.
+        origin: shipment.origin ?? result.origin ?? null,
+        destination: shipment.destination ?? result.destination ?? null,
         estimatedDelivery: result.estimatedDelivery ? new Date(result.estimatedDelivery) : null,
         actualDelivery: result.actualDelivery ? new Date(result.actualDelivery) : null,
       };

@@ -62,7 +62,7 @@ vi.mock('../queues', () => ({
   isRedisConnected: vi.fn().mockReturnValue(true),
   isRedisConfigured: vi.fn().mockReturnValue(true),
 }));
-vi.mock('../redis', () => ({ bullConnectionOptions: {}, cacheClient: null }));
+vi.mock('../redis', () => ({ bullConnectionOptions: {}, bullConnection: null, cacheClient: null }));
 
 import './index';
 

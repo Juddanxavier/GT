@@ -107,6 +107,15 @@ describe('createQuotationSchema', () => {
     });
     expect(r.success).toBe(false);
   });
+
+  it('accepts a Better Auth text customer id', () => {
+    const r = createQuotationSchema.safeParse({
+      quoteNo: 'Q-001',
+      customerId: 'K3n9xQ2pLm7Rt4Vw8Yz1Ab5Cd6Ef0Gh2',
+      items: [{ description: 'Item', rate: '100', amount: '100' }],
+    });
+    expect(r.success).toBe(true);
+  });
 });
 
 describe('createShipmentSchema', () => {
@@ -145,6 +154,29 @@ describe('createShipmentSchema', () => {
     const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001', customerId: null });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.customerId).toBeNull();
+  });
+
+  it('accepts a Better Auth text customer id', () => {
+    const r = createShipmentSchema.safeParse({
+      trackingNo: 'TRACK001',
+      customerId: 'K3n9xQ2pLm7Rt4Vw8Yz1Ab5Cd6Ef0Gh2',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.customerId).toBe('K3n9xQ2pLm7Rt4Vw8Yz1Ab5Cd6Ef0Gh2');
+  });
+
+  it('rejects an empty customerId instead of treating it as null', () => {
+    const r = createShipmentSchema.safeParse({ trackingNo: 'TRACK001', customerId: '' });
+    expect(r.success).toBe(false);
+  });
+
+  it('trims customerId before storing it', () => {
+    const r = createShipmentSchema.safeParse({
+      trackingNo: 'TRACK001',
+      customerId: '  K3n9xQ2pLm7Rt4Vw8Yz1Ab5Cd6Ef0Gh2  ',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.customerId).toBe('K3n9xQ2pLm7Rt4Vw8Yz1Ab5Cd6Ef0Gh2');
   });
 
   it('accepts missing customerId', () => {

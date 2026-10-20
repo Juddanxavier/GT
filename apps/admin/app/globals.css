@@ -318,6 +318,38 @@ html {
   animation: scan-sweep 1.2s var(--ease-out-quint) 0.45s both;
 }
 
+/* A newly created shipment lands in the table: the row drops into place while
+ * its cells wash with the ops accent, then hand back to the normal row states.
+ * No fill mode on purpose — the row must still hover and select afterwards. */
+@keyframes shipment-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shipment-wash {
+  0%,
+  45% {
+    background-color: var(--ops-accent-dim);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.shipment-created {
+  animation: shipment-arrive 0.5s var(--ease-out-quint);
+}
+
+.shipment-created > td {
+  animation: shipment-wash 1.5s var(--ease-out-quint);
+}
+
+.shipment-created > td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--ops-accent);
+}
+
 /* Theme switch animation (lib/use-theme.ts)
  *
  * Toggling light/dark runs through the View Transitions API, which snapshots

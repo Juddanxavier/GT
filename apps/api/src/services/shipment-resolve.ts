@@ -1,4 +1,4 @@
-import { and, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, or, type SQL } from 'drizzle-orm';
 import { db } from '../db';
 import { shipments } from '../db/schema';
 
@@ -23,19 +23,56 @@ export function shipmentScope(scope: {
 
 // Resolve a route param (shipment uuid or tracking number) to the shipment's uuid,
 // respecting the caller's tenant/branch scope.
+//
+// A tracking number can be reused once its row is archived, so several rows may
+// share it. Resolve to the active shipment first (newest wins), then fall back
+// to the most recent archived row so history is still reachable.
 export async function resolveShipmentId(
   param: string,
   scope: { tenantId?: string | null; branchId?: string | null },
 ): Promise<string | null> {
-  const identityCondition = isShipmentUuid(param)
-    ? or(eq(shipments.id, param), eq(shipments.trackingNo, param))
-    : eq(shipments.trackingNo, param);
+  if (isShipmentUuid(param)) {
+    const [row] = await db
+      .select({ id: shipments.id })
+      .from(shipments)
+      .where(
+        and(
+          or(eq(shipments.id, param), eq(shipments.trackingNo, param)),
+          ...shipmentScope(scope),
+        ) as SQL | undefined,
+      )
+      .limit(1);
 
-  const [row] = await db
+    return row?.id ?? null;
+  }
+
+  const [active] = await db
     .select({ id: shipments.id })
     .from(shipments)
-    .where(and(identityCondition, ...shipmentScope(scope)) as SQL | undefined)
+    .where(
+      and(
+        eq(shipments.trackingNo, param),
+        isNull(shipments.archivedAt),
+        ...shipmentScope(scope),
+      ) as SQL | undefined,
+    )
+    .orderBy(desc(shipments.createdAt))
     .limit(1);
 
-  return row?.id ?? null;
+  if (active) return active.id;
+
+  const [archived] = await db
+    .select({ id: shipments.id })
+    .from(shipments)
+    .where(
+      and(
+        eq(shipments.trackingNo, param),
+        isNotNull(shipments.archivedAt),
+        ...shipmentScope(scope),
+      ) as SQL | undefined,
+    )
+    .orderBy(desc(shipments.createdAt))
+    .limit(1);
+
+  return archived?.id ?? null;
 }

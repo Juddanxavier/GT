@@ -23,7 +23,7 @@
  *   5. Return the shipment details (public-safe subset)
  */
 
-import { and, eq, type SQL } from 'drizzle-orm';
+import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db';
@@ -36,6 +36,7 @@ import { sendEmail } from '../email/provider';
 import { logAudit } from '../services/audit';
 import { generateOtp, verifyOtp, maskEmail } from '../services/otp';
 import { globalRateLimit } from '../middleware/rate-limit';
+import { trackingNoSchema } from '../validators';
 import type { LoggerVariables } from '../logger';
 import type { TenantVariables } from '../middleware/tenant';
 import type { InternalStatus } from '../shipment-providers/types';
@@ -43,7 +44,7 @@ import type { InternalStatus } from '../shipment-providers/types';
 const app = new Hono<{ Variables: TenantVariables & LoggerVariables }>();
 
 const claimSchema = z.object({
-  trackingNo: z.string().min(1).max(255),
+  trackingNo: trackingNoSchema,
   email: z.string().email().max(255).optional(),
   phone: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(255).optional(),
@@ -87,6 +88,7 @@ app.post('/claim', globalRateLimit({ windowSeconds: 300, maxRequests: 5, keyPref
   if (tenantId) {
     conditions.push(eq(shipments.tenantId, tenantId));
   }
+  conditions.push(isNull(shipments.archivedAt));
 
   // Find the shipment
   const [ship] = await db
@@ -230,13 +232,17 @@ app.post('/claim', globalRateLimit({ windowSeconds: 300, maxRequests: 5, keyPref
 // ── OTP-based claim flow ──
 
 app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, keyPrefix: 'claim-otp' }), async (c) => {
-  const { trackingNo } = await c.req.json().catch(() => ({}));
-  if (!trackingNo || typeof trackingNo !== 'string' || trackingNo.length > 255) {
+  const parsed = z.object({ trackingNo: trackingNoSchema }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) {
     return c.json({ error: 'Valid trackingNo is required' }, 400);
   }
+  const { trackingNo } = parsed.data;
 
-  // Find shipment
-  const claimConditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo)];
+  // Find shipment (archived shipments are not claimable)
+  const claimConditions: SQL[] = [
+    eq(shipments.trackingNo, trackingNo),
+    isNull(shipments.archivedAt),
+  ];
   const resolvedTenantId = (c.get('tenantId') as string | null) ?? null;
   if (resolvedTenantId) {
     claimConditions.push(eq(shipments.tenantId, resolvedTenantId));
@@ -287,7 +293,7 @@ app.post('/claim/init', globalRateLimit({ windowSeconds: 600, maxRequests: 3, ke
 
 app.post('/claim/verify-otp', globalRateLimit({ windowSeconds: 300, maxRequests: 10, keyPrefix: 'claim-verify' }), async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const parsed = z.object({ trackingNo: z.string().min(1).max(255), otpCode: z.string().length(6) }).safeParse(body);
+  const parsed = z.object({ trackingNo: trackingNoSchema, otpCode: z.string().length(6) }).safeParse(body);
   if (!parsed.success) {
     return c.json({ error: 'Valid trackingNo and otpCode (6 digits) are required' }, 400);
   }
@@ -314,7 +320,7 @@ app.post('/claim/verify-otp', globalRateLimit({ windowSeconds: 300, maxRequests:
       tenantId: shipments.tenantId,
     })
     .from(shipments)
-    .where(and(eq(shipments.trackingNo, trackingNo), ...(resolvedTenantId ? [eq(shipments.tenantId, resolvedTenantId)] : [])) as SQL | undefined)
+    .where(and(eq(shipments.trackingNo, trackingNo), isNull(shipments.archivedAt), ...(resolvedTenantId ? [eq(shipments.tenantId, resolvedTenantId)] : [])) as SQL | undefined)
     .limit(1);
 
   if (!ship) return c.json({ error: 'Shipment not found' }, 404);
@@ -368,12 +374,16 @@ app.post('/claim/verify-otp', globalRateLimit({ windowSeconds: 300, maxRequests:
 
 // ── Resend OTP ──
 app.post('/claim/resend-otp', globalRateLimit({ windowSeconds: 600, maxRequests: 3, keyPrefix: 'claim-otp' }), async (c) => {
-  const { trackingNo } = await c.req.json().catch(() => ({}));
-  if (!trackingNo || typeof trackingNo !== 'string' || trackingNo.length > 255) {
+  const parsed = z.object({ trackingNo: trackingNoSchema }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) {
     return c.json({ error: 'Valid trackingNo is required' }, 400);
   }
+  const { trackingNo } = parsed.data;
 
-  const resendConditions: ReturnType<typeof eq>[] = [eq(shipments.trackingNo, trackingNo)];
+  const resendConditions: SQL[] = [
+    eq(shipments.trackingNo, trackingNo),
+    isNull(shipments.archivedAt),
+  ];
   const resendTenantId = (c.get('tenantId') as string | null) ?? null;
   if (resendTenantId) {
     resendConditions.push(eq(shipments.tenantId, resendTenantId));

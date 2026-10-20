@@ -7,6 +7,19 @@ export const bullConnectionOptions: Record<string, unknown> | null = REDIS_URL
   ? { url: REDIS_URL, maxRetriesPerRequest: null, enableReadyCheck: false }
   : null;
 
+// Producers (Queue.add) must fail fast instead of parking commands in the
+// offline queue: a dead Redis used to leave shipment creation waiting forever.
+// Workers keep the shared connection above (they need maxRetriesPerRequest: null).
+export const bullProducerConnectionOptions: Record<string, unknown> | null = REDIS_URL
+  ? {
+      url: REDIS_URL,
+      maxRetriesPerRequest: 1,
+      enableReadyCheck: false,
+      enableOfflineQueue: false,
+      connectTimeout: 5000,
+    }
+  : null;
+
 function createBullConnection(): Redis | null {
   if (!REDIS_URL) return null;
   const client = new Redis(REDIS_URL, {

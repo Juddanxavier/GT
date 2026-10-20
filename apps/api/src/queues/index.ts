@@ -1,11 +1,14 @@
 import { Queue, type ConnectionOptions, type JobsOptions } from 'bullmq';
-import { bullConnection, bullConnectionOptions } from '../redis';
+import { bullConnection, bullProducerConnectionOptions } from '../redis';
 
 function createOrSkip(name: string, opts?: Partial<QueueOptions>): Queue | null {
-  if (!bullConnectionOptions) {
+  if (!bullProducerConnectionOptions) {
     return null;
   }
-  return new Queue(name, { connection: bullConnectionOptions as ConnectionOptions, ...opts });
+  return new Queue(name, {
+    connection: bullProducerConnectionOptions as ConnectionOptions,
+    ...opts,
+  });
 }
 
 type QueueOptions = { defaultJobOptions: JobsOptions };
@@ -77,7 +80,7 @@ export const queues = [
 export type QueueName = string;
 
 export function isRedisConfigured(): boolean {
-  return !!bullConnectionOptions;
+  return !!bullProducerConnectionOptions;
 }
 
 /**

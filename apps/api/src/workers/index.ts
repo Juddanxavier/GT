@@ -35,7 +35,7 @@ import {
   shipmentQueue,
   whatsappQueue,
 } from '../queues';
-import { bullConnectionOptions, cacheClient } from '../redis';
+import { bullConnection, bullConnectionOptions, cacheClient } from '../redis';
 import { runArchive } from '../services/archive';
 import { logAudit } from '../services/audit';
 import { performTracking, autoCreateInvoice } from '../services/shipment';
@@ -493,7 +493,22 @@ async function registerArchiveRepeatable(maxRetries = 3): Promise<void> {
   }
 }
 
-registerArchiveRepeatable();
+// Producers fail fast when Redis is unreachable, so these one-shot
+// registrations must wait for the shared connection instead of giving up while
+// Redis is still starting. Repeatable jobs persist in Redis, so one successful
+// registration per process is enough.
+function whenRedisReady(run: () => Promise<void>, label: string): void {
+  if (!bullConnection) return;
+  const attempt = () => {
+    run().catch((err) =>
+      childLogger({ type: label }).error({ err }, 'repeatable job registration failed'),
+    );
+  };
+  if (bullConnection.status === 'ready') attempt();
+  else bullConnection.once('ready', attempt);
+}
+
+whenRedisReady(registerArchiveRepeatable, 'archive');
 
 // Register periodic re-tracking (every 2 hours) with retries.
 async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
@@ -521,7 +536,7 @@ async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
   }
 }
 
-registerRetrackingRepeatable();
+whenRedisReady(registerRetrackingRepeatable, 'retrack');
 
 export async function retrackActiveShipments(): Promise<number> {
   if (!shipmentQueue) return 0;

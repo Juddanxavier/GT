@@ -14,8 +14,26 @@ describe('normalizeStatus', () => {
     expect(normalizeStatus('in_transit')).toBe('in_transit');
   });
 
-  it('defaults unknown provider statuses to exception', () => {
-    expect(normalizeStatus('SomethingWeird')).toBe('exception');
+  it('maps 17TRACK sub-stages to their parent stage', () => {
+    expect(normalizeStatus('InTransit_PickedUp')).toBe('in_transit');
+    expect(normalizeStatus('InTransit_Other')).toBe('in_transit');
+    expect(normalizeStatus('InTransit_CustomsReleased')).toBe('in_transit');
+    expect(normalizeStatus('DeliveryFailure_AddressIssue')).toBe('failed_attempt');
+    expect(normalizeStatus('Exception_Damage')).toBe('exception');
+  });
+
+  it('prefers the longest matching stage prefix', () => {
+    // "Delivered_..." must not be captured by a shorter prefix.
+    expect(normalizeStatus('Delivered_DroppedOff')).toBe('delivered');
+    expect(normalizeStatus('OutForDelivery_Today')).toBe('out_for_delivery');
+  });
+
+  it('maps the granular PickedUp stage', () => {
+    expect(normalizeStatus('PickedUp')).toBe('in_transit');
+  });
+
+  it('defaults unknown provider statuses to pending, not exception', () => {
+    expect(normalizeStatus('SomethingWeird')).toBe('pending');
   });
 });
 

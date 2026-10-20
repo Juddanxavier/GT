@@ -189,13 +189,19 @@ function DashboardLayoutInner({
     socket.on('notification:new', notifHandler);
     const trackHandler = (data: { shipmentId: string; trackingNo: string; status: string }) => {
       toast('info', `Shipment ${data.trackingNo}: ${data.status}`, 'Tracking status updated');
+      // The worker updates rows out of band; pull the list and open detail back
+      // so the board reflects the new status without a manual reload.
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['shipment', data.shipmentId] });
+      queryClient.invalidateQueries({ queryKey: ['shipment-tracking', data.shipmentId] });
+      queryClient.invalidateQueries({ queryKey: ['shipment-trend'] });
     };
     socket.on('tracking:updated', trackHandler);
     return () => {
       socket.off('notification:new', notifHandler);
       socket.off('tracking:updated', trackHandler);
     };
-  }, [session, toast, sessionUser?.tenantId]);
+  }, [session, toast, queryClient, sessionUser?.tenantId]);
 
   function handleThemeChange() {
     setTheme(resolved === 'dark' ? 'light' : 'dark');

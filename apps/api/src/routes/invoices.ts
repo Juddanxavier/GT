@@ -107,9 +107,9 @@ app.post(
         branchId: ship.branchId ?? null,
         invoiceNo,
         amount: String(amount),
-        status: 'paid' as const,
+        // New invoices start unpaid; PATCH /invoices/:id records payment.
+        status: 'unpaid' as const,
         emailCount: 0,
-        paidAt: now,
         lastEmailSentAt: now,
       };
 
@@ -437,9 +437,14 @@ app.patch('/:id', requireRole('superadmin', 'tenant-admin'), requireBranchScope(
     .limit(1);
   if (!existing) return c.json({ error: 'Invoice not found' }, 404);
 
+  const update: Record<string, unknown> = { ...filtered, updatedAt: new Date() };
+  // Keep status and payment timestamp consistent when an admin changes status.
+  if (update.status === 'paid' && !existing.paidAt) update.paidAt = new Date();
+  if (update.status != null && update.status !== 'paid') update.paidAt = null;
+
   const [row] = await db
     .update(invoices)
-    .set({ ...filtered, updatedAt: new Date() })
+    .set(update)
     .where(and(eq(invoices.id, resolvedId), eq(invoices.tenantId, scope.tenantId)))
     .returning();
 

@@ -2,9 +2,25 @@ import { z } from 'zod';
 import { stripHtml } from '../sanitize';
 
 const uuidSchema = z.string().uuid().transform(stripHtml);
+// Better Auth user IDs are plain text (not UUIDs), so customer/user references
+// must be validated as non-empty strings rather than UUIDs.
+const userIdSchema = z.string().trim().min(1).max(255).transform(stripHtml);
 const numericString = z.string().regex(/^\d+(\.\d{1,2})?$/);
 
 const phoneRegex = /^\+[\d\s-]{4,20}$/;
+
+// Carrier tracking numbers are 3-64 characters of letters, digits, spaces and
+// - _ / . (matches the admin form rules). The first character must be
+// alphanumeric so placeholder strings like "--" are rejected.
+export const trackingNoSchema = z
+  .string()
+  .min(3, 'Tracking number must be at least 3 characters')
+  .max(64, 'Tracking number must be 64 characters or fewer')
+  .regex(
+    /^[A-Za-z0-9][A-Za-z0-9 _./-]*$/,
+    'Use letters, numbers, spaces, -, _, / or . only',
+  )
+  .transform(stripHtml);
 
 export const addressSchema = z.object({
   name: z.string().max(255).transform(stripHtml).optional(),
@@ -47,7 +63,7 @@ export const quoteItemSchema = z.object({
 
 export const createQuotationSchema = z.object({
   quoteNo: z.string().min(1).max(50).transform(stripHtml),
-  customerId: uuidSchema,
+  customerId: userIdSchema,
   validUntil: z.string().datetime().transform(stripHtml).optional(),
   notes: z.string().transform(stripHtml).optional(),
   branchId: uuidSchema.optional(),
@@ -67,10 +83,10 @@ export const updateQuotationStatusSchema = z.object({
 });
 
 export const createShipmentSchema = z.object({
-  trackingNo: z.string().min(1).max(255).transform(stripHtml),
+  trackingNo: trackingNoSchema,
   customerName: z.string().min(1).max(255).transform(stripHtml).optional(),
   courierCode: z.string().max(50).transform(stripHtml).optional(),
-  customerId: z.union([uuidSchema, z.null()]).optional(),
+  customerId: z.union([userIdSchema, z.null()]).optional(),
   contactEmail: z.string().email().max(255).transform(stripHtml).optional().or(z.literal('')),
   contactPhone: z.string().regex(phoneRegex, 'Phone must start with + and country code (e.g. +91 9876543210)').max(50).transform(stripHtml).optional().or(z.literal('')),
   carrier: z.string().max(100).transform(stripHtml).optional(),
