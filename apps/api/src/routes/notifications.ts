@@ -5,18 +5,21 @@ import { Hono } from 'hono';
 import { cacheDelPattern } from '../cache';
 import { db } from '../db';
 import { notifications } from '../db/schema';
-import { type AuthVariables, sessionMiddleware } from '../middleware/auth';
-import { type TenantVariables, tenantMiddleware } from '../middleware/tenant';
-import { emitToTenant } from '../realtime';
+import type { AuthVariables } from '../middleware/auth';
+import type { TenantVariables } from '../middleware/tenant';
 import { logAudit } from '../services/audit';
 
 type Env = { Variables: AuthVariables & TenantVariables };
 
 const app = new Hono<Env>();
 
-app.use('*', sessionMiddleware, tenantMiddleware);
+// Session + tenant middleware are applied globally in index.ts before this
+// router is mounted. Re-applying them here opened a second nested transaction
+// (and a second pooled connection) for every notification request, which
+// exhausted/destabilised the pool under load and made these two endpoints fail
+// with 500 while every other route was fine.
 
-  // List notifications for current user/tenant
+// List notifications for current user/tenant
 app.get('/', async (c) => {
   const user = c.get('user') as unknown as { id: string; role: string; tenantId?: string } | null;
   const tenantId = c.get('tenantId');
