@@ -538,6 +538,42 @@ async function registerRetrackingRepeatable(maxRetries = 3): Promise<void> {
 
 whenRedisReady(registerRetrackingRepeatable, 'retrack');
 
+// Fresh shipments never tracked at all (lost create-time job) get reconciled
+// every five minutes instead of waiting for the two-hourly sweep.
+async function registerPendingRetrackRepeatable(maxRetries = 3): Promise<void> {
+  if (!shipmentQueue) return;
+  const log = childLogger({ queue: 'shipment', type: 'retrack-pending' });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await shipmentQueue.add(
+        'retrack-pending',
+        {},
+        {
+          repeat: { pattern: '*/5 * * * *' },
+          removeOnComplete: { age: 86400, count: 50 },
+          removeOnFail: { age: 86400 * 7, count: 100 },
+        },
+      );
+      log.info('repeatable job registered (every 5 minutes)');
+      return;
+    } catch (err) {
+      log.error({ err, attempt, maxRetries }, 'failed to register pending retrack repeatable job');
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      }
+    }
+  }
+}
+
+whenRedisReady(async () => {
+  await registerPendingRetrackRepeatable();
+  // Boot-time catch-up: a shipment created just before a deploy should not wait
+  // for the next five-minute tick.
+  await shipmentQueue?.add('retrack-pending', {}, {
+    removeOnComplete: { age: 3600, count: 10 },
+  });
+}, 'retrack-pending');
+
 export async function retrackActiveShipments(): Promise<number> {
   if (!shipmentQueue) return 0;
 
@@ -551,6 +587,47 @@ export async function retrackActiveShipments(): Promise<number> {
       AND status NOT IN ('delivered','expired')
       AND (last_tracked_at IS NULL OR last_tracked_at < NOW() - INTERVAL '6 hours')
     LIMIT 200
+  `);
+
+  let enqueued = 0;
+  for (const row of rows) {
+    if (!shipmentQueue) break;
+    await shipmentQueue.add('track', {
+      type: 'track',
+      shipmentId: row.id,
+      tenantId: row.tenant_id,
+      trackingNo: row.tracking_no,
+      courierCode: row.courier_code,
+      carrier: row.carrier,
+    });
+    enqueued++;
+  }
+
+  return enqueued;
+}
+
+/**
+ * Re-enqueue the first track for shipments that were created but never tracked.
+ * A deploy or a Redis blip can drop the create-time job; without this the shipment
+ * sits at `pending` until the every-2-hours sweep. `last_tracked_at` is set by the
+ * first attempt, so each shipment is picked up here at most once.
+ */
+export async function retrackPendingShipments(): Promise<number> {
+  if (!shipmentQueue) return 0;
+
+  const rows = await db.execute<{
+    id: string; tracking_no: string; tenant_id: string;
+    carrier: string | null; courier_code: string | null;
+  }>(sql`
+    SELECT id, tracking_no, tenant_id, carrier, courier_code
+    FROM shipment
+    WHERE archived_at IS NULL
+      AND status = 'pending'
+      AND last_tracked_at IS NULL
+      AND created_at < NOW() - INTERVAL '2 minutes'
+      AND created_at > NOW() - INTERVAL '1 hour'
+    ORDER BY created_at ASC
+    LIMIT 100
   `);
 
   let enqueued = 0;
@@ -635,6 +712,12 @@ export const shipmentWorker = createWorker(
     if (data.type === 'retrack') {
       const count = await retrackActiveShipments();
       log.info({ type: 'retrack', count }, 'enqueued track jobs');
+      return;
+    }
+
+    if (data.type === 'retrack-pending') {
+      const count = await retrackPendingShipments();
+      log.info({ type: 'retrack-pending', count }, 'enqueued first-track jobs');
       return;
     }
 

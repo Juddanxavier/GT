@@ -4,6 +4,8 @@ import type { Logger } from '../../logger';
 
 const BASE = 'https://api.trackingmore.com/v4';
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 function headers(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
@@ -21,6 +23,7 @@ export class TrackingMoreProvider implements ShipmentProvider {
         method: 'POST',
         headers: headers(),
         body: JSON.stringify({ tracking_number: trackingNo }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       const body = (await res.json()) as {
         meta?: { code?: number };
@@ -58,6 +61,7 @@ export class TrackingMoreProvider implements ShipmentProvider {
           tracking_number: data.trackingNo,
           courier_code: data.courierCode,
         }]),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       const body = (await res.json()) as {
@@ -85,7 +89,11 @@ export class TrackingMoreProvider implements ShipmentProvider {
   ): Promise<TrackResult> {
     try {
       const url = `${BASE}/trackings/get?tracking_numbers=${encodeURIComponent(trackingNo)}`;
-      const res = await fetch(url, { method: 'GET', headers: headers() });
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: headers(),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
       if (!res.ok) {
         log.error({ status: res.status, trackingNo }, 'track request failed');

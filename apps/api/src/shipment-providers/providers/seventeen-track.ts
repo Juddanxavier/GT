@@ -5,6 +5,10 @@ import { createHmac } from 'node:crypto';
 
 const BASE = 'https://api.17track.net/track/v2.4';
 
+// A stalled carrier API call must not park a BullMQ worker (and leave the
+// shipment at `pending`) until the job is reclaimed minutes later.
+const REQUEST_TIMEOUT_MS = 15_000;
+
 function headers(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
@@ -80,6 +84,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
         method: 'POST',
         headers: headers(),
         body: JSON.stringify([payload]),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       const json = (await res.json()) as { code?: number };
@@ -113,6 +118,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
         method: 'POST',
         headers: headers(),
         body: JSON.stringify([body]),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       const json = (await res.json()) as {
@@ -148,6 +154,7 @@ export class SeventeenTrackProvider implements ShipmentProvider {
         method: 'POST',
         headers: headers(),
         body: JSON.stringify([payload]),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (!res.ok) {
